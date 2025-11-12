@@ -15,13 +15,10 @@ export default function Header({ session }: { session: Session | null }) {
         >
           <Link
             href="/"
-            className="flex items-center gap-3 text-white"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-[var(--surface-2)]/85 px-3 py-2 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-[var(--surface-2)]"
             style={{ justifySelf: "start" }}
           >
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#1B84F8] text-sm font-semibold">
-              SF
-            </span>
-            <span className="text-base font-semibold tracking-tight">superfactorymanager</span>
+            superfactorymanager
           </Link>
 
           <div className="w-full max-w-xl" style={{ justifySelf: "center" }}>
@@ -30,7 +27,7 @@ export default function Header({ session }: { session: Session | null }) {
 
           <div className="flex items-center gap-2" style={{ justifySelf: "end" }}>
             <Link href="/posts/new" className="inline-flex">
-              <Button size="sm" className="w-28 justify-center">
+              <Button size="sm" className="min-w-[9.5rem] justify-center">
                 <Plus /> New post
               </Button>
             </Link>
@@ -43,13 +40,13 @@ export default function Header({ session }: { session: Session | null }) {
                   await signOut({ redirectTo: "/" });
                 }}
               >
-                <Button size="sm" variant="ghost" className="w-24 justify-center">
+                <Button size="sm" variant="ghost" className="min-w-[8.5rem] justify-center">
                   <LogOut /> Log out
                 </Button>
               </form>
             ) : (
               <Link href="/login" className="inline-flex">
-                <Button size="sm" variant="outline" className="w-24 justify-center">
+                <Button size="sm" variant="outline" className="min-w-[8.5rem] justify-center">
                   <LogIn /> Log in
                 </Button>
               </Link>
