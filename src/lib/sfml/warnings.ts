@@ -1,0 +1,98 @@
+// src/lib/sfml/warnings.ts
+import { CharStreams, CommonTokenStream } from "antlr4ts";
+import { ParseTreeWalker } from "antlr4ts/tree/ParseTreeWalker";
+import { SFMLLexer } from "@/generated/SFMLLexer";
+import { SFMLParser, BlockContext, ForgetStatementContext, IfStatementContext, InputStatementContext, OutputStatementContext } from "@/generated/SFMLParser";
+import { SFMLListener } from "@/generated/SFMLListener";
+
+export type WarningItem = { message: string; lineStart: number; lineEnd: number };
+
+class InputOutputChecker implements SFMLListener {
+  private inputs: Array<{ type: string; lineStart: number; lineEnd: number }> = [];
+  private outputs: Array<{ type: string; lineStart: number; lineEnd: number }> = [];
+  private onIfElseStatement = false;
+  public warnings: WarningItem[] = [];
+
+  private addWarning(msg: string, lineStart: number, lineEnd: number) {
+    this.warnings.push({ message: msg, lineStart, lineEnd });
+  }
+
+  private typeFromCtxText(text: string): string {
+    // mirrors the extension’s heuristic
+    let t = text.match(/(fe|fluid|gas|item)(?:::[^:]*|:[^:*]*:\*|:[^:*]*)/i)?.[1]?.toLowerCase();
+    if (!t || !text.includes(":")) t = "item";
+    if (t.startsWith("fluid:")) t = "fluid";
+    if (t.startsWith("fe:")) t = "fe";
+    if (t.startsWith("gas:")) t = "gas";
+    if (t.startsWith("item:")) t = "item";
+    return t;
+  }
+
+  enterInputStatement(ctx: InputStatementContext) {
+    const type = this.typeFromCtxText(ctx.text);
+    this.inputs.push({ type, lineStart: ctx.start.line, lineEnd: ctx.stop?.line ?? ctx.start.line });
+  }
+
+  enterOutputStatement(ctx: OutputStatementContext) {
+    const type = this.typeFromCtxText(ctx.text);
+    this.outputs.push({ type, lineStart: ctx.start.line, lineEnd: ctx.stop?.line ?? ctx.start.line });
+  }
+
+  private verify() {
+    // input without corresponding output
+    for (const i of this.inputs) {
+      if (!this.outputs.some(o => o.type === i.type)) {
+        this.addWarning(`Warning: Input ${i.type}:: without corresponding output.`, i.lineStart, i.lineEnd);
+      }
+    }
+    // output without corresponding input
+    for (const o of this.outputs) {
+      if (!this.inputs.some(i => i.type === o.type)) {
+        this.addWarning(`Warning: Output ${o.type}:: without corresponding input.`, o.lineStart, o.lineEnd);
+      }
+    }
+  }
+
+  enterForgetStatement(_ctx: ForgetStatementContext) {
+    this.verify();
+    this.inputs = [];
+    this.outputs = [];
+  }
+
+  exitBlock(_ctx: BlockContext) {
+    if (this.onIfElseStatement) { this.onIfElseStatement = false; return; }
+    this.verify();
+    this.inputs = [];
+    this.outputs = [];
+  }
+
+  enterIfStatement(_ctx: IfStatementContext) { this.onIfElseStatement = true; }
+
+  finalCheck() {
+    this.verify();
+    this.inputs = [];
+    this.outputs = [];
+  }
+
+  // no-op implementations
+  enterEveryRule?(_: any): void { }
+  exitEveryRule?(_: any): void { }
+  visitTerminal?(_: any): void { }
+  visitErrorNode?(_: any): void { }
+}
+
+/** Semantic warnings pass (pairing of inputs/outputs), no VS Code deps */
+export function collectWarnings(code: string): WarningItem[] {
+  const input = CharStreams.fromString(code);
+  const lexer = new SFMLLexer(input);
+  const tokens = new CommonTokenStream(lexer);
+  const parser = new SFMLParser(tokens);
+
+  const tree = parser.program();
+  const checker = new InputOutputChecker();
+  const walker = new ParseTreeWalker();
+  walker.walk(checker as SFMLListener, tree);
+  (checker as any).finalCheck();
+
+  return checker.warnings;
+}

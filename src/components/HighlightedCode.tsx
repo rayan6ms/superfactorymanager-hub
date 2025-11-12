@@ -1,0 +1,13 @@
+import { highlightSFML } from "@/lib/highlight-sfml";
+
+export default async function HighlightedCode({
+  code,
+}: { code: string; theme?: string }) {
+  const html = await highlightSFML(code);
+  return (
+    <div
+      className="border rounded overflow-auto"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}

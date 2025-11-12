@@ -1,0 +1,111 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  image        String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  posts        Post[]
+  ratings      Rating[]
+}
+
+model Category {
+  id    String @id @default(cuid())
+  key   String @unique
+  name  String
+  posts Post[]
+}
+
+model PostImage {
+  id       String @id @default(cuid())
+  original String
+  thumbSm  String
+  thumbMd  String
+  thumbLg  String
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId   String
+}
+
+model Rating {
+  id      String   @id @default(cuid())
+  value   Int
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId  String
+  ratedAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+enum CodeStatus {
+  VERIFIED
+  UNVERIFIED
+  BROKEN
+}
+
+model Dependency {
+  id     String @id @default(cuid())
+  name   String
+  slug   String
+  source String
+  url    String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+
+  @@index([slug])
+  @@index([source])
+}
+
+model SfmVersion {
+  id          String   @id @default(cuid())
+  gameVersion String
+  modVersion  String
+  source      String
+  firstSeen   DateTime @default(now())
+  lastSeen    DateTime @default(now())
+
+  fileId     String?
+  fileUrl    String?
+  uploadedAt DateTime?
+
+  @@unique([gameVersion, modVersion])
+  @@index([source])
+  @@index([fileId])
+  @@index([uploadedAt])
+}
+
+model Post {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  title        String
+  modVersion   String
+  gameVersion  String
+  categoryId   String
+  category     Category     @relation(fields: [categoryId], references: [id])
+  authorId     String
+  author       User         @relation(fields: [authorId], references: [id])
+  authorName   String
+  rating       Float        @default(0)
+  ratingCount  Int          @default(0)
+  ratings      Rating[]
+  views        Int          @default(0)
+  uploadDate   DateTime     @default(now())
+  code         String
+  codeStatus   CodeStatus   @default(UNVERIFIED)
+  codeNote     String?
+  description  String
+  youtubeUrl   String?
+  images       PostImage[]
+  dependencies Dependency[]
+}

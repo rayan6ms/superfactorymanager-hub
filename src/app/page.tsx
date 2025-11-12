@@ -1,66 +1,92 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import { Search, Star } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+
+type Item = {
+  id: string;
+  slug: string;
+  title: string;
+  modVersion: string;
+  views: number;
+  rating: number;
+  ratingCount: number;
+  description: string;
+  category: { name: string };
+  images?: { thumbSm: string; thumbMd: string; thumbLg: string }[];
+};
 
 export default function Home() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+
+  const runSearch = useCallback(async (search: string) => {
+    setLoading(true);
+    const res = await fetch(`/api/posts?q=${encodeURIComponent(search)}`);
+    const data = await res.json();
+    setItems(data.items || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      void runSearch(searchParams.get("q") || "");
+    });
+    return () => cancelAnimationFrame(id);
+  }, [searchParams, runSearch]);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="space-y-10">
+      <ul className="grid gap-5 md:grid-cols-2">
+        {items.map(item => (
+          <li key={item.id}>
+            <Link href={`/posts/${item.slug}`} className="block">
+              <Card className="p-5" hoverable>
+                <div className="flex flex-col gap-4 sm:flex-row">
+                  {item.images?.[0]?.thumbSm ? (
+                    <img
+                      src={item.images[0].thumbSm}
+                      alt=""
+                      width={160}
+                      height={110}
+                      className="h-[120px] w-full rounded-xl border border-white/10 object-cover sm:w-[160px]"
+                    />
+                  ) : (
+                    <div className="grid h-[120px] w-full place-items-center rounded-xl border border-white/10 bg-white/5 text-white/40 sm:w-[160px]">
+                      <Search className="h-5 w-5" />
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                      <Badge>{item.category?.name}</Badge>
+                    </div>
+                    <p className="text-sm text-white/70 line-clamp-2">{item.description}</p>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-white/60">
+                      <span>v{item.modVersion}</span>
+                      <span>{item.views} views</span>
+                      <span className="inline-flex items-center gap-1 text-white">
+                        <Star className="h-3 w-3 text-yellow-400" /> {(item.rating ?? 0).toFixed(1)} ({item.ratingCount ?? 0})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      {!loading && items.length === 0 && (
+        <Card className="p-8 text-center text-white/70">
+          No results yet. Use the search card above to populate the feed.
+        </Card>
+      )}
     </div>
   );
 }
