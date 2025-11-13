@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { clsx } from "clsx";
 import { highlightSFML } from "@/lib/highlight-sfml";
 
@@ -31,6 +31,10 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
   const highlightContentRef = useRef<HTMLElement | null>(null);
   const fallbackHtml = useMemo(() => plainHighlight(value), [value]);
   const html = highlightState?.code === value ? highlightState.html : fallbackHtml;
+  const textareaStyle = useMemo<CSSProperties | undefined>(
+    () => (value ? { color: "transparent", WebkitTextFillColor: "transparent" } : undefined),
+    [value]
+  );
 
   const syncScroll = useCallback(() => {
     if (!textareaRef.current || !highlightContentRef.current) return;
@@ -101,10 +105,11 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
+        style={textareaStyle}
         className={clsx(
           "relative z-10 min-h-[16rem] w-full resize-y border-0 bg-transparent px-4 py-3 font-mono text-sm leading-6 outline-none focus:outline-none",
           value
-            ? "text-transparent caret-brand-200 selection:bg-brand-500/30 selection:text-white"
+            ? "caret-brand-200 selection:bg-brand-500/30 selection:text-white"
             : "text-white/80 placeholder:text-white/40"
         )}
       />

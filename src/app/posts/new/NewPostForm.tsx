@@ -381,425 +381,421 @@ export default function NewPostForm() {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1.15fr)] xl:gap-10">
-        <div className="space-y-6">
-          <Card className="space-y-6 px-6 py-5 sm:px-8 sm:py-7">
-            <SectionTitle title="Post details" description="Set the essentials for your upload." />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1.15fr)] xl:gap-10">
+        <Card className="space-y-6 px-6 py-5 sm:px-8 sm:py-7">
+          <SectionTitle title="Post details" description="Set the essentials for your upload." />
 
-            <div className="space-y-5">
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-medium text-white/75">
+                Title
+              </label>
+              <Input
+                id="title"
+                placeholder="Give your post a clear, descriptive title"
+                value={form.title}
+                onChange={e => change("title", e.target.value)}
+                onBlur={() => markTouched("title")}
+                aria-invalid={shouldShowError("title") || undefined}
+                aria-describedby={shouldShowError("title") ? errorId("title") : undefined}
+                className={clsx(
+                  shouldShowError("title") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
+                )}
+              />
+              <div className="flex items-center justify-between text-xs text-white/45">
+                <span>Keep it under {MAX_TITLE_LENGTH} characters.</span>
+                <span>
+                  {form.title.trim().length}/{MAX_TITLE_LENGTH}
+                </span>
+              </div>
+              {shouldShowError("title") && errors.title && (
+                <p id={errorId("title")} className="text-sm text-red-400">
+                  {errors.title}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <label htmlFor="title" className="text-sm font-medium text-white/75">
-                  Title
+                <label htmlFor="gameVersion" className="text-sm font-medium text-white/75">
+                  Minecraft version
                 </label>
-                <Input
-                  id="title"
-                  placeholder="Give your post a clear, descriptive title"
-                  value={form.title}
-                  onChange={e => change("title", e.target.value)}
-                  onBlur={() => markTouched("title")}
-                  aria-invalid={shouldShowError("title") || undefined}
-                  aria-describedby={shouldShowError("title") ? errorId("title") : undefined}
+                <select
+                  id="gameVersion"
                   className={clsx(
-                    shouldShowError("title") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
+                    "h-12 w-full rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 text-sm font-medium text-white focus:ring-2",
+                    shouldShowError("gameVersion")
+                      ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
+                      : "focus:border-brand-400 focus:ring-brand-400"
                   )}
-                />
-                <div className="flex items-center justify-between text-xs text-white/45">
-                  <span>Keep it under {MAX_TITLE_LENGTH} characters.</span>
-                  <span>
-                    {form.title.trim().length}/{MAX_TITLE_LENGTH}
-                  </span>
-                </div>
-                {shouldShowError("title") && errors.title && (
-                  <p id={errorId("title")} className="text-sm text-red-400">
-                    {errors.title}
+                  value={form.gameVersion}
+                  onChange={e => change("gameVersion", e.target.value)}
+                  onBlur={() => markTouched("gameVersion")}
+                  aria-invalid={shouldShowError("gameVersion") || undefined}
+                  aria-describedby={shouldShowError("gameVersion") ? errorId("gameVersion") : undefined}
+                >
+                  <option value="">Select a Minecraft version…</option>
+                  {matrix.gameVersions.map(v => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+                {shouldShowError("gameVersion") && errors.gameVersion && (
+                  <p id={errorId("gameVersion")} className="text-sm text-red-400">
+                    {errors.gameVersion}
                   </p>
                 )}
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="gameVersion" className="text-sm font-medium text-white/75">
-                    Minecraft version
-                  </label>
+              <div className="space-y-2">
+                <label htmlFor="modVersion" className="text-sm font-medium text-white/75">
+                  SFM mod version
+                </label>
+                <div className="relative">
                   <select
-                    id="gameVersion"
+                    id="modVersion"
                     className={clsx(
-                      "h-12 w-full rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 text-sm font-medium text-white focus:ring-2",
-                      shouldShowError("gameVersion")
+                      "h-12 w-full appearance-none rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 text-sm font-medium text-white focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
+                      shouldShowError("modVersion")
                         ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
                         : "focus:border-brand-400 focus:ring-brand-400"
                     )}
-                    value={form.gameVersion}
-                    onChange={e => change("gameVersion", e.target.value)}
-                    onBlur={() => markTouched("gameVersion")}
-                    aria-invalid={shouldShowError("gameVersion") || undefined}
-                    aria-describedby={shouldShowError("gameVersion") ? errorId("gameVersion") : undefined}
+                    value={form.modVersion}
+                    disabled={!form.gameVersion}
+                    onChange={e => change("modVersion", e.target.value)}
+                    onBlur={() => markTouched("modVersion")}
+                    aria-invalid={shouldShowError("modVersion") || undefined}
+                    aria-describedby={shouldShowError("modVersion") ? errorId("modVersion") : undefined}
                   >
-                    <option value="">Select a Minecraft version…</option>
-                    {matrix.gameVersions.map(v => (
+                    <option value="">
+                      {form.gameVersion ? "Select an SFM mod version…" : ""}
+                    </option>
+                    {modOptions.map(v => (
                       <option key={v} value={v}>
                         {v}
                       </option>
                     ))}
                   </select>
-                  {shouldShowError("gameVersion") && errors.gameVersion && (
-                    <p id={errorId("gameVersion")} className="text-sm text-red-400">
-                      {errors.gameVersion}
-                    </p>
+                  {!form.gameVersion && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-2xl border border-dashed border-white/20 bg-black/30 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-white/45">
+                      Select Minecraft first
+                    </div>
                   )}
                 </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="modVersion" className="text-sm font-medium text-white/75">
-                    SFM mod version
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="modVersion"
-                      className={clsx(
-                        "h-12 w-full appearance-none rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 text-sm font-medium text-white focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
-                        shouldShowError("modVersion")
-                          ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
-                          : "focus:border-brand-400 focus:ring-brand-400"
-                      )}
-                      value={form.modVersion}
-                      disabled={!form.gameVersion}
-                      onChange={e => change("modVersion", e.target.value)}
-                      onBlur={() => markTouched("modVersion")}
-                      aria-invalid={shouldShowError("modVersion") || undefined}
-                      aria-describedby={shouldShowError("modVersion") ? errorId("modVersion") : undefined}
-                    >
-                      <option value="">
-                        {form.gameVersion ? "Select an SFM mod version…" : ""}
-                      </option>
-                      {modOptions.map(v => (
-                        <option key={v} value={v}>
-                          {v}
-                        </option>
-                      ))}
-                    </select>
-                    {!form.gameVersion && (
-                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-2xl border border-dashed border-white/20 bg-black/30 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-white/45">
-                        Select Minecraft first
-                      </div>
-                    )}
-                  </div>
-                  {shouldShowError("modVersion") && errors.modVersion && (
-                    <p id={errorId("modVersion")} className="text-sm text-red-400">
-                      {errors.modVersion}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="categoryKey" className="text-sm font-medium text-white/75">
-                  Category key
-                </label>
-                <Input
-                  id="categoryKey"
-                  placeholder="e.g. factories/automation"
-                  value={form.categoryKey}
-                  onChange={e => change("categoryKey", e.target.value)}
-                  onBlur={() => markTouched("categoryKey")}
-                  aria-invalid={shouldShowError("categoryKey") || undefined}
-                  aria-describedby={shouldShowError("categoryKey") ? errorId("categoryKey") : undefined}
-                  className={clsx(
-                    shouldShowError("categoryKey") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
-                  )}
-                />
-                <p className="text-xs text-white/45">
-                  Use lowercase letters, numbers, slashes, or hyphens to group similar posts.
-                </p>
-                {shouldShowError("categoryKey") && errors.categoryKey && (
-                  <p id={errorId("categoryKey")} className="text-sm text-red-400">
-                    {errors.categoryKey}
+                {shouldShowError("modVersion") && errors.modVersion && (
+                  <p id={errorId("modVersion")} className="text-sm text-red-400">
+                    {errors.modVersion}
                   </p>
                 )}
               </div>
             </div>
-          </Card>
-
-          <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
-            <SectionTitle
-              title="Description"
-              description="Tell readers what to expect and how to get started."
-            />
 
             <div className="space-y-2">
-              <label htmlFor="description" className="text-sm font-medium text-white/75">
-                Overview
+              <label htmlFor="categoryKey" className="text-sm font-medium text-white/75">
+                Category key
               </label>
-              <textarea
-                id="description"
+              <Input
+                id="categoryKey"
+                placeholder="e.g. factories/automation"
+                value={form.categoryKey}
+                onChange={e => change("categoryKey", e.target.value)}
+                onBlur={() => markTouched("categoryKey")}
+                aria-invalid={shouldShowError("categoryKey") || undefined}
+                aria-describedby={shouldShowError("categoryKey") ? errorId("categoryKey") : undefined}
                 className={clsx(
-                  "min-h-[8rem] w-full rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:ring-2",
-                  shouldShowError("description")
-                    ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
-                    : "focus:border-brand-400 focus:ring-brand-400"
+                  shouldShowError("categoryKey") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
                 )}
-                placeholder="Describe the goal, features, and any setup instructions"
-                value={form.description}
-                onChange={e => change("description", e.target.value)}
-                onBlur={() => markTouched("description")}
-                aria-invalid={shouldShowError("description") || undefined}
-                aria-describedby={shouldShowError("description") ? errorId("description") : undefined}
               />
               <p className="text-xs text-white/45">
-                {form.description.trim().length}/{MIN_DESCRIPTION_LENGTH} characters minimum
+                Use lowercase letters, numbers, slashes, or hyphens to group similar posts.
               </p>
-              {shouldShowError("description") && errors.description && (
-                <p id={errorId("description")} className="text-sm text-red-400">
-                  {errors.description}
+              {shouldShowError("categoryKey") && errors.categoryKey && (
+                <p id={errorId("categoryKey")} className="text-sm text-red-400">
+                  {errors.categoryKey}
                 </p>
               )}
             </div>
-          </Card>
+          </div>
+        </Card>
 
-          <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
-            <SectionTitle
-              title="Code"
-              description="Paste the SuperFactoryManager script that powers your build."
-            />
+        <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
+          <SectionTitle
+            title="Description"
+            description="Tell readers what to expect and how to get started."
+          />
 
-            <CodeBox
-              value={form.code}
-              onChange={v => change("code", v)}
-              onBlur={() => markTouched("code")}
-              isInvalid={shouldShowError("code")}
-              describedBy={[
-                shouldShowError("code") ? errorId("code") : null,
-                codeFeedback.status === "ok" && codeFeedback.warnings.length ? codeWarningsId : null,
-              ]
-                .filter(Boolean)
-                .join(" ") || undefined}
+          <div className="space-y-2">
+            <label htmlFor="description" className="text-sm font-medium text-white/75">
+              Overview
+            </label>
+            <textarea
+              id="description"
+              className={clsx(
+                "min-h-[8rem] w-full rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:ring-2",
+                shouldShowError("description")
+                  ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
+                  : "focus:border-brand-400 focus:ring-brand-400"
+              )}
+              placeholder="Describe the goal, features, and any setup instructions"
+              value={form.description}
+              onChange={e => change("description", e.target.value)}
+              onBlur={() => markTouched("description")}
+              aria-invalid={shouldShowError("description") || undefined}
+              aria-describedby={shouldShowError("description") ? errorId("description") : undefined}
             />
-            {shouldShowError("code") && errors.code && (
-              <div id={errorId("code")} className="space-y-1 text-sm text-red-400">
-                <p>{errors.code}</p>
-                {codeFeedback.syntaxErrors.length > 0 && (
-                  <ul className="list-disc space-y-1 pl-5">
-                    {codeFeedback.syntaxErrors.map((err, idx) => (
-                      <li key={`${err.lineStart}-${err.columnStart}-${idx}`}>
-                        Line {err.lineStart}
-                        {typeof err.columnStart === "number" ? `, column ${err.columnStart + 1}` : ""} – {err.message}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            <p className="text-xs text-white/45">
+              {form.description.trim().length}/{MIN_DESCRIPTION_LENGTH} characters minimum
+            </p>
+            {shouldShowError("description") && errors.description && (
+              <p id={errorId("description")} className="text-sm text-red-400">
+                {errors.description}
+              </p>
+            )}
+          </div>
+        </Card>
+
+        <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
+          <SectionTitle
+            title="Dependencies"
+            description="Link any CurseForge or Modrinth projects your blueprint relies on."
+          />
+
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1 space-y-2">
+                <label htmlFor="dependency" className="text-sm font-medium text-white/75">
+                  Dependency URL
+                </label>
+                <Input
+                  id="dependency"
+                  placeholder="Paste a CurseForge or Modrinth link"
+                  value={depsInput}
+                  onChange={e => setDepsInput(e.target.value)}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={addDep}
+              >
+                Add
+              </Button>
+            </div>
+            {depError && <p className="text-sm text-red-400">{depError}</p>}
+            {!!deps.length && (
+              <div className="flex flex-wrap gap-2">
+                {deps.map(d => (
+                  <a
+                    key={d.url}
+                    href={d.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm no-underline"
+                  >
+                    <span className="font-medium text-white/85 group-hover:text-white">{d.name}</span>
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.preventDefault();
+                        removeDep(d.url);
+                      }}
+                      className="rounded-lg border border-white/20 px-2 py-0.5 text-xs font-semibold text-white/60 transition hover:border-white/40 hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </a>
+                ))}
               </div>
             )}
-            {codeFeedback.status === "ok" && codeFeedback.warnings.length > 0 && (
-              <div id={codeWarningsId} className="space-y-1 text-sm text-amber-300">
-                <p className="font-semibold">Warnings</p>
-                <ul className="list-disc space-y-1 pl-5 marker:text-amber-300">
-                  {codeFeedback.warnings.map((warning, idx) => (
-                    <li key={`${warning.lineStart}-${warning.lineEnd}-${idx}`}>
-                      Line {warning.lineStart}
-                      {warning.lineEnd !== warning.lineStart ? `-${warning.lineEnd}` : ""} – {warning.message}
+          </div>
+        </Card>
+
+        <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
+          <SectionTitle
+            title="Media"
+            description="Enhance your post with a video or screenshots."
+          />
+
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="youtube" className="text-sm font-medium text-white/75">
+                YouTube link <span className="text-white/45">(optional)</span>
+              </label>
+              <Input
+                id="youtube"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={form.youtubeUrl}
+                onChange={e => change("youtubeUrl", e.target.value)}
+                onBlur={() => markTouched("youtubeUrl")}
+                aria-invalid={shouldShowError("youtubeUrl") || undefined}
+                aria-describedby={shouldShowError("youtubeUrl") ? errorId("youtubeUrl") : undefined}
+                className={clsx(
+                  shouldShowError("youtubeUrl") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
+                )}
+              />
+              {shouldShowError("youtubeUrl") && errors.youtubeUrl && (
+                <p id={errorId("youtubeUrl")} className="text-sm text-red-400">
+                  {errors.youtubeUrl}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <label htmlFor="images" className="text-sm font-medium text-white/75">
+                  Image gallery <span className="text-white/45">(max {MAX_IMAGE_MB}MB each)</span>
+                </label>
+                <input
+                  id="images"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={e => {
+                    markTouched("images");
+                    const incoming = e.target.files ? Array.from(e.target.files) : [];
+                    if (incoming.length) {
+                      setMediaFiles(prev => [...prev, ...incoming]);
+                    }
+                    e.target.value = "";
+                  }}
+                  aria-invalid={shouldShowError("images") || undefined}
+                  aria-describedby={shouldShowError("images") ? errorId("images") : undefined}
+                />
+                <label
+                  htmlFor="images"
+                  className={clsx(
+                    "inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/10",
+                    shouldShowError("images") && "border-red-500/60 text-red-200 hover:border-red-400"
+                  )}
+                >
+                  <Images aria-hidden="true" className="h-4 w-4" />
+                  <span>Choose files</span>
+                </label>
+                <p className="text-xs text-white/60">
+                  <span className="font-semibold text-white/80">Selected:</span> {fileSummary}
+                </p>
+              </div>
+              {shouldShowError("images") && errors.images && (
+                <p id={errorId("images")} className="text-sm text-red-400">
+                  {errors.images}
+                </p>
+              )}
+              {!!previews.length && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {previews.map((src, i) => {
+                    const file = mediaFiles[i];
+                    if (!file) return null;
+                    const key = `${file.name}-${file.lastModified}-${file.size}`;
+                    return (
+                      <div
+                        key={key}
+                        className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
+                      >
+                        <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                          #{i + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeMediaAt(i)}
+                          className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          ×
+                        </button>
+                        <img src={src} alt="" className="h-full w-full object-cover" />
+                        <div className="absolute bottom-3 left-3 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => moveMedia(i, i - 1)}
+                            disabled={i === 0}
+                            className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
+                            aria-label={`Move ${file.name} earlier`}
+                          >
+                            ←
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveMedia(i, i + 1)}
+                            disabled={i === mediaFiles.length - 1}
+                            className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
+                            aria-label={`Move ${file.name} later`}
+                          >
+                            →
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        <Card className="space-y-6 p-6 sm:px-8 sm:py-7 lg:col-span-2">
+          <SectionTitle
+            title="Code"
+            description="Paste the SuperFactoryManager script that powers your build."
+          />
+
+          <CodeBox
+            value={form.code}
+            onChange={v => change("code", v)}
+            onBlur={() => markTouched("code")}
+            isInvalid={shouldShowError("code")}
+            describedBy={[
+              shouldShowError("code") ? errorId("code") : null,
+              codeFeedback.status === "ok" && codeFeedback.warnings.length ? codeWarningsId : null,
+            ]
+              .filter(Boolean)
+              .join(" ") || undefined}
+          />
+          {shouldShowError("code") && errors.code && (
+            <div id={errorId("code")} className="space-y-1 text-sm text-red-400">
+              <p>{errors.code}</p>
+              {codeFeedback.syntaxErrors.length > 0 && (
+                <ul className="list-disc space-y-1 pl-5">
+                  {codeFeedback.syntaxErrors.map((err, idx) => (
+                    <li key={`${err.lineStart}-${err.columnStart}-${idx}`}>
+                      Line {err.lineStart}
+                      {typeof err.columnStart === "number" ? `, column ${err.columnStart + 1}` : ""} – {err.message}
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        <div className="flex flex-col gap-6">
-          <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
-            <SectionTitle
-              title="Dependencies"
-              description="Link any CurseForge or Modrinth projects your blueprint relies on."
-            />
-
-            <div className="space-y-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="flex-1 space-y-2">
-                  <label htmlFor="dependency" className="text-sm font-medium text-white/75">
-                    Dependency URL
-                  </label>
-                  <Input
-                    id="dependency"
-                    placeholder="Paste a CurseForge or Modrinth link"
-                    value={depsInput}
-                    onChange={e => setDepsInput(e.target.value)}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto"
-                  onClick={addDep}
-                >
-                  Add
-                </Button>
-              </div>
-              {depError && <p className="text-sm text-red-400">{depError}</p>}
-              {!!deps.length && (
-                <div className="flex flex-wrap gap-2">
-                  {deps.map(d => (
-                    <a
-                      key={d.url}
-                      href={d.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm no-underline"
-                    >
-                      <span className="font-medium text-white/85 group-hover:text-white">{d.name}</span>
-                      <button
-                        type="button"
-                        onClick={e => {
-                          e.preventDefault();
-                          removeDep(d.url);
-                        }}
-                        className="rounded-lg border border-white/20 px-2 py-0.5 text-xs font-semibold text-white/60 transition hover:border-white/40 hover:text-white"
-                      >
-                        ×
-                      </button>
-                    </a>
-                  ))}
-                </div>
               )}
             </div>
-          </Card>
-
-          <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
-            <SectionTitle
-              title="Media"
-              description="Enhance your post with a video or screenshots."
-            />
-
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label htmlFor="youtube" className="text-sm font-medium text-white/75">
-                  YouTube link <span className="text-white/45">(optional)</span>
-                </label>
-                <Input
-                  id="youtube"
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  value={form.youtubeUrl}
-                  onChange={e => change("youtubeUrl", e.target.value)}
-                  onBlur={() => markTouched("youtubeUrl")}
-                  aria-invalid={shouldShowError("youtubeUrl") || undefined}
-                  aria-describedby={shouldShowError("youtubeUrl") ? errorId("youtubeUrl") : undefined}
-                  className={clsx(
-                    shouldShowError("youtubeUrl") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
-                  )}
-                />
-                {shouldShowError("youtubeUrl") && errors.youtubeUrl && (
-                  <p id={errorId("youtubeUrl")} className="text-sm text-red-400">
-                    {errors.youtubeUrl}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <label htmlFor="images" className="text-sm font-medium text-white/75">
-                    Image gallery <span className="text-white/45">(max {MAX_IMAGE_MB}MB each)</span>
-                  </label>
-                  <input
-                    id="images"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={e => {
-                      markTouched("images");
-                      const incoming = e.target.files ? Array.from(e.target.files) : [];
-                      if (incoming.length) {
-                        setMediaFiles(prev => [...prev, ...incoming]);
-                      }
-                      e.target.value = "";
-                    }}
-                    aria-invalid={shouldShowError("images") || undefined}
-                    aria-describedby={shouldShowError("images") ? errorId("images") : undefined}
-                  />
-                  <label
-                    htmlFor="images"
-                    className={clsx(
-                      "inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/10",
-                      shouldShowError("images") && "border-red-500/60 text-red-200 hover:border-red-400"
-                    )}
-                  >
-                    <Images aria-hidden="true" className="h-4 w-4" />
-                    <span>Choose files</span>
-                  </label>
-                  <p className="text-xs text-white/60">
-                    <span className="font-semibold text-white/80">Selected:</span> {fileSummary}
-                  </p>
-                </div>
-                {shouldShowError("images") && errors.images && (
-                  <p id={errorId("images")} className="text-sm text-red-400">
-                    {errors.images}
-                  </p>
-                )}
-                {!!previews.length && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {previews.map((src, i) => {
-                      const file = mediaFiles[i];
-                      if (!file) return null;
-                      const key = `${file.name}-${file.lastModified}-${file.size}`;
-                      return (
-                        <div
-                          key={key}
-                          className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
-                        >
-                          <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
-                            #{i + 1}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeMediaAt(i)}
-                            className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
-                            aria-label={`Remove ${file.name}`}
-                          >
-                            ×
-                          </button>
-                          <img src={src} alt="" className="h-full w-full object-cover" />
-                          <div className="absolute bottom-3 left-3 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => moveMedia(i, i - 1)}
-                              disabled={i === 0}
-                              className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                              aria-label={`Move ${file.name} earlier`}
-                            >
-                              ←
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveMedia(i, i + 1)}
-                              disabled={i === mediaFiles.length - 1}
-                              className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                              aria-label={`Move ${file.name} later`}
-                            >
-                              →
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+          )}
+          {codeFeedback.status === "ok" && codeFeedback.warnings.length > 0 && (
+            <div id={codeWarningsId} className="space-y-1 text-sm text-amber-300">
+              <p className="font-semibold">Warnings</p>
+              <ul className="list-disc space-y-1 pl-5 marker:text-amber-300">
+                {codeFeedback.warnings.map((warning, idx) => (
+                  <li key={`${warning.lineStart}-${warning.lineEnd}-${idx}`}>
+                    Line {warning.lineStart}
+                    {warning.lineEnd !== warning.lineStart ? `-${warning.lineEnd}` : ""} – {warning.message}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </Card>
+          )}
+        </Card>
+      </div>
 
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              size="lg"
-              className="w-full sm:w-auto"
-              disabled={loading}
-              onClick={submit}
-            >
-              <UploadCloud aria-hidden="true" />
-              {loading ? "Saving..." : "Publish post"}
-            </Button>
-          </div>
-        </div>
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          size="lg"
+          className="w-full sm:w-auto"
+          disabled={loading}
+          onClick={submit}
+        >
+          <UploadCloud aria-hidden="true" />
+          {loading ? "Saving..." : "Publish post"}
+        </Button>
       </div>
     </div>
   );
