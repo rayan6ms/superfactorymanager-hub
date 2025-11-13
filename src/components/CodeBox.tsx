@@ -80,7 +80,7 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
   return (
     <div
       className={clsx(
-        "codebox relative isolate w-full overflow-hidden rounded-xl border bg-[var(--surface-2)]/80 transition-shadow",
+        "codebox relative isolate grid w-full overflow-hidden rounded-xl border bg-[var(--surface-2)]/80 transition-shadow",
         isInvalid
           ? "border-red-500/60 focus-within:border-red-500/70 focus-within:ring-2 focus-within:ring-red-400"
           : "border-white/10 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-400"
@@ -88,7 +88,7 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
     >
       <div
         ref={highlightWrapperRef}
-        className="codebox-highlight pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] px-4 py-3"
+        className="codebox-highlight pointer-events-none col-span-full row-span-full h-full w-full overflow-hidden rounded-[inherit] px-4 py-3"
         aria-hidden="true"
         dangerouslySetInnerHTML={{ __html: html }}
       />
@@ -107,9 +107,9 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        style={textareaStyle}
+        style={{ backgroundColor: "transparent", ...textareaStyle }}
         className={clsx(
-          "relative z-10 min-h-[16rem] w-full resize-y border-0 bg-transparent px-4 py-3 font-mono text-sm leading-6 text-white outline-none focus:outline-none",
+          "col-span-full row-span-full relative z-10 min-h-[16rem] w-full resize-y border-0 bg-transparent px-4 py-3 font-mono text-sm leading-6 text-white outline-none focus:outline-none",
           value
             ? "caret-brand-200 selection:bg-brand-500/30 selection:text-white"
             : "text-white/80 placeholder:text-white/40"
