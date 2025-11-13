@@ -30,7 +30,7 @@ const escapeHtml = (input: string) =>
 
 const plainHighlight = (code: string) => {
   const safe = code ? escapeHtml(code) : "&nbsp;";
-  return `<pre class="shiki plain" style="color: rgba(255,255,255,0.85)"><code>${safe}</code></pre>`;
+  return `<pre class="shiki plain" style="color: rgba(0,0,0,0)"><code>${safe}</code></pre>`;
 };
 
 const INDENT = "    ";
