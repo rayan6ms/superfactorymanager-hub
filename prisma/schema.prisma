@@ -17,6 +17,7 @@ model User {
   createdAt    DateTime @default(now())
   posts        Post[]
   ratings      Rating[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Category {
@@ -46,6 +47,16 @@ model Rating {
   ratedAt DateTime @default(now())
 
   @@unique([userId, postId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
 }
 
 enum CodeStatus {

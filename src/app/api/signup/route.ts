@@ -4,9 +4,19 @@ import { hash } from "bcrypt";
 import { z } from "zod";
 
 const schema = z.object({
-  email: z.email(),
-  name: z.string().min(1),
-  password: z.string().min(6)
+  email: z
+    .string()
+    .trim()
+    .min(1, "EMAIL_REQUIRED")
+    .email("INVALID_EMAIL"),
+  name: z
+    .string()
+    .trim()
+    .min(1, "NAME_REQUIRED"),
+  password: z
+    .string()
+    .min(1, "PASSWORD_REQUIRED")
+    .min(8, "PASSWORD_TOO_SHORT"),
 });
 
 export async function POST(req: Request) {
@@ -24,8 +34,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
   } catch (e: any) {
     console.error("Signup error:", e);
-    // If it's Zod, show issues
-    if (e?.issues) return NextResponse.json({ error: e.issues }, { status: 400 });
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: e.flatten().fieldErrors }, { status: 400 });
+    }
     return NextResponse.json({ error: e?.message ?? "Unknown error" }, { status: 400 });
   }
 }

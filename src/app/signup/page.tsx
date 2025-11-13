@@ -1,43 +1,207 @@
 "use client";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, Card, Input } from "@/components/ui/index";
+import { Eye, EyeOff } from "lucide-react";
+
+type FieldErrors = {
+  name?: string;
+  email?: string;
+  password?: string;
+  form?: string;
+};
+
+function mapSignupError(code: string): string {
+  switch (code) {
+    case "NAME_REQUIRED":
+      return "Name is required.";
+    case "EMAIL_REQUIRED":
+      return "Email is required.";
+    case "INVALID_EMAIL":
+      return "Enter a valid email address.";
+    case "PASSWORD_REQUIRED":
+      return "Password is required.";
+    case "PASSWORD_TOO_SHORT":
+      return "Password must be at least 8 characters.";
+    default:
+      return "Please check the highlighted fields.";
+  }
+}
 
 export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const sp = useSearchParams();
   const next = sp.get("next") || "/";
+  const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const nextErrors: FieldErrors = {};
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName) {
+      nextErrors.name = "Name is required.";
+    }
+    if (!trimmedEmail) {
+      nextErrors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      nextErrors.email = "Enter a valid email address.";
+    }
+    if (!password) {
+      nextErrors.password = "Password is required.";
+    } else if (password.length < 8) {
+      nextErrors.password = "Password must be at least 8 characters.";
+    }
+
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrors({});
+
     const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name: trimmedName, email: trimmedEmail, password })
     });
     const data = await res.json();
-    if (!res.ok) { alert(data.error || "Failed"); return; }
-    await signIn("credentials", { email, password, callbackUrl: next });
+    if (!res.ok) {
+      if (data?.error && typeof data.error === "object" && !Array.isArray(data.error)) {
+        const fieldErrors = data.error as Record<string, string[] | undefined>;
+        setErrors({
+          name: fieldErrors.name?.[0] ? mapSignupError(fieldErrors.name[0]) : undefined,
+          email: fieldErrors.email?.[0] ? mapSignupError(fieldErrors.email[0]) : undefined,
+          password: fieldErrors.password?.[0] ? mapSignupError(fieldErrors.password[0]) : undefined,
+        });
+      } else if (data?.error === "Email already exists") {
+        setErrors({ email: "Email is already registered." });
+      } else {
+        setErrors({ form: "We couldn’t create your account. Please try again." });
+      }
+      setIsSubmitting(false);
+      return;
+    }
+
+    const signin = await signIn("credentials", { redirect: false, email: trimmedEmail, password, callbackUrl: next });
+
+    if (signin?.error) {
+      setErrors({ form: "Account created, but we couldn’t sign you in automatically. Please log in." });
+      setIsSubmitting(false);
+      return;
+    }
+
+    router.push(next);
+    router.refresh();
   }
 
   return (
-    <>
-      <Card className="max-w-sm space-y-3">
-        <form className="space-y-2" onSubmit={onSubmit}>
-          <Input placeholder="Name" value={name} onChange={e => setName(e.target.value)} />
-          <Input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-          <Input placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
-          <Button type="submit">Create account</Button>
+    <main className="flex min-h-[calc(100vh-7rem)] flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
+      <Card className="w-full max-w-sm space-y-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-white">Sign up</h1>
+        </div>
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-white" htmlFor="name">
+              Name
+            </label>
+            <Input
+              id="name"
+              placeholder="Name"
+              value={name}
+              onChange={e => {
+                setName(e.target.value);
+                setErrors(prev => ({ ...prev, name: undefined, form: undefined }));
+              }}
+              autoComplete="name"
+              aria-invalid={Boolean(errors.name)}
+            />
+            {errors.name && (
+              <p className="text-sm text-red-500" role="alert">
+                {errors.name}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-white" htmlFor="signup-email">
+              Email
+            </label>
+            <Input
+              id="signup-email"
+              placeholder="Email"
+              type="email"
+              value={email}
+              onChange={e => {
+                setEmail(e.target.value);
+                setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
+              }}
+              autoComplete="email"
+              aria-invalid={Boolean(errors.email)}
+            />
+            {errors.email && (
+              <p className="text-sm text-red-500" role="alert">
+                {errors.email}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-white" htmlFor="signup-password">
+              Password
+            </label>
+            <Input
+              id="signup-password"
+              placeholder="Password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={e => {
+                setPassword(e.target.value);
+                setErrors(prev => ({ ...prev, password: undefined, form: undefined }));
+              }}
+              autoComplete="new-password"
+              aria-invalid={Boolean(errors.password)}
+              rightInteractive
+              rightIcon={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-2)]"
+                  aria-pressed={showPassword}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+                </button>
+              }
+            />
+            {errors.password && (
+              <p className="text-sm text-red-500" role="alert">
+                {errors.password}
+              </p>
+            )}
+          </div>
+          {errors.form && (
+            <p className="text-sm text-red-500" role="alert">
+              {errors.form}
+            </p>
+          )}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            Create account
+          </Button>
         </form>
       </Card>
-      <div className="text-sm text-center text-white/70">
+      <div className="w-full max-w-sm text-center text-sm text-white/70">
         Already have an account? <Link href="/login" className="underline">Log in</Link>
       </div>
-    </>
+    </main>
   );
 }
 

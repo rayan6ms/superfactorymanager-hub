@@ -6,8 +6,15 @@ import { db } from "./db";
 import { z } from "zod";
 
 const credsSchema = z.object({
-  email: z.email(),
-  password: z.string().min(1),
+  email: z
+    .string()
+    .trim()
+    .min(1, "EMAIL_REQUIRED")
+    .email("INVALID_EMAIL"),
+  password: z
+    .string()
+    .min(1, "PASSWORD_REQUIRED")
+    .min(8, "PASSWORD_TOO_SHORT"),
 });
 
 export const authOptions: NextAuthConfig = {
@@ -21,15 +28,27 @@ export const authOptions: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const parsed = credsSchema.safeParse(credentials);
-        if (!parsed.success) return null;
+        const parsed = credsSchema.safeParse({
+          email: credentials?.email,
+          password: credentials?.password,
+        });
+
+        if (!parsed.success) {
+          const issue = parsed.error.issues[0];
+          throw new Error(issue?.message ?? "INVALID_CREDENTIALS");
+        }
+
         const { email, password } = parsed.data;
 
         const user = await db.user.findUnique({ where: { email } });
-        if (!user?.passwordHash) return null;
+        if (!user?.passwordHash) {
+          throw new Error("EMAIL_NOT_FOUND");
+        }
 
         const ok = await compare(password, user.passwordHash);
-        if (!ok) return null;
+        if (!ok) {
+          throw new Error("WRONG_PASSWORD");
+        }
 
         return { id: user.id, email: user.email, name: user.name ?? null, image: user.image ?? null };
       },

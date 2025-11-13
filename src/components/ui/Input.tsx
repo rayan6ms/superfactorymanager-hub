@@ -4,10 +4,11 @@ import { clsx } from "clsx";
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  rightInteractive?: boolean;
 };
 
 const Input = forwardRef<HTMLInputElement, Props>(
-  ({ className, leftIcon, rightIcon, ...props }, ref) => {
+  ({ className, leftIcon, rightIcon, rightInteractive = false, ...props }, ref) => {
     const padClass = useMemo(() => {
       return clsx(
         leftIcon && "pl-9",
@@ -34,7 +35,12 @@ const Input = forwardRef<HTMLInputElement, Props>(
           {...props}
         />
         {rightIcon && (
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-white/50 pointer-events-none [&>svg]:h-4 [&>svg]:w-4">
+          <div
+            className={clsx(
+              "absolute inset-y-0 right-0 flex items-center pr-3 text-white/50 [&>svg]:h-4 [&>svg]:w-4",
+              !rightInteractive && "pointer-events-none"
+            )}
+          >
             {rightIcon}
           </div>
         )}

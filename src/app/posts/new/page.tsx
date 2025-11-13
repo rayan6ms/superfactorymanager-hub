@@ -7,8 +7,13 @@ export default async function NewPostPage() {
   if (!session?.user) redirect("/login?from=/posts/new");
 
   return (
-    <div className="space-y-2">
-      <h1 className="text-xl font-semibold">New Post</h1>
+    <div className="mx-auto w-full max-w-6xl space-y-6 lg:space-y-8">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight">Create a new post</h1>
+        <p className="text-sm text-white/60">
+          Share your blueprint with the community by filling out the details below.
+        </p>
+      </div>
       <NewPostForm />
     </div>
   );
