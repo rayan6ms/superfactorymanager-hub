@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_POST_IMAGES } from "./images";
 
 export const dependencyUrl = z.url().refine((u) => {
   try {
@@ -23,7 +24,9 @@ export const postSchema = z.object({
         thumbLg: z.url().optional(),
       })
     ])
-  ).default([]),
+  )
+    .max(MAX_POST_IMAGES, { message: `You can upload up to ${MAX_POST_IMAGES} images.` })
+    .default([]),
 
   dependencies: z.array(dependencyUrl).optional().default([]),
 

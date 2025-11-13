@@ -175,7 +175,10 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
   }, [adjustHeight]);
 
   useEffect(() => {
-    syncScroll();
+    const raf = requestAnimationFrame(() => {
+      syncScroll();
+    });
+    return () => cancelAnimationFrame(raf);
   }, [boxHeight, value, syncScroll]);
 
   const handleIndent = useCallback(
@@ -325,6 +328,7 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
             value={value}
             onChange={event => {
               onChange(event.target.value);
+              requestAnimationFrame(syncScroll);
             }}
             onBlur={onBlur}
             onScroll={syncScroll}

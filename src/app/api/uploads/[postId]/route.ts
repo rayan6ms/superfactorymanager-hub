@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import { MAX_POST_IMAGES } from "@/lib/images";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,14 @@ export async function POST(
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (post.author.email !== session.user.email) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const existingCount = await db.postImage.count({ where: { postId } });
+  if (existingCount >= MAX_POST_IMAGES) {
+    return NextResponse.json(
+      { error: `You can upload up to ${MAX_POST_IMAGES} images per post.` },
+      { status: 400 }
+    );
   }
 
   const form = await req.formData();

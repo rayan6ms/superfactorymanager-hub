@@ -8,8 +8,10 @@ import { CodeBox } from "@/components/CodeBox";
 import { Card, Button, Input } from "@/components/ui";
 import { validateSyntax, type SyntaxErrorItem } from "@/lib/sfml/syntax";
 import { collectWarnings, type WarningItem } from "@/lib/sfml/warnings";
+import { MAX_POST_IMAGES } from "@/lib/images";
 
 const MAX_IMAGE_MB = 5;
+const MAX_IMAGE_COUNT = MAX_POST_IMAGES;
 const MAX_TITLE_LENGTH = 120;
 const MIN_DESCRIPTION_LENGTH = 50;
 const CATEGORY_KEY_PATTERN = /^[a-z0-9]+(?:[\-/][a-z0-9]+)*$/i;
@@ -97,10 +99,11 @@ export default function NewPostForm() {
   const [loading, setLoading] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [limitedByMax, setLimitedByMax] = useState(false);
   const fileSummary = useMemo(() => {
-    if (!mediaFiles.length) return "No files chosen";
-    if (mediaFiles.length === 1) return mediaFiles[0].name;
-    return `${mediaFiles.length} files selected`;
+    if (!mediaFiles.length) return `No files chosen (0/${MAX_IMAGE_COUNT})`;
+    if (mediaFiles.length === 1) return `1 of ${MAX_IMAGE_COUNT} image slots used`;
+    return `${mediaFiles.length} of ${MAX_IMAGE_COUNT} image slots used`;
   }, [mediaFiles]);
   const errorId = useCallback((key: FormErrorKey) => `${idPrefix}-${key}-error`, [idPrefix]);
   const codeWarningsId = `${idPrefix}-code-warnings`;
@@ -123,6 +126,9 @@ export default function NewPostForm() {
 
   const computeImagesError = useCallback((list: File[]) => {
     if (!list.length) return null;
+    if (list.length > MAX_IMAGE_COUNT) {
+      return `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`;
+    }
     for (const file of list) {
       const sizeMb = file.size / (1024 * 1024);
       if (sizeMb > MAX_IMAGE_MB) {
@@ -263,7 +269,13 @@ export default function NewPostForm() {
   }, [form.gameVersion, change]);
 
   useEffect(() => {
-    const message = computeImagesError(mediaFiles);
+    if (mediaFiles.length < MAX_IMAGE_COUNT && limitedByMax) {
+      setLimitedByMax(false);
+    }
+
+    const message = limitedByMax
+      ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+      : computeImagesError(mediaFiles);
     setErrors(prev => (prev.images === message ? prev : { ...prev, images: message }));
     if (!mediaFiles.length) {
       setPreviews(prev => (prev.length ? [] : prev));
@@ -272,7 +284,7 @@ export default function NewPostForm() {
     const urls = mediaFiles.map(file => URL.createObjectURL(file));
     setPreviews(urls);
     return () => urls.forEach(url => URL.revokeObjectURL(url));
-  }, [mediaFiles, computeImagesError]);
+  }, [mediaFiles, computeImagesError, limitedByMax]);
 
   const removeMediaAt = useCallback((index: number) => {
     setMediaFiles(prev => prev.filter((_, idx) => idx !== index));
@@ -336,7 +348,9 @@ export default function NewPostForm() {
       description: validateField("description", form.description, form),
       code: null,
       youtubeUrl: validateField("youtubeUrl", form.youtubeUrl, form),
-      images: computeImagesError(mediaFiles),
+      images: limitedByMax
+        ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+        : computeImagesError(mediaFiles),
     };
 
     const codeAnalysis = analyzeCode(form.code);
@@ -647,7 +661,8 @@ export default function NewPostForm() {
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <label htmlFor="images" className="text-sm font-medium text-white/75">
-                    Image gallery <span className="text-white/45">(max {MAX_IMAGE_MB}MB each)</span>
+                    Image gallery
+                    <span className="text-white/45"> (max {MAX_IMAGE_MB}MB each, up to {MAX_IMAGE_COUNT} images)</span>
                   </label>
                   <label
                     htmlFor="images"
@@ -670,7 +685,13 @@ export default function NewPostForm() {
                     markTouched("images");
                     const incoming = e.target.files ? Array.from(e.target.files) : [];
                     if (incoming.length) {
-                      setMediaFiles(prev => [...prev, ...incoming]);
+                      setMediaFiles(prev => {
+                        const merged = [...prev, ...incoming];
+                        if (merged.length > MAX_IMAGE_COUNT) {
+                          setLimitedByMax(true);
+                        }
+                        return merged.slice(0, MAX_IMAGE_COUNT);
+                      });
                     }
                     e.target.value = "";
                   }}
@@ -678,7 +699,7 @@ export default function NewPostForm() {
                   aria-describedby={shouldShowError("images") ? errorId("images") : undefined}
                 />
                 <p className="text-xs text-white/60">
-                  <span className="font-semibold text-white/80">Selected:</span> {fileSummary}
+                  <span className="font-semibold text-white/80">Selected:</span> {fileSummary}. The first image becomes your thumbnail.
                 </p>
               </div>
               {shouldShowError("images") && errors.images && (
@@ -697,8 +718,13 @@ export default function NewPostForm() {
                         key={key}
                         className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
                       >
-                        <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
-                          #{i + 1}
+                        <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                          <span>#{i + 1}</span>
+                          {i === 0 && (
+                            <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
+                              thumb
+                            </span>
+                          )}
                         </span>
                         <button
                           type="button"

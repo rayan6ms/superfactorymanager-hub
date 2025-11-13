@@ -4,8 +4,19 @@ import Search from "@/components/ui/Search";
 import { LogIn, LogOut, Menu, Plus } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import type { Session } from "next-auth";
+import NotificationBell from "./NotificationBell";
+import NotificationPreviewList from "@/components/notifications/NotificationPreviewList";
+import type { SerializedNotification } from "@/lib/notifications";
 
-export default function Header({ session }: { session: Session | null }) {
+type HeaderProps = {
+  session: Session | null;
+  notifications?: { notifications: SerializedNotification[]; unreadCount: number } | null;
+};
+
+export default function Header({ session, notifications }: HeaderProps) {
+  const notificationItems = notifications?.notifications ?? [];
+  const unreadCount = notifications?.unreadCount ?? 0;
+
   return (
     <header className="sticky top-0 z-30 border-b border-white/15 bg-[var(--surface)]/85 py-3 backdrop-blur-lg">
       <div className="container-max">
@@ -18,13 +29,19 @@ export default function Header({ session }: { session: Session | null }) {
             <span className="sm:hidden">SFM</span>
           </Link>
 
-          <div className="hidden flex-1 justify-center lg:flex">
-            <div className="w-full max-w-xl">
-              <Search />
+          <div className="hidden flex-1 items-center justify-center lg:flex">
+            <div className="w-full max-w-md">
+              <Search className="max-w-md" />
             </div>
           </div>
 
           <div className="ml-auto hidden items-center gap-2 lg:flex">
+            {session?.user && (
+              <NotificationBell
+                initialNotifications={notificationItems}
+                initialUnreadCount={unreadCount}
+              />
+            )}
             {session?.user && (
               <Link href="/posts/new" className="inline-flex">
                 <Button size="md" className="justify-center px-4">
@@ -61,8 +78,28 @@ export default function Header({ session }: { session: Session | null }) {
             </summary>
             <div className="absolute right-0 top-full mt-2 min-w-[16rem] rounded-xl border border-white/15 bg-[var(--surface-2)]/95 p-4 shadow-lg">
               <div className="flex flex-col gap-4">
+                {session?.user && (
+                  <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="flex items-center justify-between text-xs text-white/60">
+                      <span className="font-semibold text-white">Notifications</span>
+                      <span>{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</span>
+                    </div>
+                    <NotificationPreviewList
+                      notifications={notificationItems}
+                      emptyLabel="No notifications yet"
+                      dense
+                      className="max-h-64 overflow-y-auto pr-1"
+                    />
+                    <Link
+                      href="/notifications"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
+                    >
+                      View all notifications
+                    </Link>
+                  </div>
+                )}
                 <div className="w-full">
-                  <Search />
+                  <Search className="w-full" />
                 </div>
                 {session?.user && (
                   <Link href="/posts/new" className="inline-flex">

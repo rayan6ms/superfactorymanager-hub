@@ -18,6 +18,7 @@ model User {
   posts        Post[]
   ratings      Rating[]
   passwordResetTokens PasswordResetToken[]
+  notifications Notification[]
 }
 
 model Category {
@@ -119,4 +120,26 @@ model Post {
   youtubeUrl   String?
   images       PostImage[]
   dependencies Dependency[]
+}
+
+enum NotificationOrigin {
+  SYSTEM
+  POST
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  origin    NotificationOrigin
+  link      String?
+  imageUrl  String?
+  metadata  Json?
+  createdAt DateTime            @default(now())
+  readAt    DateTime?
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }
