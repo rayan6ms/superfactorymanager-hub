@@ -749,6 +749,7 @@ export default function NewPostForm() {
             onChange={v => change("code", v)}
             onBlur={() => markTouched("code")}
             isInvalid={shouldShowError("code")}
+            errorLines={codeFeedback.syntaxErrors.map(error => error.lineStart)}
             describedBy={[
               shouldShowError("code") ? errorId("code") : null,
               codeFeedback.status === "ok" && codeFeedback.warnings.length ? codeWarningsId : null,

@@ -23,10 +23,11 @@ class CollectingErrorListener implements ANTLRErrorListener<any> {
     e: RecognitionException | undefined
   ) {
     const offendingToken: any = (e as any)?.getOffendingToken?.();
+    const fallbackLength = Math.max(1, msg?.length ? Math.min(msg.length, 4) : 1);
     const lineEnd = offendingToken?.line ?? lineStart;
     const columnEnd = offendingToken
       ? offendingToken.charPositionInLine + (offendingToken.text?.length || 0)
-      : columnStart;
+      : columnStart + fallbackLength;
 
     this.errors.push({
       lineStart,
@@ -46,11 +47,13 @@ export function validateSyntax(code: string): { ok: boolean; errors: SyntaxError
   const parser = new SFMLParser(tokens);
 
   const listener = new CollectingErrorListener();
+  lexer.removeErrorListeners();
   parser.removeErrorListeners();
+  lexer.addErrorListener(listener);
   parser.addErrorListener(listener);
 
   // entry rule in the grammar
   parser.program();
 
-  return { ok: parser.numberOfSyntaxErrors === 0, errors: listener.errors };
+  return { ok: parser.numberOfSyntaxErrors === 0 && listener.errors.length === 0, errors: listener.errors };
 }
