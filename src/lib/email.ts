@@ -85,3 +85,47 @@ export async function sendPasswordResetEmail({
     console.error("Failed to send password reset email", error);
   }
 }
+
+export async function sendEmailVerificationEmail({
+  to,
+  verificationToken,
+  name,
+}: {
+  to: string;
+  verificationToken: string;
+  name?: string | null;
+}) {
+  const from = process.env.EMAIL_FROM;
+  if (!from) {
+    console.warn("EMAIL_FROM env var is not set. Skipping verification email send.");
+    return;
+  }
+
+  try {
+    const transporter = await getTransporter();
+    const baseUrl = getAppBaseUrl();
+    const verifyLink = `${baseUrl}/verify-email/${verificationToken}`;
+    const displayName = name?.trim() ? name.trim() : "there";
+
+    await transporter.sendMail({
+      to,
+      from,
+      subject: "Verify your SuperFactoryManager email",
+      text: `Hi ${displayName},\n\nThanks for signing up for SuperFactoryManager!\n\nPlease confirm that this email address belongs to you by clicking the link below:\n${verifyLink}\n\nIf you did not create an account, you can safely ignore this message.\n\nThis link will expire in one hour.\n\nThanks,\nSuperFactoryManager Team`,
+      html:
+        "<!DOCTYPE html><html><body style=\"font-family: sans-serif; color: #0f172a;\">" +
+        `<p>Hi ${displayName},</p>` +
+        `<p>Thanks for signing up for SuperFactoryManager!</p>` +
+        `<p>Please confirm that this email address belongs to you by clicking the button below.</p>` +
+        `<p style=\"margin: 24px 0;\">` +
+        `<a href=\"${verifyLink}\" style=\"display: inline-block; background: #22c55e; color: #fff; padding: 12px 20px; border-radius: 9999px; text-decoration: none;\">Verify email</a>` +
+        `</p>` +
+        `<p>If you didn’t create this account, you can safely ignore this message.</p>` +
+        `<p style=\"margin-top: 24px;\">This link will expire in one hour.</p>` +
+        `<p style=\"margin-top: 24px;\">Thanks,<br/>SuperFactoryManager Team</p>` +
+        `</body></html>`,
+    });
+  } catch (error) {
+    console.error("Failed to send verification email", error);
+  }
+}

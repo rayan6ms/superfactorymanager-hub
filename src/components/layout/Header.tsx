@@ -1,10 +1,9 @@
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Search from "@/components/ui/Search";
-import { LogIn, LogOut, Menu, Plus } from "lucide-react";
+import { LogIn, LogOut, Plus } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import type { Session } from "next-auth";
-import NotificationBell from "./NotificationBell";
 import NotificationPreviewList from "@/components/notifications/NotificationPreviewList";
 import type { SerializedNotification } from "@/lib/notifications";
 
@@ -16,6 +15,9 @@ type HeaderProps = {
 export default function Header({ session, notifications }: HeaderProps) {
   const notificationItems = notifications?.notifications ?? [];
   const unreadCount = notifications?.unreadCount ?? 0;
+  const user = session?.user ?? null;
+  const avatarUrl = user?.image ?? null;
+  const initial = (user?.name ?? user?.email ?? "?").trim().charAt(0).toUpperCase() || "?";
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/15 bg-[var(--surface)]/85 py-3 backdrop-blur-lg">
@@ -36,32 +38,73 @@ export default function Header({ session, notifications }: HeaderProps) {
           </div>
 
           <div className="ml-auto hidden items-center gap-2 lg:flex">
-            {session?.user && (
-              <NotificationBell
-                initialNotifications={notificationItems}
-                initialUnreadCount={unreadCount}
-              />
-            )}
-            {session?.user && (
-              <Link href="/posts/new" className="inline-flex">
-                <Button size="md" className="justify-center px-4">
-                  <Plus /> New post
-                </Button>
-              </Link>
-            )}
-
-            {session?.user ? (
-              <form
-                className="inline-flex"
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/" });
-                }}
-              >
-                <Button size="md" variant="outline" className="justify-center px-4">
-                  <LogOut /> Log out
-                </Button>
-              </form>
+            {user ? (
+              <details className="relative">
+                <summary className="group flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-[var(--surface-2)]/85 text-white transition hover:border-white/25 hover:bg-[var(--surface-2)]/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
+                  {avatarUrl ? (
+                    <span
+                      className="h-10 w-10 rounded-full bg-cover bg-center"
+                      style={{ backgroundImage: `url(${avatarUrl})` }}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg font-semibold">
+                      {initial}
+                    </span>
+                  )}
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-500 px-1 text-[0.65rem] font-semibold leading-none text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                  <span className="sr-only">Open user menu</span>
+                </summary>
+                <div className="absolute right-0 top-full mt-2 min-w-[20rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/15 bg-[var(--surface-2)]/95 p-4 shadow-lg">
+                  <div className="flex flex-col gap-4">
+                    <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-center justify-between text-xs text-white/60">
+                        <span className="font-semibold text-white">Notifications</span>
+                        <span>{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</span>
+                      </div>
+                      <NotificationPreviewList
+                        notifications={notificationItems}
+                        emptyLabel="No notifications yet"
+                        dense
+                        className="max-h-72 overflow-y-auto pr-1"
+                      />
+                      <Link
+                        href="/notifications"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
+                      >
+                        View all notifications
+                      </Link>
+                    </div>
+                    <div className="grid gap-2">
+                      <Link href="/posts/new" className="inline-flex">
+                        <Button size="md" className="w-full justify-center gap-2">
+                          <Plus /> New post
+                        </Button>
+                      </Link>
+                      <Link href="/profile" className="inline-flex">
+                        <Button size="md" variant="outline" className="w-full justify-center">
+                          Edit profile
+                        </Button>
+                      </Link>
+                      <form
+                        className="inline-flex"
+                        action={async () => {
+                          "use server";
+                          await signOut({ redirectTo: "/" });
+                        }}
+                      >
+                        <Button size="md" variant="ghost" className="w-full justify-center text-red-200 hover:text-red-100">
+                          <LogOut /> Log out
+                        </Button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </details>
             ) : (
               <Link href="/login" className="inline-flex">
                 <Button size="md" variant="outline" className="justify-center px-4">
@@ -72,13 +115,36 @@ export default function Header({ session, notifications }: HeaderProps) {
           </div>
 
           <details className="relative ml-auto lg:hidden">
-            <summary className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/15 bg-[var(--surface-2)]/85 text-white transition hover:border-white/25 hover:bg-[var(--surface-2)]/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
-              <Menu className="h-5 w-5" aria-hidden="true" />
+            <summary className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-[var(--surface-2)]/85 text-white transition hover:border-white/25 hover:bg-[var(--surface-2)]/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
+              {user ? (
+                <>
+                  {avatarUrl ? (
+                    <span
+                      className="h-10 w-10 rounded-full bg-cover bg-center"
+                      style={{ backgroundImage: `url(${avatarUrl})` }}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg font-semibold">
+                      {initial}
+                    </span>
+                  )}
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-500 px-1 text-[0.65rem] font-semibold leading-none text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg font-semibold">
+                  <LogIn className="h-5 w-5" aria-hidden="true" />
+                </span>
+              )}
               <span className="sr-only">Toggle navigation</span>
             </summary>
             <div className="absolute right-0 top-full mt-2 min-w-[16rem] rounded-xl border border-white/15 bg-[var(--surface-2)]/95 p-4 shadow-lg">
               <div className="flex flex-col gap-4">
-                {session?.user && (
+                {user && (
                   <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
                     <div className="flex items-center justify-between text-xs text-white/60">
                       <span className="font-semibold text-white">Notifications</span>
@@ -98,17 +164,21 @@ export default function Header({ session, notifications }: HeaderProps) {
                     </Link>
                   </div>
                 )}
-                <div className="w-full">
-                  <Search className="w-full" />
-                </div>
-                {session?.user && (
+                {user && (
+                  <Link href="/profile" className="inline-flex">
+                    <Button size="md" variant="outline" className="w-full justify-center px-4">
+                      Edit profile
+                    </Button>
+                  </Link>
+                )}
+                {user && (
                   <Link href="/posts/new" className="inline-flex">
                     <Button size="md" className="w-full justify-center px-4">
                       <Plus /> New post
                     </Button>
                   </Link>
                 )}
-                {session?.user ? (
+                {user ? (
                   <form
                     className="inline-flex"
                     action={async () => {
@@ -116,7 +186,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                       await signOut({ redirectTo: "/" });
                     }}
                   >
-                    <Button size="md" variant="outline" className="w-full justify-center px-4">
+                    <Button size="md" variant="ghost" className="w-full justify-center px-4 text-red-200 hover:text-red-100">
                       <LogOut /> Log out
                     </Button>
                   </form>

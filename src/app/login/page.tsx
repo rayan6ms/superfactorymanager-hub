@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Card, Input } from "@/components/ui/index";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Github, MailWarning } from "lucide-react";
 
 type FieldErrors = {
   email?: string;
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [infoMessage, setInfoMessage] = useState("");
   const sp = useSearchParams();
   const next = sp.get("next") || "/";
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
     setErrors({});
+    setInfoMessage("");
 
     const sanitizedEmail = email.trim();
 
@@ -69,6 +71,10 @@ export default function LoginPage() {
         case "WRONG_PASSWORD":
           message.password = "Incorrect password.";
           break;
+        case "EMAIL_NOT_VERIFIED":
+          message.form = undefined;
+          setInfoMessage("Please verify your email address using the link we sent before logging in.");
+          break;
         default:
           message.form = "Unable to sign you in. Please try again.";
       }
@@ -79,6 +85,17 @@ export default function LoginPage() {
 
     router.push(next);
     router.refresh();
+  }
+
+  async function handleSocialLogin(provider: "google" | "github") {
+    setIsSubmitting(true);
+    setErrors({});
+    setInfoMessage("");
+    try {
+      await signIn(provider, { callbackUrl: next });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -158,6 +175,43 @@ export default function LoginPage() {
             Login
           </Button>
         </form>
+        <div className="space-y-3 text-left">
+          <div className="relative flex items-center">
+            <div className="h-px flex-1 bg-white/15" />
+            <span className="px-3 text-xs uppercase tracking-wide text-white/50">Or continue with</span>
+            <div className="h-px flex-1 bg-white/15" />
+          </div>
+          <div className="grid gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-center gap-2"
+              onClick={() => handleSocialLogin("google")}
+              disabled={isSubmitting}
+            >
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4285F4] text-xs font-bold text-white">
+                G
+              </span>
+              Continue with Google
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-center gap-2"
+              onClick={() => handleSocialLogin("github")}
+              disabled={isSubmitting}
+            >
+              <Github className="h-5 w-5" aria-hidden />
+              Continue with GitHub
+            </Button>
+          </div>
+        </div>
+        {infoMessage && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-left text-sm text-amber-100">
+            <MailWarning className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+            <p>{infoMessage}</p>
+          </div>
+        )}
       </Card>
       <div className="w-full max-w-sm text-center text-sm text-white/70">
         New here? <Link href="/signup" className="underline">Create an account</Link>

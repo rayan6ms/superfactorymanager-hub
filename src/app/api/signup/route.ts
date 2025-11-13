@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hash } from "bcrypt";
 import { z } from "zod";
+import { generateInitialAvatar } from "@/lib/avatar";
+import { generateRandomToken, hashToken } from "@/lib/tokens";
+import { sendEmailVerificationEmail } from "@/lib/email";
 
 const schema = z.object({
   email: z
@@ -28,15 +31,40 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email already exists" }, { status: 409 });
     }
     const passwordHash = await hash(parsed.password, 10);
+    const avatar = generateInitialAvatar({ name: parsed.name, seed: parsed.email });
     const user = await db.user.create({
-      data: { email: parsed.email, name: parsed.name, passwordHash },
+      data: {
+        email: parsed.email,
+        name: parsed.name,
+        passwordHash,
+        image: avatar,
+      },
     });
+
+    const rawToken = generateRandomToken();
+    const tokenHash = hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+    await db.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    await sendEmailVerificationEmail({
+      to: user.email,
+      verificationToken: rawToken,
+      name: user.name,
+    });
+
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
-  } catch (e: any) {
-    console.error("Signup error:", e);
-    if (e instanceof z.ZodError) {
-      return NextResponse.json({ error: e.flatten().fieldErrors }, { status: 400 });
+  } catch (error: unknown) {
+    console.error("Signup error:", error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.flatten().fieldErrors }, { status: 400 });
     }
-    return NextResponse.json({ error: e?.message ?? "Unknown error" }, { status: 400 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

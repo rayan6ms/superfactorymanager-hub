@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, Card, Input } from "@/components/ui/index";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Github, MailCheck } from "lucide-react";
 
 type FieldErrors = {
   name?: string;
@@ -21,6 +21,8 @@ function mapSignupError(code: string): string {
       return "Email is required.";
     case "INVALID_EMAIL":
       return "Enter a valid email address.";
+    case "NAME_TOO_LONG":
+      return "Name is too long.";
     case "PASSWORD_REQUIRED":
       return "Password is required.";
     case "PASSWORD_TOO_SHORT":
@@ -37,9 +39,9 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const sp = useSearchParams();
   const next = sp.get("next") || "/";
-  const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,6 +70,7 @@ export default function SignupPage() {
 
     setIsSubmitting(true);
     setErrors({});
+    setSuccessMessage("");
 
     const res = await fetch("/api/signup", {
       method: "POST",
@@ -92,16 +95,22 @@ export default function SignupPage() {
       return;
     }
 
-    const signin = await signIn("credentials", { redirect: false, email: trimmedEmail, password, callbackUrl: next });
+    setSuccessMessage("Account created! Check your inbox for a verification email before signing in.");
+    setName("");
+    setEmail("");
+    setPassword("");
+    setIsSubmitting(false);
+  }
 
-    if (signin?.error) {
-      setErrors({ form: "Account created, but we couldn’t sign you in automatically. Please log in." });
+  async function handleSocialSignup(provider: "google" | "github") {
+    setIsSubmitting(true);
+    setErrors({});
+    setSuccessMessage("");
+    try {
+      await signIn(provider, { callbackUrl: next });
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    router.push(next);
-    router.refresh();
   }
 
   return (
@@ -197,6 +206,43 @@ export default function SignupPage() {
             Create account
           </Button>
         </form>
+        <div className="space-y-3 text-left">
+          <div className="relative flex items-center">
+            <div className="h-px flex-1 bg-white/15" />
+            <span className="px-3 text-xs uppercase tracking-wide text-white/50">Or continue with</span>
+            <div className="h-px flex-1 bg-white/15" />
+          </div>
+          <div className="grid gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-center gap-2"
+              onClick={() => handleSocialSignup("google")}
+              disabled={isSubmitting}
+            >
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4285F4] text-xs font-bold text-white">
+                G
+              </span>
+              Continue with Google
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-center gap-2"
+              onClick={() => handleSocialSignup("github")}
+              disabled={isSubmitting}
+            >
+              <Github className="h-5 w-5" aria-hidden />
+              Continue with GitHub
+            </Button>
+          </div>
+        </div>
+        {successMessage && (
+          <div className="flex items-start gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-left text-sm text-emerald-100">
+            <MailCheck className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+            <p>{successMessage}</p>
+          </div>
+        )}
       </Card>
       <div className="w-full max-w-sm text-center text-sm text-white/70">
         Already have an account? <Link href="/login" className="underline">Log in</Link>
