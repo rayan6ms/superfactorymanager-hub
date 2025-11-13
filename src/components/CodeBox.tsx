@@ -36,7 +36,9 @@ const plainHighlight = (code: string) => {
 const INDENT = "    ";
 const MIN_HEIGHT = 256;
 const MAX_HEIGHT = 544;
-const LINE_HEIGHT = "1.5rem";
+const DEFAULT_LINE_HEIGHT = "1.5rem";
+const CODE_PADDING_X = "1rem"; // Tailwind px-4
+const CODE_PADDING_Y = "0.75rem"; // Tailwind py-3
 
 export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedBy, errorLines }: CodeBoxProps) {
   const deferredValue = useDeferredValue(value);
@@ -47,9 +49,16 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
   const highlightOverlayRef = useRef<HTMLDivElement | null>(null);
   const lineNumbersInnerRef = useRef<HTMLDivElement | null>(null);
   const [boxHeight, setBoxHeight] = useState<number>(MIN_HEIGHT);
+  const [lineHeight, setLineHeight] = useState<string>(DEFAULT_LINE_HEIGHT);
   const containerStyle = useMemo<CSSProperties>(
-    () => ({ height: boxHeight, "--codebox-line-height": LINE_HEIGHT } as CSSProperties),
-    [boxHeight]
+    () =>
+      ({
+        height: boxHeight,
+        "--codebox-line-height": lineHeight,
+        "--codebox-padding-x": CODE_PADDING_X,
+        "--codebox-padding-y": CODE_PADDING_Y,
+      } satisfies CSSProperties),
+    [boxHeight, lineHeight]
   );
   const fallbackHtml = useMemo(() => plainHighlight(value), [value]);
   const highlightReady = highlightState?.code === value;
@@ -121,7 +130,10 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
     target.style.padding = "0";
     target.style.minWidth = "100%";
     target.style.width = "max-content";
-  }, []);
+    if (computed.lineHeight && computed.lineHeight !== lineHeight) {
+      setLineHeight(computed.lineHeight);
+    }
+  }, [lineHeight]);
 
   useEffect(() => {
     let active = true;
@@ -148,6 +160,7 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
     if (pre) {
       highlightContentRef.current = pre as HTMLElement;
       pre.style.transformOrigin = "top left";
+      pre.style.backgroundColor = "transparent";
     }
     copyTypographyToHighlight();
     syncScroll();
@@ -270,9 +283,10 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
                 <div
                   key={index}
                   className={clsx(
-                    "tabular-nums px-1",
-                    isErrorLine && "rounded-sm bg-red-500/20 text-white/80"
+                    "tabular-nums px-2",
+                    isErrorLine && "bg-red-500/20 text-white/80"
                   )}
+                  style={{ lineHeight: "var(--codebox-line-height)", minHeight: "var(--codebox-line-height)" }}
                 >
                   {lineNumber}
                 </div>
@@ -283,24 +297,26 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
         <div className="relative flex-1 overflow-hidden">
           <div
             ref={highlightWrapperRef}
-            className="pointer-events-none absolute inset-0 overflow-hidden px-4 py-3"
+            className="pointer-events-none absolute inset-0 overflow-hidden"
             aria-hidden="true"
           >
             <div ref={highlightOverlayRef} className="pointer-events-none absolute inset-0">
               {highlightRects.map(rect => (
                 <div
                   key={rect.key}
-                  className="pointer-events-none w-full rounded-sm bg-red-500/20"
+                  className="pointer-events-none rounded-sm bg-red-500/20"
                   style={{
                     position: "absolute",
-                    top: `calc(${rect.index} * var(--codebox-line-height))`,
+                    top: `calc(var(--codebox-padding-y) + ${rect.index} * var(--codebox-line-height))`,
                     height: "var(--codebox-line-height)",
+                    left: "var(--codebox-padding-x)",
+                    right: "var(--codebox-padding-x)",
                   }}
                 />
               ))}
             </div>
             <div
-              className="h-full font-mono text-sm leading-6 text-white"
+              className="h-full px-4 py-3 font-mono text-sm leading-6 text-white"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           </div>
@@ -329,7 +345,7 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
-            style={{ backgroundColor: "transparent", ...textareaStyle }}
+            style={{ backgroundColor: "transparent", borderRadius: 0, ...textareaStyle }}
             className={clsx(
               "relative z-10 h-full w-full resize-none overflow-auto border-0 bg-transparent px-4 py-3 font-mono text-sm leading-6 text-white outline-none focus:outline-none",
               value
