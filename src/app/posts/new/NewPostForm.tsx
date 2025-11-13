@@ -381,7 +381,7 @@ export default function NewPostForm() {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1.15fr)] xl:gap-10">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:gap-10">
         <Card className="space-y-6 px-6 py-5 sm:px-8 sm:py-7">
           <SectionTitle title="Post details" description="Set the essentials for your upload." />
 
@@ -645,9 +645,21 @@ export default function NewPostForm() {
 
             <div className="space-y-3">
               <div className="space-y-2">
-                <label htmlFor="images" className="text-sm font-medium text-white/75">
-                  Image gallery <span className="text-white/45">(max {MAX_IMAGE_MB}MB each)</span>
-                </label>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label htmlFor="images" className="text-sm font-medium text-white/75">
+                    Image gallery <span className="text-white/45">(max {MAX_IMAGE_MB}MB each)</span>
+                  </label>
+                  <label
+                    htmlFor="images"
+                    className={clsx(
+                      "inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/10",
+                      shouldShowError("images") && "border-red-500/60 text-red-200 hover:border-red-400"
+                    )}
+                  >
+                    <Images aria-hidden="true" className="h-4 w-4" />
+                    <span>Choose files</span>
+                  </label>
+                </div>
                 <input
                   id="images"
                   type="file"
@@ -665,16 +677,6 @@ export default function NewPostForm() {
                   aria-invalid={shouldShowError("images") || undefined}
                   aria-describedby={shouldShowError("images") ? errorId("images") : undefined}
                 />
-                <label
-                  htmlFor="images"
-                  className={clsx(
-                    "inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/10",
-                    shouldShowError("images") && "border-red-500/60 text-red-200 hover:border-red-400"
-                  )}
-                >
-                  <Images aria-hidden="true" className="h-4 w-4" />
-                  <span>Choose files</span>
-                </label>
                 <p className="text-xs text-white/60">
                   <span className="font-semibold text-white/80">Selected:</span> {fileSummary}
                 </p>

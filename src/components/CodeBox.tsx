@@ -20,7 +20,7 @@ const escapeHtml = (input: string) =>
 
 const plainHighlight = (code: string) => {
   const safe = code ? escapeHtml(code) : "&nbsp;";
-  return `<pre class="shiki plain"><code>${safe}</code></pre>`;
+  return `<pre class="shiki plain" style="color: rgba(255,255,255,0.85)"><code>${safe}</code></pre>`;
 };
 
 export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedBy }: CodeBoxProps) {
@@ -30,10 +30,12 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
   const highlightWrapperRef = useRef<HTMLDivElement | null>(null);
   const highlightContentRef = useRef<HTMLElement | null>(null);
   const fallbackHtml = useMemo(() => plainHighlight(value), [value]);
-  const html = highlightState?.code === value ? highlightState.html : fallbackHtml;
+  const highlightReady = highlightState?.code === value;
+  const html = highlightReady ? highlightState.html : fallbackHtml;
   const textareaStyle = useMemo<CSSProperties | undefined>(
-    () => (value ? { color: "transparent", WebkitTextFillColor: "transparent" } : undefined),
-    [value]
+    () =>
+      value && highlightReady ? { color: "transparent", WebkitTextFillColor: "transparent" } : undefined,
+    [value, highlightReady]
   );
 
   const syncScroll = useCallback(() => {
@@ -78,7 +80,7 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
   return (
     <div
       className={clsx(
-        "codebox relative isolate w-full overflow-hidden rounded-2xl border bg-[var(--surface-2)]/80 transition-shadow",
+        "codebox relative isolate w-full overflow-hidden rounded-xl border bg-[var(--surface-2)]/80 transition-shadow",
         isInvalid
           ? "border-red-500/60 focus-within:border-red-500/70 focus-within:ring-2 focus-within:ring-red-400"
           : "border-white/10 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-400"
@@ -107,7 +109,7 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
         autoCapitalize="off"
         style={textareaStyle}
         className={clsx(
-          "relative z-10 min-h-[16rem] w-full resize-y border-0 bg-transparent px-4 py-3 font-mono text-sm leading-6 outline-none focus:outline-none",
+          "relative z-10 min-h-[16rem] w-full resize-y border-0 bg-transparent px-4 py-3 font-mono text-sm leading-6 text-white outline-none focus:outline-none",
           value
             ? "caret-brand-200 selection:bg-brand-500/30 selection:text-white"
             : "text-white/80 placeholder:text-white/40"
