@@ -28,9 +28,7 @@ export default function LoginPage() {
     const nextErrors: FieldErrors = {};
 
     if (!email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      nextErrors.email = "Enter a valid email address.";
+      nextErrors.email = "Email or username is required.";
     }
 
     if (!password) {
@@ -48,19 +46,24 @@ export default function LoginPage() {
     setErrors({});
     setInfoMessage("");
 
-    const sanitizedEmail = email.trim();
+    const sanitizedIdentifier = email.trim();
 
-    const res = await signIn("credentials", { redirect: false, email: sanitizedEmail, password, callbackUrl: next });
+    const res = await signIn("credentials", {
+      redirect: false,
+      identifier: sanitizedIdentifier,
+      password,
+      callbackUrl: next,
+    });
 
     if (res?.error) {
       const message: FieldErrors = {};
       switch (res.error) {
+        case "IDENTIFIER_REQUIRED":
         case "EMAIL_REQUIRED":
-        case "INVALID_EMAIL":
-          message.email = res.error === "EMAIL_REQUIRED" ? "Email is required." : "Enter a valid email address.";
+          message.email = "Email or username is required.";
           break;
         case "EMAIL_NOT_FOUND":
-          message.email = "Email not registered.";
+          message.email = "Account not found.";
           break;
         case "PASSWORD_REQUIRED":
           message.password = "Password is required.";
@@ -99,26 +102,26 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-7rem)] flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
+    <main className="flex flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
       <Card className="w-full max-w-sm space-y-4">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-white">Login</h1>
         </div>
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-white" htmlFor="email">
-              Email
+            <label className="block text-sm font-medium text-white" htmlFor="identifier">
+              Email or username
             </label>
             <Input
-              id="email"
-              placeholder="Email"
-              type="email"
+              id="identifier"
+              placeholder="Email or username"
+              type="text"
               value={email}
               onChange={e => {
                 setEmail(e.target.value);
                 setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
               }}
-              autoComplete="email"
+              autoComplete="username"
               aria-invalid={Boolean(errors.email)}
             />
             {errors.email && (
@@ -147,7 +150,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(prev => !prev)}
-                  className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-2)]"
+                  className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-(--surface-2)"
                   aria-pressed={showPassword}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -208,7 +211,7 @@ export default function LoginPage() {
         </div>
         {infoMessage && (
           <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-left text-sm text-amber-100">
-            <MailWarning className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+            <MailWarning className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <p>{infoMessage}</p>
           </div>
         )}

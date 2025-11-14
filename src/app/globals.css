@@ -55,7 +55,7 @@
 html, body { height: 100%; }
 
 body {
-  @apply bg-[var(--bg)] text-white/90 antialiased;
+  @apply bg-(--bg) text-white/90 antialiased;
   color: hsl(var(--text));
   font-family: var(--font-sans);
   font-size: 0.95rem;
@@ -97,8 +97,8 @@ body {
 }
 
 /* Surfaces */
-.surface  { @apply bg-[var(--surface)]  border border-base-700/50 rounded-2xl shadow-soft; }
-.surface-2{ @apply bg-[var(--surface-2)] border border-base-700/50 rounded-2xl shadow-soft; }
+.surface  { @apply bg-(--surface)  border border-base-700/50 rounded-2xl shadow-soft; }
+.surface-2{ @apply bg-(--surface-2) border border-base-700/50 rounded-2xl shadow-soft; }
 .hr       { @apply border-t border-base-700/60; }
 
 /* Links */
@@ -106,7 +106,7 @@ a { @apply text-brand-400 hover:text-brand-300 underline-offset-4 hover:underlin
 
 /* Forms (forms plugin is active; these are your tweaks) */
 input, select, textarea {
-  @apply bg-[var(--surface-2)] border-base-700/80 text-white placeholder-white/40 rounded-xl focus:ring-2 focus:ring-brand-400 focus:border-brand-400;
+  @apply bg-(--surface-2) border-base-700/80 text-white placeholder-white/40 rounded-xl focus:ring-2 focus:ring-brand-400 focus:border-brand-400;
 }
 
 textarea {

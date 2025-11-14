@@ -9,11 +9,10 @@ import { z } from "zod";
 import type { Adapter } from "next-auth/adapters";
 
 const credsSchema = z.object({
-  email: z
+  identifier: z
     .string()
     .trim()
-    .min(1, "EMAIL_REQUIRED")
-    .email("INVALID_EMAIL"),
+    .min(1, "IDENTIFIER_REQUIRED"),
   password: z
     .string()
     .min(1, "PASSWORD_REQUIRED")
@@ -22,14 +21,14 @@ const credsSchema = z.object({
 
 const providers: NextAuthConfig["providers"] = [
   Credentials({
-    name: "Email & Password",
+    name: "Email / Username & Password",
     credentials: {
-      email: { label: "Email", type: "text" },
+      identifier: { label: "Email or username", type: "text" },
       password: { label: "Password", type: "password" },
     },
     async authorize(credentials) {
       const parsed = credsSchema.safeParse({
-        email: credentials?.email,
+        identifier: credentials?.identifier,
         password: credentials?.password,
       });
 
@@ -38,9 +37,17 @@ const providers: NextAuthConfig["providers"] = [
         throw new Error(issue?.message ?? "INVALID_CREDENTIALS");
       }
 
-      const { email, password } = parsed.data;
+      const { identifier, password } = parsed.data;
 
-      const user = await db.user.findUnique({ where: { email } });
+      const user = await db.user.findFirst({
+        where: {
+          OR: [
+            { email: identifier },
+            { name: identifier },
+          ],
+        },
+      });
+
       if (!user?.passwordHash) {
         throw new Error("EMAIL_NOT_FOUND");
       }
@@ -54,7 +61,12 @@ const providers: NextAuthConfig["providers"] = [
         throw new Error("EMAIL_NOT_VERIFIED");
       }
 
-      return { id: user.id, email: user.email, name: user.name ?? null, image: user.image ?? null };
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name ?? null,
+        image: user.image ?? null,
+      };
     },
   }),
 ];
@@ -87,18 +99,40 @@ export const authOptions: NextAuthConfig = {
   callbacks: {
     async signIn({ user, account }) {
       if (!account) return true;
-      if (account.provider !== "credentials") {
+
+      if (account.provider === "credentials") {
+        return true;
+      }
+
+      if (!user?.id) {
+        return true;
+      }
+
+      try {
+        const existing = await db.user.findUnique({
+          where: { id: user.id as string },
+        });
+
+        if (!existing) {
+          return true;
+        }
+
         await db.user.update({
-          where: { id: user.id },
+          where: { id: existing.id },
           data: {
-            emailVerified: user.emailVerified ?? new Date(),
-            name: user.name ?? undefined,
-            image: user.image ?? undefined,
+            emailVerified: existing.emailVerified ?? new Date(),
+            name: user.name ?? existing.name,
+            image: user.image ?? existing.image,
           },
         });
+      } catch (err) {
+        console.warn("OAuth signIn callback user update failed:", err);
+        // Do NOT throw – just log and allow sign-in
       }
+
       return true;
     },
+
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? session.user.id;
@@ -111,6 +145,7 @@ export const authOptions: NextAuthConfig = {
       }
       return session;
     },
+
     async jwt({ token, user }) {
       if (user) {
         token.name = user.name ?? token.name;
@@ -118,7 +153,7 @@ export const authOptions: NextAuthConfig = {
       }
       return token;
     },
-  },
+  }
 };
 
 export const { auth, signIn, signOut, handlers } = NextAuth(authOptions);

@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { NotificationOrigin, type Notification } from "@prisma/client";
+import { NotificationOrigin, type Notification, Prisma } from "@prisma/client";
 
 export const NOTIFICATION_PREVIEW_LIMIT = 5;
 export const NOTIFICATION_PAGE_SIZE = 20;
@@ -97,7 +97,7 @@ export async function createNotification(options: {
   origin?: NotificationOrigin;
   link?: string | null;
   imageUrl?: string | null;
-  metadata?: Record<string, unknown> | null;
+  metadata?: Prisma.InputJsonValue | null;
   markUnread?: boolean;
 }) {
   const {
@@ -111,6 +111,9 @@ export async function createNotification(options: {
     markUnread = true,
   } = options;
 
+  const prismaMetadata: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue | undefined =
+    metadata === null ? Prisma.JsonNull : metadata;
+
   return db.notification.create({
     data: {
       userId,
@@ -119,7 +122,7 @@ export async function createNotification(options: {
       origin,
       link,
       imageUrl,
-      metadata,
+      metadata: prismaMetadata,
       readAt: markUnread ? null : new Date(),
     },
   });

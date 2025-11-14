@@ -81,7 +81,7 @@ export default async function VerifyEmailPage(props: VerifyEmailPageProps) {
   const copy = getStatusCopy(status);
 
   return (
-    <main className="flex min-h-[calc(100vh-7rem)] flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
+    <main className="flex flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
       <Card className="w-full max-w-md space-y-4 text-center">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold text-white">{copy.title}</h1>

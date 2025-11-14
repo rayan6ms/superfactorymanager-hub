@@ -121,9 +121,9 @@ export default function NotificationCenter({
           prev.map(item =>
             item.id === notification.id
               ? {
-                  ...item,
-                  readAt: makeRead ? new Date().toISOString() : null,
-                }
+                ...item,
+                readAt: makeRead ? new Date().toISOString() : null,
+              }
               : item,
           ),
         );
@@ -223,7 +223,7 @@ export default function NotificationCenter({
                 <li
                   key={item.id}
                   className={clsx(
-                    "flex flex-col gap-3 rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 p-4 text-sm text-white/80 shadow-sm transition",
+                    "flex flex-col gap-3 rounded-2xl border border-white/10 bg-(--surface-2)/80 p-4 text-sm text-white/80 shadow-sm transition",
                     unread ? "ring-1 ring-brand-400/70" : "",
                   )}
                 >

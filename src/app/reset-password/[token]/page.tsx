@@ -97,7 +97,7 @@ export default function ResetPasswordConfirmPage() {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-7rem)] flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
+    <main className="flex flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
       <Card className="w-full max-w-sm space-y-4">
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-semibold text-white">Reset password</h1>
@@ -118,7 +118,7 @@ export default function ResetPasswordConfirmPage() {
             </p>
           </div>
         )}
-        {state === "ready" && (
+        {(state === "ready" || state === "submitting") && (
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-white" htmlFor="email">
@@ -153,7 +153,7 @@ export default function ResetPasswordConfirmPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(prev => !prev)}
-                    className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-2)]"
+                    className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-(--surface-2)"
                     aria-pressed={showPassword}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >

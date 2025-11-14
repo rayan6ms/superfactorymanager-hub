@@ -11,7 +11,9 @@ const schema = z.object({
     .string()
     .trim()
     .min(1, "EMAIL_REQUIRED")
-    .email("INVALID_EMAIL"),
+    .pipe(
+      z.email({ message: "INVALID_EMAIL" }),
+    ),
   name: z
     .string()
     .trim()
@@ -30,8 +32,10 @@ export async function POST(req: Request) {
     if (existing) {
       return NextResponse.json({ error: "Email already exists" }, { status: 409 });
     }
+
     const passwordHash = await hash(parsed.password, 10);
     const avatar = generateInitialAvatar({ name: parsed.name, seed: parsed.email });
+
     const user = await db.user.create({
       data: {
         email: parsed.email,
@@ -52,17 +56,26 @@ export async function POST(req: Request) {
       },
     });
 
-    await sendEmailVerificationEmail({
-      to: user.email,
-      verificationToken: rawToken,
-      name: user.name,
-    });
+    try {
+      await sendEmailVerificationEmail({
+        to: user.email,
+        verificationToken: rawToken,
+        name: user.name,
+      });
+    } catch (err) {
+      console.error("Failed to send verification email:", err);
+      return NextResponse.json({ error: "EMAIL_SEND_FAILED" }, { status: 500 });
+    }
 
-    return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
+    return NextResponse.json(
+      { id: user.id, email: user.email },
+      { status: 201 },
+    );
   } catch (error: unknown) {
     console.error("Signup error:", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.flatten().fieldErrors }, { status: 400 });
+      const { fieldErrors } = z.flattenError(error);
+      return NextResponse.json({ error: fieldErrors }, { status: 400 });
     }
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 400 });

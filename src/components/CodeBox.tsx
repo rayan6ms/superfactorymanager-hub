@@ -22,6 +22,12 @@ type CodeBoxProps = {
   errorLines?: number[];
 };
 
+type CodeBoxCSSVars = {
+  "--codebox-line-height": string;
+  "--codebox-padding-x": string;
+  "--codebox-padding-y": string;
+};
+
 const escapeHtml = (input: string) =>
   input
     .replace(/&/g, "&amp;")
@@ -50,14 +56,13 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
   const lineNumbersInnerRef = useRef<HTMLDivElement | null>(null);
   const [boxHeight, setBoxHeight] = useState<number>(MIN_HEIGHT);
   const [lineHeight, setLineHeight] = useState<string>(DEFAULT_LINE_HEIGHT);
-  const containerStyle = useMemo<CSSProperties>(
-    () =>
-      ({
-        height: boxHeight,
-        "--codebox-line-height": lineHeight,
-        "--codebox-padding-x": CODE_PADDING_X,
-        "--codebox-padding-y": CODE_PADDING_Y,
-      } satisfies CSSProperties),
+  const containerStyle = useMemo<CodeBoxCSSVars & CSSProperties>(
+    () => ({
+      height: boxHeight,
+      "--codebox-line-height": lineHeight,
+      "--codebox-padding-x": CODE_PADDING_X,
+      "--codebox-padding-y": CODE_PADDING_Y,
+    }),
     [boxHeight, lineHeight]
   );
   const fallbackHtml = useMemo(() => plainHighlight(value), [value]);
@@ -267,7 +272,7 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
   return (
     <div
       className={clsx(
-        "codebox relative isolate w-full overflow-hidden rounded-xl border bg-[var(--surface-2)]/80 transition-shadow",
+        "codebox relative isolate w-full overflow-hidden rounded-xl border bg-(--surface-2)/80 transition-shadow",
         isInvalid
           ? "border-red-500/60 focus-within:border-red-500/70 focus-within:ring-2 focus-within:ring-red-400"
           : "border-white/10 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-400"

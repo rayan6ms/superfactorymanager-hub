@@ -46,10 +46,19 @@ export default function ResetPasswordRequestPage() {
         body: JSON.stringify({ email: email.trim() }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error("Request failed");
+        if (data?.error === "EMAIL_SEND_FAILED") {
+          setErrors({ form: "We couldn’t send the reset email. Please try again later." });
+        } else {
+          setErrors({ form: "Unable to send reset email. Please try again." });
+        }
+        setState("idle");
+        return;
       }
 
+      // success
       setState("success");
     } catch (error) {
       console.error("Reset email request failed", error);
@@ -59,7 +68,7 @@ export default function ResetPasswordRequestPage() {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-7rem)] flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
+    <main className="flex flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
       <Card className="w-full max-w-sm space-y-4">
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-semibold text-white">Forgot password</h1>
@@ -69,7 +78,7 @@ export default function ResetPasswordRequestPage() {
         </div>
         {state === "success" ? (
           <div className="space-y-3 text-center text-sm text-white/80">
-            <p>If an account exists for {email.trim()}, we&apos;ve sent password reset instructions.</p>
+            <p>Email sent to <span className="font-semibold">{email.trim()}</span>.</p>
             <p>Please check your inbox and follow the link to finish resetting your password.</p>
           </div>
         ) : (

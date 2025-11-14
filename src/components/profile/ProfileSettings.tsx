@@ -192,7 +192,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             disabled={resetLoading}
           >
             {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ShieldCheck className="h-4 w-4" aria-hidden />}
-            Send password reset email
+            Send email to reset password
           </Button>
           {resetStatus === "sent" && <span className="text-emerald-300">Email sent!</span>}
           {resetStatus === "error" && <span className="text-red-400">Couldn’t send email.</span>}

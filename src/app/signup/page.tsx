@@ -79,7 +79,9 @@ export default function SignupPage() {
     });
     const data = await res.json();
     if (!res.ok) {
-      if (data?.error && typeof data.error === "object" && !Array.isArray(data.error)) {
+      if (data?.error === "EMAIL_SEND_FAILED") {
+        setErrors({ form: "We created your account, but couldn’t send the verification email. Try again in a moment." });
+      } else if (data?.error && typeof data.error === "object" && !Array.isArray(data.error)) {
         const fieldErrors = data.error as Record<string, string[] | undefined>;
         setErrors({
           name: fieldErrors.name?.[0] ? mapSignupError(fieldErrors.name[0]) : undefined,
@@ -95,7 +97,7 @@ export default function SignupPage() {
       return;
     }
 
-    setSuccessMessage("Account created! Check your inbox for a verification email before signing in.");
+    setSuccessMessage(`Account created! Verification email sent to ${trimmedEmail}.`);
     setName("");
     setEmail("");
     setPassword("");
@@ -114,7 +116,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-7rem)] flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
+    <main className="flex flex-col items-center justify-start gap-6 px-4 pb-12 pt-16">
       <Card className="w-full max-w-sm space-y-4">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-white">Sign up</h1>
@@ -183,7 +185,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(prev => !prev)}
-                  className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-2)]"
+                  className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-(--surface-2)"
                   aria-pressed={showPassword}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -239,7 +241,7 @@ export default function SignupPage() {
         </div>
         {successMessage && (
           <div className="flex items-start gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-left text-sm text-emerald-100">
-            <MailCheck className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+            <MailCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <p>{successMessage}</p>
           </div>
         )}

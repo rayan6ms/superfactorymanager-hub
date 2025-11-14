@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell, Loader2 } from "lucide-react";
 import clsx from "clsx";
 import NotificationPreviewList from "@/components/notifications/NotificationPreviewList";
@@ -32,18 +33,25 @@ export default function NotificationBell({
   const [open, setOpen] = useState(false);
   const [fetchState, setFetchState] = useState<FetchState>("idle");
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
-    function handleClick(event: MouseEvent) {
-      if (!open) return;
+    if (!open) return;
+
+    function handlePointerDown(event: PointerEvent) {
       if (!containerRef.current) return;
       if (!containerRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
-    window.addEventListener("mousedown", handleClick);
-    return () => window.removeEventListener("mousedown", handleClick);
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
   }, [open]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const markAsRead = useCallback(async (ids: string[]) => {
     if (!ids.length) return;
@@ -73,7 +81,9 @@ export default function NotificationBell({
       if (typeof data.unreadCount === "number") {
         setUnreadCount(data.unreadCount);
       }
-      const unreadIds = (data.notifications ?? []).filter(notification => !notification.readAt).map(notification => notification.id);
+      const unreadIds = (data.notifications ?? [])
+        .filter(notification => !notification.readAt)
+        .map(notification => notification.id);
       if (unreadIds.length) {
         await markAsRead(unreadIds);
       }
@@ -95,7 +105,7 @@ export default function NotificationBell({
         type="button"
         onClick={() => setOpen(prev => !prev)}
         className={clsx(
-          "relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-[var(--surface-2)]/85 text-white transition hover:border-white/25 hover:bg-[var(--surface-2)]/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400",
+          "relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-(--surface-2)/85 text-white transition hover:border-white/25 hover:bg-(--surface-2)/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400",
           open && "border-brand-400/70",
         )}
         aria-label="Open notifications"
@@ -104,20 +114,22 @@ export default function NotificationBell({
       >
         <Bell className="h-5 w-5" aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-500 px-1 text-[0.65rem] font-semibold leading-none text-white">
+          <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 text-[0.65rem] font-semibold leading-none text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-80 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/15 bg-[var(--surface-2)]/95 p-4 shadow-xl backdrop-blur">
+        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-80 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/15 bg-(--surface-2)/95 p-4 shadow-xl backdrop-blur">
           <div className="flex items-center justify-between gap-3 pb-3">
             <div>
               <p className="text-sm font-semibold text-white">Notifications</p>
               <p className="text-xs text-white/50">Showing the latest {LIMIT} updates</p>
             </div>
-            {fetchState === "loading" && <Loader2 className="h-4 w-4 animate-spin text-white/60" aria-hidden="true" />}
+            {fetchState === "loading" && (
+              <Loader2 className="h-4 w-4 animate-spin text-white/60" aria-hidden="true" />
+            )}
           </div>
 
           <NotificationPreviewList
@@ -141,7 +153,9 @@ export default function NotificationBell({
           </div>
 
           {fetchState === "error" && (
-            <p className="mt-2 text-xs text-red-300">We couldn’t refresh notifications. Please try again.</p>
+            <p className="mt-2 text-xs text-red-300">
+              We couldn’t refresh notifications. Please try again.
+            </p>
           )}
         </div>
       )}
