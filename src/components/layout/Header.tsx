@@ -22,12 +22,12 @@ export default function Header({ session, notifications }: HeaderProps) {
   const displayName = (user?.name ?? user?.email ?? "").trim();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/15 bg-(--surface)/85 py-3 backdrop-blur-lg">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-(--surface) py-3 backdrop-blur-xl">
       <div className="container-max">
         <div className="flex items-center gap-4">
           <Link
             href="/"
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-(--surface-2)/85 px-3 py-2 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-(--surface-2)"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/15 bg-(--surface-2) px-3 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
           >
             <span className="hidden sm:inline">superfactorymanager</span>
             <span className="sm:hidden">SFM</span>
@@ -52,7 +52,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                   </Link>
                 )}
                 <details className="relative" data-user-menu>
-                  <summary className="group flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-(--surface-2)/85 text-white transition hover:border-white/25 hover:bg-(--surface-2)/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
+                  <summary className="group flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-(--surface-2) text-white transition hover:border-white/30 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
                     {avatarUrl ? (
                       <span
                         className="h-10 w-10 rounded-full bg-cover bg-center"
@@ -71,9 +71,9 @@ export default function Header({ session, notifications }: HeaderProps) {
                     )}
                     <span className="sr-only">Open user menu</span>
                   </summary>
-                  <div className="absolute right-0 top-full mt-2 min-w-[20rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/15 bg-(--surface-2)/95 p-4 shadow-lg">
+                  <div className="absolute right-0 top-full mt-2 min-w-[20rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/10 bg-(--surface-2) p-4 shadow-2xl backdrop-blur-xl">
                     <div className="flex flex-col gap-4">
-                      <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="space-y-3 rounded-xl border border-white/10 bg-white/10 p-3 backdrop-blur">
                         <div className="flex items-center justify-between text-xs text-white/60">
                           <span className="font-semibold text-white">Notifications</span>
                           <span>{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</span>
@@ -86,7 +86,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                         />
                         <Link
                           href="/notifications"
-                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/20"
                         >
                           View all notifications
                         </Link>
@@ -128,7 +128,7 @@ export default function Header({ session, notifications }: HeaderProps) {
           </div>
 
           <details className="relative ml-auto lg:hidden" data-user-menu>
-            <summary className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-(--surface-2)/85 text-white transition hover:border-white/25 hover:bg-(--surface-2)/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
+            <summary className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-(--surface-2) text-white transition hover:border-white/30 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
               {user ? (
                 <>
                   {avatarUrl ? (
@@ -155,10 +155,10 @@ export default function Header({ session, notifications }: HeaderProps) {
               )}
               <span className="sr-only">Toggle navigation</span>
             </summary>
-            <div className="absolute right-0 top-full mt-2 min-w-[16rem] rounded-xl border border-white/15 bg-(--surface-2)/95 p-4 shadow-lg">
+            <div className="absolute right-0 top-full mt-2 min-w-[16rem] rounded-xl border border-white/10 bg-(--surface-2) p-4 shadow-2xl backdrop-blur-xl">
               <div className="flex flex-col gap-4">
                 {user && (
-                  <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="space-y-3 rounded-xl border border-white/10 bg-white/10 p-3 backdrop-blur">
                     <div className="flex items-center justify-between text-xs text-white/60">
                       <span className="font-semibold text-white">Notifications</span>
                       <span>{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</span>

@@ -72,7 +72,16 @@ export default async function ProfilePage() {
                     {post.title}
                   </Link>
                   <p className="text-xs text-white/50">
-                    Published {formatDate(post.uploadDate)} · Rating {post.rating.toFixed(1)} ({post.ratingCount} votes)
+                    Published {formatDate(post.uploadDate)} · {(() => {
+                      const worked = Math.max(Math.round(post.rating ?? 0), 0);
+                      const total = Math.max(post.ratingCount ?? 0, 0);
+                      const broken = Math.max(total - worked, 0);
+                      if (total === 0) {
+                        return "No verification votes yet";
+                      }
+                      const success = Math.round((worked / total) * 100);
+                      return `${success}% success (${worked}✓ / ${broken}✕)`;
+                    })()}
                   </p>
                 </div>
                 <Link

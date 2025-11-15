@@ -192,7 +192,7 @@ export default function SignupForm({ next }: SignupFormProps) {
             />
             <p className="mt-1 text-xs text-white/60">{USERNAME_HELP_TEXT}</p>
             {errors.name && (
-              <p className="text-sm text-red-500" role="alert">
+              <p className="text-sm text-error" role="alert">
                 {errors.name}
               </p>
             )}
@@ -214,7 +214,7 @@ export default function SignupForm({ next }: SignupFormProps) {
               aria-invalid={Boolean(errors.email)}
             />
             {errors.email && (
-              <p className="text-sm text-red-500" role="alert">
+              <p className="text-sm text-error" role="alert">
                 {errors.email}
               </p>
             )}
@@ -248,13 +248,13 @@ export default function SignupForm({ next }: SignupFormProps) {
               }
             />
             {errors.password && (
-              <p className="text-sm text-red-500" role="alert">
+              <p className="text-sm text-error" role="alert">
                 {errors.password}
               </p>
             )}
           </div>
           {errors.form && (
-            <p className="text-sm text-red-500" role="alert">
+            <p className="text-sm text-error" role="alert">
               {errors.form}
             </p>
           )}

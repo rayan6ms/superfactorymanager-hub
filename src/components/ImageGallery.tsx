@@ -1,20 +1,26 @@
 "use client";
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element */
 
 export default function ImageGallery({ imgs }: { imgs: { id: string; thumbSm: string; thumbMd: string; thumbLg: string; original: string }[] }) {
   if (!imgs?.length) return null;
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
       {imgs.map(img => (
-        <div key={img.id} className="relative rounded-xl overflow-hidden border border-base-700/60 bg-white/5">
-          <Image
-            src={img.thumbMd || img.thumbSm}
+        <a
+          key={img.id}
+          href={img.original || img.thumbLg || img.thumbMd || img.thumbSm}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group relative block overflow-hidden rounded-2xl border border-white/10 bg-black/20"
+        >
+          <img
+            src={img.thumbLg || img.thumbMd || img.thumbSm || img.original}
             alt=""
-            width={640} height={360}
-            sizes="(max-width: 768px) 50vw, 33vw"
-            className="w-full h-auto"
+            loading="lazy"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
           />
-        </div>
+          <span className="pointer-events-none absolute inset-0 border-2 border-transparent transition group-hover:border-white/20" />
+        </a>
       ))}
     </div>
   );

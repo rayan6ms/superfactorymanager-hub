@@ -22,7 +22,7 @@ export default function LoginForm({ next }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [infoMessage, setInfoMessage] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
   const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
@@ -46,7 +46,7 @@ export default function LoginForm({ next }: LoginFormProps) {
 
     setIsSubmitting(true);
     setErrors({});
-    setInfoMessage("");
+    setStatusMessage("");
 
     const sanitizedIdentifier = email.trim();
 
@@ -77,8 +77,10 @@ export default function LoginForm({ next }: LoginFormProps) {
           message.password = "Incorrect password.";
           break;
         case "EMAIL_NOT_VERIFIED":
-          message.form = undefined;
-          setInfoMessage("Please verify your email address using the link we sent before logging in.");
+          message.form = "We couldn't sign you in because your email hasn't been verified yet.";
+          setStatusMessage(
+            "Check your inbox (and spam folder) for the verification email we sent. You can request a new link from the sign-up confirmation email if needed."
+          );
           break;
         default:
           message.form = "Unable to sign you in. Please try again.";
@@ -122,12 +124,13 @@ export default function LoginForm({ next }: LoginFormProps) {
               onChange={e => {
                 setEmail(e.target.value);
                 setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
+                setStatusMessage("");
               }}
               autoComplete="username"
               aria-invalid={Boolean(errors.email)}
             />
             {errors.email && (
-              <p className="text-sm text-red-500" role="alert">
+              <p className="text-sm text-error" role="alert">
                 {errors.email}
               </p>
             )}
@@ -144,6 +147,7 @@ export default function LoginForm({ next }: LoginFormProps) {
               onChange={e => {
                 setPassword(e.target.value);
                 setErrors(prev => ({ ...prev, password: undefined, form: undefined }));
+                setStatusMessage("");
               }}
               autoComplete="current-password"
               aria-invalid={Boolean(errors.password)}
@@ -161,7 +165,7 @@ export default function LoginForm({ next }: LoginFormProps) {
               }
             />
             {errors.password && (
-              <p className="text-sm text-red-500" role="alert">
+              <p className="text-sm text-error" role="alert">
                 {errors.password}
               </p>
             )}
@@ -172,7 +176,7 @@ export default function LoginForm({ next }: LoginFormProps) {
             </div>
           </div>
           {errors.form && (
-            <p className="text-sm text-red-500" role="alert">
+            <p className="text-sm text-error" role="alert">
               {errors.form}
             </p>
           )}
@@ -211,10 +215,10 @@ export default function LoginForm({ next }: LoginFormProps) {
             </Button>
           </div>
         </div>
-        {infoMessage && (
-          <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-left text-sm text-amber-100">
-            <MailWarning className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            <p>{infoMessage}</p>
+        {statusMessage && (
+          <div className="flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-left text-sm text-error">
+            <MailWarning className="mt-0.5 h-4 w-4 shrink-0 text-error" aria-hidden />
+            <p className="text-error">{statusMessage}</p>
           </div>
         )}
       </Card>

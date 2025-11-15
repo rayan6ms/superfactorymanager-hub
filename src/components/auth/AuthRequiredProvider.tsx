@@ -41,8 +41,18 @@ export default function AuthRequiredProvider({ children }: { children: React.Rea
   const withAuth = useCallback(async <R,>(fn: () => Promise<R>) => {
     try {
       return await fn();
-    } catch (e: any) {
-      if (e?.status === 401 || e?.code === "UNAUTHORIZED") openLogin();
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null) {
+        const status = "status" in error && typeof (error as { status?: unknown }).status === "number"
+          ? (error as { status: number }).status
+          : undefined;
+        const code = "code" in error && typeof (error as { code?: unknown }).code === "string"
+          ? (error as { code: string }).code
+          : undefined;
+        if (status === 401 || code === "UNAUTHORIZED") {
+          openLogin();
+        }
+      }
       return null;
     }
   }, [openLogin]);

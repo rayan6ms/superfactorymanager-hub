@@ -1,3 +1,6 @@
+"use client";
+/* eslint-disable @next/next/no-img-element */
+
 import Link from "next/link";
 import clsx from "clsx";
 import { formatNotificationTimestamp, type SerializedNotification } from "@/lib/notifications";
@@ -17,6 +20,7 @@ type NotificationPreviewListProps = {
   emptyLabel?: string;
   className?: string;
   dense?: boolean;
+  onMarkRead?: (id: string) => void | Promise<void>;
 };
 
 export default function NotificationPreviewList({
@@ -24,6 +28,7 @@ export default function NotificationPreviewList({
   emptyLabel = "You’re all caught up!",
   className,
   dense = false,
+  onMarkRead,
 }: NotificationPreviewListProps) {
   if (!notifications.length) {
     return (
@@ -52,7 +57,7 @@ export default function NotificationPreviewList({
               unread ? "ring-1 ring-brand-400/70" : "",
             )}
           >
-            <div className={clsx("flex gap-3", dense ? "items-start" : "items-center")}> 
+            <div className={clsx("flex gap-3", dense ? "items-start" : "items-center")}>
               {item.imageUrl ? (
                 <div className="relative h-12 w-12 flex-none overflow-hidden rounded-lg border border-white/10">
                   <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
@@ -82,6 +87,15 @@ export default function NotificationPreviewList({
                   {item.message && <p className="text-white/70">{item.message}</p>}
                 </div>
               </div>
+              {onMarkRead && unread && (
+                <button
+                  type="button"
+                  onClick={() => onMarkRead(item.id)}
+                  className="ml-auto inline-flex h-8 items-center justify-center rounded-lg border border-white/15 px-2 text-xs font-semibold text-white/70 transition hover:border-white/30 hover:text-white"
+                >
+                  Mark as read
+                </button>
+              )}
             </div>
           </li>
         );

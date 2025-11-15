@@ -689,7 +689,7 @@ export default function NewPostForm() {
                 </span>
               </div>
               {shouldShowError("title") && errors.title && (
-                <p id={errorId("title")} className="text-sm text-red-400">
+                <p id={errorId("title")} className="text-sm text-error">
                   {errors.title}
                 </p>
               )}
@@ -722,7 +722,7 @@ export default function NewPostForm() {
                   ))}
                 </select>
                 {shouldShowError("gameVersion") && errors.gameVersion && (
-                  <p id={errorId("gameVersion")} className="text-sm text-red-400">
+                  <p id={errorId("gameVersion")} className="text-sm text-error">
                     {errors.gameVersion}
                   </p>
                 )}
@@ -764,7 +764,7 @@ export default function NewPostForm() {
                   )}
                 </div>
                 {shouldShowError("modVersion") && errors.modVersion && (
-                  <p id={errorId("modVersion")} className="text-sm text-red-400">
+                  <p id={errorId("modVersion")} className="text-sm text-error">
                     {errors.modVersion}
                   </p>
                 )}
@@ -801,7 +801,7 @@ export default function NewPostForm() {
               </select>
               {categoriesError && <p className="text-xs text-amber-300">{categoriesError}</p>}
               {shouldShowError("categoryKey") && errors.categoryKey && (
-                <p id={errorId("categoryKey")} className="text-sm text-red-400">
+                <p id={errorId("categoryKey")} className="text-sm text-error">
                   {errors.categoryKey}
                 </p>
               )}
@@ -847,9 +847,9 @@ export default function NewPostForm() {
                   <TagIcon className="h-4 w-4" /> Add tag
                 </Button>
               </div>
-              {tagError && <p className="text-sm text-red-400">{tagError}</p>}
+              {tagError && <p className="text-sm text-error">{tagError}</p>}
               {shouldShowError("tags") && errors.tags && (
-                <p id={errorId("tags")} className="text-sm text-red-400">
+                <p id={errorId("tags")} className="text-sm text-error">
                   {errors.tags}
                 </p>
               )}
@@ -909,7 +909,7 @@ export default function NewPostForm() {
               {form.description.trim().length}/{MIN_DESCRIPTION_LENGTH} characters minimum
             </p>
             {shouldShowError("description") && errors.description && (
-              <p id={errorId("description")} className="text-sm text-red-400">
+              <p id={errorId("description")} className="text-sm text-error">
                 {errors.description}
               </p>
             )}
@@ -945,7 +945,7 @@ export default function NewPostForm() {
                 Add
               </Button>
             </div>
-            {depError && <p className="text-sm text-red-400">{depError}</p>}
+            {depError && <p className="text-sm text-error">{depError}</p>}
             {!!deps.length && (
               <div className="flex flex-wrap gap-2">
                 {deps.map(d => (
@@ -998,7 +998,7 @@ export default function NewPostForm() {
                 )}
               />
               {shouldShowError("youtubeUrl") && errors.youtubeUrl && (
-                <p id={errorId("youtubeUrl")} className="text-sm text-red-400">
+                <p id={errorId("youtubeUrl")} className="text-sm text-error">
                   {errors.youtubeUrl}
                 </p>
               )}
@@ -1082,7 +1082,7 @@ export default function NewPostForm() {
                 </p>
               </div>
               {shouldShowError("images") && errors.images && (
-                <p id={errorId("images")} className="text-sm text-red-400">
+                <p id={errorId("images")} className="text-sm text-error">
                   {errors.images}
                 </p>
               )}
@@ -1163,7 +1163,7 @@ export default function NewPostForm() {
               .join(" ") || undefined}
           />
           {shouldShowError("code") && errors.code && (
-            <div id={errorId("code")} className="space-y-1 text-sm text-red-400">
+            <div id={errorId("code")} className="space-y-1 text-sm text-error">
               <p>{errors.code}</p>
               {codeFeedback.syntaxErrors.length > 0 && (
                 <ul className="list-disc space-y-1 pl-5">

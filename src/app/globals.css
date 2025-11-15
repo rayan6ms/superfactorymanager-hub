@@ -41,8 +41,8 @@
 /* ---- App-level tokens (CSS vars that your utilities refer to) ---- */
 :root {
   --bg: var(--color-base-950);
-  --surface: var(--color-base-900);
-  --surface-2: var(--color-base-800);
+  --surface: rgba(10, 10, 10, 0.78);
+  --surface-2: rgba(42, 39, 39, 0.76);
   --muted: var(--color-base-700);
   --text: 240 9% 98%;
   --text-muted: 240 6% 62%;
@@ -97,8 +97,8 @@ body {
 }
 
 /* Surfaces */
-.surface  { @apply bg-(--surface)  border border-base-700/50 rounded-2xl shadow-soft; }
-.surface-2{ @apply bg-(--surface-2) border border-base-700/50 rounded-2xl shadow-soft; }
+.surface  { @apply bg-(--surface)  border border-white/15 rounded-2xl shadow-soft backdrop-blur-xl; }
+.surface-2{ @apply bg-(--surface-2) border border-white/15 rounded-2xl shadow-soft backdrop-blur-xl; }
 .hr       { @apply border-t border-base-700/60; }
 
 /* Links */
@@ -178,4 +178,8 @@ h1, h2, h3, h4 {
 
 p {
   color: hsl(var(--text) / 0.82);
+}
+
+.text-error {
+  color: #f87171 !important;
 }

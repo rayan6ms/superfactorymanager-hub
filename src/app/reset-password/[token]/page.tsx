@@ -162,13 +162,13 @@ export default function ResetPasswordConfirmPage() {
                 }
               />
               {errors.password && (
-                <p className="text-sm text-red-500" role="alert">
+                <p className="text-sm text-error" role="alert">
                   {errors.password}
                 </p>
               )}
             </div>
             {errors.form && (
-              <p className="text-sm text-red-500" role="alert">
+              <p className="text-sm text-error" role="alert">
                 {errors.form}
               </p>
             )}

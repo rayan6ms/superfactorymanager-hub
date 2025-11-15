@@ -99,17 +99,17 @@ export default function ResetPasswordRequestPage() {
                 autoComplete="email"
                 aria-invalid={Boolean(errors.email)}
               />
-              {errors.email && (
-                <p className="text-sm text-red-500" role="alert">
-                  {errors.email}
-                </p>
-              )}
-            </div>
-            {errors.form && (
-              <p className="text-sm text-red-500" role="alert">
-                {errors.form}
+            {errors.email && (
+              <p className="text-sm text-error" role="alert">
+                {errors.email}
               </p>
             )}
+            </div>
+          {errors.form && (
+            <p className="text-sm text-error" role="alert">
+              {errors.form}
+            </p>
+          )}
             <Button type="submit" className="w-full" disabled={state === "submitting"}>
               <Mail aria-hidden />
               Send me a reset link

@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCheck, Loader2, RefreshCw } from "lucide-react";
@@ -304,7 +306,7 @@ export default function NotificationCenter({
         </div>
       )}
 
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p className="text-sm text-error">{error}</p>}
     </div>
   );
 }

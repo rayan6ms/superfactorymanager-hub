@@ -55,6 +55,9 @@ export default function NotificationBell({
 
   const markAsRead = useCallback(async (ids: string[]) => {
     if (!ids.length) return;
+    const timestamp = new Date().toISOString();
+    const idSet = new Set(ids);
+    setNotifications(prev => prev.map(item => (idSet.has(item.id) ? { ...item, readAt: timestamp } : item)));
     try {
       const res = await fetch("/api/notifications", {
         method: "PATCH",
@@ -70,6 +73,13 @@ export default function NotificationBell({
       console.error(error);
     }
   }, []);
+
+  const handleInlineMark = useCallback(
+    async (id: string) => {
+      await markAsRead([id]);
+    },
+    [markAsRead],
+  );
 
   const loadNotifications = useCallback(async () => {
     setFetchState("loading");
@@ -137,6 +147,7 @@ export default function NotificationBell({
             emptyLabel="No notifications yet"
             dense
             className="max-h-80 overflow-y-auto pr-1"
+            onMarkRead={handleInlineMark}
           />
 
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
@@ -153,7 +164,7 @@ export default function NotificationBell({
           </div>
 
           {fetchState === "error" && (
-            <p className="mt-2 text-xs text-red-300">
+            <p className="mt-2 text-xs text-error">
               We couldn’t refresh notifications. Please try again.
             </p>
           )}

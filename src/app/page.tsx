@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
@@ -53,12 +54,11 @@ export default function Home() {
             <Link href={`/posts/${item.slug}`} className="block">
               <Card className="p-5" hoverable>
                 <div className="flex flex-col gap-4 sm:flex-row">
-                  {item.images?.[0]?.thumbSm ? (
+                  {item.images?.[0] ? (
                     <img
-                      src={item.images[0].thumbSm}
+                      src={item.images[0].thumbLg || item.images[0].thumbMd || item.images[0].thumbSm}
                       alt=""
-                      width={160}
-                      height={110}
+                      loading="lazy"
                       className="h-[120px] w-full rounded-xl border border-white/10 object-cover sm:w-40"
                     />
                   ) : (
@@ -88,8 +88,18 @@ export default function Home() {
                     <div className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-white/60">
                       <span>v{item.modVersion}</span>
                       <span>{viewsFormatter.format(item.views)} views</span>
-                      <span className="inline-flex items-center gap-1 text-white">
-                        <Star className="h-3 w-3 text-yellow-400" /> {(item.rating ?? 0).toFixed(1)} ({item.ratingCount ?? 0})
+                      <span className="inline-flex items-center gap-1 text-white/80">
+                        <Star className="h-3 w-3 text-amber-300" aria-hidden />
+                        {(() => {
+                          const worked = Math.max(Math.round(item.rating ?? 0), 0);
+                          const total = Math.max(item.ratingCount ?? 0, 0);
+                          const broken = Math.max(total - worked, 0);
+                          if (total === 0) {
+                            return "No votes yet";
+                          }
+                          const rate = Math.round((worked / total) * 100);
+                          return `${rate}% success (${worked}✓ / ${broken}✕)`;
+                        })()}
                       </span>
                       <span className="truncate text-white/50">by {item.authorName}</span>
                     </div>
