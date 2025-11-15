@@ -21,7 +21,7 @@ export async function isUsernameTaken(name: string, excludeUserId?: string): Pro
   if (!normalized) return false;
   const existing = await db.user.findFirst({
     where: {
-      name: { equals: normalized, mode: "insensitive" },
+      name: normalized,
       ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
     },
     select: { id: true },

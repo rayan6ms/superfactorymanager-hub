@@ -73,7 +73,10 @@ export async function GET(req: Request) {
           },
         });
         const map = new Map(items.map(i => [i.id, i]));
-        const ordered = ids.map((id: string) => map.get(id)).filter(Boolean).map(serializePost);
+        const ordered = ids
+          .map((id: string) => map.get(id))
+          .filter((post): post is PostWithRelations => Boolean(post))
+          .map(serializePost);
         return NextResponse.json({
           items: ordered,
           total: res.estimatedTotalHits ?? ordered.length,
@@ -93,6 +96,7 @@ export async function GET(req: Request) {
       { modVersion: { contains: q } },
       { category: { is: { name: { contains: q } } } },
       { category: { is: { key: { contains: q } } } },
+      { tags: { some: { tag: { name: { contains: q } } } } },
       { dependencies: { some: { name: { contains: q } } } },
     ];
 
@@ -163,11 +167,10 @@ export async function POST(req: Request) {
 
     const derivedAuthorName = user.name?.trim() || (user.email?.split("@")[0] ?? "user");
 
-    const category = await db.category.upsert({
-      where: { key: parsed.categoryKey },
-      update: {},
-      create: { key: parsed.categoryKey, name: parsed.categoryKey },
-    });
+    const category = await db.category.findUnique({ where: { key: parsed.categoryKey } });
+    if (!category) {
+      return NextResponse.json({ error: "INVALID_CATEGORY" }, { status: 400 });
+    }
 
     const slugBase = makeSlug(parsed.title);
     let slug = slugBase;
@@ -237,7 +240,13 @@ export async function POST(req: Request) {
           })),
         },
       },
-      include: { category: true, images: true, dependencies: true, tags: { include: { tag: true } } },
+      include: {
+        category: true,
+        images: true,
+        dependencies: true,
+        author: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
+      },
     });
 
     await indexPost(created);

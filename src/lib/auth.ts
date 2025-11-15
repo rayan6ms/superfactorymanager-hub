@@ -46,8 +46,8 @@ const providers: NextAuthConfig["providers"] = [
       const user = await db.user.findFirst({
         where: {
           OR: [
-            { email: { equals: identifier, mode: "insensitive" } },
-            { name: { equals: normalizedIdentifier, mode: "insensitive" } },
+            { email: normalizedIdentifier },
+            { name: normalizedIdentifier },
           ],
         },
       });
@@ -100,8 +100,7 @@ async function ensurePasswordReminderNotification(userId: string) {
       where: {
         userId,
         metadata: {
-          path: ["kind"],
-          equals: "password-reminder",
+          equals: { kind: "password-reminder" },
         },
       },
     });

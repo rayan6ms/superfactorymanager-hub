@@ -43,8 +43,8 @@ const INDENT = "    ";
 const MIN_HEIGHT = 256;
 const MAX_HEIGHT = 544;
 const DEFAULT_LINE_HEIGHT = "1.5rem";
-const CODE_PADDING_X = "1rem"; // Tailwind px-4
-const CODE_PADDING_Y = "0.75rem"; // Tailwind py-3
+const CODE_PADDING_X = "1rem";
+const CODE_PADDING_Y = "0.75rem";
 
 export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedBy, errorLines }: CodeBoxProps) {
   const deferredValue = useDeferredValue(value);

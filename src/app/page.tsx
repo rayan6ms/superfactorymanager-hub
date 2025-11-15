@@ -59,10 +59,10 @@ export default function Home() {
                       alt=""
                       width={160}
                       height={110}
-                      className="h-[120px] w-full rounded-xl border border-white/10 object-cover sm:w-[160px]"
+                      className="h-[120px] w-full rounded-xl border border-white/10 object-cover sm:w-40"
                     />
                   ) : (
-                    <div className="grid h-[120px] w-full place-items-center rounded-xl border border-white/10 bg-white/5 text-white/40 sm:w-[160px]">
+                    <div className="grid h-[120px] w-full place-items-center rounded-xl border border-white/10 bg-white/5 text-white/40 sm:w-40">
                       <Search className="h-5 w-5" />
                     </div>
                   )}

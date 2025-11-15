@@ -130,62 +130,6 @@ export default function NewPostForm() {
   const errorId = useCallback((key: FormErrorKey) => `${idPrefix}-${key}-error`, [idPrefix]);
   const codeWarningsId = `${idPrefix}-code-warnings`;
 
-  const formEvaluations = useMemo(() => {
-    const next: Record<FormErrorKey, string | null> = {
-      title: validateField("title", form.title, form),
-      gameVersion: validateField("gameVersion", form.gameVersion, form),
-      modVersion: validateField("modVersion", form.modVersion, form),
-      categoryKey: validateField("categoryKey", form.categoryKey, form),
-      description: validateField("description", form.description, form),
-      code: null,
-      youtubeUrl: validateField("youtubeUrl", form.youtubeUrl, form),
-      images: null,
-      tags: validateTags(tags),
-    };
-    const codeCheck = analyzeCode(form.code);
-    next.code = codeCheck.message;
-    const imageMessage = limitedByMax
-      ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-      : computeImagesError(mediaFiles);
-    next.images = imageMessage;
-    return next;
-  }, [
-    form,
-    validateField,
-    analyzeCode,
-    limitedByMax,
-    computeImagesError,
-    mediaFiles,
-    validateTags,
-    tags,
-  ]);
-
-  const blockingMessages = useMemo(() => {
-    const unique = new Set<string>();
-    Object.values(formEvaluations).forEach(message => {
-      if (message) unique.add(message);
-    });
-    return Array.from(unique);
-  }, [formEvaluations]);
-
-  const publishDisabled = loading || blockingMessages.length > 0;
-
-  const markTouched = useCallback((key: FormErrorKey) => {
-    setTouched(prev => (prev[key] ? prev : { ...prev, [key]: true }));
-  }, []);
-
-  const touchAll = useCallback(() => {
-    setTouched(prev => {
-      const next: Record<FormErrorKey, boolean> = { ...prev };
-      (Object.keys(next) as FormErrorKey[]).forEach(k => {
-        next[k] = true;
-      });
-      return next;
-    });
-  }, []);
-
-  const shouldShowError = (key: FormErrorKey) => !!errors[key] && (submitted || touched[key]);
-
   const computeImagesError = useCallback((list: File[]) => {
     if (!list.length) return "Upload at least one image to showcase your build.";
     if (list.length > MAX_IMAGE_COUNT) {
@@ -327,6 +271,62 @@ export default function NewPostForm() {
     }
     return null;
   }, []);
+
+  const formEvaluations = useMemo(() => {
+    const next: Record<FormErrorKey, string | null> = {
+      title: validateField("title", form.title, form),
+      gameVersion: validateField("gameVersion", form.gameVersion, form),
+      modVersion: validateField("modVersion", form.modVersion, form),
+      categoryKey: validateField("categoryKey", form.categoryKey, form),
+      description: validateField("description", form.description, form),
+      code: null,
+      youtubeUrl: validateField("youtubeUrl", form.youtubeUrl, form),
+      images: null,
+      tags: validateTags(tags),
+    };
+    const codeCheck = analyzeCode(form.code);
+    next.code = codeCheck.message;
+    const imageMessage = limitedByMax
+      ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+      : computeImagesError(mediaFiles);
+    next.images = imageMessage;
+    return next;
+  }, [
+    form,
+    validateField,
+    analyzeCode,
+    limitedByMax,
+    computeImagesError,
+    mediaFiles,
+    validateTags,
+    tags,
+  ]);
+
+  const blockingMessages = useMemo(() => {
+    const unique = new Set<string>();
+    Object.values(formEvaluations).forEach(message => {
+      if (message) unique.add(message);
+    });
+    return Array.from(unique);
+  }, [formEvaluations]);
+
+  const publishDisabled = loading || blockingMessages.length > 0;
+
+  const markTouched = useCallback((key: FormErrorKey) => {
+    setTouched(prev => (prev[key] ? prev : { ...prev, [key]: true }));
+  }, []);
+
+  const touchAll = useCallback(() => {
+    setTouched(prev => {
+      const next: Record<FormErrorKey, boolean> = { ...prev };
+      (Object.keys(next) as FormErrorKey[]).forEach(k => {
+        next[k] = true;
+      });
+      return next;
+    });
+  }, []);
+
+  const shouldShowError = (key: FormErrorKey) => !!errors[key] && (submitted || touched[key]);
 
   const tryAddTag = useCallback(
     (raw: string) => {
@@ -703,7 +703,7 @@ export default function NewPostForm() {
                 <select
                   id="gameVersion"
                   className={clsx(
-                    "h-12 w-full rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 text-sm font-medium text-white focus:ring-2",
+                    "h-12 w-full rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 text-sm font-medium text-white focus:ring-2",
                     shouldShowError("gameVersion")
                       ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
                       : "focus:border-brand-400 focus:ring-brand-400"
@@ -736,7 +736,7 @@ export default function NewPostForm() {
                   <select
                     id="modVersion"
                     className={clsx(
-                      "h-12 w-full appearance-none rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 text-sm font-medium text-white focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
+                      "h-12 w-full appearance-none rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 text-sm font-medium text-white focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
                       shouldShowError("modVersion")
                         ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
                         : "focus:border-brand-400 focus:ring-brand-400"
@@ -778,7 +778,7 @@ export default function NewPostForm() {
               <select
                 id="categoryKey"
                 className={clsx(
-                  "h-12 w-full rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 text-sm font-medium text-white focus:ring-2",
+                  "h-12 w-full rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 text-sm font-medium text-white focus:ring-2",
                   shouldShowError("categoryKey")
                     ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
                     : "focus:border-brand-400 focus:ring-brand-400"
@@ -893,7 +893,7 @@ export default function NewPostForm() {
             <textarea
               id="description"
               className={clsx(
-                "min-h-[8rem] w-full rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:ring-2",
+                "min-h-32 w-full rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:ring-2",
                 shouldShowError("description")
                   ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
                   : "focus:border-brand-400 focus:ring-brand-400"
@@ -924,10 +924,10 @@ export default function NewPostForm() {
 
           <div className="space-y-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="flex-1 space-y-2">
-                  <label htmlFor="dependency" className="text-sm font-medium text-white/75">
-                    Dependency URL <span className="text-white/45">(optional)</span>
-                  </label>
+              <div className="flex-1 space-y-2">
+                <label htmlFor="dependency" className="text-sm font-medium text-white/75">
+                  Dependency URL <span className="text-white/45">(optional)</span>
+                </label>
                 <Input
                   id="dependency"
                   placeholder="Paste a CurseForge or Modrinth link"

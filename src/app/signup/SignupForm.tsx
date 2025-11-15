@@ -33,7 +33,7 @@ function mapUsernameError(code: UsernameValidationCode | "NAME_TAKEN"): string {
     case "NAME_TOO_LONG":
       return `Name must be at most ${USERNAME_MAX_LENGTH} characters.`;
     case "NAME_INVALID":
-      return "Use only letters, numbers, hyphens, or underscores.";
+      return "Use only letters, numbers, hyphens, or underscores. No spaces or symbols.";
     case "NAME_TAKEN":
       return "That name is already taken.";
     default:

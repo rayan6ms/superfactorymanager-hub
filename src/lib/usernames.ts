@@ -1,7 +1,7 @@
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 32;
 export const USERNAME_REGEX = /^[A-Za-z0-9_-]+$/;
-export const USERNAME_HELP_TEXT = "Use 3-32 characters with letters, numbers, hyphens, or underscores. Usernames are stored in lowercase.";
+export const USERNAME_HELP_TEXT = "Use 3-32 characters with no symbols or spaces. Usernames are stored in lowercase.";
 
 export type UsernameValidationCode =
   | "NAME_REQUIRED"

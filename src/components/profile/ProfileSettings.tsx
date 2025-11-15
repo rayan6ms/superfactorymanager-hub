@@ -66,7 +66,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       case "NAME_TOO_LONG":
         return `Name must be at most ${USERNAME_MAX_LENGTH} characters.`;
       case "NAME_INVALID":
-        return "Use only letters, numbers, hyphens, or underscores.";
+        return "Use only letters, numbers, hyphens, or underscores. No spaces or symbols.";
       case "NAME_TAKEN":
         return "That name is already taken.";
       default:
@@ -167,7 +167,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
         </div>
         <div className="flex-1 space-y-3">
           <div>
-            <label className="text-sm font-semibold text-white">Display name</label>
+            <label className="text-sm font-semibold text-white">Username</label>
             <Input
               value={name}
               onChange={event => {

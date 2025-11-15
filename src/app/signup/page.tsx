@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import SignupForm from "./SignupForm";
 
 type SignupPageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams: Promise<{ next?: string | string[] }>;
 };
 
 function resolveNext(param: unknown): string {
@@ -13,7 +13,8 @@ function resolveNext(param: unknown): string {
 }
 
 export default async function SignupPage({ searchParams }: SignupPageProps) {
-  const nextParam = searchParams?.next;
+  const resolved = await searchParams;
+  const nextParam = resolved?.next;
   const next = Array.isArray(nextParam) ? nextParam[0] : nextParam;
   const safeNext = resolveNext(next);
 

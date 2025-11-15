@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-white/15 bg-[var(--surface)]/85">
+    <footer className="mt-auto border-t border-white/15 bg-(--surface)/85">
       <div
         className="container-max py-6 text-sm text-white/65"
         style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center" }}
