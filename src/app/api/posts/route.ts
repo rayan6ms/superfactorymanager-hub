@@ -1,13 +1,36 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { postSchema, searchQuerySchema } from "@/lib/validation";
+import type { Prisma } from "@prisma/client";
+import { TAG_MIN_COUNT, postSchema, searchQuerySchema } from "@/lib/validation";
 import { makeSlug } from "@/lib/slug";
 import { indexPost } from "@/lib/search";
-import { toEmbed } from "@/lib/youtube";
+import { analyzeYoutubeUrl, toEmbed } from "@/lib/youtube";
 import { normalizeImages } from "@/lib/images";
 import { parseDependency, type ParsedDep } from "@/lib/deps";
 import { getSfmMatrix } from "@/lib/sfm";
+import { normalizeTags } from "@/lib/tags";
+
+type PostWithRelations = Prisma.PostGetPayload<{
+  include: {
+    category: true;
+    images: true;
+    dependencies: true;
+    author: { select: { id: true; name: true } };
+    tags: { include: { tag: true } };
+  };
+}>;
+
+type PostTagWithTag = Prisma.PostTagGetPayload<{ include: { tag: true } }>;
+
+type SerializedPost = Omit<PostWithRelations, "tags"> & { tags: PostTagWithTag["tag"][] };
+
+const serializePost = (post: PostWithRelations): SerializedPost => ({
+  ...post,
+  tags: (post.tags ?? [])
+    .map(({ tag }) => tag)
+    .filter((tag): tag is PostTagWithTag["tag"] => Boolean(tag)),
+});
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -21,7 +44,7 @@ export async function GET(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Bad query" }, { status: 400 });
   const { q, category, version, page, perPage } = parsed.data;
 
-  const baseWhere: any = {};
+  const baseWhere: Prisma.PostWhereInput = {};
   if (category) baseWhere.category = { key: category };
   if (version) baseWhere.modVersion = version;
   if (q && q.trim().length) {
@@ -46,10 +69,11 @@ export async function GET(req: Request) {
             images: true,
             dependencies: true,
             author: { select: { id: true, name: true } },
+            tags: { include: { tag: true } },
           },
         });
         const map = new Map(items.map(i => [i.id, i]));
-        const ordered = ids.map((id: string) => map.get(id)).filter(Boolean);
+        const ordered = ids.map((id: string) => map.get(id)).filter(Boolean).map(serializePost);
         return NextResponse.json({
           items: ordered,
           total: res.estimatedTotalHits ?? ordered.length,
@@ -80,6 +104,7 @@ export async function GET(req: Request) {
         images: true,
         dependencies: true,
         author: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
       },
       skip: (page - 1) * perPage,
       take: perPage,
@@ -89,7 +114,7 @@ export async function GET(req: Request) {
       where: { ...baseWhere, OR: or },
     });
 
-    return NextResponse.json({ items, total, page, perPage });
+    return NextResponse.json({ items: items.map(serializePost), total, page, perPage });
   }
 
   const [items, total] = await Promise.all([
@@ -101,6 +126,7 @@ export async function GET(req: Request) {
         images: true,
         dependencies: true,
         author: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
       },
       skip: (page - 1) * perPage,
       take: perPage,
@@ -108,7 +134,7 @@ export async function GET(req: Request) {
     db.post.count({ where: baseWhere }),
   ]);
 
-  return NextResponse.json({ items, total, page, perPage });
+  return NextResponse.json({ items: items.map(serializePost), total, page, perPage });
 }
 
 export async function POST(req: Request) {
@@ -125,6 +151,11 @@ export async function POST(req: Request) {
     const modsForGame = byGame[parsed.gameVersion] || [];
     if (!modsForGame.includes(parsed.modVersion)) {
       return NextResponse.json({ error: `Mod version ${parsed.modVersion} is not available for Minecraft ${parsed.gameVersion}` }, { status: 400 });
+    }
+
+    const normalizedTags = normalizeTags(parsed.tags);
+    if (normalizedTags.length < TAG_MIN_COUNT) {
+      return NextResponse.json({ error: "Add more distinct tags to describe your post." }, { status: 400 });
     }
 
     const user = await db.user.findUnique({ where: { email: session.user.email } });
@@ -150,9 +181,13 @@ export async function POST(req: Request) {
       .map(parseDependency)
       .filter((d): d is ParsedDep => d !== null);
 
-    const yt = parsed.youtubeUrl ? toEmbed(parsed.youtubeUrl) : null;
-    if (parsed.youtubeUrl && !yt) {
-      return NextResponse.json({ error: "Invalid YouTube URL" }, { status: 400 });
+    let yt: string | null = null;
+    if (parsed.youtubeUrl) {
+      const ytCheck = analyzeYoutubeUrl(parsed.youtubeUrl);
+      if (!ytCheck.ok) {
+        return NextResponse.json({ error: ytCheck.message }, { status: 400 });
+      }
+      yt = toEmbed(parsed.youtubeUrl);
     }
 
     let codeStatus: "VERIFIED" | "UNVERIFIED" | "BROKEN" = "UNVERIFIED";
@@ -191,13 +226,24 @@ export async function POST(req: Request) {
             url: d.url,
           }))
         },
+        tags: {
+          create: normalizedTags.map(tag => ({
+            tag: {
+              connectOrCreate: {
+                where: { slug: tag.slug },
+                create: { slug: tag.slug, name: tag.name },
+              },
+            },
+          })),
+        },
       },
-      include: { category: true, images: true, dependencies: true },
+      include: { category: true, images: true, dependencies: true, tags: { include: { tag: true } } },
     });
 
     await indexPost(created);
-    return NextResponse.json(created, { status: 201 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+    return NextResponse.json(serializePost(created), { status: 201 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Invalid request";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

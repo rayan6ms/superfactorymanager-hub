@@ -1,6 +1,19 @@
 import { z } from "zod";
 import { MAX_POST_IMAGES } from "./images";
 
+export const TAG_MIN_COUNT = 2;
+export const TAG_MAX_COUNT = 6;
+export const MAX_TAG_LENGTH = 32;
+
+export const tagSchema = z
+  .string()
+  .trim()
+  .min(2, { message: "Tags must be at least 2 characters long." })
+  .max(MAX_TAG_LENGTH, { message: `Tags must be ${MAX_TAG_LENGTH} characters or fewer.` })
+  .regex(/^[\p{L}\p{N}\s\-_/]+$/u, {
+    message: "Tags may include letters, numbers, spaces, hyphens, underscores, and slashes.",
+  });
+
 export const dependencyUrl = z.url().refine((u) => {
   try {
     const url = new URL(u);
@@ -13,6 +26,23 @@ export const postSchema = z.object({
   gameVersion: z.string().min(1),
   modVersion: z.string().min(1),
   categoryKey: z.string().min(1),
+  tags: z
+    .array(tagSchema)
+    .max(TAG_MAX_COUNT, { message: `Use up to ${TAG_MAX_COUNT} tags.` })
+    .transform(values => {
+      const seen = new Set<string>();
+      return values
+        .map(value => value.trim().replace(/\s+/g, " "))
+        .filter(value => {
+          const lower = value.toLowerCase();
+          if (seen.has(lower)) return false;
+          seen.add(lower);
+          return true;
+        });
+    })
+    .refine(values => values.length >= TAG_MIN_COUNT, {
+      message: `Add at least ${TAG_MIN_COUNT} tags.`,
+    }),
 
   images: z.array(
     z.union([

@@ -11,8 +11,17 @@ export const postsIndex = () => client.index("posts");
 export async function ensureIndexes() {
   const index = postsIndex();
   await index.updateSettings({
-    searchableAttributes: ["title", "description", "code", "dependencies", "authorName", "modVersion", "categoryKey"],
-    filterableAttributes: ["modVersion", "categoryKey"],
+    searchableAttributes: [
+      "title",
+      "description",
+      "code",
+      "dependencies",
+      "authorName",
+      "modVersion",
+      "categoryKey",
+      "tags",
+    ],
+    filterableAttributes: ["modVersion", "categoryKey", "tags"],
     sortableAttributes: ["uploadDate", "views", "rating"],
   });
 }
@@ -25,6 +34,7 @@ export async function indexPost(p: any) {
     description: p.description,
     code: p.code,
     dependencies: p.dependencies?.map((d: any) => d.name) ?? [],
+    tags: p.tags?.map((t: any) => t.tag?.name ?? t.tagName ?? "")?.filter(Boolean) ?? [],
     authorName: p.authorName,
     modVersion: p.modVersion,
     categoryKey: p.category?.key ?? null,
@@ -41,7 +51,7 @@ export async function removePost(id: string) {
 
 export async function reindexAll() {
   const items = await db.post.findMany({
-    include: { dependencies: true, category: true },
+    include: { dependencies: true, category: true, tags: { include: { tag: true } } },
   });
   await postsIndex().deleteAllDocuments();
   await postsIndex().addDocuments(items.map(p => ({
@@ -51,6 +61,7 @@ export async function reindexAll() {
     description: p.description,
     code: p.code,
     dependencies: p.dependencies.map(d => d.name),
+    tags: p.tags.map(t => t.tag.name),
     authorName: p.authorName,
     modVersion: p.modVersion,
     categoryKey: p.category?.key ?? null,

@@ -6,7 +6,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   const { slug } = await ctx.params;
   const post = await db.post.findUnique({
     where: { slug: slug },
-    include: { category: true, images: true, dependencies: true, author: true },
+    include: { category: true, images: true, dependencies: true, author: true, tags: { include: { tag: true } } },
   }).catch(() => null);
 
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });

@@ -3,23 +3,25 @@
 import { useCallback, useEffect, useMemo, useState, useId } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
-import { Images, UploadCloud } from "lucide-react";
+import { Images, Loader2, Tag as TagIcon, UploadCloud } from "lucide-react";
 import { CodeBox } from "@/components/CodeBox";
 import { Card, Button, Input } from "@/components/ui";
 import { validateSyntax, type SyntaxErrorItem } from "@/lib/sfml/syntax";
 import { collectWarnings, type WarningItem } from "@/lib/sfml/warnings";
 import { MAX_POST_IMAGES } from "@/lib/images";
+import { MAX_TAG_LENGTH, TAG_MAX_COUNT, TAG_MIN_COUNT, tagSchema } from "@/lib/validation";
+import { analyzeYoutubeUrl } from "@/lib/youtube";
+import { normalizeTag, type NormalizedTag } from "@/lib/tags";
 
 const MAX_IMAGE_MB = 5;
 const MAX_IMAGE_COUNT = MAX_POST_IMAGES;
 const MAX_TITLE_LENGTH = 120;
 const MIN_DESCRIPTION_LENGTH = 50;
-const CATEGORY_KEY_PATTERN = /^[a-z0-9]+(?:[\-/][a-z0-9]+)*$/i;
 const CONTROL_CHAR_REGEX = /[\x00-\x08\x0B\x0C\x0E-\x1F]/;
 const CODE_ANALYZE_DEBOUNCE = 350;
-const YOUTUBE_REGEX = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
 
 type Matrix = { byGame: Record<string, string[]>; gameVersions: string[] };
+type CategoryOption = { key: string; name: string };
 type FormState = {
   title: string;
   gameVersion: string;
@@ -30,13 +32,20 @@ type FormState = {
   youtubeUrl: string;
 };
 
-type FormErrorKey = keyof FormState | "images";
+type FormErrorKey = keyof FormState | "images" | "tags";
 
 type CodeFeedback = {
   status: "idle" | "ok" | "error";
   message: string | null;
   syntaxErrors: SyntaxErrorItem[];
   warnings: WarningItem[];
+};
+
+type YoutubePreview = {
+  title: string;
+  author: string;
+  thumbnail: string | null;
+  source: string;
 };
 
 const INITIAL_ERRORS: Record<FormErrorKey, string | null> = {
@@ -48,6 +57,7 @@ const INITIAL_ERRORS: Record<FormErrorKey, string | null> = {
   code: null,
   youtubeUrl: null,
   images: null,
+  tags: null,
 };
 
 const INITIAL_TOUCHED: Record<FormErrorKey, boolean> = {
@@ -59,6 +69,7 @@ const INITIAL_TOUCHED: Record<FormErrorKey, boolean> = {
   code: false,
   youtubeUrl: false,
   images: false,
+  tags: false,
 };
 
 function SectionTitle({ title, description }: { title: string; description?: string }) {
@@ -75,6 +86,9 @@ export default function NewPostForm() {
   const idPrefix = useId();
 
   const [matrix, setMatrix] = useState<Matrix>({ byGame: {}, gameVersions: [] });
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>({
     title: "",
     gameVersion: "",
@@ -84,6 +98,9 @@ export default function NewPostForm() {
     code: "",
     youtubeUrl: "",
   });
+  const [tags, setTags] = useState<NormalizedTag[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [tagError, setTagError] = useState<string | null>(null);
   const [depsInput, setDepsInput] = useState("");
   const [deps, setDeps] = useState<{ url: string; name: string }[]>([]);
   const [depError, setDepError] = useState<string | null>(null);
@@ -96,7 +113,12 @@ export default function NewPostForm() {
     syntaxErrors: [],
     warnings: [],
   });
+  const [youtubePreview, setYoutubePreview] = useState<YoutubePreview | null>(null);
+  const [youtubePreviewStatus, setYoutubePreviewStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [youtubePreviewMessage, setYoutubePreviewMessage] = useState<string | null>(null);
+  const [youtubePreviewSource, setYoutubePreviewSource] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [limitedByMax, setLimitedByMax] = useState(false);
@@ -107,6 +129,46 @@ export default function NewPostForm() {
   }, [mediaFiles]);
   const errorId = useCallback((key: FormErrorKey) => `${idPrefix}-${key}-error`, [idPrefix]);
   const codeWarningsId = `${idPrefix}-code-warnings`;
+
+  const formEvaluations = useMemo(() => {
+    const next: Record<FormErrorKey, string | null> = {
+      title: validateField("title", form.title, form),
+      gameVersion: validateField("gameVersion", form.gameVersion, form),
+      modVersion: validateField("modVersion", form.modVersion, form),
+      categoryKey: validateField("categoryKey", form.categoryKey, form),
+      description: validateField("description", form.description, form),
+      code: null,
+      youtubeUrl: validateField("youtubeUrl", form.youtubeUrl, form),
+      images: null,
+      tags: validateTags(tags),
+    };
+    const codeCheck = analyzeCode(form.code);
+    next.code = codeCheck.message;
+    const imageMessage = limitedByMax
+      ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+      : computeImagesError(mediaFiles);
+    next.images = imageMessage;
+    return next;
+  }, [
+    form,
+    validateField,
+    analyzeCode,
+    limitedByMax,
+    computeImagesError,
+    mediaFiles,
+    validateTags,
+    tags,
+  ]);
+
+  const blockingMessages = useMemo(() => {
+    const unique = new Set<string>();
+    Object.values(formEvaluations).forEach(message => {
+      if (message) unique.add(message);
+    });
+    return Array.from(unique);
+  }, [formEvaluations]);
+
+  const publishDisabled = loading || blockingMessages.length > 0;
 
   const markTouched = useCallback((key: FormErrorKey) => {
     setTouched(prev => (prev[key] ? prev : { ...prev, [key]: true }));
@@ -125,7 +187,7 @@ export default function NewPostForm() {
   const shouldShowError = (key: FormErrorKey) => !!errors[key] && (submitted || touched[key]);
 
   const computeImagesError = useCallback((list: File[]) => {
-    if (!list.length) return null;
+    if (!list.length) return "Upload at least one image to showcase your build.";
     if (list.length > MAX_IMAGE_COUNT) {
       return `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`;
     }
@@ -200,9 +262,13 @@ export default function NewPostForm() {
         return null;
       }
       case "categoryKey": {
-        if (!trimmed) return "Category key is required.";
-        if (!CATEGORY_KEY_PATTERN.test(trimmed)) {
-          return "Use lowercase letters, numbers, slashes, or hyphens only (e.g. factories/automation).";
+        if (categoriesLoading) return null;
+        if (categoriesError && !categories.length) {
+          return "Categories failed to load. Try refreshing the page.";
+        }
+        if (!trimmed) return "Choose a category for your post.";
+        if (!categories.find(category => category.key === trimmed)) {
+          return "Pick one of the available categories.";
         }
         return null;
       }
@@ -217,12 +283,13 @@ export default function NewPostForm() {
         return trimmed ? null : "Code is required.";
       case "youtubeUrl": {
         if (!trimmed) return null;
-        return YOUTUBE_REGEX.test(trimmed) ? null : "Enter a valid YouTube video URL.";
+        const analysis = analyzeYoutubeUrl(trimmed);
+        return analysis.ok ? null : analysis.message;
       }
       default:
         return null;
     }
-  }, [matrix]);
+  }, [categories, categoriesError, categoriesLoading, matrix]);
 
   const change = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (key === "code") {
@@ -251,12 +318,132 @@ export default function NewPostForm() {
     });
   }, [validateField]);
 
+  const validateTags = useCallback((list: NormalizedTag[]): string | null => {
+    if (list.length < TAG_MIN_COUNT) {
+      return `Add at least ${TAG_MIN_COUNT} tags.`;
+    }
+    if (list.length > TAG_MAX_COUNT) {
+      return `Use up to ${TAG_MAX_COUNT} tags.`;
+    }
+    return null;
+  }, []);
+
+  const tryAddTag = useCallback(
+    (raw: string) => {
+      const trimmed = raw.trim();
+      if (!trimmed) return false;
+      const parsed = tagSchema.safeParse(trimmed);
+      if (!parsed.success) {
+        setTagError(parsed.error.issues?.[0]?.message ?? "Invalid tag.");
+        return false;
+      }
+      const normalized = normalizeTag(parsed.data);
+      let error: string | null = null;
+      let added = false;
+      setTags(prev => {
+        if (prev.some(tag => tag.slug === normalized.slug)) {
+          error = "This tag is already added.";
+          return prev;
+        }
+        if (prev.length >= TAG_MAX_COUNT) {
+          error = `You can add up to ${TAG_MAX_COUNT} tags.`;
+          return prev;
+        }
+        added = true;
+        return [...prev, normalized];
+      });
+      if (error) {
+        setTagError(error);
+        return false;
+      }
+      if (added) {
+        setTagError(null);
+        markTouched("tags");
+      }
+      return added;
+    },
+    [markTouched]
+  );
+
+  const addTagsFromInput = useCallback(
+    (values: string[]) => {
+      values.forEach(value => {
+        void tryAddTag(value);
+      });
+    },
+    [tryAddTag]
+  );
+
+  const handleTagInputChange = useCallback(
+    (value: string) => {
+      setTagError(null);
+      if (value.includes(",")) {
+        const parts = value.split(",");
+        const last = parts.pop() ?? "";
+        addTagsFromInput(parts);
+        setTagInput(last);
+        return;
+      }
+      setTagInput(value);
+    },
+    [addTagsFromInput]
+  );
+
+  const commitTagInput = useCallback(() => {
+    if (!tagInput.trim()) {
+      setTagInput("");
+      return;
+    }
+    if (tryAddTag(tagInput)) {
+      setTagInput("");
+    }
+  }, [tagInput, tryAddTag]);
+
+  const removeTag = useCallback(
+    (slug: string) => {
+      setTags(prev => prev.filter(tag => tag.slug !== slug));
+      setTagError(null);
+      markTouched("tags");
+    },
+    [markTouched]
+  );
+
   useEffect(() => {
     (async () => {
       const res = await fetch("/api/meta/sfm/versions");
       const data = await res.json();
       setMatrix(data);
     })();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setCategoriesLoading(true);
+    setCategoriesError(null);
+    (async () => {
+      try {
+        const res = await fetch("/api/meta/categories");
+        const data = await res.json();
+        if (!active) return;
+        if (!res.ok) {
+          setCategoriesError(data.error || "Could not load categories.");
+          setCategories([]);
+        } else {
+          setCategories(Array.isArray(data.categories) ? data.categories : []);
+        }
+      } catch {
+        if (!active) return;
+        setCategoriesError("Could not load categories.");
+        setCategories([]);
+      } finally {
+        if (active) {
+          setCategoriesLoading(false);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const modOptions = useMemo(
@@ -267,6 +454,11 @@ export default function NewPostForm() {
   useEffect(() => {
     change("modVersion", "");
   }, [form.gameVersion, change]);
+
+  useEffect(() => {
+    const message = validateTags(tags);
+    setErrors(prev => (prev.tags === message ? prev : { ...prev, tags: message }));
+  }, [tags, validateTags]);
 
   useEffect(() => {
     if (mediaFiles.length < MAX_IMAGE_COUNT && limitedByMax) {
@@ -314,6 +506,60 @@ export default function NewPostForm() {
     });
   }, [codeFeedback.message]);
 
+  useEffect(() => {
+    const raw = form.youtubeUrl.trim();
+    if (!raw) {
+      setYoutubePreview(null);
+      setYoutubePreviewSource(null);
+      setYoutubePreviewStatus("idle");
+      setYoutubePreviewMessage(null);
+      return;
+    }
+    const analysis = analyzeYoutubeUrl(raw);
+    if (!analysis.ok) {
+      setYoutubePreview(null);
+      setYoutubePreviewSource(null);
+      setYoutubePreviewStatus("idle");
+      setYoutubePreviewMessage(null);
+      return;
+    }
+    if (youtubePreviewSource === raw) return;
+    let active = true;
+    setYoutubePreviewStatus("loading");
+    setYoutubePreviewMessage(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/meta/youtube?url=${encodeURIComponent(raw)}`);
+        const data = await res.json();
+        if (!active) return;
+        if (!res.ok) {
+          setYoutubePreview(null);
+          setYoutubePreviewSource(null);
+          setYoutubePreviewStatus("error");
+          setYoutubePreviewMessage(data.error || "Could not load video preview.");
+          return;
+        }
+        setYoutubePreview({
+          title: data.title,
+          author: data.author,
+          thumbnail: data.thumbnail,
+          source: raw,
+        });
+        setYoutubePreviewSource(raw);
+        setYoutubePreviewStatus("idle");
+      } catch {
+        if (!active) return;
+        setYoutubePreview(null);
+        setYoutubePreviewSource(null);
+        setYoutubePreviewStatus("error");
+        setYoutubePreviewMessage("Could not load video preview.");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [form.youtubeUrl, youtubePreviewSource]);
+
   const addDep = async () => {
     const raw = depsInput.trim();
     setDepError(null);
@@ -339,23 +585,25 @@ export default function NewPostForm() {
   const submit = async () => {
     setSubmitted(true);
     touchAll();
+    setSubmitError(null);
 
+    const codeAnalysis = analyzeCode(form.code);
+    setCodeFeedback(codeAnalysis);
+    const imageMessage = limitedByMax
+      ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+      : computeImagesError(mediaFiles);
+    const tagMessage = validateTags(tags);
     const nextErrors: Record<FormErrorKey, string | null> = {
       title: validateField("title", form.title, form),
       gameVersion: validateField("gameVersion", form.gameVersion, form),
       modVersion: validateField("modVersion", form.modVersion, form),
       categoryKey: validateField("categoryKey", form.categoryKey, form),
       description: validateField("description", form.description, form),
-      code: null,
+      code: codeAnalysis.message,
       youtubeUrl: validateField("youtubeUrl", form.youtubeUrl, form),
-      images: limitedByMax
-        ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-        : computeImagesError(mediaFiles),
+      images: imageMessage,
+      tags: tagMessage,
     };
-
-    const codeAnalysis = analyzeCode(form.code);
-    setCodeFeedback(codeAnalysis);
-    nextErrors.code = codeAnalysis.message;
 
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
@@ -368,6 +616,7 @@ export default function NewPostForm() {
         modVersion: form.modVersion,
         categoryKey: form.categoryKey.trim(),
         dependencies: deps.map(d => d.url),
+        tags: tags.map(tag => tag.name),
         images: [],
         code: form.code,
         description: form.description.trim(),
@@ -378,16 +627,33 @@ export default function NewPostForm() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.error || "Failed"); setLoading(false); return; }
+      if (!res.ok) {
+        setSubmitError(data.error || "We couldn't publish your post. Check the details and try again.");
+        return;
+      }
 
       if (mediaFiles.length) {
         for (const f of mediaFiles) {
           const fd = new FormData();
           fd.append("file", f);
-          await fetch(`/api/uploads/${data.id}`, { method: "POST", body: fd });
+          const uploadRes = await fetch(`/api/uploads/${data.id}`, { method: "POST", body: fd });
+          if (!uploadRes.ok) {
+            let uploadMessage = "Failed to upload one of the images.";
+            try {
+              const uploadData = await uploadRes.json();
+              if (uploadData?.error) uploadMessage = uploadData.error;
+            } catch {
+              // ignore parse error
+            }
+            setSubmitError(uploadMessage);
+            return;
+          }
         }
       }
       r.push(`/posts/${data.slug}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Something went wrong while publishing your post.";
+      setSubmitError(message);
     } finally {
       setLoading(false);
     }
@@ -507,27 +773,108 @@ export default function NewPostForm() {
 
             <div className="space-y-2">
               <label htmlFor="categoryKey" className="text-sm font-medium text-white/75">
-                Category key
+                Category
               </label>
-              <Input
+              <select
                 id="categoryKey"
-                placeholder="e.g. factories/automation"
+                className={clsx(
+                  "h-12 w-full rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 text-sm font-medium text-white focus:ring-2",
+                  shouldShowError("categoryKey")
+                    ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
+                    : "focus:border-brand-400 focus:ring-brand-400"
+                )}
                 value={form.categoryKey}
                 onChange={e => change("categoryKey", e.target.value)}
                 onBlur={() => markTouched("categoryKey")}
+                disabled={categoriesLoading && !categories.length}
                 aria-invalid={shouldShowError("categoryKey") || undefined}
                 aria-describedby={shouldShowError("categoryKey") ? errorId("categoryKey") : undefined}
-                className={clsx(
-                  shouldShowError("categoryKey") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
-                )}
-              />
-              <p className="text-xs text-white/45">
-                Use lowercase letters, numbers, slashes, or hyphens to group similar posts.
-              </p>
+              >
+                <option value="">
+                  {categoriesLoading ? "Loading categories…" : "Select a category…"}
+                </option>
+                {categories.map(category => (
+                  <option key={category.key} value={category.key}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              {categoriesError && <p className="text-xs text-amber-300">{categoriesError}</p>}
               {shouldShowError("categoryKey") && errors.categoryKey && (
                 <p id={errorId("categoryKey")} className="text-sm text-red-400">
                   {errors.categoryKey}
                 </p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <label htmlFor="tags" className="text-sm font-medium text-white/75">
+                Tags <span className="text-white/45">({TAG_MIN_COUNT}–{TAG_MAX_COUNT} required)</span>
+              </label>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex-1 space-y-2">
+                  <Input
+                    id="tags"
+                    placeholder="Add tags like automation, redstone, megabase"
+                    value={tagInput}
+                    onChange={e => handleTagInputChange(e.target.value)}
+                    onBlur={() => markTouched("tags")}
+                    onKeyDown={event => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        commitTagInput();
+                      }
+                    }}
+                    aria-invalid={shouldShowError("tags") || undefined}
+                    aria-describedby={shouldShowError("tags") ? errorId("tags") : undefined}
+                    disabled={tags.length >= TAG_MAX_COUNT}
+                    className={clsx(
+                      shouldShowError("tags") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
+                    )}
+                  />
+                  <p className="text-xs text-white/60">
+                    Separate tags with commas or use the add button. Each tag can be up to {MAX_TAG_LENGTH} characters.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                  onClick={commitTagInput}
+                  disabled={tags.length >= TAG_MAX_COUNT}
+                >
+                  <TagIcon className="h-4 w-4" /> Add tag
+                </Button>
+              </div>
+              {tagError && <p className="text-sm text-red-400">{tagError}</p>}
+              {shouldShowError("tags") && errors.tags && (
+                <p id={errorId("tags")} className="text-sm text-red-400">
+                  {errors.tags}
+                </p>
+              )}
+              {!!tags.length && (
+                <div className="flex flex-wrap gap-2">
+                  {tags.map(tag => (
+                    <span
+                      key={tag.slug}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-sm text-white/85"
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        <TagIcon className="h-3 w-3 text-white/60" />
+                        {tag.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag.slug)}
+                        className="rounded-full border border-white/20 px-2 py-0.5 text-xs font-semibold text-white/60 transition hover:border-white/40 hover:text-white"
+                        aria-label={`Remove tag ${tag.name}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -577,10 +924,10 @@ export default function NewPostForm() {
 
           <div className="space-y-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="flex-1 space-y-2">
-                <label htmlFor="dependency" className="text-sm font-medium text-white/75">
-                  Dependency URL
-                </label>
+                <div className="flex-1 space-y-2">
+                  <label htmlFor="dependency" className="text-sm font-medium text-white/75">
+                    Dependency URL <span className="text-white/45">(optional)</span>
+                  </label>
                 <Input
                   id="dependency"
                   placeholder="Paste a CurseForge or Modrinth link"
@@ -654,6 +1001,38 @@ export default function NewPostForm() {
                 <p id={errorId("youtubeUrl")} className="text-sm text-red-400">
                   {errors.youtubeUrl}
                 </p>
+              )}
+              {youtubePreviewStatus === "loading" && (
+                <p className="text-xs text-white/60">Fetching video details…</p>
+              )}
+              {youtubePreviewStatus === "error" && youtubePreviewMessage && (
+                <p className="text-xs text-amber-300">{youtubePreviewMessage}</p>
+              )}
+              {youtubePreview && (
+                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-sm text-white/85">
+                  {youtubePreview.thumbnail ? (
+                    <img
+                      src={youtubePreview.thumbnail}
+                      alt="YouTube thumbnail"
+                      className="h-16 w-24 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="grid h-16 w-24 place-items-center rounded-lg bg-white/10 text-white/50">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="h-6 w-6"
+                        aria-hidden="true"
+                      >
+                        <path d="M10 15.5 16 12 10 8.5z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-white">{youtubePreview.title}</p>
+                    <p className="text-xs text-white/60">by {youtubePreview.author}</p>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -814,17 +1193,38 @@ export default function NewPostForm() {
         </Card>
       </div>
 
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          size="lg"
-          className="w-full sm:w-auto"
-          disabled={loading}
-          onClick={submit}
-        >
-          <UploadCloud aria-hidden="true" />
-          {loading ? "Saving..." : "Publish post"}
-        </Button>
+      <div className="space-y-4">
+        {blockingMessages.length > 0 && (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            <p className="font-semibold text-red-100">Complete the following before publishing:</p>
+            <ul className="mt-1 list-disc space-y-1 pl-4 marker:text-red-200">
+              {blockingMessages.map(message => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {submitError && (
+          <div className="rounded-2xl border border-red-500/40 bg-red-500/15 px-4 py-3 text-sm text-red-200">
+            {submitError}
+          </div>
+        )}
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            size="lg"
+            className="w-full sm:w-auto"
+            disabled={publishDisabled}
+            onClick={submit}
+          >
+            {loading ? (
+              <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
+            ) : (
+              <UploadCloud aria-hidden="true" />
+            )}
+            {loading ? "Publishing..." : "Publish post"}
+          </Button>
+        </div>
       </div>
     </div>
   );

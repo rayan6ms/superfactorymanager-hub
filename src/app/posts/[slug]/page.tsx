@@ -12,7 +12,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
 
   const post = await db.post.findUnique({
     where: { slug },
-    include: { category: true, images: true, dependencies: true, author: true },
+    include: { category: true, images: true, dependencies: true, author: true, tags: { include: { tag: true } } },
   });
 
   if (!post) return <div className="opacity-70">Not found</div>;
@@ -28,6 +28,16 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
     }
   }
 
+  const formattedViews = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(
+    post.views ?? 0
+  );
+  const postTags = post.tags?.map(t => t.tag).filter(Boolean) ?? [];
+  const codeWarningMessage =
+    post.codeNote ??
+    (post.codeStatus === "BROKEN"
+      ? "The author marked this script as broken."
+      : "This script hasn't been verified yet.");
+
   return (
     <div className="space-y-4">
       <ViewBeacon slug={slug} />
@@ -37,13 +47,25 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
           <div>
             <h1 className="text-2xl font-bold">{post.title}</h1>
             <div className="text-xs opacity-70">
-              Minecraft {post.gameVersion} · SFM {post.modVersion} · {post.category?.name} · {post.views} views
+              Minecraft {post.gameVersion} · SFM {post.modVersion} · {post.category?.name} · {formattedViews} views
             </div>
           </div>
           <StarRating slug={post.slug} initial={myRating} avg={post.rating || 0} count={post.ratingCount || 0} isAuthor={isAuthor} />
         </div>
 
         <p className="whitespace-pre-wrap mt-3 text-white/85">{post.description}</p>
+        {postTags.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2 text-sm text-white/60">
+            {postTags.map(tag => (
+              <span
+                key={tag.slug}
+                className="rounded-full border border-white/15 px-3 py-1 text-xs uppercase tracking-wide text-white/70"
+              >
+                #{tag.name}
+              </span>
+            ))}
+          </div>
+        )}
       </Card>
 
       {post.youtubeUrl ? (
@@ -59,7 +81,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
 
       {post.codeStatus !== "VERIFIED" && (
         <Card className="bg-yellow-500/10 border-yellow-400/30 text-yellow-200 text-sm">
-          ⚠️ This code may not work as expected{post.codeNote ? `: ${post.codeNote}` : "."}
+          ⚠️ {codeWarningMessage}
         </Card>
       )}
 

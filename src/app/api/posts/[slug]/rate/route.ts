@@ -14,8 +14,9 @@ async function recompute(postId: string) {
   const updated = await db.post.update({
     where: { id: postId },
     data: { rating: agg._avg.value ?? 0, ratingCount: agg._count.value },
+    include: { dependencies: true, category: true, tags: { include: { tag: true } } },
   });
-  await indexPost({ ...updated, dependencies: [], category: null });
+  await indexPost(updated);
   return updated;
 }
 

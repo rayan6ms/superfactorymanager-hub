@@ -337,6 +337,9 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
             }}
             onBlur={onBlur}
             onScroll={syncScroll}
+            onPaste={() => {
+              requestAnimationFrame(adjustHeight);
+            }}
             onKeyDown={event => {
               if (event.key === "Tab" && textareaRef.current) {
                 event.preventDefault();

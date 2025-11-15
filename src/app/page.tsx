@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -16,6 +16,8 @@ type Item = {
   ratingCount: number;
   description: string;
   category: { name: string };
+  authorName: string;
+  tags?: { name: string; slug: string }[];
   images?: { thumbSm: string; thumbMd: string; thumbLg: string }[];
 };
 
@@ -23,6 +25,10 @@ export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
+  const viewsFormatter = useMemo(
+    () => new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }),
+    []
+  );
 
   const runSearch = useCallback(async (search: string) => {
     setLoading(true);
@@ -67,12 +73,25 @@ export default function Home() {
                       <Badge>{item.category?.name}</Badge>
                     </div>
                     <p className="text-sm text-white/70 line-clamp-2">{item.description}</p>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-white/60">
+                    {item.tags?.length ? (
+                      <div className="flex flex-wrap gap-1 text-xs text-white/50">
+                        {item.tags.slice(0, 4).map(tag => (
+                          <span
+                            key={tag.slug || tag.name}
+                            className="rounded-full border border-white/10 px-2 py-0.5 text-[0.7rem] text-white/65"
+                          >
+                            #{tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-white/60">
                       <span>v{item.modVersion}</span>
-                      <span>{item.views} views</span>
+                      <span>{viewsFormatter.format(item.views)} views</span>
                       <span className="inline-flex items-center gap-1 text-white">
                         <Star className="h-3 w-3 text-yellow-400" /> {(item.rating ?? 0).toFixed(1)} ({item.ratingCount ?? 0})
                       </span>
+                      <span className="truncate text-white/50">by {item.authorName}</span>
                     </div>
                   </div>
                 </div>

@@ -32,6 +32,23 @@ model Category {
   posts Post[]
 }
 
+model Tag {
+  id    String   @id @default(cuid())
+  slug  String   @unique
+  name  String
+  posts PostTag[]
+}
+
+model PostTag {
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId  String
+
+  @@id([postId, tagId])
+  @@index([tagId])
+}
+
 model PostImage {
   id       String @id @default(cuid())
   original String
@@ -134,6 +151,7 @@ model Post {
   youtubeUrl   String?
   images       PostImage[]
   dependencies Dependency[]
+  tags         PostTag[]
 }
 
 enum NotificationOrigin {
