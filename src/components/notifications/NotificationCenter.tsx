@@ -1,7 +1,5 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCheck, Loader2, RefreshCw } from "lucide-react";
@@ -172,7 +170,7 @@ export default function NotificationCenter({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
         <div>
           <p className="text-sm font-semibold text-white">{unreadCount} unread</p>
           <p className="text-xs text-white/50">{totalLoaded} notifications loaded</p>
@@ -225,8 +223,7 @@ export default function NotificationCenter({
                 <li
                   key={item.id}
                   className={clsx(
-                    "flex flex-col gap-3 rounded-2xl border border-white/10 bg-(--surface-2)/80 p-4 text-sm text-white/80 shadow-sm transition",
-                    unread ? "ring-1 ring-brand-400/70" : "",
+                    "flex flex-col gap-3 rounded-2xl border border-white/10 bg-(--surface-2)/60 p-4 text-sm text-white/80 shadow-sm transition backdrop-blur-sm",
                   )}
                 >
                   <div className="flex flex-wrap items-start gap-3">

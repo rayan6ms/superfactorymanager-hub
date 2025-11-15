@@ -172,7 +172,6 @@ export default function CodeVerification({
           vote === "up"
             ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100 hover:border-emerald-400/60 hover:bg-emerald-500/15"
             : "border-red-500/40 bg-red-500/10 text-error hover:border-red-400/70 hover:bg-red-500/15",
-          active && "ring-2 ring-brand-400",
           (busy || isAuthor) && "opacity-60"
         )}
       >

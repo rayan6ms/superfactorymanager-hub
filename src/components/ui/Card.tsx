@@ -9,8 +9,8 @@ export default function Card({
   return (
     <div
       className={clsx(
-        "surface p-4",
-        hoverable && "transition hover:shadow-card hover:-translate-y-[1px]",
+        "surface p-4 backdrop-blur-sm",
+        hoverable && "transition hover:shadow-card hover:-translate-y-px",
         className
       )}
     >

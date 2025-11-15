@@ -1,8 +1,9 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
+import { useCallback, useState, useEffect } from "react";
 import Link from "next/link";
 import clsx from "clsx";
+import { CheckCheck, Loader2 } from "lucide-react";
 import { formatNotificationTimestamp, type SerializedNotification } from "@/lib/notifications";
 
 const ORIGIN_LABEL: Record<SerializedNotification["origin"], string> = {
@@ -30,6 +31,67 @@ export default function NotificationPreviewList({
   dense = false,
   onMarkRead,
 }: NotificationPreviewListProps) {
+  const [localUnread, setLocalUnread] = useState<Record<string, boolean>>({});
+  const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    setLocalUnread({});
+    setPendingIds(new Set());
+  }, [notifications]);
+
+  const toggleRead = useCallback(
+    async (notification: SerializedNotification) => {
+      const id = notification.id;
+
+      const unreadFromProps = !notification.readAt;
+      const override = localUnread[id];
+      const unread = typeof override === "boolean" ? override : unreadFromProps;
+
+      const makeRead = unread;
+
+      setPendingIds(prev => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
+
+      setLocalUnread(prev => ({
+        ...prev,
+        [id]: !makeRead,
+      }));
+
+      try {
+        const res = await fetch("/api/notifications", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: [id], read: makeRead }),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to update notification");
+        }
+
+        if (onMarkRead) {
+          await onMarkRead(id);
+        }
+      } catch (error) {
+        console.error(error);
+        setLocalUnread(prev => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      } finally {
+        setPendingIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    },
+    [localUnread, onMarkRead],
+  );
+
   if (!notifications.length) {
     return (
       <div
@@ -48,13 +110,17 @@ export default function NotificationPreviewList({
     <ul className={clsx("space-y-3", className)}>
       {notifications.map(item => {
         const created = formatNotificationTimestamp(item.createdAt);
-        const unread = !item.readAt;
+
+        const unreadFromProps = !item.readAt;
+        const override = localUnread[item.id];
+        const unread = typeof override === "boolean" ? override : unreadFromProps;
+        const pending = pendingIds.has(item.id);
+
         return (
           <li
             key={item.id}
             className={clsx(
-              "rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 shadow-sm transition",
-              unread ? "ring-1 ring-brand-400/70" : "",
+              "rounded-xl border border-white/10 bg-white/5 px-2 py-3 text-sm text-white/80 shadow-sm transition",
             )}
           >
             <div className={clsx("flex gap-3", dense ? "items-start" : "items-center")}>
@@ -64,37 +130,64 @@ export default function NotificationPreviewList({
                   <span className="sr-only">Notification thumbnail</span>
                 </div>
               ) : (
-                <div className="flex h-12 w-12 flex-none items-center justify-center rounded-lg border border-white/10 bg-black/40 text-xs uppercase tracking-wide text-white/40">
+                <div className="flex h-14 w-14 flex-none items-center justify-center rounded-lg border border-white/10 bg-black/40 text-xs uppercase tracking-wide text-white/40">
                   {ORIGIN_LABEL[item.origin]}
                 </div>
               )}
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/50">
-                  <span className={clsx("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide", ORIGIN_COLOR[item.origin])}>
+
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span
+                    className={clsx(
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide",
+                      ORIGIN_COLOR[item.origin],
+                    )}
+                  >
                     {ORIGIN_LABEL[item.origin]}
                   </span>
-                  <span>{created}</span>
-                  {unread && <span className="inline-flex h-2 w-2 rounded-full bg-brand-400" aria-label="Unread" />}
+
+                  <button
+                    type="button"
+                    onClick={() => toggleRead(item)}
+                    disabled={pending}
+                    className={clsx(
+                      "inline-flex items-center justify-center gap-1 rounded-full border border-white/20 px-2 py-0.5 text-[0.65rem] font-semibold text-white/70 transition hover:border-white/40 hover:bg-white/10 hover:text-white shrink-0 disabled:cursor-not-allowed disabled:opacity-60",
+                    )}
+                  >
+                    {pending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <CheckCheck className="h-3 w-3" aria-hidden="true" />
+                    )}
+                    <span>{unread ? "Mark read" : "Mark unread"}</span>
+                  </button>
                 </div>
+
                 <div className="space-y-1">
-                  {item.link ? (
-                    <Link href={item.link} className="block font-semibold text-white hover:underline">
-                      {item.title}
-                    </Link>
-                  ) : (
-                    <p className="font-semibold text-white">{item.title}</p>
-                  )}
-                  {item.message && <p className="text-white/70">{item.message}</p>}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.7rem] text-white/50">
+                    <span>{created}</span>
+                    {unread && (
+                      <span
+                        className="inline-flex h-2 w-2 rounded-full bg-brand-400"
+                        aria-label="Unread"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
-              {onMarkRead && unread && (
-                <button
-                  type="button"
-                  onClick={() => onMarkRead(item.id)}
-                  className="ml-auto inline-flex h-8 items-center justify-center rounded-lg border border-white/15 px-2 text-xs font-semibold text-white/70 transition hover:border-white/30 hover:text-white"
+            </div>
+
+            <div className="mt-0.5 space-y-1">
+              {item.message && <p className="text-white/70">{item.message}</p>}
+              {item.link ? (
+                <Link
+                  href={item.link}
+                  className="flex justify-end font-semibold text-white hover:underline"
                 >
-                  Mark as read
-                </button>
+                  {item.title}
+                </Link>
+              ) : (
+                <p className="font-semibold text-white">{item.title}</p>
               )}
             </div>
           </li>

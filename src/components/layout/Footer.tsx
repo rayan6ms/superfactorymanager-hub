@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-white/10 bg-(--surface) backdrop-blur-xl">
-      <div className="container-max grid gap-3 py-8 text-center text-xs text-white/60 sm:text-sm">
+    <footer className="mt-auto border-t border-white/10 bg-(--surface)/30 backdrop-blur-sm">
+      <div className="container-max grid space-y-1 py-4 text-center text-xs text-white/60 sm:text-sm">
         <Link href="/" className="mx-auto text-sm font-semibold text-white transition hover:text-brand-300">
           superfactorymanager
         </Link>

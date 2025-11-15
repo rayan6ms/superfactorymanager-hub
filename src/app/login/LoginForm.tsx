@@ -97,7 +97,7 @@ export default function LoginForm({ next }: LoginFormProps) {
   async function handleSocialLogin(provider: "google" | "github") {
     setIsSubmitting(true);
     setErrors({});
-    setInfoMessage("");
+    setStatusMessage("");
     try {
       await signIn(provider, { callbackUrl: next });
     } finally {
