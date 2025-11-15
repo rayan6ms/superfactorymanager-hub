@@ -5,6 +5,8 @@ import { z } from "zod";
 import { generateInitialAvatar } from "@/lib/avatar";
 import { generateRandomToken, hashToken } from "@/lib/tokens";
 import { sendEmailVerificationEmail } from "@/lib/email";
+import { validateUsernameInput } from "@/lib/usernames";
+import { isUsernameTaken } from "@/lib/usernames.server";
 
 const schema = z.object({
   email: z
@@ -28,18 +30,27 @@ export async function POST(req: Request) {
   try {
     const data = await req.json();
     const parsed = schema.parse(data);
+    const usernameValidation = validateUsernameInput(parsed.name);
+    if (!usernameValidation.ok) {
+      return NextResponse.json({ error: usernameValidation.code }, { status: 400 });
+    }
+
+    const normalizedName = usernameValidation.normalized;
+    if (await isUsernameTaken(normalizedName)) {
+      return NextResponse.json({ error: "NAME_TAKEN" }, { status: 409 });
+    }
     const existing = await db.user.findUnique({ where: { email: parsed.email } });
     if (existing) {
       return NextResponse.json({ error: "Email already exists" }, { status: 409 });
     }
 
     const passwordHash = await hash(parsed.password, 10);
-    const avatar = generateInitialAvatar({ name: parsed.name, seed: parsed.email });
+    const avatar = generateInitialAvatar({ name: normalizedName, seed: parsed.email });
 
     const user = await db.user.create({
       data: {
         email: parsed.email,
-        name: parsed.name,
+        name: normalizedName,
         passwordHash,
         image: avatar,
       },

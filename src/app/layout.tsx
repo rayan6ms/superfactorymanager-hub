@@ -5,6 +5,7 @@ import { Space_Grotesk } from "next/font/google";
 import clsx from "clsx";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import ExternalLinkGuard from "@/components/layout/ExternalLinkGuard";
 import { db } from "@/lib/db";
 import { getNotificationPreview, type SerializedNotification } from "@/lib/notifications";
 
@@ -35,7 +36,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         <main className="flex-1">
           <div className="container-max space-y-12 py-12 sm:py-16">
-            <Providers>{children}</Providers>
+            <Providers>
+              <ExternalLinkGuard />
+              {children}
+            </Providers>
           </div>
         </main>
 

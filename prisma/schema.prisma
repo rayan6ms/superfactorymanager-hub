@@ -11,7 +11,7 @@ generator client {
 model User {
   id                     String   @id @default(cuid())
   email                  String   @unique
-  name                   String?
+  name                   String? @unique
   image                  String?
   passwordHash           String?
   emailVerified          DateTime?

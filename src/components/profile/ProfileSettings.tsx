@@ -2,8 +2,16 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button, Input, Card } from "@/components/ui";
 import { Loader2, RefreshCw, Upload, ShieldCheck } from "lucide-react";
+import {
+  USERNAME_HELP_TEXT,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  validateUsernameInput,
+  type UsernameValidationCode,
+} from "@/lib/usernames";
 
 type ProfileSettingsProps = {
   initialUser: {
@@ -31,6 +39,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   const [resetStatus, setResetStatus] = useState<ResetStatus>("idle");
   const [errors, setErrors] = useState<FormErrors>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const router = useRouter();
 
   const isLoading = status === "loading";
   const resetLoading = resetStatus === "loading";
@@ -48,17 +57,36 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     reader.readAsDataURL(file);
   }
 
+  function usernameErrorMessage(code: UsernameValidationCode | "NAME_TAKEN") {
+    switch (code) {
+      case "NAME_REQUIRED":
+        return "Name is required.";
+      case "NAME_TOO_SHORT":
+        return `Name must be at least ${USERNAME_MIN_LENGTH} characters.`;
+      case "NAME_TOO_LONG":
+        return `Name must be at most ${USERNAME_MAX_LENGTH} characters.`;
+      case "NAME_INVALID":
+        return "Use only letters, numbers, hyphens, or underscores.";
+      case "NAME_TAKEN":
+        return "That name is already taken.";
+      default:
+        return "Please check this field.";
+    }
+  }
+
   async function submitProfile(regenerateAvatar = false) {
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setErrors({ name: "Name is required." });
+    const validation = validateUsernameInput(name);
+    if (!validation.ok) {
+      setErrors({ name: usernameErrorMessage(validation.code) });
       return;
     }
+
+    const normalizedName = validation.normalized;
 
     setErrors({});
     setStatus("loading");
 
-    const payload: Record<string, unknown> = { name: trimmedName };
+    const payload: Record<string, unknown> = { name: normalizedName };
 
     if (regenerateAvatar) {
       payload.regenerateAvatar = true;
@@ -76,10 +104,15 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         const errorMessage = typeof data?.error === "string" ? data.error : "We couldn’t update your profile.";
-        if (errorMessage === "NAME_REQUIRED") {
-          setErrors({ name: "Name is required." });
-        } else if (errorMessage === "NAME_TOO_LONG") {
-          setErrors({ name: "Name is too long." });
+        if (
+          errorMessage === "NAME_REQUIRED" ||
+          errorMessage === "NAME_TOO_SHORT" ||
+          errorMessage === "NAME_TOO_LONG" ||
+          errorMessage === "NAME_INVALID" ||
+          errorMessage === "NAME_TAKEN"
+        ) {
+          const code = errorMessage as UsernameValidationCode | "NAME_TAKEN";
+          setErrors({ name: usernameErrorMessage(code) });
         } else if (errorMessage === "IMAGE_URL_TOO_LONG" || errorMessage === "INVALID_IMAGE_URL") {
           setErrors({ image: "Please provide a valid image URL." });
         } else {
@@ -94,6 +127,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       setImage(data.user.image ?? "");
       setPreview(data.user.image ?? "");
       setStatus("success");
+      router.refresh();
       setTimeout(() => setStatus("idle"), 2000);
     } catch (error) {
       console.error("Failed to update profile", error);
@@ -144,6 +178,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
               className="mt-1"
               aria-invalid={Boolean(errors.name)}
             />
+            <p className="mt-1 text-xs text-white/60">{USERNAME_HELP_TEXT}</p>
             {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
           </div>
           <div>

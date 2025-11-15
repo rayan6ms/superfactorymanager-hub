@@ -1,5 +1,10 @@
 import crypto from "crypto";
 
+const DATA_URL_PATTERN = /^data:image\//i;
+const BASE64_DATA_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,/i;
+const REMOTE_URL_PATTERN = /^https?:\/\//i;
+const REMOTE_TIMEOUT_MS = 5000;
+
 const COLORS = [
   "#6366F1",
   "#EC4899",
@@ -32,4 +37,107 @@ export function generateInitialAvatar({ name, seed }: { name: string; seed?: str
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'>\n  <defs>\n    <linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'>\n      <stop offset='0%' stop-color='${color}' stop-opacity='0.85'/>\n      <stop offset='100%' stop-color='${color}' stop-opacity='1'/>\n    </linearGradient>\n  </defs>\n  <circle cx='64' cy='64' r='60' fill='url(#grad)' stroke='white' stroke-width='4'/>\n  <text x='50%' y='50%' dy='0.35em' text-anchor='middle' fill='white' font-family='"Inter", "Segoe UI", sans-serif' font-size='64' font-weight='600'>${initial}</text>\n</svg>`;
   const encoded = encodeURIComponent(svg).replace(/'/g, "%27").replace(/\(/g, "%28").replace(/\)/g, "%29");
   return `data:image/svg+xml,${encoded}`;
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REMOTE_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function remoteImageIsReachable(url: string): Promise<boolean> {
+  try {
+    const head = await fetchWithTimeout(url, {
+      method: "HEAD",
+      redirect: "follow",
+      cache: "no-store",
+    });
+
+    if (head.ok) {
+      const contentType = head.headers.get("content-type");
+      if (contentType && contentType.toLowerCase().startsWith("image/")) {
+        const lengthHeader = head.headers.get("content-length");
+        if (!lengthHeader) return true;
+        const length = Number(lengthHeader);
+        if (Number.isNaN(length) || length > 0) return true;
+      }
+    }
+
+    if (head.status !== 405) {
+      return false;
+    }
+  } catch (error) {
+    if ((error as Error).name !== "AbortError") {
+      return false;
+    }
+  }
+
+  try {
+    const getRes = await fetchWithTimeout(url, {
+      method: "GET",
+      headers: { Range: "bytes=0-0" },
+      redirect: "follow",
+      cache: "no-store",
+    });
+
+    if (!getRes.ok) {
+      return false;
+    }
+
+    const contentType = getRes.headers.get("content-type");
+    if (!contentType || !contentType.toLowerCase().startsWith("image/")) {
+      return false;
+    }
+
+    // Consume minimal data to allow connection cleanup without downloading the full file.
+    await getRes.arrayBuffer().catch(() => undefined);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function dataUrlHasPayload(dataUrl: string): boolean {
+  if (!DATA_URL_PATTERN.test(dataUrl)) return false;
+  const commaIndex = dataUrl.indexOf(",");
+  if (commaIndex === -1) return false;
+  const payload = dataUrl.slice(commaIndex + 1).trim();
+  if (!payload) return false;
+  if (BASE64_DATA_URL_PATTERN.test(dataUrl)) {
+    return payload.length > 0;
+  }
+  return payload.length > 0;
+}
+
+export async function resolveProfileImage({
+  image,
+  name,
+  seed,
+}: {
+  image: string;
+  name: string;
+  seed?: string;
+}): Promise<string> {
+  if (!image) {
+    return generateInitialAvatar({ name, seed });
+  }
+
+  if (DATA_URL_PATTERN.test(image)) {
+    return dataUrlHasPayload(image) ? image : generateInitialAvatar({ name, seed });
+  }
+
+  if (!REMOTE_URL_PATTERN.test(image)) {
+    return generateInitialAvatar({ name, seed });
+  }
+
+  const reachable = await remoteImageIsReachable(image);
+  if (!reachable) {
+    return generateInitialAvatar({ name, seed });
+  }
+
+  return image;
 }

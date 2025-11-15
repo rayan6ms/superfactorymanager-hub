@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { generateInitialAvatar } from "@/lib/avatar";
+import { generateInitialAvatar, resolveProfileImage } from "@/lib/avatar";
+import { validateUsernameInput } from "@/lib/usernames";
+import { isUsernameTaken } from "@/lib/usernames.server";
 
 const schema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, "NAME_REQUIRED")
-    .max(80, "NAME_TOO_LONG"),
+    .min(1, "NAME_REQUIRED"),
   image: z
     .string()
     .trim()
@@ -39,19 +40,33 @@ export async function PATCH(request: Request) {
   }
 
   const { name, image, regenerateAvatar } = parsed.data;
-  const updateData: { name: string; image?: string | null } = { name };
+  const usernameValidation = validateUsernameInput(name);
+  if (!usernameValidation.ok) {
+    return NextResponse.json({ error: usernameValidation.code }, { status: 400 });
+  }
+
+  const normalizedName = usernameValidation.normalized;
+  if (await isUsernameTaken(normalizedName, user.id)) {
+    return NextResponse.json({ error: "NAME_TAKEN" }, { status: 409 });
+  }
+
+  const updateData: { name: string; image?: string | null } = { name: normalizedName };
 
   if (regenerateAvatar) {
-    updateData.image = generateInitialAvatar({ name, seed: user.email });
+    updateData.image = generateInitialAvatar({ name: normalizedName, seed: user.email });
   } else if (typeof image === "string") {
     if (!image) {
-      updateData.image = generateInitialAvatar({ name, seed: user.email });
-    } else if (image.startsWith("data:")) {
-      updateData.image = image;
-    } else if (/^https?:\/\//i.test(image)) {
-      updateData.image = image;
-    } else {
+      updateData.image = generateInitialAvatar({ name: normalizedName, seed: user.email });
+    } else if (!/^https?:\/\//i.test(image) && !image.startsWith("data:")) {
       return NextResponse.json({ error: "INVALID_IMAGE_URL" }, { status: 400 });
+    } else if (image === user.image) {
+      updateData.image = user.image;
+    } else {
+      updateData.image = await resolveProfileImage({
+        image,
+        name: normalizedName,
+        seed: user.email ?? user.id,
+      });
     }
   }
 
