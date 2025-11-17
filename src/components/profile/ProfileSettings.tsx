@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button, Input, Card } from "@/components/ui";
-import { Loader2, RefreshCw, Upload, ShieldCheck, UserRoundPen } from "lucide-react";
+import { Loader2, RefreshCw, Upload, ShieldCheck, Pencil } from "lucide-react";
 import {
   USERNAME_HELP_TEXT,
   USERNAME_MAX_LENGTH,
@@ -159,20 +159,30 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   return (
     <Card className="space-y-6 p-6">
       <div className="flex items-start gap-4">
-        <div className="relative h-24 w-24 overflow-hidden rounded-full border border-white/15 bg-white/5">
+        <div className="relative h-24 w-24 overflow-hidden rounded-full border border-white/15 bg-white/5 group">
           {preview ? (
-            <Image src={preview} alt={name || "Profile avatar"} fill sizes="96px" className="object-cover" unoptimized />
+            <Image
+              src={preview}
+              alt={name || "Profile avatar"}
+              fill
+              sizes="96px"
+              className="object-cover transition group-hover:opacity-60"
+              unoptimized
+            />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-white/70">
+            <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-white/70 transition group-hover:opacity-60">
               {(name || initialUser.email).charAt(0).toUpperCase()}
             </div>
           )}
+          <div className="pointer-events-none absolute inset-0 bg-black/0 transition group-hover:bg-black/30" />
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute bottom-1 right-1 inline-flex items-center justify-center rounded-full border border-white/30 bg-black/60 p-1 text-white transition hover:border-white/60 hover:bg-black/80"
+            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center
+               rounded-full border border-white/30 bg-black/60 p-1 text-white shadow-sm
+               transition hover:border-white/60 hover:bg-black/80"
           >
-            <UserRoundPen className="h-4 w-4" aria-hidden />
+            <Pencil className="h-4 w-4" aria-hidden />
             <span className="sr-only">Change avatar image</span>
           </button>
         </div>
