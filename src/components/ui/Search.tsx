@@ -13,7 +13,7 @@ type Props = {
 };
 
 export default function SearchBar({
-  action = "/",
+  action = "/posts",
   method = "get",
   name = "q",
   placeholder = "Search posts",

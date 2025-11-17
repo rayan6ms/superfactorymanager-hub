@@ -109,6 +109,10 @@ body {
   z-index: -1;
 }
 
+body[data-hide-header-search="true"] [data-header-search] {
+  display: none !important;
+}
+
 .app-shell {
   @apply flex min-h-screen flex-col relative overflow-x-hidden overflow-y-auto;
 }

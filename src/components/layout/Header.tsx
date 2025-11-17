@@ -34,7 +34,7 @@ export default function Header({ session, notifications }: HeaderProps) {
             <span className="sm:hidden">SFM</span>
           </Link>
 
-          <div className="hidden flex-1 items-center justify-center lg:flex">
+          <div className="hidden flex-1 items-center justify-center lg:flex" data-header-search>
             <div className="w-full max-w-md">
               <Search className="max-w-md" />
             </div>
