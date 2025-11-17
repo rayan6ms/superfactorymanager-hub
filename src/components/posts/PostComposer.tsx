@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useId } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useId } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import { Images, Loader2, Tag as TagIcon, UploadCloud } from "lucide-react";
@@ -22,6 +22,14 @@ const CODE_ANALYZE_DEBOUNCE = 350;
 
 type Matrix = { byGame: Record<string, string[]>; gameVersions: string[] };
 type CategoryOption = { key: string; name: string };
+type ExistingImage = {
+  id: string;
+  original: string;
+  thumbSm?: string | null;
+  thumbMd?: string | null;
+  thumbLg?: string | null;
+};
+
 type FormState = {
   title: string;
   gameVersion: string;
@@ -30,9 +38,11 @@ type FormState = {
   description: string;
   code: string;
   youtubeUrl: string;
+  openForImprovement: boolean;
 };
 
-type FormErrorKey = keyof FormState | "images" | "tags";
+type TextFieldKey = Exclude<keyof FormState, "openForImprovement">;
+type FormErrorKey = TextFieldKey | "images" | "tags";
 
 type CodeFeedback = {
   status: "idle" | "ok" | "error";
@@ -72,6 +82,17 @@ const INITIAL_TOUCHED: Record<FormErrorKey, boolean> = {
   tags: false,
 };
 
+type PostComposerProps = {
+  mode?: "create" | "edit";
+  slug?: string;
+  initialData?: Partial<Omit<FormState, "openForImprovement">> & {
+    tags?: NormalizedTag[];
+    dependencies?: { url: string; name: string }[];
+    openForImprovement?: boolean;
+    existingImages?: ExistingImage[];
+  };
+};
+
 function SectionTitle({ title, description }: { title: string; description?: string }) {
   return (
     <div className="space-y-1">
@@ -81,28 +102,31 @@ function SectionTitle({ title, description }: { title: string; description?: str
   );
 }
 
-export default function NewPostForm() {
+export default function PostComposer({ mode = "create", slug, initialData }: PostComposerProps) {
   const r = useRouter();
   const idPrefix = useId();
+  const isEditMode = mode === "edit";
+  const existingImages = initialData?.existingImages ?? [];
 
   const [matrix, setMatrix] = useState<Matrix>({ byGame: {}, gameVersions: [] });
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>({
-    title: "",
-    gameVersion: "",
-    modVersion: "",
-    categoryKey: "",
-    description: "",
-    code: "",
-    youtubeUrl: "",
+    title: initialData?.title ?? "",
+    gameVersion: initialData?.gameVersion ?? "",
+    modVersion: initialData?.modVersion ?? "",
+    categoryKey: initialData?.categoryKey ?? "",
+    description: initialData?.description ?? "",
+    code: initialData?.code ?? "",
+    youtubeUrl: initialData?.youtubeUrl ?? "",
+    openForImprovement: initialData?.openForImprovement ?? false,
   });
-  const [tags, setTags] = useState<NormalizedTag[]>([]);
+  const [tags, setTags] = useState<NormalizedTag[]>(initialData?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
   const [depsInput, setDepsInput] = useState("");
-  const [deps, setDeps] = useState<{ url: string; name: string }[]>([]);
+  const [deps, setDeps] = useState<{ url: string; name: string }[]>(initialData?.dependencies ?? []);
   const [depError, setDepError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<FormErrorKey, string | null>>({ ...INITIAL_ERRORS });
   const [touched, setTouched] = useState<Record<FormErrorKey, boolean>>({ ...INITIAL_TOUCHED });
@@ -123,6 +147,8 @@ export default function NewPostForm() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [limitedByMax, setLimitedByMax] = useState(false);
   const [wrapLines, setWrapLines] = useState(true);
+  const submitButtonLabel = isEditMode ? "Save changes" : "Publish post";
+  const submitLoadingLabel = isEditMode ? "Saving..." : "Publishing...";
   const fileSummary = useMemo(() => {
     if (!mediaFiles.length) return `No files chosen (0/${MAX_IMAGE_COUNT})`;
     if (mediaFiles.length === 1) return `1 of ${MAX_IMAGE_COUNT} image slots used`;
@@ -185,7 +211,7 @@ export default function NewPostForm() {
     return { status: "ok", message: null, syntaxErrors: [], warnings };
   }, []);
 
-  const validateField = useCallback((key: keyof FormState, value: string, current: FormState): string | null => {
+  const validateField = useCallback((key: TextFieldKey, value: string, current: FormState): string | null => {
     const trimmed = value.trim();
     switch (key) {
       case "title": {
@@ -236,7 +262,7 @@ export default function NewPostForm() {
     }
   }, [categories, categoriesError, categoriesLoading, matrix]);
 
-  const change = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
+  const change = useCallback(<K extends TextFieldKey>(key: K, value: FormState[K]) => {
     if (key === "code") {
       const nextValue = value as string;
       setForm(state => ({ ...state, code: nextValue }));
@@ -287,9 +313,11 @@ export default function NewPostForm() {
     };
     const codeCheck = analyzeCode(form.code);
     next.code = codeCheck.message;
-    const imageMessage = limitedByMax
-      ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-      : computeImagesError(mediaFiles);
+    const imageMessage = isEditMode
+      ? null
+      : limitedByMax
+          ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+          : computeImagesError(mediaFiles);
     next.images = imageMessage;
     return next;
   }, [
@@ -301,6 +329,7 @@ export default function NewPostForm() {
     mediaFiles,
     validateTags,
     tags,
+    isEditMode,
   ]);
 
   const blockingMessages = useMemo(() => {
@@ -452,8 +481,12 @@ export default function NewPostForm() {
     [form.gameVersion, matrix]
   );
 
+  const previousGameVersionRef = useRef(form.gameVersion);
   useEffect(() => {
-    change("modVersion", "");
+    if (previousGameVersionRef.current !== form.gameVersion) {
+      change("modVersion", "");
+      previousGameVersionRef.current = form.gameVersion;
+    }
   }, [form.gameVersion, change]);
 
   useEffect(() => {
@@ -590,9 +623,11 @@ export default function NewPostForm() {
 
     const codeAnalysis = analyzeCode(form.code);
     setCodeFeedback(codeAnalysis);
-    const imageMessage = limitedByMax
-      ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-      : computeImagesError(mediaFiles);
+    const imageMessage = isEditMode
+      ? null
+      : limitedByMax
+          ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+          : computeImagesError(mediaFiles);
     const tagMessage = validateTags(tags);
     const nextErrors: Record<FormErrorKey, string | null> = {
       title: validateField("title", form.title, form),
@@ -622,20 +657,28 @@ export default function NewPostForm() {
         code: form.code,
         description: form.description.trim(),
         youtubeUrl: form.youtubeUrl.trim(),
+        openForImprovement: form.openForImprovement,
       };
-      const res = await fetch("/api/posts", {
-        method: "POST",
+      const endpoint = isEditMode && slug ? `/api/posts/${slug}` : "/api/posts";
+      const method = isEditMode ? "PATCH" : "POST";
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
-        setSubmitError(data.error || "We couldn't publish your post. Check the details and try again.");
+        setSubmitError(
+          data.error ||
+            (isEditMode
+              ? "We couldn't save your changes. Double-check the details and try again."
+              : "We couldn't publish your post. Check the details and try again."),
+        );
         return;
       }
 
-      if (mediaFiles.length) {
+      if (!isEditMode && mediaFiles.length) {
         for (const f of mediaFiles) {
           const fd = new FormData();
           fd.append("file", f);
@@ -657,7 +700,11 @@ export default function NewPostForm() {
           }
         }
       }
-      r.push(`/posts/${data.slug}`);
+      if (isEditMode && slug) {
+        r.push(`/posts/${slug}`);
+      } else {
+        r.push(`/posts/${data.slug}`);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Something went wrong while publishing your post.";
       setSubmitError(message);
@@ -668,6 +715,14 @@ export default function NewPostForm() {
 
   return (
     <div className="space-y-8">
+      {isEditMode && (
+        <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
+          <p className="font-semibold text-amber-100">Editing this post will clear all verification votes.</p>
+          <p className="text-amber-100/80">
+            Publish updates only when you are ready&mdash;the community will have to verify the new version again.
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:gap-10">
         <Card className="space-y-6 px-6 py-5 sm:px-8 sm:py-7">
           <SectionTitle title="Post details" description="Set the essentials for your upload." />
@@ -1045,110 +1100,145 @@ export default function NewPostForm() {
               )}
             </div>
 
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <label htmlFor="images" className="text-sm font-medium text-white/75">
-                    Image gallery
-                    <span className="text-white/45"> (max {MAX_IMAGE_MB}MB each, up to {MAX_IMAGE_COUNT} images)</span>
-                  </label>
-                  <label
-                    htmlFor="images"
-                    className={clsx(
-                      "inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/10",
-                      shouldShowError("images") && "border-red-500/60 text-red-200 hover:border-red-400"
-                    )}
-                  >
-                    <Images aria-hidden="true" className="h-4 w-4" />
-                    <span>Choose files</span>
-                  </label>
-                </div>
-                <input
-                  id="images"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={e => {
-                    markTouched("images");
-                    const incoming = e.target.files ? Array.from(e.target.files) : [];
-                    if (incoming.length) {
-                      setMediaFiles(prev => {
-                        const merged = [...prev, ...incoming];
-                        if (merged.length > MAX_IMAGE_COUNT) {
-                          setLimitedByMax(true);
-                        }
-                        return merged.slice(0, MAX_IMAGE_COUNT);
-                      });
-                    }
-                    e.target.value = "";
-                  }}
-                  aria-invalid={shouldShowError("images") || undefined}
-                  aria-describedby={shouldShowError("images") ? errorId("images") : undefined}
-                />
-                <p className="text-xs text-white/60">
-                  <span className="font-semibold text-white/80">Selected:</span> {fileSummary}. The first image becomes your thumbnail.
+            {isEditMode ? (
+              <div className="space-y-3">
+                <p className="text-sm text-white/70">
+                  Image management is handled separately today. Reach out to the moderators if you need to update screenshots.
                 </p>
-              </div>
-              {shouldShowError("images") && errors.images && (
-                <p id={errorId("images")} className="text-sm text-error">
-                  {errors.images}
-                </p>
-              )}
-              {!!previews.length && (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {previews.map((src, i) => {
-                    const file = mediaFiles[i];
-                    if (!file) return null;
-                    const key = `${file.name}-${file.lastModified}-${file.size}`;
-                    return (
-                      <div
-                        key={key}
-                        className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
-                      >
-                        <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
-                          <span>#{i + 1}</span>
-                          {i === 0 && (
-                            <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
-                              thumb
-                            </span>
-                          )}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeMediaAt(i)}
-                          className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
-                          aria-label={`Remove ${file.name}`}
+                {existingImages.length ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {existingImages.map((image, index) => {
+                      const previewSrc = image.thumbMd || image.thumbLg || image.thumbSm || image.original;
+                      return (
+                        <div
+                          key={image.id}
+                          className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
                         >
-                          ×
-                        </button>
-                        <img src={src} alt="" className="h-full w-full object-cover" />
-                        <div className="absolute bottom-3 left-3 flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => moveMedia(i, i - 1)}
-                            disabled={i === 0}
-                            className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                            aria-label={`Move ${file.name} earlier`}
-                          >
-                            ←
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveMedia(i, i + 1)}
-                            disabled={i === mediaFiles.length - 1}
-                            className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                            aria-label={`Move ${file.name} later`}
-                          >
-                            →
-                          </button>
+                          <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                            <span>#{index + 1}</span>
+                            {index === 0 && (
+                              <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
+                                thumb
+                              </span>
+                            )}
+                          </span>
+                          <img src={previewSrc} alt="" className="h-full w-full object-cover" />
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-white/15 bg-black/20 px-4 py-6 text-center text-sm text-white/60">
+                    No images have been attached to this post yet.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <label htmlFor="images" className="text-sm font-medium text-white/75">
+                      Image gallery
+                      <span className="text-white/45"> (max {MAX_IMAGE_MB}MB each, up to {MAX_IMAGE_COUNT} images)</span>
+                    </label>
+                    <label
+                      htmlFor="images"
+                      className={clsx(
+                        "inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/10",
+                        shouldShowError("images") && "border-red-500/60 text-red-200 hover:border-red-400"
+                      )}
+                    >
+                      <Images aria-hidden="true" className="h-4 w-4" />
+                      <span>Choose files</span>
+                    </label>
+                  </div>
+                  <input
+                    id="images"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={e => {
+                      markTouched("images");
+                      const incoming = e.target.files ? Array.from(e.target.files) : [];
+                      if (incoming.length) {
+                        setMediaFiles(prev => {
+                          const merged = [...prev, ...incoming];
+                          if (merged.length > MAX_IMAGE_COUNT) {
+                            setLimitedByMax(true);
+                          }
+                          return merged.slice(0, MAX_IMAGE_COUNT);
+                        });
+                      }
+                      e.target.value = "";
+                    }}
+                    aria-invalid={shouldShowError("images") || undefined}
+                    aria-describedby={shouldShowError("images") ? errorId("images") : undefined}
+                  />
+                  <p className="text-xs text-white/60">
+                    <span className="font-semibold text-white/80">Selected:</span> {fileSummary}. The first image becomes your thumbnail.
+                  </p>
                 </div>
-              )}
-            </div>
+                {shouldShowError("images") && errors.images && (
+                  <p id={errorId("images")} className="text-sm text-error">
+                    {errors.images}
+                  </p>
+                )}
+                {!!previews.length && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {previews.map((src, i) => {
+                      const file = mediaFiles[i];
+                      if (!file) return null;
+                      const key = `${file.name}-${file.lastModified}-${file.size}`;
+                      return (
+                        <div
+                          key={key}
+                          className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
+                        >
+                          <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                            <span>#{i + 1}</span>
+                            {i === 0 && (
+                              <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
+                                thumb
+                              </span>
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeMediaAt(i)}
+                            className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
+                            aria-label={`Remove ${file.name}`}
+                          >
+                            ×
+                          </button>
+                          <img src={src} alt="" className="h-full w-full object-cover" />
+                          <div className="absolute bottom-3 left-3 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => moveMedia(i, i - 1)}
+                              disabled={i === 0}
+                              className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
+                              aria-label={`Move ${file.name} earlier`}
+                            >
+                              ←
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveMedia(i, i + 1)}
+                              disabled={i === mediaFiles.length - 1}
+                              className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
+                              aria-label={`Move ${file.name} later`}
+                            >
+                              →
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </Card>
 
@@ -1223,23 +1313,60 @@ export default function NewPostForm() {
               )}
             </div>
           )}
-          {codeFeedback.status === "ok" && codeFeedback.warnings.length > 0 && (
-            <div id={codeWarningsId} className="space-y-1 text-sm text-amber-300">
-              <p className="font-semibold">Warnings</p>
-              <ul className="list-disc space-y-1 pl-5 marker:text-amber-300">
-                {codeFeedback.warnings.map((warning, idx) => (
-                  <li key={`${warning.lineStart}-${warning.lineEnd}-${idx}`}>
-                    Line {warning.lineStart}
-                    {warning.lineEnd !== warning.lineStart ? `-${warning.lineEnd}` : ""} – {warning.message}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </Card>
-      </div>
+        {codeFeedback.status === "ok" && codeFeedback.warnings.length > 0 && (
+          <div id={codeWarningsId} className="space-y-1 text-sm text-amber-300">
+            <p className="font-semibold">Warnings</p>
+            <ul className="list-disc space-y-1 pl-5 marker:text-amber-300">
+              {codeFeedback.warnings.map((warning, idx) => (
+                <li key={`${warning.lineStart}-${warning.lineEnd}-${idx}`}>
+                  Line {warning.lineStart}
+                  {warning.lineEnd !== warning.lineStart ? `-${warning.lineEnd}` : ""} – {warning.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Card>
 
-      <div className="space-y-4">
+      <Card className="space-y-5 p-6 sm:px-8 sm:py-7 lg:col-span-2">
+        <SectionTitle
+          title="Collaboration"
+          description="Allow other builders to propose code improvements for this post."
+        />
+        <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-white/80">
+            {form.openForImprovement
+              ? "Anyone with an account can suggest code edits. You decide what to merge."
+              : "Only you can update this code. Enable collaboration to accept pull-request style edits."}
+          </p>
+          <button
+            type="button"
+            onClick={() => setForm(prev => ({ ...prev, openForImprovement: !prev.openForImprovement }))}
+            className={clsx(
+              "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition",
+              form.openForImprovement
+                ? "bg-brand-500 text-white shadow-soft"
+                : "border border-white/20 bg-white/5 text-white/80 hover:border-white/30 hover:text-white"
+            )}
+          >
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-current">
+              <span
+                className={clsx(
+                  "h-3 w-3 rounded-full bg-current transition",
+                  form.openForImprovement ? "opacity-100" : "opacity-0"
+                )}
+              />
+            </span>
+            {form.openForImprovement ? "Open to improvements" : "Closed to improvements"}
+          </button>
+        </div>
+        <p className="text-xs text-white/55">
+          When collaboration is enabled, contributors can edit only the code and must include a message explaining their changes.
+        </p>
+      </Card>
+    </div>
+
+    <div className="space-y-4">
         {blockingMessages.length > 0 && (
           <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
             <p className="font-semibold text-red-100">Complete the following before publishing:</p>
@@ -1268,7 +1395,7 @@ export default function NewPostForm() {
             ) : (
               <UploadCloud aria-hidden="true" />
             )}
-            {loading ? "Publishing..." : "Publish post"}
+            {loading ? submitLoadingLabel : submitButtonLabel}
           </Button>
         </div>
       </div>

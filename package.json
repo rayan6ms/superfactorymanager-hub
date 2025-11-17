@@ -17,6 +17,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "diff": "^8.0.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.553.0",
     "meilisearch": "^0.54.0",

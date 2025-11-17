@@ -63,6 +63,7 @@ export const postSchema = z.object({
   code: z.string().min(1),
   description: z.string().min(1),
   youtubeUrl: z.url().optional().or(z.literal("").optional()),
+  openForImprovement: z.boolean().optional().default(false),
 });
 
 export const searchQuerySchema = z.object({

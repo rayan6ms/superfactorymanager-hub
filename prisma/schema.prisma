@@ -18,6 +18,8 @@ model User {
   createdAt              DateTime @default(now())
   posts                  Post[]
   ratings                Rating[]
+  postCommits            PostCommit[]
+  postContributions      PostContributor[]
   passwordResetTokens    PasswordResetToken[]
   notifications          Notification[]
   accounts               Account[]
@@ -152,6 +154,51 @@ model Post {
   images       PostImage[]
   dependencies Dependency[]
   tags         PostTag[]
+  openForImprovement Boolean   @default(false)
+  currentCommitId   String?      @unique
+  currentCommit     PostCommit? @relation("PostCurrentCommit", fields: [currentCommitId], references: [id])
+  commits           PostCommit[]
+  contributors      PostContributor[]
+}
+
+enum PostCommitStatus {
+  PENDING
+  MERGED
+  REJECTED
+}
+
+model PostCommit {
+  id          String            @id @default(cuid())
+  postId      String
+  post        Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  message     String
+  code        String
+  status      PostCommitStatus  @default(PENDING)
+  createdAt   DateTime          @default(now())
+  mergedAt    DateTime?
+  rejectedAt  DateTime?
+  baseCommitId String?
+  baseCommit  PostCommit?       @relation("PostCommitBase", fields: [baseCommitId], references: [id])
+  derivedCommits PostCommit[]   @relation("PostCommitBase")
+  currentForPost Post?          @relation("PostCurrentCommit")
+
+  @@index([postId, createdAt])
+  @@index([status])
+}
+
+model PostContributor {
+  id                  String   @id @default(cuid())
+  postId              String
+  post                Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mergedCommits       Int      @default(0)
+  lastContributionAt  DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId, mergedCommits])
 }
 
 enum NotificationOrigin {

@@ -10,6 +10,7 @@ import { normalizeImages } from "@/lib/images";
 import { parseDependency, type ParsedDep } from "@/lib/deps";
 import { getSfmMatrix } from "@/lib/sfm";
 import { normalizeTags } from "@/lib/tags";
+import { recordPostContributor } from "@/lib/posts";
 
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
@@ -213,6 +214,7 @@ export async function POST(req: Request) {
         codeStatus, codeNote,
         description: parsed.description,
         youtubeUrl: yt,
+        openForImprovement: parsed.openForImprovement ?? false,
         images: {
           create: normalizeImages(parsed.images).map(i => ({
             original: i.original,
@@ -249,8 +251,24 @@ export async function POST(req: Request) {
       },
     });
 
-    await indexPost(created);
-    return NextResponse.json(serializePost(created), { status: 201 });
+    const initialCommit = await db.postCommit.create({
+      data: {
+        postId: created.id,
+        authorId: user.id,
+        message: "Initial publication",
+        code,
+        status: "MERGED",
+        mergedAt: new Date(),
+      },
+    });
+
+    await db.post.update({ where: { id: created.id }, data: { currentCommitId: initialCommit.id } });
+    await recordPostContributor(db, created.id, user.id);
+
+    const hydrated = { ...created, currentCommitId: initialCommit.id };
+
+    await indexPost(hydrated);
+    return NextResponse.json(serializePost(hydrated), { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Invalid request";
     return NextResponse.json({ error: message }, { status: 400 });

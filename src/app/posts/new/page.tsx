@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import NewPostForm from "./NewPostForm";
+import PostComposer from "@/components/posts/PostComposer";
 
 export default async function NewPostPage() {
   const session = await auth();
@@ -14,7 +14,7 @@ export default async function NewPostPage() {
           Share your blueprint with the community by filling out the details below.
         </p>
       </div>
-      <NewPostForm />
+      <PostComposer mode="create" />
     </div>
   );
 }

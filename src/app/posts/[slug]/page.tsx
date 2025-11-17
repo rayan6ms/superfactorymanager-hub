@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import ViewBeacon from "@/components/ViewBeacon";
@@ -113,6 +114,14 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
               <span>Uploaded {uploadDate}</span>
               <span>{views} views</span>
               <span>Author: {post.author?.name ?? post.authorName}</span>
+              {verification.isAuthor && (
+                <Link
+                  href={`/posts/${slug}/edit`}
+                  className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
+                >
+                  Edit post
+                </Link>
+              )}
             </div>
           </div>
 
