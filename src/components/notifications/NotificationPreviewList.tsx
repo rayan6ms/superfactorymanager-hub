@@ -21,6 +21,7 @@ type NotificationPreviewListProps = {
   emptyLabel?: string;
   className?: string;
   dense?: boolean;
+  maxVisible?: number;
   onMarkRead?: (id: string) => void | Promise<void>;
 };
 
@@ -29,6 +30,7 @@ export default function NotificationPreviewList({
   emptyLabel = "You’re all caught up!",
   className,
   dense = false,
+  maxVisible,
   onMarkRead,
 }: NotificationPreviewListProps) {
   const [localUnread, setLocalUnread] = useState<Record<string, boolean>>({});
@@ -64,6 +66,7 @@ export default function NotificationPreviewList({
         const res = await fetch("/api/notifications", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ ids: [id], read: makeRead }),
         });
 
@@ -92,6 +95,8 @@ export default function NotificationPreviewList({
     [localUnread, onMarkRead],
   );
 
+  const items = typeof maxVisible === "number" ? notifications.slice(0, Math.max(0, maxVisible)) : notifications;
+
   if (!notifications.length) {
     return (
       <div
@@ -108,7 +113,7 @@ export default function NotificationPreviewList({
 
   return (
     <ul className={clsx("space-y-3", className)}>
-      {notifications.map(item => {
+      {items.map(item => {
         const created = formatNotificationTimestamp(item.createdAt);
 
         const unreadFromProps = !item.readAt;

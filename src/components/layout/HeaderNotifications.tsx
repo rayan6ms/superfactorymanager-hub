@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import NotificationPreviewList from "@/components/notifications/NotificationPreviewList";
-import type { SerializedNotification } from "@/lib/notifications";
+import { NOTIFICATION_PREVIEW_LIMIT, type SerializedNotification } from "@/lib/notifications";
 
 type HeaderNotificationsProps = {
   initialNotifications: SerializedNotification[];
@@ -14,6 +14,7 @@ type HeaderNotificationsProps = {
 
 type ApiResponse = {
   unreadCount?: number;
+  notifications?: SerializedNotification[];
 };
 
 export default function HeaderNotifications({
@@ -21,10 +22,35 @@ export default function HeaderNotifications({
   initialUnreadCount,
   scrollClassName,
 }: HeaderNotificationsProps) {
-  const [notifications, setNotifications] = useState<SerializedNotification[]>(initialNotifications);
+  const [notifications, setNotifications] = useState<SerializedNotification[]>(
+    initialNotifications.filter(notification => !notification.readAt),
+  );
   const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
+
+  const refreshPreview = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({
+        limit: String(NOTIFICATION_PREVIEW_LIMIT),
+        unreadOnly: "1",
+      });
+      const res = await fetch(`/api/notifications?${params.toString()}`, {
+        cache: "no-store",
+        credentials: "include",
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as ApiResponse;
+      if (Array.isArray(data.notifications)) {
+        setNotifications(data.notifications.filter(notification => !notification.readAt));
+      }
+      if (typeof data.unreadCount === "number") {
+        setUnreadCount(data.unreadCount);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
   const markAsRead = useCallback(
     async (id: string) => {
@@ -45,20 +71,21 @@ export default function HeaderNotifications({
       );
 
       try {
-        const res = await fetch("/api/notifications", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids: [id], read: true }),
-        });
+      const res = await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ids: [id], read: true }),
+      });
         if (!res.ok) throw new Error("Request failed");
 
         const data = (await res.json()) as ApiResponse;
         if (typeof data.unreadCount === "number") {
           setUnreadCount(data.unreadCount);
         } else {
-          // fallback if API doesn’t return count
           setUnreadCount(prev => Math.max(0, prev - 1));
         }
+        await refreshPreview();
       } catch (err) {
         console.error(err);
         setError("We couldn’t update that notification. Please try again.");
@@ -71,11 +98,13 @@ export default function HeaderNotifications({
         });
       }
     },
-    [pendingIds],
+    [pendingIds, refreshPreview],
   );
 
   const derivedUnread = notifications.filter(n => !n.readAt).length;
   const labelCount = unreadCount ?? derivedUnread;
+  const visibleCount = Math.min(notifications.length, 1);
+  const extraCount = Math.max(0, labelCount - visibleCount);
 
   return (
     <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
@@ -86,11 +115,18 @@ export default function HeaderNotifications({
 
       <NotificationPreviewList
         notifications={notifications}
-        emptyLabel="No notifications yet"
+        emptyLabel="No unread notifications"
         dense
+        maxVisible={1}
         className={clsx("overflow-y-auto pr-1", scrollClassName ?? "max-h-72")}
         onMarkRead={markAsRead}
       />
+
+      {extraCount > 0 && (
+        <p className="text-[0.7rem] text-white/60">
+          +{extraCount} more unread {extraCount === 1 ? "notification" : "notifications"}
+        </p>
+      )}
 
       <Link
         href="/notifications"

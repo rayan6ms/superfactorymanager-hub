@@ -4,7 +4,6 @@ import Search from "@/components/ui/Search";
 import { LogIn, LogOut, Plus, UserRoundPen } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import type { Session } from "next-auth";
-import NotificationPreviewList from "@/components/notifications/NotificationPreviewList";
 import type { SerializedNotification } from "@/lib/notifications";
 import UserMenuAutoCloser from "@/components/layout/UserMenuAutoCloser";
 import HeaderNotifications from "@/components/layout/HeaderNotifications";
@@ -144,6 +143,10 @@ export default function Header({ session, notifications }: HeaderProps) {
             </summary>
             <div className="absolute right-0 top-full mt-2 min-w-[16rem] rounded-xl border border-white/15 bg-(--surface-2)/95 p-4 shadow-lg">
               <div className="flex flex-col gap-4">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Search posts</p>
+                  <Search className="w-full" />
+                </div>
                 {user && (
                   <HeaderNotifications
                     initialNotifications={notificationItems}

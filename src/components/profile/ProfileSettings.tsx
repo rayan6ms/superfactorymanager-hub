@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button, Input, Card } from "@/components/ui";
-import { Loader2, RefreshCw, Upload, ShieldCheck } from "lucide-react";
+import { Loader2, RefreshCw, Upload, ShieldCheck, UserRoundPen } from "lucide-react";
 import {
   USERNAME_HELP_TEXT,
   USERNAME_MAX_LENGTH,
@@ -55,6 +55,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       }
     };
     reader.readAsDataURL(file);
+    event.target.value = "";
   }
 
   function usernameErrorMessage(code: UsernameValidationCode | "NAME_TAKEN") {
@@ -98,6 +99,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 
@@ -142,6 +144,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       const res = await fetch("/api/auth/password/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email: initialUser.email }),
       });
       if (!res.ok) throw new Error("Request failed");
@@ -164,6 +167,14 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
               {(name || initialUser.email).charAt(0).toUpperCase()}
             </div>
           )}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute bottom-1 right-1 inline-flex items-center justify-center rounded-full border border-white/30 bg-black/60 p-1 text-white transition hover:border-white/60 hover:bg-black/80"
+          >
+            <UserRoundPen className="h-4 w-4" aria-hidden />
+            <span className="sr-only">Change avatar image</span>
+          </button>
         </div>
         <div className="flex-1 space-y-3">
           <div>

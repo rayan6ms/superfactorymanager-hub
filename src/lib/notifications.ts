@@ -36,7 +36,7 @@ export async function getNotificationPreview(userId: string, limit = NOTIFICATIO
   const take = Math.min(Math.max(limit, 1), 10);
   const [items, unreadCount] = await Promise.all([
     db.notification.findMany({
-      where: { userId },
+      where: { userId, readAt: null },
       orderBy: { createdAt: "desc" },
       take,
     }),
@@ -47,11 +47,15 @@ export async function getNotificationPreview(userId: string, limit = NOTIFICATIO
 
 export async function getNotifications(
   userId: string,
-  options: { take?: number; cursor?: string | null } = {}
+  options: { take?: number; cursor?: string | null; unreadOnly?: boolean } = {}
 ): Promise<NotificationQueryResult> {
   const take = Math.min(Math.max(options.take ?? NOTIFICATION_PAGE_SIZE, 1), 50);
+  const where: Prisma.NotificationWhereInput = {
+    userId,
+    ...(options.unreadOnly ? { readAt: null } : {}),
+  };
   const notifications = await db.notification.findMany({
-    where: { userId },
+    where,
     orderBy: { createdAt: "desc" },
     take: take + 1,
     ...(options.cursor ? { skip: 1, cursor: { id: options.cursor } } : {}),

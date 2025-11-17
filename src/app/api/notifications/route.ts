@@ -19,8 +19,9 @@ export async function GET(req: Request) {
   const cursor = url.searchParams.get("cursor") ?? undefined;
   const takeCandidate = limitParam ? Number.parseInt(limitParam, 10) : undefined;
   const take = typeof takeCandidate === "number" && Number.isFinite(takeCandidate) ? takeCandidate : undefined;
+  const unreadOnly = url.searchParams.get("unreadOnly") === "1";
 
-  const data = await getNotifications(user.id, { take, cursor: cursor || undefined });
+  const data = await getNotifications(user.id, { take, cursor: cursor || undefined, unreadOnly });
   return NextResponse.json(data);
 }
 

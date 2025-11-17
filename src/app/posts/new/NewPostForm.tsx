@@ -624,7 +624,9 @@ export default function NewPostForm() {
         youtubeUrl: form.youtubeUrl.trim(),
       };
       const res = await fetch("/api/posts", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -637,7 +639,11 @@ export default function NewPostForm() {
         for (const f of mediaFiles) {
           const fd = new FormData();
           fd.append("file", f);
-          const uploadRes = await fetch(`/api/uploads/${data.id}`, { method: "POST", body: fd });
+          const uploadRes = await fetch(`/api/uploads/${data.id}`, {
+            method: "POST",
+            body: fd,
+            credentials: "include",
+          });
           if (!uploadRes.ok) {
             let uploadMessage = "Failed to upload one of the images.";
             try {
@@ -956,7 +962,7 @@ export default function NewPostForm() {
                     key={d.url}
                     href={d.url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm no-underline"
                   >
                     <span className="font-medium text-white/85 group-hover:text-white">{d.name}</span>

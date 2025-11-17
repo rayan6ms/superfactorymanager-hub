@@ -70,7 +70,10 @@ export default function NotificationCenter({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/notifications?limit=${NOTIFICATION_PAGE_SIZE}`, { cache: "no-store" });
+      const res = await fetch(`/api/notifications?limit=${NOTIFICATION_PAGE_SIZE}`, {
+        cache: "no-store",
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Failed to fetch notifications");
       const data = (await res.json()) as ApiResponse;
       applyUpdates(data.notifications ?? [], data.unreadCount ?? 0, data.nextCursor ?? null);
@@ -91,7 +94,10 @@ export default function NotificationCenter({
         cursor,
         limit: String(NOTIFICATION_PAGE_SIZE),
       });
-      const res = await fetch(`/api/notifications?${params.toString()}`, { cache: "no-store" });
+      const res = await fetch(`/api/notifications?${params.toString()}`, {
+        cache: "no-store",
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Failed to load more");
       const data = (await res.json()) as ApiResponse;
       setNotifications(prev => [...prev, ...(data.notifications ?? [])]);
@@ -113,6 +119,7 @@ export default function NotificationCenter({
         const res = await fetch("/api/notifications", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ ids: [notification.id], read: makeRead }),
         });
         if (!res.ok) throw new Error("Request failed");
@@ -149,6 +156,7 @@ export default function NotificationCenter({
       const res = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ ids, read: true }),
       });
       if (!res.ok) throw new Error("Failed to mark notifications as read");

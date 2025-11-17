@@ -26,7 +26,11 @@ export default function AuthRequiredProvider({ children }: { children: React.Rea
   }, []);
 
   const apiFetch = useCallback(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const res = await fetch(input, init);
+    const nextInit: RequestInit = {
+      ...init,
+      credentials: init?.credentials ?? "include",
+    };
+    const res = await fetch(input, nextInit);
     if (res.status === 401) openLogin();
     return res;
   }, [openLogin]);

@@ -6,6 +6,8 @@ import { generateInitialAvatar, resolveProfileImage } from "@/lib/avatar";
 import { validateUsernameInput } from "@/lib/usernames";
 import { isUsernameTaken } from "@/lib/usernames.server";
 
+const MAX_IMAGE_VALUE_LENGTH = 1_000_000;
+
 const schema = z.object({
   name: z
     .string()
@@ -14,7 +16,7 @@ const schema = z.object({
   image: z
     .string()
     .trim()
-    .max(2048, "IMAGE_URL_TOO_LONG")
+    .max(MAX_IMAGE_VALUE_LENGTH, "IMAGE_URL_TOO_LONG")
     .optional()
     .or(z.literal("").transform(() => undefined)),
   regenerateAvatar: z.boolean().optional(),
