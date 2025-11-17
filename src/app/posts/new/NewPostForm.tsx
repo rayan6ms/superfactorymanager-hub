@@ -122,6 +122,7 @@ export default function NewPostForm() {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [limitedByMax, setLimitedByMax] = useState(false);
+  const [wrapLines, setWrapLines] = useState(true);
   const fileSummary = useMemo(() => {
     if (!mediaFiles.length) return `No files chosen (0/${MAX_IMAGE_COUNT})`;
     if (mediaFiles.length === 1) return `1 of ${MAX_IMAGE_COUNT} image slots used`;
@@ -676,6 +677,7 @@ export default function NewPostForm() {
                 value={form.title}
                 onChange={e => change("title", e.target.value)}
                 onBlur={() => markTouched("title")}
+                maxLength={MAX_TITLE_LENGTH}
                 aria-invalid={shouldShowError("title") || undefined}
                 aria-describedby={shouldShowError("title") ? errorId("title") : undefined}
                 className={clsx(
@@ -825,6 +827,7 @@ export default function NewPostForm() {
                         commitTagInput();
                       }
                     }}
+                    maxLength={MAX_TAG_LENGTH}
                     aria-invalid={shouldShowError("tags") || undefined}
                     aria-describedby={shouldShowError("tags") ? errorId("tags") : undefined}
                     disabled={tags.length >= TAG_MAX_COUNT}
@@ -1149,12 +1152,49 @@ export default function NewPostForm() {
             description="Paste the SuperFactoryManager script that powers your build."
           />
 
+          <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-white/65">
+              {wrapLines
+                ? "Long lines wrap into the next row so you never lose sight of your cursor."
+                : "Long lines stay on one row. Scroll horizontally to view everything."}
+            </p>
+            <div className="inline-flex rounded-full border border-white/15 bg-white/5 p-1 text-xs font-semibold">
+              <button
+                type="button"
+                aria-pressed={wrapLines}
+                onClick={() => setWrapLines(true)}
+                className={clsx(
+                  "rounded-full px-3 py-1.5 transition",
+                  wrapLines
+                    ? "bg-brand-500 text-white shadow-soft"
+                    : "text-white/70 hover:text-white"
+                )}
+              >
+                Wrap lines
+              </button>
+              <button
+                type="button"
+                aria-pressed={!wrapLines}
+                onClick={() => setWrapLines(false)}
+                className={clsx(
+                  "rounded-full px-3 py-1.5 transition",
+                  !wrapLines
+                    ? "bg-brand-500 text-white shadow-soft"
+                    : "text-white/70 hover:text-white"
+                )}
+              >
+                Horizontal scroll
+              </button>
+            </div>
+          </div>
+
           <CodeBox
             value={form.code}
             onChange={v => change("code", v)}
             onBlur={() => markTouched("code")}
             isInvalid={shouldShowError("code")}
             errorLines={codeFeedback.syntaxErrors.map(error => error.lineStart)}
+            wrapLines={wrapLines}
             describedBy={[
               shouldShowError("code") ? errorId("code") : null,
               codeFeedback.status === "ok" && codeFeedback.warnings.length ? codeWarningsId : null,
