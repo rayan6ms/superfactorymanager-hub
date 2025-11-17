@@ -41,18 +41,26 @@ export async function getRecentPosts(limit = 6) {
 
 export async function getTrendingPosts(limit = 6) {
   const since = subDays(new Date(), 14);
+
   const ratingGroups = await db.rating.groupBy({
     by: ["postId"],
     where: { ratedAt: { gte: since } },
-    _count: { _all: true },
-    orderBy: { _count: { _all: "desc" } },
+    _count: { postId: true },
+    orderBy: { _count: { postId: "desc" } },
     take: limit * 3,
   });
+
   const ids = ratingGroups.map(group => group.postId);
+
   const posts = ids.length
-    ? await db.post.findMany({ where: { id: { in: ids } }, include: POST_CARD_INCLUDE })
+    ? await db.post.findMany({
+      where: { id: { in: ids } },
+      include: POST_CARD_INCLUDE,
+    })
     : [];
+
   const map = new Map(posts.map(post => [post.id, post]));
+
   const ordered = ids
     .map(id => map.get(id))
     .filter((post): post is PostWithRelations => Boolean(post))
@@ -69,15 +77,18 @@ export async function getTrendingPosts(limit = 6) {
     include: POST_CARD_INCLUDE,
     take: limit * 2,
   });
+
   const combined: SerializedPost[] = [];
   const seen = new Set(ordered.map(post => post.id));
   combined.push(...ordered);
+
   for (const post of fallback) {
     if (seen.has(post.id)) continue;
     combined.push(serializePost(post));
     seen.add(post.id);
     if (combined.length >= limit) break;
   }
+
   return combined.slice(0, limit);
 }
 
@@ -102,11 +113,11 @@ export async function getRecommendedPosts(opts: {
   const { userId, searchTerm, limit = 6 } = opts;
   const recentUserPosts = userId
     ? await db.post.findMany({
-        where: { authorId: userId },
-        include: { tags: { include: { tag: true } } },
-        orderBy: { uploadDate: "desc" },
-        take: 5,
-      })
+      where: { authorId: userId },
+      include: { tags: { include: { tag: true } } },
+      orderBy: { uploadDate: "desc" },
+      take: 5,
+    })
     : [];
 
   const categoryIds = new Set(recentUserPosts.map(post => post.categoryId));
@@ -126,7 +137,9 @@ export async function getRecommendedPosts(opts: {
   }
   if (titleKeywords.size) {
     orFilters.push({
-      OR: Array.from(titleKeywords).map(word => ({ title: { contains: word, mode: "insensitive" } })),
+      OR: Array.from(titleKeywords).map(word => ({
+        title: { contains: word },
+      })),
     });
   }
 
@@ -155,13 +168,13 @@ export async function getRecommendedPosts(opts: {
 export type PostsFilterOptions = {
   q?: string;
   order?:
-    | "best"
-    | "newest"
-    | "oldest"
-    | "highest-rating"
-    | "lowest-rating"
-    | "most-views"
-    | "least-views";
+  | "best"
+  | "newest"
+  | "oldest"
+  | "highest-rating"
+  | "lowest-rating"
+  | "most-views"
+  | "least-views";
   minRating?: number;
   categoryKey?: string;
   gameVersion?: string;
@@ -215,16 +228,16 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
   const where: Prisma.PostWhereInput = { ...baseWhere };
   if (q && q.trim().length) {
     const or: Prisma.PostWhereInput[] = [
-      { title: { contains: q, mode: "insensitive" } },
-      { description: { contains: q, mode: "insensitive" } },
+      { title: { contains: q } },
+      { description: { contains: q } },
       { code: { contains: q } },
-      { authorName: { contains: q, mode: "insensitive" } },
-      { slug: { contains: q, mode: "insensitive" } },
-      { modVersion: { contains: q, mode: "insensitive" } },
-      { category: { is: { name: { contains: q, mode: "insensitive" } } } },
-      { category: { is: { key: { contains: q, mode: "insensitive" } } } },
-      { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } },
-      { dependencies: { some: { name: { contains: q, mode: "insensitive" } } } },
+      { authorName: { contains: q } },
+      { slug: { contains: q } },
+      { modVersion: { contains: q } },
+      { category: { is: { name: { contains: q } } } },
+      { category: { is: { key: { contains: q } } } },
+      { tags: { some: { tag: { name: { contains: q } } } } },
+      { dependencies: { some: { name: { contains: q } } } },
     ];
     where.OR = or;
   }

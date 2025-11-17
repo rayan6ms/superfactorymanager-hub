@@ -16,30 +16,42 @@ const ORDER_VALUES: PostsFilterOptions["order"][] = [
   "least-views",
 ];
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
 type Props = {
-  searchParams?: Record<string, string | string[]>;
+  searchParams?: SearchParams;
 };
 
-function getParam(searchParams: Props["searchParams"], key: string) {
-  const value = searchParams?.[key];
+function getParam(
+  params: Record<string, string | string[] | undefined> | undefined,
+  key: string
+) {
+  const value = params?.[key];
+  if (Array.isArray(value)) return value[0] ?? "";
   return typeof value === "string" ? value : "";
 }
 
 export default async function PostsPage({ searchParams }: Props) {
-  const q = getParam(searchParams, "q");
-  const orderParam = getParam(searchParams, "order");
-  const minRatingParam = getParam(searchParams, "minRating");
-  const category = getParam(searchParams, "category");
-  const gameVersion = getParam(searchParams, "gameVersion");
-  const sfmVersion = getParam(searchParams, "sfmVersion");
+  const params = searchParams ? await searchParams : undefined;
 
-  const order = (ORDER_VALUES.includes(orderParam as PostsFilterOptions["order"])
+  const q = getParam(params, "q");
+  const orderParam = getParam(params, "order");
+  const minRatingParam = getParam(params, "minRating");
+  const category = getParam(params, "category");
+  const gameVersion = getParam(params, "gameVersion");
+  const sfmVersion = getParam(params, "sfmVersion");
+
+  const order = ORDER_VALUES.includes(orderParam as PostsFilterOptions["order"])
     ? (orderParam as PostsFilterOptions["order"])
-    : "most-views");
+    : "most-views";
+
   const minRatingNumber = Number(minRatingParam) || undefined;
 
   const [categories, sfmMatrix, posts] = await Promise.all([
-    db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, key: true, name: true } }),
+    db.category.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, key: true, name: true },
+    }),
     getSfmMatrix(false),
     searchPostsWithFilters({
       q: q || undefined,

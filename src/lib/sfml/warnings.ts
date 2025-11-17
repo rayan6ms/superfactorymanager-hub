@@ -1,4 +1,3 @@
-// src/lib/sfml/warnings.ts
 import { CharStreams, CommonTokenStream } from "antlr4ts";
 import { ParseTreeWalker } from "antlr4ts/tree/ParseTreeWalker";
 import { SFMLLexer } from "@/generated/SFMLLexer";
@@ -18,7 +17,6 @@ class InputOutputChecker implements SFMLListener {
   }
 
   private typeFromCtxText(text: string): string {
-    // mirrors the extension’s heuristic
     let t = text.match(/(fe|fluid|gas|item)(?:::[^:]*|:[^:*]*:\*|:[^:*]*)/i)?.[1]?.toLowerCase();
     if (!t || !text.includes(":")) t = "item";
     if (t.startsWith("fluid:")) t = "fluid";
@@ -39,13 +37,11 @@ class InputOutputChecker implements SFMLListener {
   }
 
   private verify() {
-    // input without corresponding output
     for (const i of this.inputs) {
       if (!this.outputs.some(o => o.type === i.type)) {
         this.addWarning(`Warning: Input ${i.type}:: without corresponding output.`, i.lineStart, i.lineEnd);
       }
     }
-    // output without corresponding input
     for (const o of this.outputs) {
       if (!this.inputs.some(i => i.type === o.type)) {
         this.addWarning(`Warning: Output ${o.type}:: without corresponding input.`, o.lineStart, o.lineEnd);
@@ -74,14 +70,12 @@ class InputOutputChecker implements SFMLListener {
     this.outputs = [];
   }
 
-  // no-op implementations
   enterEveryRule?(_: any): void { }
   exitEveryRule?(_: any): void { }
   visitTerminal?(_: any): void { }
   visitErrorNode?(_: any): void { }
 }
 
-/** Semantic warnings pass (pairing of inputs/outputs), no VS Code deps */
 export function collectWarnings(code: string): WarningItem[] {
   const input = CharStreams.fromString(code);
   const lexer = new SFMLLexer(input);

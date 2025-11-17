@@ -1,7 +1,6 @@
 "use client";
 import Input from "./Input";
 import { Search } from "lucide-react";
-// keep className extension simple; avoid clsx so Tailwind v4 static extraction is robust
 
 type Props = {
   action?: string;

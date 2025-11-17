@@ -1,4 +1,3 @@
-// src/components/layout/UserMenuAutoCloser.tsx
 "use client";
 
 import { useEffect } from "react";

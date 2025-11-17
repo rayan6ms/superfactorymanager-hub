@@ -93,7 +93,7 @@ async function remoteImageIsReachable(url: string): Promise<boolean> {
       return false;
     }
 
-    // Consume minimal data to allow connection cleanup without downloading the full file.
+    // consume minimal data to allow connection cleanup without downloading the full file.
     await getRes.arrayBuffer().catch(() => undefined);
     return true;
   } catch {

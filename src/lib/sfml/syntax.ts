@@ -1,4 +1,3 @@
-// src/lib/sfml/syntax.ts
 import { CharStreams, CommonTokenStream } from "antlr4ts";
 import { ANTLRErrorListener, RecognitionException, Recognizer } from "antlr4ts";
 import { SFMLLexer } from "@/generated/SFMLLexer";
@@ -39,7 +38,6 @@ class CollectingErrorListener implements ANTLRErrorListener<any> {
   }
 }
 
-/** Parse & return ANTLR syntax errors (no VS Code deps) */
 export function validateSyntax(code: string): { ok: boolean; errors: SyntaxErrorItem[] } {
   const input = CharStreams.fromString(code);
   const lexer = new SFMLLexer(input);
@@ -52,7 +50,6 @@ export function validateSyntax(code: string): { ok: boolean; errors: SyntaxError
   lexer.addErrorListener(listener);
   parser.addErrorListener(listener);
 
-  // entry rule in the grammar
   parser.program();
 
   return { ok: parser.numberOfSyntaxErrors === 0 && listener.errors.length === 0, errors: listener.errors };

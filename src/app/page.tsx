@@ -11,8 +11,10 @@ import {
   type SerializedPost,
 } from "@/lib/posts";
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
 type Props = {
-  searchParams?: { q?: string };
+  searchParams?: SearchParams;
 };
 
 function PostSection({ title, posts }: { title: string; posts: SerializedPost[] }) {
@@ -36,11 +38,18 @@ function PostSection({ title, posts }: { title: string; posts: SerializedPost[] 
 }
 
 export default async function Home({ searchParams }: Props) {
+  const params = searchParams ? await searchParams : undefined;
+  const rawQ = params?.q;
+  const q = Array.isArray(rawQ) ? rawQ[0] : rawQ;
+
   const session = await auth();
-  const q = searchParams?.q ? String(searchParams.q) : undefined;
+
   let userId: string | null = null;
   if (session?.user?.email) {
-    const user = await db.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
+    const user = await db.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
     userId = user?.id ?? null;
   }
 

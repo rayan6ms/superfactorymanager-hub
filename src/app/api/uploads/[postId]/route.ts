@@ -48,7 +48,6 @@ export async function POST(
   const baseDir = path.join(process.cwd(), "public", "uploads", postId);
   await mkdir(baseDir, { recursive: true });
 
-  // save original as jpg
   const originalName = `${id}-orig.jpg`;
   const originalPath = path.join(baseDir, originalName);
   const originalJpg = await sharp(bytes).jpeg({ quality: 90 }).toBuffer();

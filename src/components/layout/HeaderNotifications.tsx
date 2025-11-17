@@ -9,7 +9,6 @@ import type { SerializedNotification } from "@/lib/notifications";
 type HeaderNotificationsProps = {
   initialNotifications: SerializedNotification[];
   initialUnreadCount: number;
-  /** Optional: tweak scroll height (desktop vs mobile) */
   scrollClassName?: string;
 };
 
@@ -64,7 +63,6 @@ export default function HeaderNotifications({
         console.error(err);
         setError("We couldn’t update that notification. Please try again.");
 
-        // (optional) you could rollback here if you really care about accuracy
       } finally {
         setPendingIds(prev => {
           const next = new Set(prev);

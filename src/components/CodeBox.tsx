@@ -352,7 +352,7 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
             }}
             aria-invalid={isInvalid || undefined}
             aria-describedby={describedBy}
-            placeholder="// paste your code here"
+            placeholder="-- paste your code here"
             spellCheck={false}
             autoComplete="off"
             autoCorrect="off"
