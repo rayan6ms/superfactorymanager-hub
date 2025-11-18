@@ -7,6 +7,8 @@ import { Card } from "@/components/ui";
 import ImageGallery from "@/components/ImageGallery";
 import HighlightedCode from "@/components/HighlightedCode";
 import CodeVerification from "@/components/CodeVerification";
+import CommentsSection from "@/components/posts/CommentsSection";
+import { getPostComments } from "@/lib/comments";
 
 type VoteValue = "up" | "down" | null;
 
@@ -70,12 +72,17 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
 
   let myVoteValue: number | null = null;
   let isAuthor = false;
+  let me: { id: string; name: string | null; image: string | null } | null = null;
 
   if (session?.user?.email) {
-    const me = await db.user.findUnique({ where: { email: session.user.email } });
-    if (me) {
-      isAuthor = me.id === post.authorId;
-      const vote = await db.rating.findUnique({ where: { userId_postId: { userId: me.id, postId: post.id } } });
+    const meResult = await db.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, name: true, image: true },
+    });
+    if (meResult) {
+      me = meResult;
+      isAuthor = meResult.id === post.authorId;
+      const vote = await db.rating.findUnique({ where: { userId_postId: { userId: meResult.id, postId: post.id } } });
       myVoteValue = vote?.value ?? null;
     }
   }
@@ -87,6 +94,8 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   const heroImage = post.images?.[0] ?? null;
   const heroSrc = heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
   const tags = post.tags?.map(t => t.tag).filter(Boolean) ?? [];
+
+  const commentData = await getPostComments(post.id);
 
   return (
     <div className="space-y-8">
@@ -236,6 +245,15 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
           </Card>
         </div>
       </div>
+
+      <CommentsSection
+        postSlug={post.slug}
+        initialComments={commentData.comments}
+        initialCursor={commentData.nextCursor}
+        initialTotal={commentData.total}
+        currentUser={me}
+        postAuthorId={post.authorId}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MAX_POST_IMAGES } from "./images";
+import { COMMENT_MAX_LENGTH, COMMENT_MIN_LENGTH } from "./comment-constants";
 
 export const TAG_MIN_COUNT = 2;
 export const TAG_MAX_COUNT = 6;
@@ -72,4 +73,12 @@ export const searchQuerySchema = z.object({
   version: z.string().optional(),
   page: z.coerce.number().optional().default(1),
   perPage: z.coerce.number().optional().default(20),
+});
+
+export const commentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(COMMENT_MIN_LENGTH, { message: `Comments must be at least ${COMMENT_MIN_LENGTH} characters long.` })
+    .max(COMMENT_MAX_LENGTH, { message: `Comments must be ${COMMENT_MAX_LENGTH} characters or fewer.` }),
 });
