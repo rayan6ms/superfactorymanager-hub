@@ -1,14 +1,50 @@
 import { MeiliSearch } from "meilisearch";
 import { db } from "./db";
+import type {
+  Post,
+  Dependency,
+  PostTag,
+  Category,
+  Tag,
+} from "@prisma/client";
+
+const meiliHost = process.env.MEILI_HOST;
+if (!meiliHost) {
+  throw new Error("MEILI_HOST environment variable is not set");
+}
+
+const meiliApiKey = process.env.MEILI_API_KEY;
 
 const client = new MeiliSearch({
-  host: process.env.MEILI_HOST!,
-  apiKey: process.env.MEILI_API_KEY!,
+  host: meiliHost,
+  apiKey: meiliApiKey,
 });
 
-export const postsIndex = () => client.index("posts");
+type PostForIndex = Post & {
+  dependencies: Dependency[];
+  tags: (PostTag & { tag: Tag | null })[];
+  category: Category | null;
+};
 
-export async function ensureIndexes() {
+export type PostDocument = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  code: string;
+  dependencies: string[];
+  tags: string[];
+  authorName: string;
+  modVersion: string;
+  categoryKey: string | null;
+  uploadDate: string;
+  views: number;
+  rating: number;
+};
+
+export const postsIndex = () => client.index<PostDocument>("posts");
+
+export async function ensureIndexes(): Promise<void> {
   const index = postsIndex();
   await index.updateSettings({
     searchableAttributes: [
@@ -26,47 +62,45 @@ export async function ensureIndexes() {
   });
 }
 
-export async function indexPost(p: any) {
-  const doc = {
-    id: p.id,
-    slug: p.slug,
-    title: p.title,
-    description: p.description,
-    code: p.code,
-    dependencies: p.dependencies?.map((d: any) => d.name) ?? [],
-    tags: p.tags?.map((t: any) => t.tag?.name ?? t.tagName ?? "")?.filter(Boolean) ?? [],
-    authorName: p.authorName,
-    modVersion: p.modVersion,
-    categoryKey: p.category?.key ?? null,
-    uploadDate: p.uploadDate,
-    views: p.views,
-    rating: p.rating,
-  };
-  await postsIndex().addDocuments([doc]);
-}
-
-export async function removePost(id: string) {
-  await postsIndex().deleteDocument(id);
-}
-
-export async function reindexAll() {
-  const items = await db.post.findMany({
-    include: { dependencies: true, category: true, tags: { include: { tag: true } } },
-  });
-  await postsIndex().deleteAllDocuments();
-  await postsIndex().addDocuments(items.map(p => ({
+function toDocument(p: PostForIndex): PostDocument {
+  return {
     id: p.id,
     slug: p.slug,
     title: p.title,
     description: p.description,
     code: p.code,
     dependencies: p.dependencies.map(d => d.name),
-    tags: p.tags.map(t => t.tag.name),
+    tags:
+      p.tags
+        .map(t => t.tag?.name ?? null)
+        .filter((name): name is string => Boolean(name)) ?? [],
     authorName: p.authorName,
     modVersion: p.modVersion,
     categoryKey: p.category?.key ?? null,
-    uploadDate: p.uploadDate,
+    uploadDate: p.uploadDate.toISOString(),
     views: p.views,
     rating: p.rating,
-  })));
+  };
+}
+
+export async function indexPost(p: PostForIndex): Promise<void> {
+  const doc = toDocument(p);
+  await postsIndex().addDocuments([doc]);
+}
+
+export async function removePost(id: string): Promise<void> {
+  await postsIndex().deleteDocument(id);
+}
+
+export async function reindexAll(): Promise<void> {
+  const items = await db.post.findMany({
+    include: {
+      dependencies: true,
+      category: true,
+      tags: { include: { tag: true } },
+    },
+  });
+
+  await postsIndex().deleteAllDocuments();
+  await postsIndex().addDocuments(items.map(toDocument));
 }

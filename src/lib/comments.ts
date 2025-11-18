@@ -22,10 +22,10 @@ const serializeComment = (comment: CommentWithAuthor): SerializedComment => ({
   updatedAt: comment.updatedAt.toISOString(),
   author: comment.author
     ? {
-        id: comment.author.id,
-        name: comment.author.name,
-        image: comment.author.image,
-      }
+      id: comment.author.id,
+      name: comment.author.name,
+      image: comment.author.image,
+    }
     : null,
 });
 
@@ -36,19 +36,16 @@ export async function getPostComments(
   const take = Math.min(Math.max(options.take ?? COMMENT_PAGE_SIZE, 1), 50);
   const cursor = options.cursor ?? null;
 
-  const queryOptions: Prisma.CommentFindManyArgs = {
+  const comments: CommentWithAuthor[] = await db.comment.findMany({
     where: { postId },
     orderBy: { createdAt: "desc" },
     take: take + 1,
     include: { author: { select: authorSelect } },
-  };
-
-  if (cursor) {
-    queryOptions.cursor = { id: cursor };
-    queryOptions.skip = 1;
-  }
-
-  const comments = await db.comment.findMany(queryOptions);
+    ...(cursor && {
+      cursor: { id: cursor },
+      skip: 1,
+    }),
+  });
 
   let nextCursor: string | null = null;
   if (comments.length > take) {
