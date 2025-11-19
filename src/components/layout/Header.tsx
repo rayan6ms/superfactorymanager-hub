@@ -7,6 +7,7 @@ import type { Session } from "next-auth";
 import type { SerializedNotification } from "@/lib/notifications";
 import UserMenuAutoCloser from "@/components/layout/UserMenuAutoCloser";
 import HeaderNotifications from "@/components/layout/HeaderNotifications";
+import NotificationBadge from "@/components/layout/NotificationBadge";
 
 type HeaderProps = {
   session: Session | null;
@@ -65,11 +66,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                           {initial}
                         </span>
                       )}
-                      {unreadCount > 0 && (
-                        <span className="absolute -right-0.5 -top-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 text-[0.65rem] font-semibold leading-none text-white">
-                          {unreadCount > 9 ? "9+" : unreadCount}
-                        </span>
-                      )}
+                      <NotificationBadge initialCount={unreadCount} />
                       <span className="sr-only">Open user menu</span>
                     </summary>
                     <div className="absolute right-0 top-full mt-2 min-w-[20rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/15 bg-(--surface)/80 p-4 shadow-lg backdrop-blur-lg">
@@ -129,11 +126,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                         {initial}
                       </span>
                     )}
-                    {unreadCount > 0 && (
-                      <span className="absolute -right-0.5 -top-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 text-[0.65rem] font-semibold leading-none text-white">
-                        {unreadCount > 9 ? "9+" : unreadCount}
-                      </span>
-                    )}
+                    <NotificationBadge initialCount={unreadCount} />
                   </>
                 ) : (
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg font-semibold">

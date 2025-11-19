@@ -22,13 +22,22 @@ function renderRating(rating: number | null | undefined, ratingCount: number | n
   return `${rate}% success (${worked}\u2713 / ${broken}\u2715)`;
 }
 
+function getInitial(name: string | null | undefined) {
+  const base = name?.trim();
+  if (!base) return "?";
+  return base.charAt(0).toUpperCase();
+}
+
 export default function PostCard({ post }: Props) {
   const image = post.images?.[0];
+  const authorName = post.author?.name ?? post.authorName ?? "Unknown creator";
+  const authorImage = post.author?.image ?? null;
+  const authorProfile = post.author?.name ? `/profile/${post.author.name}` : null;
   return (
     <li>
-      <Link href={`/posts/${post.slug}`} className="block">
-        <Card className="p-5" hoverable>
-          <div className="flex flex-col gap-4 sm:flex-row">
+      <Card className="p-5" hoverable>
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <Link href={`/posts/${post.slug}`} className="flex flex-1 flex-col gap-4 sm:flex-row">
             {image ? (
               <img
                 src={image.thumbLg || image.thumbMd || image.thumbSm}
@@ -67,12 +76,35 @@ export default function PostCard({ post }: Props) {
                   <Star className="h-3 w-3 text-amber-300" aria-hidden />
                   {renderRating(post.rating, post.ratingCount)}
                 </span>
-                <span className="truncate text-white/50">by {post.authorName}</span>
               </div>
             </div>
+          </Link>
+        </div>
+
+        <div className="mt-4 flex items-center gap-2 text-sm text-white/80">
+          {authorImage ? (
+            <span
+              className="h-9 w-9 shrink-0 rounded-full bg-cover bg-center"
+              style={{ backgroundImage: `url(${authorImage})` }}
+              aria-hidden="true"
+            />
+          ) : (
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-base font-semibold">
+              {getInitial(authorName)}
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Author</p>
+            {authorProfile ? (
+              <Link href={authorProfile} className="truncate font-semibold text-white underline-offset-4 hover:underline">
+                {authorName}
+              </Link>
+            ) : (
+              <span className="truncate font-semibold text-white">{authorName}</span>
+            )}
           </div>
-        </Card>
-      </Link>
+        </div>
+      </Card>
     </li>
   );
 }

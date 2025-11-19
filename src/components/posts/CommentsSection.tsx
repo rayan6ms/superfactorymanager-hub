@@ -77,24 +77,27 @@ const insertReply = (
   items: SerializedComment[],
   parentId: string,
   reply: SerializedComment,
-): { updated: SerializedComment[]; inserted: boolean } => {
+): { updated: SerializedComment[]; inserted: boolean; replyCount?: number } => {
   let inserted = false;
+  let replyCount: number | undefined;
   const updated = items.map(item => {
     if (inserted) return item;
     if (item.id === parentId) {
       inserted = true;
+      replyCount = item.replies.length + 1;
       return { ...item, replies: [...item.replies, reply] };
     }
     if (item.replies.length) {
       const childResult = insertReply(item.replies, parentId, reply);
       if (childResult.inserted) {
         inserted = true;
+        replyCount = childResult.replyCount;
         return { ...item, replies: childResult.updated };
       }
     }
     return item;
   });
-  return { updated: inserted ? updated : items, inserted };
+  return { updated: inserted ? updated : items, inserted, replyCount };
 };
 
 export default function CommentsSection({
@@ -117,6 +120,7 @@ export default function CommentsSection({
   const [targetCommentId, setTargetCommentId] = useState<string | null>(null);
   const [highlightedComment, setHighlightedComment] = useState<string | null>(null);
   const [replyTarget, setReplyTarget] = useState<{ id: string; authorName: string } | null>(null);
+  const [visibleRepliesMap, setVisibleRepliesMap] = useState<Record<string, number>>({});
   const focusHandledRef = useRef(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -206,10 +210,21 @@ export default function CommentsSection({
           throw new Error(data.error ?? "Failed to post reply");
         }
         const createdComment = data.comment;
+        let insertedReplyCount = 0;
         setComments(prev => {
           const result = insertReply(prev, replyTargetId, createdComment);
+          if (result.inserted && typeof result.replyCount === "number") {
+            insertedReplyCount = result.replyCount;
+          }
           return result.inserted ? result.updated : prev;
         });
+        if (insertedReplyCount > 0) {
+          setVisibleRepliesMap(prev => {
+            const current = prev[replyTargetId];
+            if (current && current >= insertedReplyCount) return prev;
+            return { ...prev, [replyTargetId]: insertedReplyCount };
+          });
+        }
         setReplyText("");
         setReplyTarget(null);
         setTotal(prev => (typeof data.total === "number" ? data.total : prev + 1));
@@ -249,6 +264,25 @@ export default function CommentsSection({
   const cancelReply = useCallback(() => {
     setReplyTarget(null);
     setReplyText("");
+  }, []);
+
+  const getVisibleReplies = useCallback(
+    (commentId: string, totalReplies: number) => {
+      if (totalReplies <= 0) return 0;
+      const stored = visibleRepliesMap[commentId];
+      const baseline = totalReplies > 0 ? 1 : 0;
+      return Math.min(totalReplies, typeof stored === "number" ? stored : baseline);
+    },
+    [visibleRepliesMap],
+  );
+
+  const showNextReply = useCallback((commentId: string, totalReplies: number) => {
+    if (totalReplies <= 0) return;
+    setVisibleRepliesMap(prev => {
+      const current = prev[commentId] ?? (totalReplies > 0 ? 1 : 0);
+      if (current >= totalReplies) return prev;
+      return { ...prev, [commentId]: current + 1 };
+    });
   }, []);
 
   const loadMore = useCallback(async () => {
@@ -354,8 +388,21 @@ export default function CommentsSection({
           const isAuthor = comment.author?.id === postAuthorId;
           const isHighlighted = highlightedComment === comment.id;
           const isReplyingHere = replyTargetId === comment.id;
+          const visibleReplies = getVisibleReplies(comment.id, comment.replies.length);
+          const repliesToRender = comment.replies.slice(0, visibleReplies);
+          const remainingReplies = Math.max(comment.replies.length - repliesToRender.length, 0);
           return (
-            <div key={comment.id} className="space-y-3" id={`comment-${comment.id}`}>
+            <div
+              key={comment.id}
+              className="relative space-y-3"
+              id={`comment-${comment.id}`}
+            >
+              {depth > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -left-4 top-5 h-5 w-5 border-b border-l border-white/15 sm:-left-6 sm:w-6"
+                />
+              )}
               <article
                 className={clsx(
                   "rounded-2xl border border-white/10 bg-white/5 p-4",
@@ -431,9 +478,20 @@ export default function CommentsSection({
                 </form>
               )}
 
-              {comment.replies.length > 0 && (
+              {repliesToRender.length > 0 && (
                 <div className="ml-4 sm:ml-6">
-                  {renderThread(comment.replies, depth + 1)}
+                  {renderThread(repliesToRender, depth + 1)}
+                </div>
+              )}
+              {remainingReplies > 0 && (
+                <div className="ml-4 sm:ml-6">
+                  <button
+                    type="button"
+                    onClick={() => showNextReply(comment.id, comment.replies.length)}
+                    className="text-xs font-semibold text-brand-200 underline-offset-4 transition hover:text-brand-100 hover:underline"
+                  >
+                    Show 1 more reply ({remainingReplies} left)
+                  </button>
                 </div>
               )}
             </div>

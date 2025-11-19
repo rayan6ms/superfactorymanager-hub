@@ -45,6 +45,12 @@ function formatUploadDate(value: Date) {
   }).format(value);
 }
 
+function getInitial(name: string | null | undefined) {
+  const base = name?.trim();
+  if (!base) return "?";
+  return base.charAt(0).toUpperCase();
+}
+
 export default async function PostPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
   const session = await auth();
@@ -94,6 +100,9 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   const heroImage = post.images?.[0] ?? null;
   const heroSrc = heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
   const tags = post.tags?.map(t => t.tag).filter(Boolean) ?? [];
+  const authorDisplayName = post.author?.name ?? post.authorName;
+  const authorImage = post.author?.image ?? null;
+  const authorProfile = post.author?.name ? `/profile/${post.author.name}` : null;
 
   const commentData = await getPostComments(post.id);
 
@@ -122,7 +131,6 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
             <div className="flex flex-wrap gap-4 text-sm text-white/60">
               <span>Uploaded {uploadDate}</span>
               <span>{views} views</span>
-              <span>Author: {post.author?.name ?? post.authorName}</span>
               {verification.isAuthor && (
                 <Link
                   href={`/posts/${slug}/edit`}
@@ -131,6 +139,30 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                   Edit post
                 </Link>
               )}
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              {authorImage ? (
+                <span
+                  className="h-12 w-12 rounded-full bg-cover bg-center"
+                  style={{ backgroundImage: `url(${authorImage})` }}
+                  aria-hidden="true"
+                />
+              ) : (
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
+                  {getInitial(authorDisplayName)}
+                </span>
+              )}
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Author</p>
+                {authorProfile ? (
+                  <Link href={authorProfile} className="text-lg font-semibold text-white underline-offset-4 hover:underline">
+                    {authorDisplayName}
+                  </Link>
+                ) : (
+                  <p className="text-lg font-semibold text-white">{authorDisplayName}</p>
+                )}
+              </div>
             </div>
           </div>
 

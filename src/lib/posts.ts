@@ -6,6 +6,7 @@ export const POST_CARD_INCLUDE = {
   category: true,
   images: true,
   tags: { include: { tag: true } },
+  author: { select: { id: true, name: true, image: true } },
 } satisfies Prisma.PostInclude;
 
 export type PostWithRelations = Prisma.PostGetPayload<{ include: typeof POST_CARD_INCLUDE }>;

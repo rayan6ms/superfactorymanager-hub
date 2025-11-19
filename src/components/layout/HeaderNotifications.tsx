@@ -4,7 +4,11 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import NotificationPreviewList from "@/components/notifications/NotificationPreviewList";
-import { NOTIFICATION_PREVIEW_LIMIT, type SerializedNotification } from "@/lib/notifications";
+import {
+  NOTIFICATION_PREVIEW_LIMIT,
+  NOTIFICATION_UNREAD_EVENT,
+  type SerializedNotification,
+} from "@/lib/notifications";
 
 type HeaderNotificationsProps = {
   initialNotifications: SerializedNotification[];
@@ -29,6 +33,18 @@ export default function HeaderNotifications({
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
 
+  const updateUnreadCount = useCallback((next: number | ((prev: number) => number)) => {
+    setUnreadCount(prev => {
+      const value = typeof next === "function" ? (next as (value: number) => number)(prev) : next;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent(NOTIFICATION_UNREAD_EVENT, { detail: { count: value } }),
+        );
+      }
+      return value;
+    });
+  }, []);
+
   const refreshPreview = useCallback(async () => {
     try {
       const params = new URLSearchParams({
@@ -45,12 +61,12 @@ export default function HeaderNotifications({
         setNotifications(data.notifications.filter(notification => !notification.readAt));
       }
       if (typeof data.unreadCount === "number") {
-        setUnreadCount(data.unreadCount);
+        updateUnreadCount(data.unreadCount);
       }
     } catch (err) {
       console.error(err);
     }
-  }, []);
+  }, [updateUnreadCount]);
 
   const markAsRead = useCallback(
     async (id: string) => {
@@ -81,9 +97,9 @@ export default function HeaderNotifications({
 
         const data = (await res.json()) as ApiResponse;
         if (typeof data.unreadCount === "number") {
-          setUnreadCount(data.unreadCount);
+          updateUnreadCount(data.unreadCount);
         } else {
-          setUnreadCount(prev => Math.max(0, prev - 1));
+          updateUnreadCount(prev => Math.max(0, prev - 1));
         }
         await refreshPreview();
       } catch (err) {
@@ -98,7 +114,7 @@ export default function HeaderNotifications({
         });
       }
     },
-    [pendingIds, refreshPreview],
+    [pendingIds, refreshPreview, updateUnreadCount],
   );
 
   const derivedUnread = notifications.filter(n => !n.readAt).length;
