@@ -30,26 +30,53 @@ function getInitial(name: string | null | undefined) {
 
 export default function PostCard({ post }: Props) {
   const image = post.images?.[0];
-  const authorName = post.author?.name ?? post.authorName ?? "Unknown creator";
-  const authorImage = post.author?.image ?? null;
-  const authorProfile = post.author?.name ? `/profile/${post.author.name}` : null;
+  const imageSrc =
+    image?.thumbLg || image?.thumbMd || image?.thumbSm || image?.original || null;
+
+  const authorName = (post as any).author?.name ?? (post as any).authorName ?? "Unknown creator";
+  const authorImage = (post as any).author?.image ?? null;
+
   return (
     <li>
-      <Card className="p-5" hoverable>
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <Link href={`/posts/${post.slug}`} className="flex flex-1 flex-col gap-4 sm:flex-row">
-            {image ? (
-              <img
-                src={image.thumbLg || image.thumbMd || image.thumbSm}
-                alt=""
-                loading="lazy"
-                className="h-[120px] w-full rounded-xl border border-white/10 object-cover sm:w-40"
-              />
-            ) : (
-              <div className="grid h-[120px] w-full place-items-center rounded-xl border border-white/10 bg-white/5 text-white/40 sm:w-40">
-                <SearchIcon className="h-5 w-5" />
+      <Link href={`/posts/${post.slug}`} className="block">
+        <Card className="p-5" hoverable>
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="w-full sm:w-40 flex flex-col justify-between gap-3">
+              {imageSrc ? (
+                <img
+                  src={imageSrc}
+                  alt=""
+                  loading="lazy"
+                  className="h-[120px] w-full rounded-xl border border-white/10 object-cover"
+                />
+              ) : (
+                <div className="grid h-[120px] w-full place-items-center rounded-xl border border-white/10 bg-white/5 text-white/40">
+                  <SearchIcon className="h-5 w-5" />
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 text-xs text-white/80">
+                {authorImage ? (
+                  <span
+                    className="h-8 w-8 shrink-0 rounded-full bg-cover bg-center"
+                    style={{ backgroundImage: `url(${authorImage})` }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold">
+                    {getInitial(authorName)}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="text-[0.6rem] uppercase tracking-[0.25em] text-white/45">
+                    Author
+                  </p>
+                  <p className="truncate text-sm font-semibold text-white">
+                    {authorName}
+                  </p>
+                </div>
               </div>
-            )}
+            </div>
 
             <div className="min-w-0 flex-1 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -78,33 +105,9 @@ export default function PostCard({ post }: Props) {
                 </span>
               </div>
             </div>
-          </Link>
-        </div>
-
-        <div className="mt-4 flex items-center gap-2 text-sm text-white/80">
-          {authorImage ? (
-            <span
-              className="h-9 w-9 shrink-0 rounded-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${authorImage})` }}
-              aria-hidden="true"
-            />
-          ) : (
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-base font-semibold">
-              {getInitial(authorName)}
-            </span>
-          )}
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Author</p>
-            {authorProfile ? (
-              <Link href={authorProfile} className="truncate font-semibold text-white underline-offset-4 hover:underline">
-                {authorName}
-              </Link>
-            ) : (
-              <span className="truncate font-semibold text-white">{authorName}</span>
-            )}
           </div>
-        </div>
-      </Card>
+        </Card>
+      </Link>
     </li>
   );
 }
