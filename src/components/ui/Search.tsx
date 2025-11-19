@@ -30,7 +30,7 @@ export default function SearchBar({
           name={name}
           defaultValue={defaultValue}
           placeholder={placeholder}
-          className="!h-10 !rounded-l-lg !rounded-r-none border-white/20 border-r-0"
+          className="h-10! rounded-l-lg! rounded-r-none! border-white/20 border-r-0"
         />
       </div>
       <button

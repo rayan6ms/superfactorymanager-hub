@@ -117,7 +117,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
 
       <Card className="overflow-hidden p-0">
         {heroSrc && (
-          <div className="relative h-64 w-full overflow-hidden border-b border-white/10 bg-black/40">
+          <div className="relative h-64 w-full rounded-t-lg rounded-b-xs overflow-hidden border-b border-white/10 bg-black/40">
             <img src={heroSrc} alt={post.title} className="h-full w-full object-cover" />
           </div>
         )}

@@ -203,55 +203,52 @@ export const authOptions: NextAuthConfig = {
     },
 
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub ?? session.user.id;
-        if (token.picture) {
-          session.user.image = token.picture as string;
-        }
-        if (token.name) {
-          session.user.name = token.name as string;
-        }
+      if (!session.user) return session;
+
+      if (token.sub) {
+        session.user.id = token.sub;
       }
 
-      if (token.sub && session.user) {
+      if (token.name) {
+        session.user.name = token.name as string;
+      }
+      if (token.email) {
+        session.user.email = token.email as string;
+      }
+
+      if (token.sub) {
         try {
           const dbUser = await db.user.findUnique({
             where: { id: token.sub },
             select: { id: true, name: true, image: true, email: true },
           });
+
           if (dbUser) {
             session.user.id = dbUser.id;
             session.user.name = dbUser.name ?? session.user.name ?? null;
             session.user.image = dbUser.image ?? session.user.image ?? null;
             session.user.email = dbUser.email ?? session.user.email ?? null;
-            token.name = dbUser.name ?? token.name;
-            token.picture = dbUser.image ?? token.picture;
           }
         } catch (error) {
           console.warn("Session callback failed to refresh user:", error);
         }
       }
+
       return session;
     },
 
     async jwt({ token, user }) {
       if (user) {
-        token.name = user.name ?? token.name;
-        token.picture = user.image ?? token.picture;
-      } else if (token.sub) {
-        try {
-          const dbUser = await db.user.findUnique({
-            where: { id: token.sub },
-            select: { name: true, image: true },
-          });
-          if (dbUser) {
-            token.name = dbUser.name ?? token.name;
-            token.picture = dbUser.image ?? token.picture;
-          }
-        } catch (error) {
-          console.warn("JWT callback failed to refresh user:", error);
+        if (user.name) {
+          token.name = user.name;
+        }
+        if (user.email) {
+          token.email = user.email;
         }
       }
+
+      delete (token as any).picture;
+
       return token;
     },
   },

@@ -134,6 +134,14 @@ body[data-hide-header-search="true"] [data-header-search] {
   @apply border-t border-base-700/60;
 }
 
+.dark-scrollbar {
+  scrollbar-color: rgba(158, 158, 158, 0.418) transparent;
+}
+
+.thin-scrollbar {
+  scrollbar-width: thin;
+}
+
 a {
   @apply text-brand-400 hover:text-brand-300 underline-offset-4 hover:underline;
 }

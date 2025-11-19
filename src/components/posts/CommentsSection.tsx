@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { CornerDownRight, Loader2, MessageCircle } from "lucide-react";
@@ -363,9 +363,9 @@ export default function CommentsSection({
 
   const targetMissing = Boolean(
     targetCommentId &&
-      !commentExists(targetCommentId) &&
-      !cursor &&
-      !loadingMore,
+    !commentExists(targetCommentId) &&
+    !cursor &&
+    !loadingMore,
   );
 
   useEffect(() => {
@@ -373,7 +373,7 @@ export default function CommentsSection({
     replyTextareaRef.current?.focus();
   }, [replyTargetId]);
 
-  const renderThread = (nodes: SerializedComment[], depth = 0): JSX.Element | null => {
+  const renderThread = (nodes: SerializedComment[], depth = 0): ReactNode => {
     if (!nodes.length) return null;
     return (
       <div
@@ -385,7 +385,7 @@ export default function CommentsSection({
         {depth > 0 && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute -left-px top-2 bottom-0 w-px bg-gradient-to-b from-white/20 via-white/10 to-transparent"
+            className="pointer-events-none absolute -left-px top-2 bottom-0 w-px bg-linear-to-b from-white/20 via-white/10 to-transparent"
           />
         )}
         {nodes.map(comment => {
@@ -523,82 +523,84 @@ export default function CommentsSection({
   };
 
   return (
-    <Card className="space-y-6" id="comments">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-white/40">
-            <MessageCircle className="h-4 w-4" aria-hidden="true" />
-            Comments
+    <div id="comments">
+      <Card className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-white/40">
+              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+              Comments
+            </div>
+            <p className="text-lg font-semibold text-white">{total} comment{total === 1 ? "" : "s"}</p>
+            <p className="text-sm text-white/60">Share your feedback, tips, or troubleshooting steps.</p>
           </div>
-          <p className="text-lg font-semibold text-white">{total} comment{total === 1 ? "" : "s"}</p>
-          <p className="text-sm text-white/60">Share your feedback, tips, or troubleshooting steps.</p>
+          {canPost ? null : (
+            <Link href={`/login?from=/posts/${postSlug}`} className="inline-flex">
+              <Button variant="outline" size="sm">Log in to comment</Button>
+            </Link>
+          )}
         </div>
-        {canPost ? null : (
-          <Link href={`/login?from=/posts/${postSlug}`} className="inline-flex">
-            <Button variant="outline" size="sm">Log in to comment</Button>
-          </Link>
+
+        {error && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div>
         )}
-      </div>
 
-      {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div>
-      )}
+        {targetMissing && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            We couldn’t find the comment linked in your notification. It may have been deleted or moved.
+          </div>
+        )}
 
-      {targetMissing && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          We couldn’t find the comment linked in your notification. It may have been deleted or moved.
+        {canPost && (
+          <form className="space-y-3" onSubmit={handleSubmit}>
+            <textarea
+              name="comment"
+              rows={4}
+              value={commentText}
+              onChange={handleInputChange}
+              placeholder="Leave a constructive comment..."
+              className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/40 outline-none transition focus:border-white/40"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/60">
+              <span>
+                {commentText.length} / {COMMENT_MAX_LENGTH} characters
+              </span>
+              <Button type="submit" size="sm" disabled={!isCommentValid || submitting}>
+                {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />} Submit comment
+              </Button>
+            </div>
+          </form>
+        )}
+
+        <div className="space-y-4">
+          {comments.length === 0 ? (
+            <p className="text-sm text-white/60">No comments yet. Start the discussion!</p>
+          ) : (
+            renderThread(comments)
+          )}
         </div>
-      )}
 
-      {canPost && (
-        <form className="space-y-3" onSubmit={handleSubmit}>
-          <textarea
-            name="comment"
-            rows={4}
-            value={commentText}
-            onChange={handleInputChange}
-            placeholder="Leave a constructive comment..."
-            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/40 outline-none transition focus:border-white/40"
-          />
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/60">
-            <span>
-              {commentText.length} / {COMMENT_MAX_LENGTH} characters
-            </span>
-            <Button type="submit" size="sm" disabled={!isCommentValid || submitting}>
-              {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />} Submit comment
+        {visibleCount < total && (
+          <p className="text-center text-xs text-white/60">
+            Showing {visibleCount} of {total} comment{total === 1 ? "" : "s"}
+          </p>
+        )}
+
+        {hasMore && (
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="min-w-32"
+            >
+              {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : "Load more"}
             </Button>
           </div>
-        </form>
-      )}
-
-      <div className="space-y-4">
-        {comments.length === 0 ? (
-          <p className="text-sm text-white/60">No comments yet. Start the discussion!</p>
-        ) : (
-          renderThread(comments)
         )}
-      </div>
-
-      {visibleCount < total && (
-        <p className="text-center text-xs text-white/60">
-          Showing {visibleCount} of {total} comment{total === 1 ? "" : "s"}
-        </p>
-      )}
-
-      {hasMore && (
-        <div className="flex justify-center">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={loadMore}
-            disabled={loadingMore}
-            className="min-w-[8rem]"
-          >
-            {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : "Load more"}
-          </Button>
-        </div>
-      )}
-    </Card>
+      </Card>
+    </div>
   );
 }
