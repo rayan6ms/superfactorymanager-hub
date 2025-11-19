@@ -21,6 +21,7 @@ model User {
   postCommits            PostCommit[]
   postContributions      PostContributor[]
   comments               Comment[]
+  reports                Report[]
   passwordResetTokens    PasswordResetToken[]
   notifications          Notification[]
   accounts               Account[]
@@ -161,6 +162,7 @@ model Post {
   commits           PostCommit[]
   contributors      PostContributor[]
   comments          Comment[]
+  reports           Report[]
 }
 
 enum PostCommitStatus {
@@ -216,6 +218,8 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  reports   Report[]
+
   @@index([postId, createdAt])
   @@index([authorId, createdAt])
   @@index([parentId])
@@ -224,6 +228,7 @@ model Comment {
 enum NotificationOrigin {
   SYSTEM
   POST
+  REPORT
 }
 
 model Notification {
@@ -241,6 +246,22 @@ model Notification {
 
   @@index([userId, createdAt])
   @@index([userId, readAt])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  postId     String?
+  post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId  String?
+  comment    Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  message    String
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@index([postId])
+  @@index([commentId])
 }
 
 model Account {

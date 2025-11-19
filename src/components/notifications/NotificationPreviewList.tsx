@@ -9,11 +9,13 @@ import { formatNotificationTimestamp, type SerializedNotification } from "@/lib/
 const ORIGIN_LABEL: Record<SerializedNotification["origin"], string> = {
   SYSTEM: "System",
   POST: "Post",
+  REPORT: "Report",
 };
 
 const ORIGIN_COLOR: Record<SerializedNotification["origin"], string> = {
   SYSTEM: "bg-emerald-500/20 text-emerald-200",
   POST: "bg-sky-500/20 text-sky-200",
+  REPORT: "bg-red-500/20 text-red-200",
 };
 
 type NotificationPreviewListProps = {

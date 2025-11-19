@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { CornerDownRight, Loader2, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui";
 import Button from "@/components/ui/Button";
+import ReportButton from "@/components/ReportButton";
 import {
   COMMENT_MAX_LENGTH,
   COMMENT_MIN_LENGTH,
@@ -125,6 +126,7 @@ export default function CommentsSection({
   const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const canPost = Boolean(currentUser);
+  const loginRedirect = `/login?from=/posts/${postSlug}`;
   const isCommentValid = commentText.trim().length >= COMMENT_MIN_LENGTH;
   const isReplyValid = replyText.trim().length >= COMMENT_MIN_LENGTH;
   const replyTargetId = replyTarget?.id ?? null;
@@ -267,19 +269,19 @@ export default function CommentsSection({
   }, []);
 
   const getVisibleReplies = useCallback(
-    (commentId: string, totalReplies: number) => {
+    (commentId: string, totalReplies: number, baseline = 1) => {
       if (totalReplies <= 0) return 0;
       const stored = visibleRepliesMap[commentId];
-      const baseline = totalReplies > 0 ? 1 : 0;
-      return Math.min(totalReplies, typeof stored === "number" ? stored : baseline);
+      const fallback = Math.max(0, Math.min(baseline, totalReplies));
+      return Math.min(totalReplies, typeof stored === "number" ? stored : fallback);
     },
     [visibleRepliesMap],
   );
 
-  const showNextReply = useCallback((commentId: string, totalReplies: number) => {
+  const showNextReply = useCallback((commentId: string, totalReplies: number, baseline = 1) => {
     if (totalReplies <= 0) return;
     setVisibleRepliesMap(prev => {
-      const current = prev[commentId] ?? (totalReplies > 0 ? 1 : 0);
+      const current = prev[commentId] ?? Math.max(0, Math.min(baseline, totalReplies));
       if (current >= totalReplies) return prev;
       return { ...prev, [commentId]: current + 1 };
     });
@@ -388,7 +390,8 @@ export default function CommentsSection({
           const isAuthor = comment.author?.id === postAuthorId;
           const isHighlighted = highlightedComment === comment.id;
           const isReplyingHere = replyTargetId === comment.id;
-          const visibleReplies = getVisibleReplies(comment.id, comment.replies.length);
+          const replyBaseline = depth === 0 ? 1 : 0;
+          const visibleReplies = getVisibleReplies(comment.id, comment.replies.length, replyBaseline);
           const repliesToRender = comment.replies.slice(0, visibleReplies);
           const remainingReplies = Math.max(comment.replies.length - repliesToRender.length, 0);
           return (
@@ -433,16 +436,28 @@ export default function CommentsSection({
                       )}
                     </div>
                     <p className="whitespace-pre-wrap text-sm text-white/80">{comment.content}</p>
-                    {canPost && (
-                      <button
-                        type="button"
-                        onClick={() => toggleReply(comment)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-white/70 transition hover:text-white"
+                    <div className="flex flex-wrap items-center gap-3">
+                      {canPost && (
+                        <button
+                          type="button"
+                          onClick={() => toggleReply(comment)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-white/70 transition hover:text-white"
+                        >
+                          <CornerDownRight className="h-3.5 w-3.5" aria-hidden="true" />
+                          Reply
+                        </button>
+                      )}
+                      <ReportButton
+                        type="comment"
+                        targetId={comment.id}
+                        targetLabel={`comment by ${authorName}`}
+                        canReport={canPost}
+                        loginHref={loginRedirect}
+                        className="border-none px-0 py-0 text-xs font-semibold text-white/60 hover:text-white"
                       >
-                        <CornerDownRight className="h-3.5 w-3.5" aria-hidden="true" />
-                        Reply
-                      </button>
-                    )}
+                        Report
+                      </ReportButton>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -487,7 +502,7 @@ export default function CommentsSection({
                 <div className="ml-4 sm:ml-6">
                   <button
                     type="button"
-                    onClick={() => showNextReply(comment.id, comment.replies.length)}
+                    onClick={() => showNextReply(comment.id, comment.replies.length, replyBaseline)}
                     className="text-xs font-semibold text-brand-200 underline-offset-4 transition hover:text-brand-100 hover:underline"
                   >
                     Show 1 more reply ({remainingReplies} left)

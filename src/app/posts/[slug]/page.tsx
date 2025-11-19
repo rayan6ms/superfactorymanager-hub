@@ -3,12 +3,13 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import ViewBeacon from "@/components/ViewBeacon";
-import { Card } from "@/components/ui";
+import { Card, Button } from "@/components/ui";
 import ImageGallery from "@/components/ImageGallery";
 import HighlightedCode from "@/components/HighlightedCode";
 import CodeVerification from "@/components/CodeVerification";
 import CommentsSection from "@/components/posts/CommentsSection";
 import { getPostComments } from "@/lib/comments";
+import ReportButton from "@/components/ReportButton";
 
 type VoteValue = "up" | "down" | null;
 
@@ -105,6 +106,9 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   const authorProfile = post.author?.name ? `/profile/${post.author.name}` : null;
 
   const commentData = await getPostComments(post.id);
+
+  const improvementHref = me ? `/posts/${post.slug}/edit` : `/login?from=/posts/${post.slug}/edit`;
+  const reportLoginHref = `/login?from=/posts/${post.slug}`;
 
   return (
     <div className="space-y-8">
@@ -250,6 +254,21 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
             codeNote={post.codeNote}
           />
 
+          {!isAuthor && post.openForImprovement && (
+            <Card className="space-y-3">
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Collaborate</p>
+                <h2 className="text-lg font-semibold text-white">Share an improvement</h2>
+                <p className="text-sm text-white/65">
+                  Paste your revised code and send it to the author for review. We’ll keep the edit history for them.
+                </p>
+              </div>
+              <Link href={improvementHref} className="inline-flex">
+                <Button className="w-full justify-center">Suggest an improvement</Button>
+              </Link>
+            </Card>
+          )}
+
           <Card className="space-y-4">
             <h2 className="text-lg font-semibold text-white">Post details</h2>
             <dl className="grid gap-3 text-sm text-white/70">
@@ -274,6 +293,19 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 <dd>{uploadDate}</dd>
               </div>
             </dl>
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3">
+              <p className="text-sm text-white/80">Spotted spam or outdated info?</p>
+              <ReportButton
+                type="post"
+                targetId={post.slug}
+                targetLabel={`post "${post.title}"`}
+                canReport={Boolean(me)}
+                loginHref={reportLoginHref}
+                className="mt-3 w-full justify-center rounded-2xl border border-red-400/40 px-4 py-2 text-sm text-red-100"
+              >
+                Report post
+              </ReportButton>
+            </div>
           </Card>
         </div>
       </div>
