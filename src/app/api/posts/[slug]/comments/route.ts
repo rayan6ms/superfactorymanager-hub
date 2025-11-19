@@ -28,8 +28,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
   }
 
   if (cursor) {
-    const cursorComment = await db.comment.findUnique({ where: { id: cursor }, select: { id: true, postId: true } });
-    if (!cursorComment || cursorComment.postId !== post.id) {
+    const cursorComment = await db.comment.findUnique({
+      where: { id: cursor },
+      select: { id: true, postId: true, parentId: true },
+    });
+    if (!cursorComment || cursorComment.postId !== post.id || cursorComment.parentId !== null) {
       return badRequest("Invalid cursor");
     }
   }
@@ -58,6 +61,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   }
 
   const content = parsed.data.content.trim();
+  const parentId = parsed.data.parentId ?? null;
   if (!content) {
     return badRequest("Comment cannot be empty");
   }
@@ -71,11 +75,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  let parentComment: { id: string; authorId: string; postId: string } | null = null;
+  if (parentId) {
+    parentComment = await db.comment.findUnique({
+      where: { id: parentId },
+      select: { id: true, authorId: true, postId: true },
+    });
+    if (!parentComment || parentComment.postId !== post.id) {
+      return badRequest("Invalid parent comment");
+    }
+  }
+
   const comment = await db.comment.create({
     data: {
       content,
       postId: post.id,
       authorId: user.id,
+      parentId,
     },
     include: {
       author: { select: { id: true, name: true, image: true } },
@@ -87,26 +103,71 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     content: comment.content,
     createdAt: comment.createdAt.toISOString(),
     updatedAt: comment.updatedAt.toISOString(),
+    parentId: comment.parentId,
     author: comment.author,
+    replies: [],
   };
 
+  const notificationPayloads: {
+    userId: string;
+    title: string;
+    message: string;
+    link: string;
+    metadata: Record<string, unknown>;
+  }[] = [];
+
   if (post.authorId !== user.id) {
-    try {
-      await createNotification({
-        userId: post.authorId,
-        title: "New comment on your post",
-        message: `${user.name ?? "Someone"} commented on "${post.title}".`,
-        origin: NotificationOrigin.POST,
-        link: `/posts/${post.slug}#comment-${comment.id}`,
-        metadata: {
-          kind: "post-comment",
-          postId: post.id,
-          commentId: comment.id,
-        },
-      });
-    } catch (error) {
-      console.warn("Failed to create comment notification", error);
-    }
+    notificationPayloads.push({
+      userId: post.authorId,
+      title: "New comment on your post",
+      message: `${user.name ?? "Someone"} commented on "${post.title}".`,
+      link: `/posts/${post.slug}#comment-${comment.id}`,
+      metadata: {
+        kind: parentId ? "post-comment-reply" : "post-comment",
+        postId: post.id,
+        commentId: comment.id,
+        parentId,
+      },
+    });
+  }
+
+  if (parentComment && parentComment.authorId !== user.id) {
+    notificationPayloads.push({
+      userId: parentComment.authorId,
+      title: "Someone replied to your comment",
+      message: `${user.name ?? "Someone"} replied to your comment on "${post.title}".`,
+      link: `/posts/${post.slug}#comment-${comment.id}`,
+      metadata: {
+        kind: "comment-reply",
+        postId: post.id,
+        commentId: comment.id,
+        parentId,
+      },
+    });
+  }
+
+  if (notificationPayloads.length) {
+    const seen = new Set<string>();
+    await Promise.all(
+      notificationPayloads
+        .filter(payload => {
+          if (seen.has(payload.userId)) return false;
+          seen.add(payload.userId);
+          return true;
+        })
+        .map(payload =>
+          createNotification({
+            userId: payload.userId,
+            title: payload.title,
+            message: payload.message,
+            origin: NotificationOrigin.POST,
+            link: payload.link,
+            metadata: payload.metadata,
+          }).catch(error => {
+            console.warn("Failed to create comment notification", error);
+          }),
+        ),
+    );
   }
 
   const total = await db.comment.count({ where: { postId: post.id } });

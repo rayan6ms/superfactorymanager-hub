@@ -13,5 +13,7 @@ export type SerializedComment = {
   content: string;
   createdAt: string;
   updatedAt: string;
+  parentId: string | null;
   author: CommentAuthor | null;
+  replies: SerializedComment[];
 };

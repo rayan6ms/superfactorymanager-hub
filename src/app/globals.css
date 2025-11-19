@@ -115,7 +115,7 @@ body[data-hide-header-search="true"] [data-header-search] {
 }
 
 .app-shell {
-  @apply flex min-h-screen flex-col relative overflow-x-hidden overflow-y-auto;
+  @apply flex min-h-screen flex-col relative overflow-x-hidden;
 }
 
 .app-shell::before,

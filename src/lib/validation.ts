@@ -81,4 +81,5 @@ export const commentSchema = z.object({
     .trim()
     .min(COMMENT_MIN_LENGTH, { message: `Comments must be at least ${COMMENT_MIN_LENGTH} characters long.` })
     .max(COMMENT_MAX_LENGTH, { message: `Comments must be ${COMMENT_MAX_LENGTH} characters or fewer.` }),
+  parentId: z.string().cuid().optional().nullable(),
 });

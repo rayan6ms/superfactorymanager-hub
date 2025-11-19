@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
-import { Loader2, MessageCircle } from "lucide-react";
+import { CornerDownRight, Loader2, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui";
 import Button from "@/components/ui/Button";
 import {
@@ -62,6 +62,41 @@ function initials(name: string | null) {
   return (first[0] ?? "?").toUpperCase();
 }
 
+const flattenComments = (items: SerializedComment[]): SerializedComment[] => {
+  const result: SerializedComment[] = [];
+  for (const item of items) {
+    result.push(item);
+    if (item.replies.length) {
+      result.push(...flattenComments(item.replies));
+    }
+  }
+  return result;
+};
+
+const insertReply = (
+  items: SerializedComment[],
+  parentId: string,
+  reply: SerializedComment,
+): { updated: SerializedComment[]; inserted: boolean } => {
+  let inserted = false;
+  const updated = items.map(item => {
+    if (inserted) return item;
+    if (item.id === parentId) {
+      inserted = true;
+      return { ...item, replies: [...item.replies, reply] };
+    }
+    if (item.replies.length) {
+      const childResult = insertReply(item.replies, parentId, reply);
+      if (childResult.inserted) {
+        inserted = true;
+        return { ...item, replies: childResult.updated };
+      }
+    }
+    return item;
+  });
+  return { updated: inserted ? updated : items, inserted };
+};
+
 export default function CommentsSection({
   postSlug,
   initialComments,
@@ -74,15 +109,30 @@ export default function CommentsSection({
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [total, setTotal] = useState<number>(initialTotal);
   const [commentText, setCommentText] = useState("");
+  const [replyText, setReplyText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [replySubmitting, setReplySubmitting] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [targetCommentId, setTargetCommentId] = useState<string | null>(null);
   const [highlightedComment, setHighlightedComment] = useState<string | null>(null);
+  const [replyTarget, setReplyTarget] = useState<{ id: string; authorName: string } | null>(null);
   const focusHandledRef = useRef(false);
+  const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const canPost = Boolean(currentUser);
   const isCommentValid = commentText.trim().length >= COMMENT_MIN_LENGTH;
+  const isReplyValid = replyText.trim().length >= COMMENT_MIN_LENGTH;
+  const replyTargetId = replyTarget?.id ?? null;
+
+  const flatComments = useMemo(() => flattenComments(comments), [comments]);
+  const commentExists = useCallback(
+    (id: string | null) => {
+      if (!id) return false;
+      return flatComments.some(comment => comment.id === id);
+    },
+    [flatComments],
+  );
 
   const fetchComments = useCallback(
     async (cursorValue: string | null): Promise<CommentResponse> => {
@@ -121,8 +171,8 @@ export default function CommentsSection({
         }
         const createdComment = data.comment;
         setComments(prev => [createdComment, ...prev]);
-        setTotal(prev => (typeof data.total === "number" ? data.total : prev + 1));
         setCommentText("");
+        setTotal(prev => (typeof data.total === "number" ? data.total : prev + 1));
         setHighlightedComment(createdComment.id);
         requestAnimationFrame(() => {
           const element = document.getElementById(`comment-${createdComment.id}`);
@@ -138,9 +188,67 @@ export default function CommentsSection({
     [canPost, submitting, isCommentValid, postSlug, commentText],
   );
 
+  const handleReplySubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!canPost || replySubmitting || !replyTargetId || !isReplyValid) return;
+      setReplySubmitting(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/posts/${postSlug}/comments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ content: replyText.trim(), parentId: replyTargetId }),
+        });
+        const data = (await res.json().catch(() => ({}))) as CreateCommentResponse;
+        if (!res.ok || !data.comment) {
+          throw new Error(data.error ?? "Failed to post reply");
+        }
+        const createdComment = data.comment;
+        setComments(prev => {
+          const result = insertReply(prev, replyTargetId, createdComment);
+          return result.inserted ? result.updated : prev;
+        });
+        setReplyText("");
+        setReplyTarget(null);
+        setTotal(prev => (typeof data.total === "number" ? data.total : prev + 1));
+        setHighlightedComment(createdComment.id);
+        requestAnimationFrame(() => {
+          const element = document.getElementById(`comment-${createdComment.id}`);
+          element?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to post reply";
+        setError(message);
+      } finally {
+        setReplySubmitting(false);
+      }
+    },
+    [canPost, replySubmitting, replyTargetId, isReplyValid, postSlug, replyText],
+  );
+
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = event.target.value.slice(0, COMMENT_MAX_LENGTH);
     setCommentText(value);
+  }, []);
+
+  const handleReplyInputChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value.slice(0, COMMENT_MAX_LENGTH);
+    setReplyText(value);
+  }, []);
+
+  const toggleReply = useCallback((comment: SerializedComment) => {
+    setReplyText("");
+    setReplyTarget(prev => {
+      if (prev?.id === comment.id) return null;
+      return { id: comment.id, authorName: comment.author?.name ?? "Deleted user" };
+    });
+  }, []);
+
+  const cancelReply = useCallback(() => {
+    setReplyTarget(null);
+    setReplyText("");
   }, []);
 
   const loadMore = useCallback(async () => {
@@ -167,7 +275,7 @@ export default function CommentsSection({
     }
   }, [cursor, loadingMore, fetchComments]);
 
-  const visibleCount = comments.length;
+  const visibleCount = flatComments.length;
   const hasMore = Boolean(cursor);
 
   useEffect(() => {
@@ -197,29 +305,143 @@ export default function CommentsSection({
   useEffect(() => {
     if (!targetCommentId) return;
     if (focusHandledRef.current) return;
-    const exists = comments.some(comment => comment.id === targetCommentId);
-    if (!exists) return;
+    if (!commentExists(targetCommentId)) return;
     focusHandledRef.current = true;
     setHighlightedComment(targetCommentId);
     requestAnimationFrame(() => {
       const element = document.getElementById(`comment-${targetCommentId}`);
       element?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
-  }, [targetCommentId, comments]);
+  }, [targetCommentId, commentExists]);
 
   useEffect(() => {
     if (!targetCommentId) return;
-    if (comments.some(comment => comment.id === targetCommentId)) return;
+    if (commentExists(targetCommentId)) return;
     if (!cursor || loadingMore) return;
     loadMore();
-  }, [targetCommentId, comments, cursor, loadingMore, loadMore]);
+  }, [targetCommentId, commentExists, cursor, loadingMore, loadMore]);
 
-  const targetMissing = useMemo(() => {
-    if (!targetCommentId) return false;
-    if (comments.some(comment => comment.id === targetCommentId)) return false;
-    if (cursor || loadingMore) return false;
-    return true;
-  }, [targetCommentId, comments, cursor, loadingMore]);
+  const targetMissing = Boolean(
+    targetCommentId &&
+      !commentExists(targetCommentId) &&
+      !cursor &&
+      !loadingMore,
+  );
+
+  useEffect(() => {
+    if (!replyTargetId) return;
+    replyTextareaRef.current?.focus();
+  }, [replyTargetId]);
+
+  const renderThread = (nodes: SerializedComment[], depth = 0): JSX.Element | null => {
+    if (!nodes.length) return null;
+    return (
+      <div
+        className={clsx(
+          "space-y-4",
+          depth > 0 && "relative border-l border-white/10 pl-4 sm:pl-6",
+        )}
+      >
+        {depth > 0 && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-px top-2 bottom-0 w-px bg-gradient-to-b from-white/20 via-white/10 to-transparent"
+          />
+        )}
+        {nodes.map(comment => {
+          const authorName = comment.author?.name ?? "Deleted user";
+          const avatarUrl = comment.author?.image ?? null;
+          const isAuthor = comment.author?.id === postAuthorId;
+          const isHighlighted = highlightedComment === comment.id;
+          const isReplyingHere = replyTargetId === comment.id;
+          return (
+            <div key={comment.id} className="space-y-3" id={`comment-${comment.id}`}>
+              <article
+                className={clsx(
+                  "rounded-2xl border border-white/10 bg-white/5 p-4",
+                  isHighlighted && "ring-2 ring-brand-400",
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  {avatarUrl ? (
+                    <span
+                      className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center"
+                      style={{ backgroundImage: `url(${avatarUrl})` }}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
+                      {initials(authorName)}
+                    </span>
+                  )}
+                  <div className="flex-1 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
+                      <span className="font-semibold text-white">{authorName}</span>
+                      <span>•</span>
+                      <time dateTime={comment.createdAt}>{formatTimestamp(comment.createdAt)}</time>
+                      {isAuthor && (
+                        <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-emerald-100">
+                          Author
+                        </span>
+                      )}
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm text-white/80">{comment.content}</p>
+                    {canPost && (
+                      <button
+                        type="button"
+                        onClick={() => toggleReply(comment)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-white/70 transition hover:text-white"
+                      >
+                        <CornerDownRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        Reply
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </article>
+
+              {isReplyingHere && canPost && (
+                <form className="space-y-2 pl-6" onSubmit={handleReplySubmit}>
+                  <p className="text-xs text-white/50">Replying to {replyTarget?.authorName ?? "this comment"}</p>
+                  <textarea
+                    ref={replyTextareaRef}
+                    rows={3}
+                    value={replyText}
+                    onChange={handleReplyInputChange}
+                    placeholder="Write your reply..."
+                    className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white placeholder-white/40 outline-none transition focus:border-white/40"
+                  />
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
+                    <span>
+                      {replyText.length} / {COMMENT_MAX_LENGTH} characters
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button type="submit" size="sm" disabled={!isReplyValid || replySubmitting}>
+                        {replySubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />} Submit reply
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={cancelReply}
+                        className="text-white/60 underline-offset-4 hover:text-white hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {comment.replies.length > 0 && (
+                <div className="ml-4 sm:ml-6">
+                  {renderThread(comment.replies, depth + 1)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <Card className="space-y-6" id="comments">
@@ -274,49 +496,7 @@ export default function CommentsSection({
         {comments.length === 0 ? (
           <p className="text-sm text-white/60">No comments yet. Start the discussion!</p>
         ) : (
-          comments.map(comment => {
-            const authorName = comment.author?.name ?? "Deleted user";
-            const avatarUrl = comment.author?.image ?? null;
-            const isAuthor = comment.author?.id === postAuthorId;
-            const isHighlighted = highlightedComment === comment.id;
-            return (
-              <article
-                key={comment.id}
-                id={`comment-${comment.id}`}
-                className={clsx(
-                  "rounded-2xl border border-white/10 bg-white/5 p-4",
-                  isHighlighted && "ring-2 ring-brand-400",
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  {avatarUrl ? (
-                    <span
-                      className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center"
-                      style={{ backgroundImage: `url(${avatarUrl})` }}
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
-                      {initials(authorName)}
-                    </span>
-                  )}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-                      <span className="font-semibold text-white">{authorName}</span>
-                      <span>•</span>
-                      <time dateTime={comment.createdAt}>{formatTimestamp(comment.createdAt)}</time>
-                      {isAuthor && (
-                        <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-emerald-100">
-                          Author
-                        </span>
-                      )}
-                    </div>
-                    <p className="whitespace-pre-wrap text-sm text-white/80">{comment.content}</p>
-                  </div>
-                </div>
-              </article>
-            );
-          })
+          renderThread(comments)
         )}
       </div>
 
