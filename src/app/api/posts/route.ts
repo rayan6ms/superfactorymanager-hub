@@ -268,6 +268,7 @@ export async function POST(req: Request) {
       data: {
         postId: created.id,
         authorId: user.id,
+        title: "Initial publication",
         message: "Initial publication",
         code,
         status: "MERGED",

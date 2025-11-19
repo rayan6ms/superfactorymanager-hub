@@ -271,7 +271,7 @@ export default function NotificationCenter({
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => toggleRead(item, !unread)}
+                        onClick={() => toggleRead(item, unread)}
                         disabled={pending}
                         className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1 font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                       >

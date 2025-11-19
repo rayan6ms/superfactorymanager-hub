@@ -16,6 +16,7 @@ type CodeImprovementFormProps = {
 export default function CodeImprovementForm({ slug, baseCommitId, initialCode }: CodeImprovementFormProps) {
   const router = useRouter();
   const [code, setCode] = useState(initialCode);
+  const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [wrapLines, setWrapLines] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -25,6 +26,10 @@ export default function CodeImprovementForm({ slug, baseCommitId, initialCode }:
   const submit = async () => {
     setError(null);
     setResult("idle");
+    if (!title.trim()) {
+      setError("Add a short title that summarizes your change.");
+      return;
+    }
     if (!message.trim()) {
       setError("Explain what you changed so the author can review it quickly.");
       return;
@@ -39,7 +44,7 @@ export default function CodeImprovementForm({ slug, baseCommitId, initialCode }:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ code, message, baseCommitId }),
+        body: JSON.stringify({ code, message, title, baseCommitId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -48,6 +53,7 @@ export default function CodeImprovementForm({ slug, baseCommitId, initialCode }:
         return;
       }
       setResult("success");
+      setTitle("");
       setMessage("");
       router.refresh();
     } catch (err) {
@@ -92,6 +98,20 @@ export default function CodeImprovementForm({ slug, baseCommitId, initialCode }:
       </div>
 
       <CodeBox value={code} onChange={setCode} wrapLines={wrapLines} />
+
+      <div className="space-y-2">
+        <label htmlFor="title" className="text-sm font-medium text-white/80">
+          Commit title
+        </label>
+        <Input
+          id="title"
+          value={title}
+          onChange={event => setTitle(event.target.value)}
+          placeholder="E.g. Optimize furnace timing"
+          maxLength={80}
+        />
+        <p className="text-xs text-white/50">Short summary (max 80 characters) that shows up in the code history list.</p>
+      </div>
 
       <div className="space-y-2">
         <label htmlFor="message" className="text-sm font-medium text-white/80">

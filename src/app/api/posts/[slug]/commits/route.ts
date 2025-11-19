@@ -8,6 +8,11 @@ import { NotificationOrigin } from "@prisma/client";
 const contributionSchema = z.object({
   code: z.string().min(3, { message: "Code is required." }),
   message: z.string().min(10, { message: "Share at least 10 characters about your change." }),
+  title: z
+    .string()
+    .trim()
+    .min(5, { message: "Add a short title for your change." })
+    .max(80, { message: "Keep the title under 80 characters." }),
   baseCommitId: z.string().optional().nullable(),
 });
 
@@ -58,11 +63,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ error: "Please refresh before submitting another update." }, { status: 409 });
   }
 
+  const commitTitle = parsed.data.title.trim();
+  const commitMessage = parsed.data.message.trim();
+
   const commit = await db.postCommit.create({
     data: {
       postId: post.id,
       authorId: user.id,
-      message: parsed.data.message.trim(),
+      title: commitTitle,
+      message: commitMessage,
       code: trimmedCode,
       status: "PENDING",
       baseCommitId: parsed.data.baseCommitId ?? post.currentCommitId,
@@ -74,8 +83,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     await createNotification({
       userId: post.authorId,
       origin: NotificationOrigin.POST,
-      title: `New code contribution for ${post.title}`,
-      message: `${user.name ?? "Someone"} says: ${parsed.data.message.trim()}`,
+      title: `New contribution: ${commitTitle}`,
+      message: `${user.name ?? "Someone"} says: ${commitMessage}`,
       link: `/posts/${post.slug}/edit?commit=${commit.id}`,
     });
   }

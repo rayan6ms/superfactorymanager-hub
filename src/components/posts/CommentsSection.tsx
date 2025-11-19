@@ -74,6 +74,10 @@ const flattenComments = (items: SerializedComment[]): SerializedComment[] => {
   return result;
 };
 
+const countNestedReplies = (items: SerializedComment[]): number => {
+  return items.reduce((total, item) => total + 1 + countNestedReplies(item.replies), 0);
+};
+
 const insertReply = (
   items: SerializedComment[],
   parentId: string,
@@ -393,7 +397,9 @@ export default function CommentsSection({
           const replyBaseline = depth === 0 ? 1 : 0;
           const visibleReplies = getVisibleReplies(comment.id, comment.replies.length, replyBaseline);
           const repliesToRender = comment.replies.slice(0, visibleReplies);
-          const remainingReplies = Math.max(comment.replies.length - repliesToRender.length, 0);
+          const hiddenReplies = comment.replies.slice(visibleReplies);
+          const remainingReplies = Math.max(hiddenReplies.length, 0);
+          const hiddenReplyCount = countNestedReplies(hiddenReplies);
           return (
             <div
               key={comment.id}
@@ -505,7 +511,7 @@ export default function CommentsSection({
                     onClick={() => showNextReply(comment.id, comment.replies.length, replyBaseline)}
                     className="text-xs font-semibold text-brand-200 underline-offset-4 transition hover:text-brand-100 hover:underline"
                   >
-                    Show 1 more reply ({remainingReplies} left)
+                    Show 1 more reply ({hiddenReplyCount} in thread)
                   </button>
                 </div>
               )}

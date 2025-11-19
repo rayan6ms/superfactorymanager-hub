@@ -160,6 +160,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
         data: {
           postId: post.id,
           authorId: user.id,
+          title: "Author update",
           message: "Post updated by author",
           code,
           status: "MERGED",

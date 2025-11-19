@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type WheelEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type WheelEvent } from "react";
 import clsx from "clsx";
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2, X, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, X, ZoomIn, ZoomOut } from "lucide-react";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -23,8 +23,6 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const viewerRef = useRef<HTMLDivElement | null>(null);
 
   const total = imgs?.length ?? 0;
   const hasImages = total > 0;
@@ -42,9 +40,6 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
   const closeViewer = useCallback(() => {
     setOpen(false);
     setZoom(1);
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => undefined);
-    }
   }, []);
 
   const goToNext = useCallback(() => {
@@ -92,20 +87,22 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
     };
   }, [open]);
 
-  useEffect(() => {
-    const handler = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener("fullscreenchange", handler);
-    return () => document.removeEventListener("fullscreenchange", handler);
-  }, []);
-
   const safeIndex = hasImages ? Math.min(activeIndex, total - 1) : 0;
 
   const currentImage = useMemo(() => {
     if (!hasImages) return null;
     return imgs[safeIndex] ?? imgs[0];
   }, [imgs, hasImages, safeIndex]);
+
+  const currentImageSrc = useMemo(() => {
+    if (!currentImage) return null;
+    return currentImage.original || currentImage.thumbLg || currentImage.thumbMd || currentImage.thumbSm || null;
+  }, [currentImage]);
+
+  const openImageInNewTab = useCallback(() => {
+    if (!currentImageSrc) return;
+    window.open(currentImageSrc, "_blank", "noopener,noreferrer");
+  }, [currentImageSrc]);
 
   const handleWheel = useCallback(
     (event: WheelEvent<HTMLDivElement>) => {
@@ -119,16 +116,6 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
   const zoomInAction = useCallback(() => setZoom(prev => clamp(prev + 0.25, 1, 3)), []);
   const zoomOutAction = useCallback(() => setZoom(prev => clamp(prev - 0.25, 1, 3)), []);
   const resetZoom = useCallback(() => setZoom(1), []);
-
-  const toggleFullscreen = useCallback(() => {
-    const node = viewerRef.current;
-    if (!node) return;
-    if (!document.fullscreenElement) {
-      node.requestFullscreen().catch(() => undefined);
-    } else {
-      document.exitFullscreen().catch(() => undefined);
-    }
-  }, []);
 
   if (!hasImages) {
     return null;
@@ -152,6 +139,9 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                 loading="lazy"
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
               />
+              <span className="pointer-events-none absolute left-2 top-2 inline-flex h-7 min-w-[2rem] items-center justify-center rounded-full bg-black/70 px-2 text-xs font-semibold text-white">
+                #{index + 1}
+              </span>
               <span className="pointer-events-none absolute inset-0 border-2 border-transparent transition group-hover:border-white/20" />
             </button>
           );
@@ -160,22 +150,19 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur sm:px-8 sm:py-10"
           onMouseDown={event => {
             if (event.target === event.currentTarget) {
               closeViewer();
             }
           }}
         >
-          <div
-            ref={viewerRef}
-            className="flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/80"
-          >
+          <div className="flex w-full max-w-6xl max-h-[90vh] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/85 shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">Gallery</p>
                 <p className="text-lg font-semibold text-white">
-                  {safeIndex + 1} / {total}
+                  Image {safeIndex + 1} of {total}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -204,11 +191,12 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={toggleFullscreen}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:border-white/40 hover:text-white"
+                  onClick={openImageInNewTab}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={!currentImageSrc}
                 >
-                  {isFullscreen ? <Minimize2 className="h-5 w-5" aria-hidden="true" /> : <Maximize2 className="h-5 w-5" aria-hidden="true" />}
-                  <span className="sr-only">Toggle fullscreen</span>
+                  <ExternalLink className="h-5 w-5" aria-hidden="true" />
+                  <span className="sr-only">Open image in new tab</span>
                 </button>
                 <button
                   type="button"
@@ -221,13 +209,15 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
               </div>
             </div>
 
-            <div className="relative flex-1 overflow-hidden bg-black/70" onWheel={handleWheel}>
-              <img
-                src={currentImage?.original || currentImage?.thumbLg || currentImage?.thumbMd || currentImage?.thumbSm}
-                alt=""
-                className="mx-auto h-full max-h-full w-full object-contain"
-                style={{ transform: `scale(${zoom})`, transition: "transform 200ms ease" }}
-              />
+            <div className="relative flex-1 bg-black/80">
+              <div className="h-full w-full overflow-auto" onWheel={handleWheel}>
+                <div
+                  className="relative flex min-h-full min-w-full items-center justify-center"
+                  style={{ width: `${zoom * 100}%`, height: `${zoom * 100}%` }}
+                >
+                  <img src={currentImageSrc ?? ""} alt="" className="h-full w-full max-h-none max-w-none object-contain" />
+                </div>
+              </div>
               {total > 1 && (
                 <>
                   <button

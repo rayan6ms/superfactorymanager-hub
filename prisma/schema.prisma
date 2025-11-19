@@ -177,6 +177,7 @@ model PostCommit {
   post        Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorId    String
   author      User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title       String?
   message     String
   code        String
   status      PostCommitStatus  @default(PENDING)

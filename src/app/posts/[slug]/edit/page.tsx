@@ -67,6 +67,7 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
 
   const commits: CommitForHistory[] = post.commits.map(commit => ({
     id: commit.id,
+    title: commit.title ?? null,
     message: commit.message,
     status: commit.status,
     createdAt: commit.createdAt.toISOString(),

@@ -15,6 +15,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export type CommitForHistory = {
   id: string;
+  title: string | null;
   message: string;
   status: "PENDING" | "MERGED" | "REJECTED";
   createdAt: string;
@@ -138,7 +139,7 @@ export default function CodeHistoryPanel({
               >
                 {commits.map(commit => (
                   <option key={commit.id} value={commit.id}>
-                    {commit.message}
+                    {commit.title ?? commit.message}
                   </option>
                 ))}
               </select>
@@ -155,7 +156,7 @@ export default function CodeHistoryPanel({
                   .filter(commit => commit.id !== primaryId)
                   .map(commit => (
                     <option key={commit.id} value={commit.id}>
-                      {commit.message}
+                      {commit.title ?? commit.message}
                     </option>
                   ))}
               </select>
@@ -196,7 +197,10 @@ export default function CodeHistoryPanel({
               <div key={commit.id} className="space-y-3 rounded-2xl border border-white/10 bg-black/25 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-base font-semibold text-white">{commit.message}</p>
+                    <p className="text-base font-semibold text-white">{commit.title ?? commit.message}</p>
+                    {commit.message && commit.title && (
+                      <p className="mt-1 text-sm text-white/70">{commit.message}</p>
+                    )}
                     <p className="text-xs text-white/60">
                       {commit.author.name ?? "Anonymous"} · {formatDate(commit.createdAt)}
                     </p>

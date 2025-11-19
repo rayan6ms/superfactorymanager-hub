@@ -113,10 +113,12 @@ export async function PATCH(
   }
 
   await db.$transaction(async tx => {
+    const revertTitle = commit.title ? `Revert ${commit.title}` : `Revert to ${commit.id.slice(0, 6)}`;
     const revertCommit = await tx.postCommit.create({
       data: {
         postId: post.id,
         authorId: user.id,
+        title: revertTitle,
         message: `Revert to commit ${commit.id.slice(0, 6)}`,
         code: commit.code,
         status: "MERGED",

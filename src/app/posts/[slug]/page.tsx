@@ -108,6 +108,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   const commentData = await getPostComments(post.id);
 
   const improvementHref = me ? `/posts/${post.slug}/edit` : `/login?from=/posts/${post.slug}/edit`;
+  const improvementCta = me ? "Suggest an improvement" : "Log in to collaborate";
   const reportLoginHref = `/login?from=/posts/${post.slug}`;
 
   return (
@@ -264,7 +265,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 </p>
               </div>
               <Link href={improvementHref} className="inline-flex">
-                <Button className="w-full justify-center">Suggest an improvement</Button>
+                <Button className="w-full justify-center">{improvementCta}</Button>
               </Link>
             </Card>
           )}

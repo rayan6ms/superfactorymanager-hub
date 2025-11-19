@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { NotificationOrigin } from "@prisma/client";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { createNotification } from "@/lib/notifications";
 
 const reportSchema = z.object({
   type: z.enum(["post", "comment"]),
@@ -37,11 +35,6 @@ export async function POST(request: Request) {
   const { type, targetId, message } = parsed.data;
   let postId: string | null = null;
   let commentId: string | null = null;
-  let notifyUserId: string | null = null;
-  let link: string | undefined;
-  let postTitle = "";
-  let commentAuthorName: string | null = null;
-
   if (type === "post") {
     const post = await db.post.findUnique({
       where: { slug: targetId },
@@ -51,9 +44,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Post not found." }, { status: 404 });
     }
     postId = post.id;
-    notifyUserId = post.authorId;
-    postTitle = post.title;
-    link = `/posts/${post.slug}`;
   } else {
     const comment = await db.comment.findUnique({
       where: { id: targetId },
@@ -69,13 +59,9 @@ export async function POST(request: Request) {
     }
     commentId = comment.id;
     postId = comment.postId;
-    notifyUserId = comment.post.authorId;
-    postTitle = comment.post.title;
-    commentAuthorName = comment.author?.name ?? null;
-    link = `/posts/${comment.post.slug}#comment-${comment.id}`;
   }
 
-  const report = await db.report.create({
+  await db.report.create({
     data: {
       reporterId: user.id,
       postId,
@@ -83,26 +69,6 @@ export async function POST(request: Request) {
       message,
     },
   });
-
-  if (notifyUserId && notifyUserId !== user.id) {
-    const title = type === "post" ? "Your post was reported" : "A comment was reported";
-    const summaryPrefix =
-      type === "post" ? `Another builder flagged "${postTitle}".` : `A comment on "${postTitle}" needs your review.`;
-    const detail = commentAuthorName ? ` Reported comment author: ${commentAuthorName}.` : "";
-    await createNotification({
-      userId: notifyUserId,
-      title,
-      message: `${summaryPrefix}${detail} Reporter note: ${message}`,
-      origin: NotificationOrigin.REPORT,
-      link,
-      metadata: {
-        reportId: report.id,
-        postId,
-        commentId,
-        type,
-      },
-    });
-  }
 
   return NextResponse.json({ success: true });
 }

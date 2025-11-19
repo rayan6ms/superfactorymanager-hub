@@ -83,7 +83,7 @@ export default function ReportButton({
     async (event: React.FormEvent) => {
       event.preventDefault();
       if (tooShort) {
-        setError("Explain the issue so the author can triage it quickly.");
+        setError("Explain what’s wrong so our team can review it quickly.");
         return;
       }
       setSubmitting(true);
@@ -162,7 +162,7 @@ export default function ReportButton({
                 )}
                 {result === "success" && (
                   <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-                    Thank you. We’ll let the author know something needs attention.
+                    Thanks for flagging this. Our moderators will review it shortly.
                   </div>
                 )}
                 <div className="flex justify-end">
