@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import NotificationPreviewList from "@/components/notifications/NotificationPreviewList";
@@ -33,17 +33,22 @@ export default function HeaderNotifications({
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
 
-  const updateUnreadCount = useCallback((next: number | ((prev: number) => number)) => {
-    setUnreadCount(prev => {
-      const value = typeof next === "function" ? (next as (value: number) => number)(prev) : next;
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent(NOTIFICATION_UNREAD_EVENT, { detail: { count: value } }),
-        );
-      }
-      return value;
-    });
-  }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window.dispatchEvent(
+      new CustomEvent(NOTIFICATION_UNREAD_EVENT, { detail: { count: unreadCount } }),
+    );
+  }, [unreadCount]);
+
+  const updateUnreadCount = useCallback(
+    (next: number | ((prev: number) => number)) => {
+      setUnreadCount(prev =>
+        typeof next === "function" ? (next as (value: number) => number)(prev) : next,
+      );
+    },
+    [],
+  );
 
   const refreshPreview = useCallback(async () => {
     try {
@@ -87,12 +92,12 @@ export default function HeaderNotifications({
       );
 
       try {
-      const res = await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ ids: [id], read: true }),
-      });
+        const res = await fetch("/api/notifications", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ ids: [id], read: true }),
+        });
         if (!res.ok) throw new Error("Request failed");
 
         const data = (await res.json()) as ApiResponse;
