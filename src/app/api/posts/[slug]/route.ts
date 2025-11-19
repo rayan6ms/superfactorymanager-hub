@@ -175,6 +175,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     return updatedPost;
   });
 
-  await indexPost(updated);
+  try {
+    await indexPost(updated as any);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn("[search] Failed to reindex post in Meilisearch:", msg);
+  }
   return NextResponse.json({ slug: updated.slug });
 }

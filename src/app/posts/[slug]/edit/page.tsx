@@ -5,6 +5,7 @@ import PostComposer from "@/components/posts/PostComposer";
 import CodeHistoryPanel from "@/components/posts/CodeHistoryPanel";
 import CodeImprovementForm from "@/components/posts/CodeImprovementForm";
 import type { CommitForHistory, ContributorSummary } from "@/components/posts/CodeHistoryPanel";
+import type { Tag as TagModel } from "@prisma/client";
 
 export default async function EditPostPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
@@ -51,7 +52,7 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
     youtubeUrl: post.youtubeUrl ?? "",
     tags: post.tags
       .map(tag => tag.tag)
-      .filter((tag): tag is { slug: string; name: string } => Boolean(tag?.slug))
+      .filter((tag): tag is TagModel => Boolean(tag?.slug))
       .map(tag => ({ slug: tag.slug, name: tag.name })),
     dependencies: post.dependencies.map(dep => ({ url: dep.url, name: dep.name })),
     existingImages: post.images.map(image => ({

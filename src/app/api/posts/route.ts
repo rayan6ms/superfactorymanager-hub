@@ -11,6 +11,7 @@ import { parseDependency, type ParsedDep } from "@/lib/deps";
 import { getSfmMatrix } from "@/lib/sfm";
 import { normalizeTags } from "@/lib/tags";
 import { recordPostContributor } from "@/lib/posts";
+import { ZodError } from "zod";
 
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
@@ -155,7 +156,10 @@ export async function POST(req: Request) {
     const { byGame } = await getSfmMatrix(false);
     const modsForGame = byGame[parsed.gameVersion] || [];
     if (!modsForGame.includes(parsed.modVersion)) {
-      return NextResponse.json({ error: `Mod version ${parsed.modVersion} is not available for Minecraft ${parsed.gameVersion}` }, { status: 400 });
+      return NextResponse.json(
+        { error: `Mod version ${parsed.modVersion} is not available for Minecraft ${parsed.gameVersion}` },
+        { status: 400 },
+      );
     }
 
     const normalizedTags = normalizeTags(parsed.tags);
@@ -164,7 +168,9 @@ export async function POST(req: Request) {
     }
 
     const user = await db.user.findUnique({ where: { email: session.user.email } });
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
 
     const derivedAuthorName = user.name?.trim() || (user.email?.split("@")[0] ?? "user");
 
@@ -197,8 +203,14 @@ export async function POST(req: Request) {
     let codeStatus: "VERIFIED" | "UNVERIFIED" | "BROKEN" = "UNVERIFIED";
     let codeNote: string | null = null;
     const code = parsed.code.trim();
-    if (code.length < 3) { codeStatus = "BROKEN"; codeNote = "Code is too short."; }
-    if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(code)) { codeStatus = "BROKEN"; codeNote = "Invalid control characters found."; }
+    if (code.length < 3) {
+      codeStatus = "BROKEN";
+      codeNote = "Code is too short.";
+    }
+    if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(code)) {
+      codeStatus = "BROKEN";
+      codeNote = "Invalid control characters found.";
+    }
 
     const created = await db.post.create({
       data: {
@@ -211,7 +223,8 @@ export async function POST(req: Request) {
         authorName: derivedAuthorName,
         rating: 0,
         code,
-        codeStatus, codeNote,
+        codeStatus,
+        codeNote,
         description: parsed.description,
         youtubeUrl: yt,
         openForImprovement: parsed.openForImprovement ?? false,
@@ -221,7 +234,7 @@ export async function POST(req: Request) {
             thumbSm: i.thumbSm,
             thumbMd: i.thumbMd,
             thumbLg: i.thumbLg,
-          }))
+          })),
         },
         dependencies: {
           create: depObjs.map(d => ({
@@ -229,7 +242,7 @@ export async function POST(req: Request) {
             slug: d.slug,
             source: d.source,
             url: d.url,
-          }))
+          })),
         },
         tags: {
           create: normalizedTags.map(tag => ({
@@ -262,15 +275,31 @@ export async function POST(req: Request) {
       },
     });
 
-    await db.post.update({ where: { id: created.id }, data: { currentCommitId: initialCommit.id } });
+    await db.post.update({
+      where: { id: created.id },
+      data: { currentCommitId: initialCommit.id },
+    });
+
     await recordPostContributor(db, created.id, user.id);
 
     const hydrated = { ...created, currentCommitId: initialCommit.id };
 
-    await indexPost(hydrated);
+    try {
+      await indexPost(hydrated as any);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[search] Failed to index post in Meilisearch:", msg);
+    }
+
     return NextResponse.json(serializePost(hydrated), { status: 201 });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Invalid request";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("Error in POST /api/posts:", e);
+
+    if (e instanceof ZodError) {
+      return NextResponse.json({ error: e.issues }, { status: 400 });
+    }
+
+    const message = e instanceof Error ? e.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

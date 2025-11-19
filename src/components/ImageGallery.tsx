@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 export default function ImageGallery({ imgs }: { imgs: { id: string; thumbSm: string; thumbMd: string; thumbLg: string; original: string }[] }) {
   if (!imgs?.length) return null;

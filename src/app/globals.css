@@ -1,13 +1,9 @@
 @import "tailwindcss";
 
-/* Enable official plugins (v4 syntax) */
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
-/* line-clamp is built-in in Tailwind v4; plugin not needed */
 
-/* ---- Design tokens (v4 @theme) ---- */
 @theme {
-  /* brand scale (your reds) */
   --color-brand-50: #f7eaea;
   --color-brand-100: #eecfcf;
   --color-brand-200: #dca0a0;
@@ -16,34 +12,24 @@
   --color-brand-500: #8d2e2e;
   --color-brand-600: #6f1f1f;
   --color-brand-700: #4e0a0a;
-  /* primary */
   --color-brand-800: #3d0707;
   --color-brand-900: #2a0404;
 
-  /* base surfaces (your dark neutrals) */
   --color-base-950: #070318;
-  /* page bg */
   --color-base-900: #0a0a0a;
-  /* default surface */
   --color-base-800: #2a2727;
-  /* raised surface */
   --color-base-700: #4a4949;
-  /* borders / subtle text */
 
-  /* radii */
   --radius-xl: 0.75rem;
   --radius-2xl: 1rem;
 
-  /* shadows (custom tokens become usable as utilities: shadow-soft, shadow-card) */
   --shadow-soft: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.3);
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.25);
 
-  /* fonts */
   --font-sans: ui-sans-serif, system-ui, Inter, "Segoe UI", Roboto, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-/* ---- App-level tokens (CSS vars that your utilities refer to) ---- */
 :root {
   --bg: var(--color-base-950);
   --surface: rgba(10, 10, 10, 0.48);
@@ -60,7 +46,7 @@
 
 html,
 body {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
@@ -81,7 +67,6 @@ body {
   color: #fff;
 }
 
-/* Layout helpers */
 .container-max {
   @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
 }
@@ -95,9 +80,8 @@ body {
 }
 
 .blur-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  position: relative;
+  z-index: 0;
 }
 
 .blur-header::before {
@@ -138,7 +122,6 @@ body[data-hide-header-search="true"] [data-header-search] {
   background: radial-gradient(circle, rgba(59, 130, 246, 0.25), transparent 70%);
 }
 
-/* Surfaces */
 .surface {
   @apply bg-(--surface) border border-white/15 rounded-2xl shadow-soft;
 }
@@ -151,12 +134,10 @@ body[data-hide-header-search="true"] [data-header-search] {
   @apply border-t border-base-700/60;
 }
 
-/* Links */
 a {
   @apply text-brand-400 hover:text-brand-300 underline-offset-4 hover:underline;
 }
 
-/* Forms (forms plugin is active; these are your tweaks) */
 input,
 select,
 textarea {
@@ -193,9 +174,7 @@ button {
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
-/* (Removed ad-hoc button icon css to favor Tailwind utilities) */
 
-/* Code */
 pre,
 code {
   font-family: var(--font-mono);

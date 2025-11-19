@@ -156,6 +156,55 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     }
   }
 
+  const avatarImageControls = (
+    <div>
+      <label className="text-sm font-semibold text-white">Avatar image URL</label>
+      <Input
+        value={image}
+        onChange={event => {
+          setImage(event.target.value);
+          setPreview(event.target.value);
+          setErrors(prev => ({ ...prev, image: undefined, form: undefined }));
+        }}
+        placeholder="https://example.com/avatar.png"
+        className="mt-1"
+        aria-invalid={Boolean(errors.image)}
+      />
+      {errors.image && <p className="mt-1 text-sm text-error">{errors.image}</p>}
+      <div className="mt-2 flex flex-wrap gap-2 text-sm text-white/70">
+        <label className="inline-flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-4 w-4" aria-hidden /> Upload image
+          </Button>
+        </label>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="gap-2"
+          onClick={() => submitProfile(true)}
+          disabled={isLoading}
+        >
+          <RefreshCw className="h-4 w-4" aria-hidden />
+          Use letter avatar
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <Card className="space-y-6 p-6">
       <div className="flex items-start gap-4">
@@ -186,6 +235,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             <span className="sr-only">Change avatar image</span>
           </button>
         </div>
+
         <div className="flex-1 space-y-3">
           <div>
             <label className="text-sm font-semibold text-white">Username</label>
@@ -202,42 +252,69 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             <p className="mt-1 text-xs text-white/60">{USERNAME_HELP_TEXT}</p>
             {errors.name && <p className="mt-1 text-sm text-error">{errors.name}</p>}
           </div>
-          <div>
-            <label className="text-sm font-semibold text-white">Avatar image URL</label>
-            <Input
-              value={image}
-              onChange={event => {
-                setImage(event.target.value);
-                setPreview(event.target.value);
-                setErrors(prev => ({ ...prev, image: undefined, form: undefined }));
-              }}
-              placeholder="https://example.com/avatar.png"
-              className="mt-1"
-              aria-invalid={Boolean(errors.image)}
-            />
-            {errors.image && <p className="mt-1 text-sm text-error">{errors.image}</p>}
-            <div className="mt-2 flex flex-wrap gap-2 text-sm text-white/70">
-              <label className="inline-flex items-center gap-2">
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                <Button type="button" size="sm" variant="outline" className="gap-2" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="h-4 w-4" aria-hidden /> Upload image
-                </Button>
-              </label>
-              <Button type="button" size="sm" variant="ghost" className="gap-2" onClick={() => submitProfile(true)} disabled={isLoading}>
-                <RefreshCw className="h-4 w-4" aria-hidden />
-                Use letter avatar
-              </Button>
-            </div>
+
+          <div className="hidden sm:block">
+            {avatarImageControls}
           </div>
         </div>
       </div>
+
+      <div className="sm:hidden">
+        {avatarImageControls}
+      </div>
+
+      <div className="space-y-3 hidden sm:flex-1">
+        <div>
+          <label className="text-sm font-semibold text-white">Avatar image URL</label>
+          <Input
+            value={image}
+            onChange={event => {
+              setImage(event.target.value);
+              setPreview(event.target.value);
+              setErrors(prev => ({ ...prev, image: undefined, form: undefined }));
+            }}
+            placeholder="https://example.com/avatar.png"
+            className="mt-1"
+            aria-invalid={Boolean(errors.image)}
+          />
+          {errors.image && <p className="mt-1 text-sm text-error">{errors.image}</p>}
+          <div className="mt-2 flex flex-wrap gap-2 text-sm text-white/70">
+            <label className="inline-flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" aria-hidden /> Upload image
+              </Button>
+            </label>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="gap-2"
+              onClick={() => submitProfile(true)}
+              disabled={isLoading}
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden />
+              Use letter avatar
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {errors.form && <p className="text-sm text-error">{errors.form}</p>}
       {status === "success" && <p className="text-sm text-emerald-300">Profile updated successfully.</p>}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button onClick={() => submitProfile(false)} disabled={isLoading} className="gap-2">
-          {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          Save changes
-        </Button>
         <div className="flex items-center gap-3 text-sm text-white/70">
           <Button
             type="button"
@@ -247,12 +324,21 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             onClick={handleResetPassword}
             disabled={resetLoading}
           >
-            {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ShieldCheck className="h-4 w-4" aria-hidden />}
+            {resetLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <ShieldCheck className="h-4 w-4" aria-hidden />
+            )}
             Send email to reset password
           </Button>
           {resetStatus === "sent" && <span className="text-emerald-300">Email sent!</span>}
           {resetStatus === "error" && <span className="text-error">Couldn’t send email.</span>}
         </div>
+
+        <Button onClick={() => submitProfile(false)} disabled={isLoading} className="gap-2">
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+          Save changes
+        </Button>
       </div>
     </Card>
   );
