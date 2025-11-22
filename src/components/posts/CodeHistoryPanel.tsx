@@ -61,9 +61,9 @@ export default function CodeHistoryPanel({
   contributors,
 }: CodeHistoryPanelProps) {
   const router = useRouter();
-  const [primaryId, setPrimaryId] = useState(currentCommitId ?? commits[0]?.id ?? null);
-  const [secondaryId, setSecondaryId] = useState(
-    commits.find(commit => commit.id !== primaryId)?.id ?? null,
+  const [primaryId, setPrimaryId] = useState<string>(currentCommitId ?? commits[0]?.id ?? "");
+  const [secondaryId, setSecondaryId] = useState<string>(
+    commits.find(commit => commit.id !== (currentCommitId ?? commits[0]?.id ?? ""))?.id ?? "",
   );
   const [actionTarget, setActionTarget] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -134,8 +134,8 @@ export default function CodeHistoryPanel({
               Compare
               <select
                 className="mt-1 rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                value={primaryId ?? ""}
-                onChange={event => setPrimaryId(event.target.value || null)}
+                value={primaryId}
+                onChange={event => setPrimaryId(event.target.value)}
               >
                 {commits.map(commit => (
                   <option key={commit.id} value={commit.id}>
@@ -148,8 +148,8 @@ export default function CodeHistoryPanel({
               Against
               <select
                 className="mt-1 rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
-                value={secondaryId ?? ""}
-                onChange={event => setSecondaryId(event.target.value || null)}
+                value={secondaryId}
+                onChange={event => setSecondaryId(event.target.value)}
               >
                 <option value="">— None —</option>
                 {commits
@@ -170,7 +170,7 @@ export default function CodeHistoryPanel({
                   <pre
                     key={`${index}-${part.added}-${part.removed}`}
                     className={clsx(
-                      "whitespace-pre-wrap border-b border-white/5 px-4 py-2", 
+                      "whitespace-pre-wrap border-b border-white/5 px-4 py-2",
                       part.added && "bg-emerald-500/10 text-emerald-100",
                       part.removed && "bg-red-500/10 text-red-100",
                     )}

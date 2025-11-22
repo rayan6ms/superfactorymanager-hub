@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
-import type * as Monaco from "monaco-editor";
+import type * as monacoNs from "monaco-editor";
 import { clsx } from "clsx";
 import { CODE_CANVAS_BG } from "@/lib/highlight-sfml";
 
@@ -47,7 +47,7 @@ const KEYWORDS = [
 const TYPES = ["TICKS", "TICK", "ROUND", "ROBIN", "NAME", "FORGET", "FLUID", "GAS", "ITEM", "FE"];
 const OPERATORS = ["=", ">", "<", ">=", "<=", "EQ", "GT", "LT", "LE", "GE"];
 
-const theme: Monaco.editor.IStandaloneThemeData = {
+const theme: monacoNs.editor.IStandaloneThemeData = {
   base: "vs-dark",
   inherit: true,
   colors: {
@@ -62,12 +62,13 @@ const theme: Monaco.editor.IStandaloneThemeData = {
     "editor.selectionBackground": "#5b21b6",
   },
   rules: [
-    { token: "comment", foreground: "6272a4" },
-    { token: "string", foreground: "f1fa8c" },
-    { token: "number", foreground: "bd93f9" },
-    { token: "keyword", foreground: "ff79c6" },
-    { token: "type", foreground: "8be9fd" },
-    { token: "operator", foreground: "ffb86c" },
+    { token: "comment", foreground: "#aaaaaa" },
+    { token: "string", foreground: "#f1fa8c" },
+    { token: "number", foreground: "#8be9fd" },
+    { token: "keyword", foreground: "#938bfd" },
+    { token: "type", foreground: "#fdca8b" },
+    { token: "operator", foreground: "#ffffffff" },
+    { token: "identifier", foreground: "#8bfd95" },
   ],
 };
 
@@ -77,37 +78,60 @@ type CodeBoxProps = {
   onBlur?: () => void;
   isInvalid?: boolean;
   describedBy?: string;
-  errorLines?: number[];
-  warningRanges?: { startLine: number; endLine?: number }[];
+
+  errorMarkers?: { line: number; message: string }[];
+  warningRanges?: { startLine: number; endLine?: number; message?: string }[];
+
   wrapLines?: boolean;
 };
 
-type MarkerInput = { severity: Monaco.MarkerSeverity; startLine: number; endLine: number };
+type MarkerInput = {
+  severity: "error" | "warning";
+  startLine: number;
+  endLine: number;
+  message?: string;
+};
 
-function normalizeMarkers(errorLines?: number[], warningRanges?: { startLine: number; endLine?: number }[]) {
+function normalizeMarkers(
+  errorMarkers?: { line: number; message: string }[],
+  warningRanges?: { startLine: number; endLine?: number; message?: string }[],
+): MarkerInput[] {
   const markers: MarkerInput[] = [];
-  if (errorLines?.length) {
-    errorLines.forEach(line => {
-      if (Number.isFinite(line) && line > 0) {
-        markers.push({ severity: Monaco.MarkerSeverity.Error, startLine: Math.floor(line), endLine: Math.floor(line) });
-      }
-    });
-  }
+
+  errorMarkers?.forEach(err => {
+    if (Number.isFinite(err.line) && err.line > 0) {
+      markers.push({
+        severity: "error",
+        startLine: Math.floor(err.line),
+        endLine: Math.floor(err.line),
+        message: err.message,
+      });
+    }
+  });
 
   warningRanges?.forEach(range => {
     if (!Number.isFinite(range.startLine) || range.startLine <= 0) return;
     const start = Math.floor(range.startLine);
-    const end = Number.isFinite(range.endLine) && range.endLine && range.endLine > 0 ? Math.floor(range.endLine) : start;
-    markers.push({ severity: Monaco.MarkerSeverity.Warning, startLine: start, endLine: end });
+    const end =
+      Number.isFinite(range.endLine) && range.endLine && range.endLine > 0
+        ? Math.floor(range.endLine)
+        : start;
+    markers.push({
+      severity: "warning",
+      startLine: start,
+      endLine: end,
+      message: range.message,
+    });
   });
 
   return markers;
 }
 
-function ensureLanguage(monaco: typeof Monaco) {
+function ensureLanguage(monaco: typeof monacoNs) {
   const existing = monaco.languages.getLanguages().some(lang => lang.id === SFML_LANGUAGE_ID);
   if (!existing) {
     monaco.languages.register({ id: SFML_LANGUAGE_ID });
+
     monaco.languages.setLanguageConfiguration(SFML_LANGUAGE_ID, {
       comments: { lineComment: "--" },
       brackets: [
@@ -122,26 +146,34 @@ function ensureLanguage(monaco: typeof Monaco) {
         { open: '"', close: '"' },
       ],
     });
+
     monaco.languages.setMonarchTokensProvider(SFML_LANGUAGE_ID, {
       keywords: KEYWORDS,
       typeKeywords: TYPES,
       operators: OPERATORS,
-      symbols: /[=><!~?:&|+\-*\/\^%]+/,
-      escapes: /\\(?:[nrt"\\]|x[0-9A-Fa-f]{1,4})/,
+      ignoreCase: true,
       tokenizer: {
         root: [
           [/--.*$/, "comment"],
           [/\"([^\\\"]|\\.)*\"/, "string"],
           [/\b\d+\b/, "number"],
-          [/\b(@typeKeywords)\b/, "type"],
-          [/\b(@keywords)\b/, "keyword"],
-          [/\b(@operators)\b/, "operator"],
-          [/(@symbols)/, "operator"],
+
+          [/[A-Z_][A-Z0-9_]*/, {
+            cases: {
+              "@typeKeywords": "type",
+              "@keywords": "keyword",
+              "@operators": "operator",
+              "@default": "identifier",
+            },
+          }],
+
+          [/[=><!~?:&|+\-*\/\^%]+/, "operator"],
+
           [/\w+/, "identifier"],
         ],
       },
-      ignoreCase: true,
     });
+
     monaco.editor.defineTheme(SFML_THEME_ID, theme);
   }
 }
@@ -152,76 +184,107 @@ export function CodeBox({
   onBlur,
   isInvalid = false,
   describedBy,
-  errorLines,
+  errorMarkers,
   warningRanges,
   wrapLines = true,
 }: CodeBoxProps) {
-  const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
-  const monacoRef = useRef<typeof Monaco | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<monacoNs.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof monacoNs | null>(null);
+  const editorHeightRef = useRef(MIN_HEIGHT);
   const [editorHeight, setEditorHeight] = useState(MIN_HEIGHT);
 
-  const markers = useMemo(() => normalizeMarkers(errorLines, warningRanges), [errorLines, warningRanges]);
+  const markers = useMemo(
+    () => normalizeMarkers(errorMarkers, warningRanges),
+    [errorMarkers, warningRanges],
+  );
 
   const applyMarkers = useCallback(() => {
-    if (!monacoRef.current || !editorRef.current) return;
-    const model = editorRef.current.getModel();
+    const monaco = monacoRef.current;
+    const editor = editorRef.current;
+    if (!monaco || !editor) return;
+
+    const model = editor.getModel();
     if (!model) return;
-    monacoRef.current.editor.setModelMarkers(
-      model,
-      SFML_LANGUAGE_ID,
-      markers.map(marker => ({
-        startLineNumber: marker.startLine,
-        startColumn: 1,
-        endLineNumber: marker.endLine,
-        endColumn: 1,
-        message: marker.severity === Monaco.MarkerSeverity.Error ? "Error" : "Warning",
-        severity: marker.severity,
-      })),
-    );
+
+    const markerData: monacoNs.editor.IMarkerData[] = markers.map(marker => ({
+      startLineNumber: marker.startLine,
+      startColumn: 1,
+      endLineNumber: marker.endLine,
+      endColumn: 1,
+      message:
+        marker.message ??
+        (marker.severity === "error" ? "Error" : "Warning"),
+      severity:
+        marker.severity === "error"
+          ? monaco.MarkerSeverity.Error
+          : monaco.MarkerSeverity.Warning,
+    }));
+
+    monaco.editor.setModelMarkers(model, SFML_LANGUAGE_ID, markerData);
   }, [markers]);
 
   const updateHeight = useCallback(() => {
-    if (!editorRef.current) return;
-    const contentHeight = editorRef.current.getContentHeight();
-    const next = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.ceil(contentHeight + 24)));
-    setEditorHeight(next);
-    editorRef.current.layout({ height: next });
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const contentHeight = editor.getContentHeight();
+    const next = Math.min(
+      MAX_HEIGHT,
+      Math.max(MIN_HEIGHT, Math.ceil(contentHeight + 24)),
+    );
+
+    if (next !== editorHeightRef.current) {
+      editorHeightRef.current = next;
+      setEditorHeight(next);
+    }
   }, []);
 
   useEffect(() => {
     applyMarkers();
   }, [applyMarkers]);
 
-  const handleMount = useCallback((editor: Monaco.editor.IStandaloneCodeEditor, monaco: typeof Monaco) => {
-    monacoRef.current = monaco;
-    editorRef.current = editor;
-    ensureLanguage(monaco);
-    monaco.editor.setTheme(SFML_THEME_ID);
-    applyMarkers();
-    updateHeight();
+  const handleMount = useCallback(
+    (editor: monacoNs.editor.IStandaloneCodeEditor, monaco: typeof monacoNs) => {
+      monacoRef.current = monaco;
+      editorRef.current = editor;
 
-    const resize = new ResizeObserver(() => {
-      editor.layout();
+      ensureLanguage(monaco);
+      monaco.editor.setTheme(SFML_THEME_ID);
+
+      applyMarkers();
       updateHeight();
-    });
-    if (containerRef.current) resize.observe(containerRef.current);
 
-    const disposables: Monaco.IDisposable[] = [
-      editor.onDidContentSizeChange(() => updateHeight()),
-      editor.onDidBlurEditorText(() => onBlur?.()),
-    ];
+      const disposables: monacoNs.IDisposable[] = [
+        editor.onDidContentSizeChange(() => updateHeight()),
+        editor.onDidBlurEditorText(() => onBlur?.()),
+      ];
 
-    return () => {
-      resize.disconnect();
-      disposables.forEach(d => d.dispose());
-    };
-  }, [applyMarkers, onBlur, updateHeight]);
+      editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Tab, () => {
+        editor.getAction("editor.action.outdentLines")?.run();
+      });
+
+      editor.addCommand(monaco.KeyCode.Tab, () => {
+        const selection = editor.getSelection();
+        if (!selection) return;
+
+        if (selection.startLineNumber !== selection.endLineNumber) {
+          editor.getAction("editor.action.indentLines")?.run();
+        } else {
+          editor.trigger("keyboard", "type", { text: "\t" });
+        }
+      });
+
+      return () => {
+        disposables.forEach(d => d.dispose());
+      };
+    },
+    [applyMarkers, onBlur, updateHeight],
+  );
 
   return (
     <div
       className={clsx(
-        "codebox relative isolate w-full overflow-hidden rounded-xl border bg-(--surface-2)/80 transition-shadow",
+        "codebox relative isolate w-full rounded-xl border bg-[#0c0e12] transition-shadow",
         isInvalid
           ? "border-red-500/60 focus-within:border-red-500/70 focus-within:ring-2 focus-within:ring-red-400"
           : "border-white/10 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-400",
@@ -229,18 +292,22 @@ export function CodeBox({
       aria-invalid={isInvalid || undefined}
       aria-describedby={describedBy}
     >
-      <div ref={containerRef} className="relative" style={{ backgroundColor: `rgba${CODE_CANVAS_BG}`, minHeight: MIN_HEIGHT }}>
+      <div
+        className="relative"
+        style={{ backgroundColor: `rgba${CODE_CANVAS_BG}`, minHeight: MIN_HEIGHT }}
+      >
         <Editor
           height={editorHeight}
           defaultLanguage={SFML_LANGUAGE_ID}
           language={SFML_LANGUAGE_ID}
           theme={SFML_THEME_ID}
-          value={value}
+          defaultValue={value}
           onChange={next => onChange(next ?? "")}
           onMount={handleMount}
           options={{
             fontSize: 14,
-            fontFamily: '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+            fontFamily:
+              '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
             minimap: { enabled: false },
             wordWrap: wrapLines ? "on" : "off",
             wrappingIndent: "same",
@@ -248,7 +315,7 @@ export function CodeBox({
             smoothScrolling: true,
             renderLineHighlight: "line",
             renderValidationDecorations: "on",
-            automaticLayout: false,
+            automaticLayout: true,
             glyphMargin: false,
             folding: false,
             lineDecorationsWidth: 14,

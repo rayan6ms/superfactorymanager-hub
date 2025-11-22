@@ -156,11 +156,21 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   }, [mediaFiles]);
   const errorId = useCallback((key: FormErrorKey) => `${idPrefix}-${key}-error`, [idPrefix]);
   const codeWarningsId = `${idPrefix}-code-warnings`;
+  const errorMarkers = useMemo(
+    () =>
+      codeFeedback.syntaxErrors.map(error => ({
+        line: error.lineStart,
+        message: error.message,
+      })),
+    [codeFeedback.syntaxErrors],
+  );
+
   const warningRanges = useMemo(
     () =>
       codeFeedback.warnings.map(warning => ({
         startLine: warning.lineStart,
         endLine: warning.lineEnd ?? warning.lineStart,
+        message: warning.message,
       })),
     [codeFeedback.warnings],
   );
@@ -324,8 +334,8 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     const imageMessage = isEditMode
       ? null
       : limitedByMax
-          ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-          : computeImagesError(mediaFiles);
+        ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+        : computeImagesError(mediaFiles);
     next.images = imageMessage;
     return next;
   }, [
@@ -634,8 +644,8 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     const imageMessage = isEditMode
       ? null
       : limitedByMax
-          ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-          : computeImagesError(mediaFiles);
+        ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+        : computeImagesError(mediaFiles);
     const tagMessage = validateTags(tags);
     const nextErrors: Record<FormErrorKey, string | null> = {
       title: validateField("title", form.title, form),
@@ -679,9 +689,9 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       if (!res.ok) {
         setSubmitError(
           data.error ||
-            (isEditMode
-              ? "We couldn't save your changes. Double-check the details and try again."
-              : "We couldn't publish your post. Check the details and try again."),
+          (isEditMode
+            ? "We couldn't save your changes. Double-check the details and try again."
+            : "We couldn't publish your post. Check the details and try again."),
         );
         return;
       }
@@ -1297,7 +1307,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
             onChange={v => change("code", v)}
             onBlur={() => markTouched("code")}
             isInvalid={shouldShowError("code")}
-            errorLines={codeFeedback.syntaxErrors.map(error => error.lineStart)}
+            errorMarkers={errorMarkers}
             warningRanges={warningRanges}
             wrapLines={wrapLines}
             describedBy={[
@@ -1322,60 +1332,60 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
               )}
             </div>
           )}
-        {codeFeedback.status === "ok" && codeFeedback.warnings.length > 0 && (
-          <div id={codeWarningsId} className="space-y-1 text-sm text-amber-300">
-            <p className="font-semibold">Warnings</p>
-            <ul className="list-disc space-y-1 pl-5 marker:text-amber-300">
-              {codeFeedback.warnings.map((warning, idx) => (
-                <li key={`${warning.lineStart}-${warning.lineEnd}-${idx}`}>
-                  Line {warning.lineStart}
-                  {warning.lineEnd !== warning.lineStart ? `-${warning.lineEnd}` : ""} – {warning.message}
-                </li>
-              ))}
-            </ul>
+          {codeFeedback.status === "ok" && codeFeedback.warnings.length > 0 && (
+            <div id={codeWarningsId} className="space-y-1 text-sm text-amber-300">
+              <p className="font-semibold">Warnings</p>
+              <ul className="list-disc space-y-1 pl-5 marker:text-amber-300">
+                {codeFeedback.warnings.map((warning, idx) => (
+                  <li key={`${warning.lineStart}-${warning.lineEnd}-${idx}`}>
+                    Line {warning.lineStart}
+                    {warning.lineEnd !== warning.lineStart ? `-${warning.lineEnd}` : ""} – {warning.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
+
+        <Card className="space-y-5 p-6 sm:px-8 sm:py-7 lg:col-span-2">
+          <SectionTitle
+            title="Collaboration"
+            description="Allow other builders to propose code improvements for this post."
+          />
+          <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-white/80">
+              {form.openForImprovement
+                ? "Anyone with an account can suggest code edits. You decide what to merge."
+                : "Only you can update this code. Enable collaboration to accept pull-request style edits."}
+            </p>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, openForImprovement: !prev.openForImprovement }))}
+              className={clsx(
+                "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition",
+                form.openForImprovement
+                  ? "bg-brand-500 text-white shadow-soft"
+                  : "border border-white/20 bg-white/5 text-white/80 hover:border-white/30 hover:text-white"
+              )}
+            >
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-current">
+                <span
+                  className={clsx(
+                    "h-3 w-3 rounded-full bg-current transition",
+                    form.openForImprovement ? "opacity-100" : "opacity-0"
+                  )}
+                />
+              </span>
+              {form.openForImprovement ? "Open to improvements" : "Closed to improvements"}
+            </button>
           </div>
-        )}
-      </Card>
-
-      <Card className="space-y-5 p-6 sm:px-8 sm:py-7 lg:col-span-2">
-        <SectionTitle
-          title="Collaboration"
-          description="Allow other builders to propose code improvements for this post."
-        />
-        <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-white/80">
-            {form.openForImprovement
-              ? "Anyone with an account can suggest code edits. You decide what to merge."
-              : "Only you can update this code. Enable collaboration to accept pull-request style edits."}
+          <p className="text-xs text-white/55">
+            When collaboration is enabled, contributors can edit only the code and must include a message explaining their changes.
           </p>
-          <button
-            type="button"
-            onClick={() => setForm(prev => ({ ...prev, openForImprovement: !prev.openForImprovement }))}
-            className={clsx(
-              "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition",
-              form.openForImprovement
-                ? "bg-brand-500 text-white shadow-soft"
-                : "border border-white/20 bg-white/5 text-white/80 hover:border-white/30 hover:text-white"
-            )}
-          >
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-current">
-              <span
-                className={clsx(
-                  "h-3 w-3 rounded-full bg-current transition",
-                  form.openForImprovement ? "opacity-100" : "opacity-0"
-                )}
-              />
-            </span>
-            {form.openForImprovement ? "Open to improvements" : "Closed to improvements"}
-          </button>
-        </div>
-        <p className="text-xs text-white/55">
-          When collaboration is enabled, contributors can edit only the code and must include a message explaining their changes.
-        </p>
-      </Card>
-    </div>
+        </Card>
+      </div>
 
-    <div className="space-y-4">
+      <div className="space-y-4">
         {blockingMessages.length > 0 && (
           <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
             <p className="font-semibold text-red-100">Complete the following before publishing:</p>

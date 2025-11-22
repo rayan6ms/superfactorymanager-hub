@@ -6,7 +6,7 @@ export default async function HighlightedCode({
   const html = await highlightSFML(code);
   return (
     <div
-      className="p-2 rounded overflow-auto"
+      className="p-2 rounded overflow-auto dark-scrollbar"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

@@ -94,6 +94,11 @@ body {
   z-index: -1;
 }
 
+.monaco-editor,
+.overflow-guard {
+  border-radius: 14px;
+}
+
 body[data-hide-header-search="true"] [data-header-search] {
   display: none !important;
 }

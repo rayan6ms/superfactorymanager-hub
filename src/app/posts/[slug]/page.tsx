@@ -219,7 +219,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
             {post.dependencies?.length ? (
               <ul className="list-disc space-y-2 pl-5 text-sm text-white/80">
                 {post.dependencies.map(dep => (
-                  <li key={dep.id} className="break-words">
+                  <li key={dep.id} className="wrap-break-word">
                     <a
                       href={dep.url}
                       target="_blank"
