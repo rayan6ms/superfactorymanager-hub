@@ -12,6 +12,7 @@ import { getSfmMatrix } from "@/lib/sfm";
 import { normalizeTags } from "@/lib/tags";
 import { recordPostContributor } from "@/lib/posts";
 import { ZodError } from "zod";
+import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
@@ -170,6 +171,18 @@ export async function POST(req: Request) {
     const user = await db.user.findUnique({ where: { email: session.user.email } });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
+
+    try {
+      await assertRateLimit(user.id, "post:create");
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        return NextResponse.json(
+          { error: err.message },
+          { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+        );
+      }
+      throw err;
     }
 
     const derivedAuthorName = user.name?.trim() || (user.email?.split("@")[0] ?? "user");

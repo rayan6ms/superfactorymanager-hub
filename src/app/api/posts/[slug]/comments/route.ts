@@ -6,6 +6,7 @@ import { commentSchema } from "@/lib/validation";
 import { getPostComments } from "@/lib/comments";
 import { COMMENT_PAGE_SIZE } from "@/lib/comment-constants";
 import { createNotification } from "@/lib/notifications";
+import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
 function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
@@ -73,6 +74,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
   if (!user || !post) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  try {
+    await assertRateLimit(user.id, "comment:create");
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+      );
+    }
+    throw err;
   }
 
   let parentComment: { id: string; authorId: string; postId: string } | null = null;

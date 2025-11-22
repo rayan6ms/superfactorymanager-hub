@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
 const reportSchema = z.object({
   type: z.enum(["post", "comment"]),
@@ -18,6 +19,18 @@ export async function POST(request: Request) {
   const user = await db.user.findUnique({ where: { email: session.user.email } });
   if (!user) {
     return NextResponse.json({ error: "Log in to report content." }, { status: 401 });
+  }
+
+  try {
+    await assertRateLimit(user.id, "report:create");
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+      );
+    }
+    throw err;
   }
 
   let payload: unknown;

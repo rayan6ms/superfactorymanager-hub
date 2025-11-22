@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { NotificationOrigin } from "@prisma/client";
+import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
 const contributionSchema = z.object({
   code: z.string().min(3, { message: "Code is required." }),
@@ -46,6 +47,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   }
   if (post.authorId === user.id) {
     return NextResponse.json({ error: "Use the edit form to update your own post." }, { status: 400 });
+  }
+
+  try {
+    await assertRateLimit(user.id, "commit:create");
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+      );
+    }
+    throw err;
   }
 
   const trimmedCode = parsed.data.code.trim();

@@ -1,14 +1,20 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCheck, Loader2, RefreshCw } from "lucide-react";
 import clsx from "clsx";
 import {
   NOTIFICATION_PAGE_SIZE,
+  NOTIFICATION_PREVIEW_LIMIT,
+  NOTIFICATION_SYNC_EVENT,
   formatNotificationTimestamp,
   type SerializedNotification,
 } from "@/lib/notifications";
+import {
+  dispatchNotificationSync,
+  type NotificationSyncDetail,
+} from "@/lib/notification-events";
 
 const ORIGIN_LABEL: Record<SerializedNotification["origin"], string> = {
   SYSTEM: "System",
@@ -60,6 +66,29 @@ export default function NotificationCenter({
     });
   }, []);
 
+  useEffect(() => {
+    function handle(event: Event) {
+      const detail = (event as CustomEvent<NotificationSyncDetail>).detail;
+      if (!detail) return;
+
+      if (typeof detail.unreadCount === "number") {
+        setUnreadCount(detail.unreadCount);
+      }
+
+      if (detail.updates?.length) {
+        setNotifications(prev =>
+          prev.map(item => {
+            const update = detail.updates!.find(change => change.id === item.id);
+            return update ? { ...item, readAt: update.readAt } : item;
+          }),
+        );
+      }
+    }
+
+    window.addEventListener(NOTIFICATION_SYNC_EVENT, handle as EventListener);
+    return () => window.removeEventListener(NOTIFICATION_SYNC_EVENT, handle as EventListener);
+  }, []);
+
   const applyUpdates = useCallback((next: SerializedNotification[], unread: number, nextCursorValue?: string | null) => {
     setNotifications(next);
     setUnreadCount(unread);
@@ -79,6 +108,16 @@ export default function NotificationCenter({
       if (!res.ok) throw new Error("Failed to fetch notifications");
       const data = (await res.json()) as ApiResponse;
       applyUpdates(data.notifications ?? [], data.unreadCount ?? 0, data.nextCursor ?? null);
+      dispatchNotificationSync({
+        unreadCount: data.unreadCount ?? 0,
+        updates: (data.notifications ?? []).map(notification => ({
+          id: notification.id,
+          readAt: notification.readAt,
+        })),
+        preview: (data.notifications ?? [])
+          .filter(notification => !notification.readAt)
+          .slice(0, NOTIFICATION_PREVIEW_LIMIT),
+      });
     } catch (err) {
       console.error(err);
       setError("We couldn’t refresh notifications. Please try again.");
@@ -105,6 +144,9 @@ export default function NotificationCenter({
       setNotifications(prev => [...prev, ...(data.notifications ?? [])]);
       setUnreadCount(data.unreadCount ?? unreadCount);
       setCursor(data.nextCursor ?? null);
+      if (typeof data.unreadCount === "number") {
+        dispatchNotificationSync({ unreadCount: data.unreadCount });
+      }
     } catch (err) {
       console.error(err);
       setError("We couldn’t load more notifications.");
@@ -126,19 +168,26 @@ export default function NotificationCenter({
         });
         if (!res.ok) throw new Error("Request failed");
         const data = (await res.json()) as { unreadCount?: number };
+        const readAt = makeRead ? new Date().toISOString() : null;
         setNotifications(prev =>
-          prev.map(item =>
-            item.id === notification.id
-              ? {
-                ...item,
-                readAt: makeRead ? new Date().toISOString() : null,
-              }
-              : item,
-          ),
+          prev.map(item => (item.id === notification.id ? { ...item, readAt } : item)),
         );
-        if (typeof data.unreadCount === "number") {
-          setUnreadCount(data.unreadCount);
-        }
+        setUnreadCount(prev => {
+          const nextCount =
+            typeof data.unreadCount === "number"
+              ? data.unreadCount
+              : Math.max(0, prev + (makeRead ? -1 : 1));
+          dispatchNotificationSync({
+            unreadCount: nextCount,
+            updates: [
+              {
+                id: notification.id,
+                readAt,
+              },
+            ],
+          });
+          return nextCount;
+        });
       } catch (err) {
         console.error(err);
         setError("We couldn’t update that notification. Please try again.");
@@ -165,9 +214,12 @@ export default function NotificationCenter({
       const data = (await res.json()) as { unreadCount?: number };
       const timestamp = new Date().toISOString();
       setNotifications(prev => prev.map(item => ({ ...item, readAt: item.readAt ?? timestamp })));
-      if (typeof data.unreadCount === "number") {
-        setUnreadCount(data.unreadCount);
-      }
+      const nextCount = typeof data.unreadCount === "number" ? data.unreadCount : 0;
+      setUnreadCount(nextCount);
+      dispatchNotificationSync({
+        unreadCount: nextCount,
+        updates: ids.map(id => ({ id, readAt: timestamp })),
+      });
     } catch (err) {
       console.error(err);
       setError("We couldn’t mark everything as read. Please try again.");

@@ -6,9 +6,13 @@ import clsx from "clsx";
 import NotificationPreviewList from "@/components/notifications/NotificationPreviewList";
 import {
   NOTIFICATION_PREVIEW_LIMIT,
-  NOTIFICATION_UNREAD_EVENT,
+  NOTIFICATION_SYNC_EVENT,
   type SerializedNotification,
 } from "@/lib/notifications";
+import {
+  dispatchNotificationSync,
+  type NotificationSyncDetail,
+} from "@/lib/notification-events";
 
 type HeaderNotificationsProps = {
   initialNotifications: SerializedNotification[];
@@ -34,12 +38,35 @@ export default function HeaderNotifications({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    window.dispatchEvent(
-      new CustomEvent(NOTIFICATION_UNREAD_EVENT, { detail: { count: unreadCount } }),
-    );
+    dispatchNotificationSync({ unreadCount });
   }, [unreadCount]);
+
+  useEffect(() => {
+    function handle(event: Event) {
+      const detail = (event as CustomEvent<NotificationSyncDetail>).detail;
+      if (!detail) return;
+
+      if (typeof detail.unreadCount === "number") {
+        setUnreadCount(detail.unreadCount);
+      }
+
+      if (detail.updates?.length) {
+        setNotifications(prev =>
+          prev.map(item => {
+            const update = detail.updates!.find(change => change.id === item.id);
+            return update ? { ...item, readAt: update.readAt } : item;
+          }),
+        );
+      }
+
+      if (detail.preview) {
+        setNotifications(detail.preview);
+      }
+    }
+
+    window.addEventListener(NOTIFICATION_SYNC_EVENT, handle as EventListener);
+    return () => window.removeEventListener(NOTIFICATION_SYNC_EVENT, handle as EventListener);
+  }, []);
 
   const updateUnreadCount = useCallback(
     (next: number | ((prev: number) => number)) => {
@@ -68,6 +95,10 @@ export default function HeaderNotifications({
       if (typeof data.unreadCount === "number") {
         updateUnreadCount(data.unreadCount);
       }
+      dispatchNotificationSync({
+        unreadCount: data.unreadCount,
+        preview: data.notifications?.filter(notification => !notification.readAt),
+      });
     } catch (err) {
       console.error(err);
     }
@@ -107,6 +138,10 @@ export default function HeaderNotifications({
           updateUnreadCount(prev => Math.max(0, prev - 1));
         }
         await refreshPreview();
+        dispatchNotificationSync({
+          unreadCount: typeof data.unreadCount === "number" ? data.unreadCount : undefined,
+          updates: [{ id, readAt: timestamp }],
+        });
       } catch (err) {
         console.error(err);
         setError("We couldn’t update that notification. Please try again.");

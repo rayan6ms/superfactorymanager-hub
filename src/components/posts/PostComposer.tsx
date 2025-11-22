@@ -156,6 +156,14 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   }, [mediaFiles]);
   const errorId = useCallback((key: FormErrorKey) => `${idPrefix}-${key}-error`, [idPrefix]);
   const codeWarningsId = `${idPrefix}-code-warnings`;
+  const warningRanges = useMemo(
+    () =>
+      codeFeedback.warnings.map(warning => ({
+        startLine: warning.lineStart,
+        endLine: warning.lineEnd ?? warning.lineStart,
+      })),
+    [codeFeedback.warnings],
+  );
 
   const computeImagesError = useCallback((list: File[]) => {
     if (!list.length) return "Upload at least one image to showcase your build.";
@@ -1290,6 +1298,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
             onBlur={() => markTouched("code")}
             isInvalid={shouldShowError("code")}
             errorLines={codeFeedback.syntaxErrors.map(error => error.lineStart)}
+            warningRanges={warningRanges}
             wrapLines={wrapLines}
             describedBy={[
               shouldShowError("code") ? errorId("code") : null,

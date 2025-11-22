@@ -1,17 +1,75 @@
 "use client";
 
-import {
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Editor from "@monaco-editor/react";
+import type * as Monaco from "monaco-editor";
 import { clsx } from "clsx";
-import { CODE_CANVAS_BG, highlightSFML } from "@/lib/highlight-sfml";
+import { CODE_CANVAS_BG } from "@/lib/highlight-sfml";
+
+const SFML_LANGUAGE_ID = "sfml";
+const SFML_THEME_ID = "sfm-dracula";
+const MIN_HEIGHT = 256;
+const MAX_HEIGHT = 560;
+
+const KEYWORDS = [
+  "EXCEPT",
+  "MOVE",
+  "FROM",
+  "TO",
+  "INPUT",
+  "OUTPUT",
+  "WHERE",
+  "SLOTS",
+  "RETAIN",
+  "EACH",
+  "TOP",
+  "BOTTOM",
+  "NORTH",
+  "EAST",
+  "SOUTH",
+  "WEST",
+  "SIDE",
+  "SELF",
+  "SECONDS",
+  "EVERY",
+  "PULSE",
+  "WORLD",
+  "PROGRAM",
+  "WITH",
+  "WITHOUT",
+  "DO",
+  "END",
+  "IF",
+  "ELSE",
+  "THEN",
+];
+
+const TYPES = ["TICKS", "TICK", "ROUND", "ROBIN", "NAME", "FORGET", "FLUID", "GAS", "ITEM", "FE"];
+const OPERATORS = ["=", ">", "<", ">=", "<=", "EQ", "GT", "LT", "LE", "GE"];
+
+const theme: Monaco.editor.IStandaloneThemeData = {
+  base: "vs-dark",
+  inherit: true,
+  colors: {
+    "editor.background": "#0c0e12",
+    "editorLineNumber.foreground": "#9ca3af",
+    "editorLineNumber.activeForeground": "#c084fc",
+    "editorCursor.foreground": "#a78bfa",
+    "editorIndentGuide.background": "#374151",
+    "editorIndentGuide.activeBackground": "#6b7280",
+    "editorLineHighlightBackground": "#111827",
+    "editorGutter.background": "#0c0e12",
+    "editor.selectionBackground": "#5b21b6",
+  },
+  rules: [
+    { token: "comment", foreground: "6272a4" },
+    { token: "string", foreground: "f1fa8c" },
+    { token: "number", foreground: "bd93f9" },
+    { token: "keyword", foreground: "ff79c6" },
+    { token: "type", foreground: "8be9fd" },
+    { token: "operator", foreground: "ffb86c" },
+  ],
+};
 
 type CodeBoxProps = {
   value: string;
@@ -20,356 +78,145 @@ type CodeBoxProps = {
   isInvalid?: boolean;
   describedBy?: string;
   errorLines?: number[];
+  warningRanges?: { startLine: number; endLine?: number }[];
   wrapLines?: boolean;
 };
 
-type CodeBoxCSSVars = {
-  "--codebox-line-height": string;
-  "--codebox-padding-x": string;
-  "--codebox-padding-y": string;
-  "--codebox-highlight-bg": string;
-};
+type MarkerInput = { severity: Monaco.MarkerSeverity; startLine: number; endLine: number };
 
-const escapeHtml = (input: string) =>
-  input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-const plainHighlight = (code: string) => {
-  const safe = code ? escapeHtml(code) : "&nbsp;";
-  return `<pre class="shiki plain" style="color: rgba(0,0,0,0)"><code>${safe}</code></pre>`;
-};
-
-const INDENT = "    ";
-const MIN_HEIGHT = 256;
-const MAX_HEIGHT = 544;
-const DEFAULT_LINE_HEIGHT = "1.5rem";
-const CODE_PADDING_X = "1rem";
-const CODE_PADDING_Y = "0.75rem";
-const LINE_SPLIT_REGEX = /\r\n|\r|\n/;
-
-const parseCssNumber = (value?: string | null) => {
-  if (!value) return 0;
-  const trimmed = value.trim();
-  if (!trimmed) return 0;
-  if (trimmed.endsWith("rem")) {
-    const base = typeof window !== "undefined" ? parseFloat(getComputedStyle(document.documentElement).fontSize || "16") : 16;
-    return parseFloat(trimmed) * (Number.isFinite(base) ? base : 16);
-  }
-  if (trimmed.endsWith("px")) {
-    return parseFloat(trimmed);
-  }
-  const numeric = Number(trimmed);
-  return Number.isFinite(numeric) ? numeric : 0;
-};
-
-export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedBy, errorLines, wrapLines = true }: CodeBoxProps) {
-  const deferredValue = useDeferredValue(value);
-  const [highlightState, setHighlightState] = useState<{ code: string; html: string } | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const highlightWrapperRef = useRef<HTMLDivElement | null>(null);
-  const highlightContentRef = useRef<HTMLElement | null>(null);
-  const highlightOverlayRef = useRef<HTMLDivElement | null>(null);
-  const lineNumbersInnerRef = useRef<HTMLDivElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const measureCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [boxHeight, setBoxHeight] = useState<number>(MIN_HEIGHT);
-  const [lineHeight, setLineHeight] = useState<string>(DEFAULT_LINE_HEIGHT);
-  const [lineHeights, setLineHeights] = useState<number[]>([]);
-  const containerStyle = useMemo<CodeBoxCSSVars & CSSProperties>(
-    () => ({
-      height: boxHeight,
-      "--codebox-line-height": lineHeight,
-      "--codebox-padding-x": CODE_PADDING_X,
-      "--codebox-padding-y": CODE_PADDING_Y,
-      "--codebox-highlight-bg": CODE_CANVAS_BG,
-    }),
-    [boxHeight, lineHeight]
-  );
-  const fallbackHtml = useMemo(() => plainHighlight(value), [value]);
-  const highlightReady = highlightState?.code === value;
-  const html = highlightReady ? highlightState.html : fallbackHtml;
-  const textareaStyle = useMemo<CSSProperties>(() => {
-    const style: CSSProperties = {
-      whiteSpace: wrapLines ? "pre-wrap" : "pre",
-      overflowWrap: wrapLines ? "break-word" : "normal",
-      wordBreak: wrapLines ? "break-word" : "normal",
-    };
-    if (value && highlightReady) {
-      style.color = "transparent";
-      style.WebkitTextFillColor = "transparent";
-    }
-    return style;
-  }, [value, highlightReady, wrapLines]);
-  const lineCount = useMemo(() => Math.max(1, value.split(LINE_SPLIT_REGEX).length), [value]);
-  const uniqueErrorLines = useMemo(() => {
-    if (!errorLines || !errorLines.length) return [] as number[];
-    const set = new Set<number>();
+function normalizeMarkers(errorLines?: number[], warningRanges?: { startLine: number; endLine?: number }[]) {
+  const markers: MarkerInput[] = [];
+  if (errorLines?.length) {
     errorLines.forEach(line => {
       if (Number.isFinite(line) && line > 0) {
-        set.add(Math.floor(line));
+        markers.push({ severity: Monaco.MarkerSeverity.Error, startLine: Math.floor(line), endLine: Math.floor(line) });
       }
     });
-    return Array.from(set).sort((a, b) => a - b);
-  }, [errorLines]);
-  const errorLineSet = useMemo(() => new Set(uniqueErrorLines), [uniqueErrorLines]);
-  const fallbackLineHeightPx = useMemo(
-    () => parseCssNumber(lineHeight) || parseCssNumber(DEFAULT_LINE_HEIGHT) || 24,
-    [lineHeight]
-  );
-  const effectiveLineHeights = useMemo(() => {
-    if (!lineCount) return [] as number[];
-    return Array.from({ length: lineCount }, (_, index) => lineHeights[index] ?? fallbackLineHeightPx);
-  }, [lineCount, lineHeights, fallbackLineHeightPx]);
-  const lineOffsets = useMemo(() => {
-    const offsets: number[] = [];
-    let acc = 0;
-    for (let i = 0; i < lineCount; i += 1) {
-      offsets[i] = acc;
-      acc += effectiveLineHeights[i] ?? fallbackLineHeightPx;
-    }
-    return offsets;
-  }, [effectiveLineHeights, fallbackLineHeightPx, lineCount]);
-  const highlightRects = useMemo(() => {
-    if (!uniqueErrorLines.length) return [] as { key: number; top: number; height: number }[];
-    return uniqueErrorLines
-      .map(line => {
-        const index = line - 1;
-        const height = effectiveLineHeights[index];
-        const top = lineOffsets[index];
-        if (typeof height !== "number" || typeof top !== "number") return null;
-        return { key: line, top, height };
-      })
-      .filter((rect): rect is { key: number; top: number; height: number } => Boolean(rect));
-  }, [uniqueErrorLines, effectiveLineHeights, lineOffsets]);
+  }
 
-  const queueSelection = useCallback((start: number, end: number) => {
-    requestAnimationFrame(() => {
-      if (!textareaRef.current) return;
-      textareaRef.current.selectionStart = start;
-      textareaRef.current.selectionEnd = end;
+  warningRanges?.forEach(range => {
+    if (!Number.isFinite(range.startLine) || range.startLine <= 0) return;
+    const start = Math.floor(range.startLine);
+    const end = Number.isFinite(range.endLine) && range.endLine && range.endLine > 0 ? Math.floor(range.endLine) : start;
+    markers.push({ severity: Monaco.MarkerSeverity.Warning, startLine: start, endLine: end });
+  });
+
+  return markers;
+}
+
+function ensureLanguage(monaco: typeof Monaco) {
+  const existing = monaco.languages.getLanguages().some(lang => lang.id === SFML_LANGUAGE_ID);
+  if (!existing) {
+    monaco.languages.register({ id: SFML_LANGUAGE_ID });
+    monaco.languages.setLanguageConfiguration(SFML_LANGUAGE_ID, {
+      comments: { lineComment: "--" },
+      brackets: [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+      ],
+      autoClosingPairs: [
+        { open: "{", close: "}" },
+        { open: "[", close: "]" },
+        { open: "(", close: ")" },
+        { open: '"', close: '"' },
+      ],
     });
-  }, []);
-
-  const syncScroll = useCallback(() => {
-    if (!textareaRef.current) return;
-    const { scrollTop, scrollLeft } = textareaRef.current;
-    if (highlightContentRef.current) {
-      highlightContentRef.current.style.transform = `translate(${-scrollLeft}px, ${-scrollTop}px)`;
-    }
-    if (highlightOverlayRef.current) {
-      highlightOverlayRef.current.style.transform = `translate(${-scrollLeft}px, ${-scrollTop}px)`;
-    }
-    if (lineNumbersInnerRef.current) {
-      lineNumbersInnerRef.current.style.transform = `translateY(${-scrollTop}px)`;
-    }
-  }, []);
-
-  const adjustHeight = useCallback(() => {
-    if (!textareaRef.current) return;
-    const el = textareaRef.current;
-    el.style.height = "auto";
-    const measured = el.scrollHeight;
-    const height = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, measured));
-    setBoxHeight(height);
-    el.style.height = `${height}px`;
-  }, []);
-
-  const copyTypographyToHighlight = useCallback(() => {
-    if (!textareaRef.current || !highlightContentRef.current) return;
-    const computed = window.getComputedStyle(textareaRef.current);
-    const target = highlightContentRef.current;
-    target.style.fontFamily = computed.fontFamily;
-    target.style.fontSize = computed.fontSize;
-    target.style.lineHeight = computed.lineHeight;
-    target.style.letterSpacing = computed.letterSpacing;
-    target.style.tabSize = computed.tabSize;
-    target.style.margin = "0";
-    target.style.padding = "0";
-    target.style.minWidth = wrapLines ? "100%" : "auto";
-    target.style.width = wrapLines ? "100%" : "max-content";
-    target.style.whiteSpace = wrapLines ? "pre-wrap" : "pre";
-    target.style.wordBreak = wrapLines ? "break-word" : "normal";
-    target.style.overflowWrap = wrapLines ? "break-word" : "normal";
-    if (computed.lineHeight && computed.lineHeight !== lineHeight) {
-      setLineHeight(computed.lineHeight);
-    }
-  }, [lineHeight, wrapLines]);
-
-  const computeLineMetrics = useCallback(() => {
-    if (!textareaRef.current) return;
-    const textarea = textareaRef.current;
-    const text = textarea.value ?? "";
-    const lines = text.length ? text.split(LINE_SPLIT_REGEX) : [""];
-    const computed = window.getComputedStyle(textarea);
-    const baseLineHeightPx = parseCssNumber(computed.lineHeight) || fallbackLineHeightPx;
-    if (!wrapLines) {
-      setLineHeights(lines.map(() => baseLineHeightPx));
-      return;
-    }
-    const paddingLeft = parseCssNumber(computed.paddingLeft);
-    const paddingRight = parseCssNumber(computed.paddingRight);
-    const availableWidth = Math.max(1, textarea.clientWidth - paddingLeft - paddingRight);
-    const canvas = (measureCanvasRef.current ||= document.createElement("canvas"));
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      setLineHeights(lines.map(() => baseLineHeightPx));
-      return;
-    }
-    const fontDescriptor = `${computed.fontStyle} ${computed.fontVariant} ${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`
-      .replace(/\s+/g, " ")
-      .trim();
-    ctx.font = fontDescriptor;
-    const heights = lines.map(line => {
-      const normalized = (line || " ").replace(/\t/g, INDENT);
-      const measuredWidth = ctx.measureText(normalized || " ").width;
-      const wraps = Math.max(1, Math.ceil(measuredWidth / availableWidth));
-      return wraps * baseLineHeightPx;
+    monaco.languages.setMonarchTokensProvider(SFML_LANGUAGE_ID, {
+      keywords: KEYWORDS,
+      typeKeywords: TYPES,
+      operators: OPERATORS,
+      symbols: /[=><!~?:&|+\-*\/\^%]+/,
+      escapes: /\\(?:[nrt"\\]|x[0-9A-Fa-f]{1,4})/,
+      tokenizer: {
+        root: [
+          [/--.*$/, "comment"],
+          [/\"([^\\\"]|\\.)*\"/, "string"],
+          [/\b\d+\b/, "number"],
+          [/\b(@typeKeywords)\b/, "type"],
+          [/\b(@keywords)\b/, "keyword"],
+          [/\b(@operators)\b/, "operator"],
+          [/(@symbols)/, "operator"],
+          [/\w+/, "identifier"],
+        ],
+      },
+      ignoreCase: true,
     });
-    setLineHeights(heights);
-  }, [fallbackLineHeightPx, wrapLines]);
+    monaco.editor.defineTheme(SFML_THEME_ID, theme);
+  }
+}
+
+export function CodeBox({
+  value,
+  onChange,
+  onBlur,
+  isInvalid = false,
+  describedBy,
+  errorLines,
+  warningRanges,
+  wrapLines = true,
+}: CodeBoxProps) {
+  const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof Monaco | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [editorHeight, setEditorHeight] = useState(MIN_HEIGHT);
+
+  const markers = useMemo(() => normalizeMarkers(errorLines, warningRanges), [errorLines, warningRanges]);
+
+  const applyMarkers = useCallback(() => {
+    if (!monacoRef.current || !editorRef.current) return;
+    const model = editorRef.current.getModel();
+    if (!model) return;
+    monacoRef.current.editor.setModelMarkers(
+      model,
+      SFML_LANGUAGE_ID,
+      markers.map(marker => ({
+        startLineNumber: marker.startLine,
+        startColumn: 1,
+        endLineNumber: marker.endLine,
+        endColumn: 1,
+        message: marker.severity === Monaco.MarkerSeverity.Error ? "Error" : "Warning",
+        severity: marker.severity,
+      })),
+    );
+  }, [markers]);
+
+  const updateHeight = useCallback(() => {
+    if (!editorRef.current) return;
+    const contentHeight = editorRef.current.getContentHeight();
+    const next = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.ceil(contentHeight + 24)));
+    setEditorHeight(next);
+    editorRef.current.layout({ height: next });
+  }, []);
 
   useEffect(() => {
-    let active = true;
-    const plain = plainHighlight(deferredValue);
+    applyMarkers();
+  }, [applyMarkers]);
 
-    highlightSFML(deferredValue, wrapLines ? "sfm-dracula-soft" : "sfm-dracula")
-      .then(htmlOutput => {
-        if (!active) return;
-        setHighlightState({ code: deferredValue, html: htmlOutput });
-      })
-      .catch(() => {
-        if (!active) return;
-        setHighlightState({ code: deferredValue, html: plain });
-      });
+  const handleMount = useCallback((editor: Monaco.editor.IStandaloneCodeEditor, monaco: typeof Monaco) => {
+    monacoRef.current = monaco;
+    editorRef.current = editor;
+    ensureLanguage(monaco);
+    monaco.editor.setTheme(SFML_THEME_ID);
+    applyMarkers();
+    updateHeight();
+
+    const resize = new ResizeObserver(() => {
+      editor.layout();
+      updateHeight();
+    });
+    if (containerRef.current) resize.observe(containerRef.current);
+
+    const disposables: Monaco.IDisposable[] = [
+      editor.onDidContentSizeChange(() => updateHeight()),
+      editor.onDidBlurEditorText(() => onBlur?.()),
+    ];
 
     return () => {
-      active = false;
+      resize.disconnect();
+      disposables.forEach(d => d.dispose());
     };
-  }, [deferredValue, wrapLines]);
-
-  useEffect(() => {
-    if (!highlightWrapperRef.current) return;
-    const pre = highlightWrapperRef.current.querySelector("pre");
-    if (pre) {
-      highlightContentRef.current = pre as HTMLElement;
-      pre.style.transformOrigin = "top left";
-    }
-    copyTypographyToHighlight();
-    syncScroll();
-  }, [copyTypographyToHighlight, syncScroll, html]);
-
-  useEffect(() => {
-    adjustHeight();
-  }, [value, adjustHeight]);
-
-  useLayoutEffect(() => {
-    adjustHeight();
-  }, [adjustHeight]);
-
-  useLayoutEffect(() => {
-    computeLineMetrics();
-  }, [value, wrapLines, computeLineMetrics]);
-
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      syncScroll();
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [boxHeight, value, syncScroll]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const observer = new ResizeObserver(() => {
-      computeLineMetrics();
-    });
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, [computeLineMetrics]);
-
-  const handleIndent = useCallback(
-    (element: HTMLTextAreaElement) => {
-      const { selectionStart, selectionEnd } = element;
-      const text = element.value;
-      if (selectionStart === selectionEnd) {
-        const nextValue = `${text.slice(0, selectionStart)}${INDENT}${text.slice(selectionEnd)}`;
-        onChange(nextValue);
-        queueSelection(selectionStart + INDENT.length, selectionStart + INDENT.length);
-        return;
-      }
-
-      let adjustedEnd = selectionEnd;
-      if (adjustedEnd > selectionStart && text.charAt(adjustedEnd - 1) === "\n") {
-        adjustedEnd -= 1;
-      }
-      const startLineStart = text.lastIndexOf("\n", selectionStart - 1) + 1;
-      const endLineBreak = text.indexOf("\n", adjustedEnd);
-      const endLineEnd = endLineBreak === -1 ? text.length : endLineBreak;
-      const block = text.slice(startLineStart, endLineEnd);
-      const lines = block.split("\n");
-      const indented = lines.map(line => `${INDENT}${line}`).join("\n");
-      const nextValue = `${text.slice(0, startLineStart)}${indented}${text.slice(endLineEnd)}`;
-      const linesCount = lines.length;
-      const newStart = selectionStart + INDENT.length;
-      const newEnd = selectionEnd + INDENT.length * linesCount;
-      onChange(nextValue);
-      queueSelection(newStart, newEnd);
-    },
-    [onChange, queueSelection]
-  );
-
-  const handleOutdent = useCallback(
-    (element: HTMLTextAreaElement) => {
-      const { selectionStart, selectionEnd } = element;
-      const text = element.value;
-      const startLineStart = text.lastIndexOf("\n", selectionStart - 1) + 1;
-      let adjustedEnd = selectionEnd;
-      if (adjustedEnd > selectionStart && text.charAt(adjustedEnd - 1) === "\n") {
-        adjustedEnd -= 1;
-      }
-      const endLineBreak = text.indexOf("\n", adjustedEnd);
-      const endLineEnd = endLineBreak === -1 ? text.length : endLineBreak;
-      const block = text.slice(startLineStart, endLineEnd);
-
-      if (!block.length) return;
-
-      const selectionOffsetStart = selectionStart - startLineStart;
-      const selectionOffsetEnd = selectionEnd - startLineStart;
-      const selectionEndInBlock = Math.min(selectionOffsetEnd, block.length);
-      const lines = block.split("\n");
-      let removalBeforeStart = 0;
-      let removalBeforeEnd = 0;
-      let blockIndex = 0;
-      const dedentedLines = lines.map((line, idx) => {
-        const match = line.match(/^ {1,4}/);
-        const removal = match ? match[0].length : 0;
-        const nextLineStart = blockIndex;
-        const nextLineEnd = blockIndex + line.length;
-        if (idx === 0) {
-          removalBeforeStart = Math.min(removal, selectionOffsetStart);
-        }
-        if (selectionEndInBlock > nextLineStart) {
-          const available = Math.max(0, Math.min(removal, selectionEndInBlock - nextLineStart));
-          removalBeforeEnd += available;
-        }
-        blockIndex = nextLineEnd + 1;
-        return removal ? line.slice(removal) : line;
-      });
-
-      const nextBlock = dedentedLines.join("\n");
-      if (nextBlock === block) {
-        return;
-      }
-
-      const nextValue = `${text.slice(0, startLineStart)}${nextBlock}${text.slice(endLineEnd)}`;
-      const newStart = selectionStart - removalBeforeStart;
-      const newEnd = selectionEnd - removalBeforeEnd;
-      onChange(nextValue);
-      queueSelection(newStart, newEnd);
-    },
-    [onChange, queueSelection]
-  );
+  }, [applyMarkers, onBlur, updateHeight]);
 
   return (
     <div
@@ -377,104 +224,40 @@ export function CodeBox({ value, onChange, onBlur, isInvalid = false, describedB
         "codebox relative isolate w-full overflow-hidden rounded-xl border bg-(--surface-2)/80 transition-shadow",
         isInvalid
           ? "border-red-500/60 focus-within:border-red-500/70 focus-within:ring-2 focus-within:ring-red-400"
-          : "border-white/10 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-400"
+          : "border-white/10 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-400",
       )}
-      data-wrap-mode={wrapLines ? "wrap" : "scroll"}
+      aria-invalid={isInvalid || undefined}
+      aria-describedby={describedBy}
     >
-      <div className="relative flex w-full" style={containerStyle}>
-        <div
-          className="flex shrink-0 select-none border-r border-white/10 bg-black/20 px-3 py-3 text-right font-mono text-sm text-white/40"
-          aria-hidden="true"
-        >
-          <div ref={lineNumbersInnerRef} className="relative w-full">
-            {Array.from({ length: lineCount }, (_, index) => {
-              const lineNumber = index + 1;
-              const isErrorLine = errorLineSet.has(lineNumber);
-              const height = Math.max(effectiveLineHeights[index] ?? fallbackLineHeightPx, 1);
-              return (
-                <div
-                  key={index}
-                  className={clsx(
-                    "tabular-nums flex items-start justify-end px-2 text-xs",
-                    isErrorLine && "bg-red-500/20 text-white/80"
-                  )}
-                  style={{
-                    lineHeight: "var(--codebox-line-height)",
-                    height: `${height}px`,
-                  }}
-                >
-                  {lineNumber}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="relative flex-1 overflow-hidden">
-          <div
-            ref={highlightWrapperRef}
-            className="codebox-highlight pointer-events-none absolute inset-0 overflow-hidden"
-            aria-hidden="true"
-          >
-            <div ref={highlightOverlayRef} className="pointer-events-none absolute inset-0">
-              {highlightRects.map(rect => (
-                <div
-                  key={rect.key}
-                  className="pointer-events-none rounded-sm bg-red-500/20"
-                  style={{
-                    position: "absolute",
-                    top: `calc(var(--codebox-padding-y) + ${rect.top}px)`,
-                    height: `${rect.height}px`,
-                    left: "var(--codebox-padding-x)",
-                    right: "var(--codebox-padding-x)",
-                  }}
-                />
-              ))}
-            </div>
-            <div
-              className="h-full px-4 py-3 font-mono text-sm leading-6 text-white"
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
-          </div>
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={event => {
-              onChange(event.target.value);
-              requestAnimationFrame(syncScroll);
-            }}
-            onBlur={onBlur}
-            onScroll={syncScroll}
-            onPaste={() => {
-              requestAnimationFrame(adjustHeight);
-            }}
-            onKeyDown={event => {
-              if (event.key === "Tab" && textareaRef.current) {
-                event.preventDefault();
-                if (event.shiftKey) {
-                  handleOutdent(textareaRef.current);
-                } else {
-                  handleIndent(textareaRef.current);
-                }
-              }
-            }}
-            aria-invalid={isInvalid || undefined}
-            aria-describedby={describedBy}
-            placeholder="-- paste your code here"
-            spellCheck={false}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            wrap={wrapLines ? "soft" : "off"}
-            style={{ backgroundColor: "transparent", borderRadius: 0, ...textareaStyle }}
-            className={clsx(
-              "relative z-10 h-full w-full resize-none border-0 bg-transparent px-4 py-3 font-mono text-sm leading-6 text-white outline-none focus:outline-none",
-              wrapLines ? "overflow-y-auto overflow-x-hidden" : "overflow-auto",
-              value
-                ? "caret-brand-200 selection:bg-brand-500/30 selection:text-white"
-                : "text-white/80 placeholder:text-white/40"
-            )}
-          />
-        </div>
+      <div ref={containerRef} className="relative" style={{ backgroundColor: `rgba${CODE_CANVAS_BG}`, minHeight: MIN_HEIGHT }}>
+        <Editor
+          height={editorHeight}
+          defaultLanguage={SFML_LANGUAGE_ID}
+          language={SFML_LANGUAGE_ID}
+          theme={SFML_THEME_ID}
+          value={value}
+          onChange={next => onChange(next ?? "")}
+          onMount={handleMount}
+          options={{
+            fontSize: 14,
+            fontFamily: '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+            minimap: { enabled: false },
+            wordWrap: wrapLines ? "on" : "off",
+            wrappingIndent: "same",
+            scrollBeyondLastLine: false,
+            smoothScrolling: true,
+            renderLineHighlight: "line",
+            renderValidationDecorations: "on",
+            automaticLayout: false,
+            glyphMargin: false,
+            folding: false,
+            lineDecorationsWidth: 14,
+            lineNumbersMinChars: 3,
+            padding: { top: 14, bottom: 14 },
+            tabSize: 4,
+            ariaLabel: "Code editor",
+          }}
+        />
       </div>
     </div>
   );
