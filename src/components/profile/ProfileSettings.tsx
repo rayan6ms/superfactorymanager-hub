@@ -13,11 +13,14 @@ import {
   type UsernameValidationCode,
 } from "@/lib/usernames";
 
+const BIO_MAX_LENGTH = 300;
+
 type ProfileSettingsProps = {
   initialUser: {
     name: string | null;
     email: string;
     image: string | null;
+    bio: string | null;
   };
 };
 
@@ -28,6 +31,7 @@ type ResetStatus = "idle" | "loading" | "sent" | "error";
 type FormErrors = {
   name?: string;
   image?: string;
+  bio?: string;
   form?: string;
 };
 
@@ -35,6 +39,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   const [name, setName] = useState(initialUser.name ?? "");
   const [image, setImage] = useState(initialUser.image ?? "");
   const [preview, setPreview] = useState(initialUser.image ?? "");
+  const [bio, setBio] = useState(initialUser.bio ?? "");
   const [status, setStatus] = useState<Status>("idle");
   const [resetStatus, setResetStatus] = useState<ResetStatus>("idle");
   const [errors, setErrors] = useState<FormErrors>({});
@@ -88,6 +93,8 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     setStatus("loading");
 
     const payload: Record<string, unknown> = { name: normalizedName };
+    const trimmedBio = bio.trim();
+    payload.bio = trimmedBio ? trimmedBio : null;
 
     if (regenerateAvatar) {
       payload.regenerateAvatar = true;
@@ -115,6 +122,8 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
         ) {
           const code = errorMessage as UsernameValidationCode | "NAME_TAKEN";
           setErrors({ name: usernameErrorMessage(code) });
+        } else if (errorMessage === "BIO_TOO_LONG") {
+          setErrors({ bio: `Bio must be ${BIO_MAX_LENGTH} characters or fewer.` });
         } else if (errorMessage === "IMAGE_URL_TOO_LONG" || errorMessage === "INVALID_IMAGE_URL") {
           setErrors({ image: "Please provide a valid image URL." });
         } else {
@@ -251,6 +260,27 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             />
             <p className="mt-1 text-xs text-white/60">{USERNAME_HELP_TEXT}</p>
             {errors.name && <p className="mt-1 text-sm text-error">{errors.name}</p>}
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-white">Bio</label>
+            <textarea
+              value={bio}
+              onChange={event => {
+                const nextBio = event.target.value.slice(0, BIO_MAX_LENGTH);
+                setBio(nextBio);
+                setErrors(prev => ({ ...prev, bio: undefined, form: undefined }));
+              }}
+              placeholder="Tell the community about your play style, favorite builds, or goals."
+              rows={4}
+              className="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/40 outline-none transition focus:border-white/40"
+              aria-invalid={Boolean(errors.bio)}
+            />
+            <div className="mt-1 flex items-center justify-between text-xs text-white/60">
+              <span>{bio.length} / {BIO_MAX_LENGTH} characters</span>
+              <span className="italic text-white/50">Shown on your posts and profile</span>
+            </div>
+            {errors.bio && <p className="mt-1 text-sm text-error">{errors.bio}</p>}
           </div>
 
           <div className="hidden sm:block">

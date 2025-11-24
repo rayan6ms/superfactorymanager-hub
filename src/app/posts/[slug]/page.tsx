@@ -104,8 +104,9 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   const authorDisplayName = post.author?.name ?? post.authorName;
   const authorImage = post.author?.image ?? null;
   const authorProfile = post.author?.name ? `/profile/${post.author.name}` : null;
+  const authorBio = post.author?.bio?.trim() ?? null;
 
-  const commentData = await getPostComments(post.id);
+  const commentData = await getPostComments(post.id, { viewerId: me?.id ?? null });
 
   const improvementHref = me ? `/posts/${post.slug}/edit` : `/login?from=/posts/${post.slug}/edit`;
   const improvementCta = me ? "Suggest an improvement" : "Log in to collaborate";
@@ -167,6 +168,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 ) : (
                   <p className="text-lg font-semibold text-white">{authorDisplayName}</p>
                 )}
+                {authorBio ? <p className="mt-1 text-sm italic text-white/70">“{authorBio}”</p> : null}
               </div>
             </div>
           </div>

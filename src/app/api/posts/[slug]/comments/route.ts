@@ -14,14 +14,18 @@ function badRequest(message: string) {
 
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
+  const session = await auth();
   const url = new URL(req.url);
   const cursor = url.searchParams.get("cursor");
   const limitParam = url.searchParams.get("limit");
+  const sortParam = url.searchParams.get("sort");
 
   const take = limitParam ? Number(limitParam) : COMMENT_PAGE_SIZE;
   if (Number.isNaN(take) || take <= 0) {
     return badRequest("Invalid limit");
   }
+
+  const sort = sortParam === "top" ? "top" : "recent";
 
   const post = await db.post.findUnique({ where: { slug }, select: { id: true } });
   if (!post) {
@@ -38,7 +42,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     }
   }
 
-  const data = await getPostComments(post.id, { cursor, take });
+  const viewer = session?.user?.email
+    ? await db.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
+    : null;
+  const data = await getPostComments(post.id, { cursor, take, sort, viewerId: viewer?.id });
   return NextResponse.json(data);
 }
 
@@ -118,6 +125,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     updatedAt: comment.updatedAt.toISOString(),
     parentId: comment.parentId,
     author: comment.author,
+    score: comment.score,
+    vote: null,
     replies: [],
   };
 

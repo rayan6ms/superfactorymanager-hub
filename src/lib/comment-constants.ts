@@ -15,5 +15,7 @@ export type SerializedComment = {
   updatedAt: string;
   parentId: string | null;
   author: CommentAuthor | null;
+  score: number;
+  vote: "up" | "down" | null;
   replies: SerializedComment[];
 };

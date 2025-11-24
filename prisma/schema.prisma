@@ -13,6 +13,7 @@ model User {
   email                  String   @unique
   name                   String? @unique
   image                  String?
+  bio                    String?
   passwordHash           String?
   emailVerified          DateTime?
   createdAt              DateTime @default(now())
@@ -21,6 +22,7 @@ model User {
   postCommits            PostCommit[]
   postContributions      PostContributor[]
   comments               Comment[]
+  commentVotes           CommentVote[]
   reports                Report[]
   passwordResetTokens    PasswordResetToken[]
   notifications          Notification[]
@@ -216,6 +218,9 @@ model Comment {
   parentId  String?
   parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("CommentReplies")
+  score     Int      @default(0)
+  voteCount Int      @default(0)
+  votes     CommentVote[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -224,6 +229,21 @@ model Comment {
   @@index([postId, createdAt])
   @@index([authorId, createdAt])
   @@index([parentId])
+}
+
+model CommentVote {
+  id        String   @id @default(cuid())
+  value     Int
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, commentId])
+  @@index([commentId])
+  @@index([userId])
 }
 
 enum NotificationOrigin {

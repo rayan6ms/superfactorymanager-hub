@@ -27,6 +27,7 @@ export default async function ProfilePage() {
       name: true,
       email: true,
       image: true,
+      bio: true,
       posts: {
         orderBy: { uploadDate: "desc" },
         select: {
@@ -52,7 +53,7 @@ export default async function ProfilePage() {
         <p className="text-sm text-white/60">Manage your account details and see your recent posts.</p>
       </div>
 
-      <ProfileSettings initialUser={{ name: user.name, email: user.email, image: user.image }} />
+      <ProfileSettings initialUser={{ name: user.name, email: user.email, image: user.image, bio: user.bio }} />
 
       <Card className="space-y-4 p-6">
         <div className="flex items-center justify-between gap-3">

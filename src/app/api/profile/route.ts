@@ -20,6 +20,12 @@ const schema = z.object({
     .optional()
     .or(z.literal("").transform(() => undefined)),
   regenerateAvatar: z.boolean().optional(),
+  bio: z
+    .string()
+    .trim()
+    .max(300, "BIO_TOO_LONG")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 export async function PATCH(request: Request) {
@@ -41,7 +47,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: issue?.message ?? "INVALID_PAYLOAD" }, { status: 400 });
   }
 
-  const { name, image, regenerateAvatar } = parsed.data;
+  const { name, image, regenerateAvatar, bio } = parsed.data;
   const usernameValidation = validateUsernameInput(name);
   if (!usernameValidation.ok) {
     return NextResponse.json({ error: usernameValidation.code }, { status: 400 });
@@ -52,7 +58,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "NAME_TAKEN" }, { status: 409 });
   }
 
-  const updateData: { name: string; image?: string | null } = { name: normalizedName };
+  const updateData: { name: string; image?: string | null; bio?: string | null } = { name: normalizedName };
+
+  if (typeof bio !== "undefined") {
+    updateData.bio = bio || null;
+  }
 
   if (regenerateAvatar) {
     updateData.image = generateInitialAvatar({ name: normalizedName, seed: user.email });
@@ -75,7 +85,7 @@ export async function PATCH(request: Request) {
   const updated = await db.user.update({
     where: { id: user.id },
     data: updateData,
-    select: { id: true, name: true, image: true, email: true },
+    select: { id: true, name: true, image: true, email: true, bio: true },
   });
 
   return NextResponse.json({ user: updated });

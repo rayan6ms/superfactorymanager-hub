@@ -27,6 +27,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
       id: true,
       name: true,
       image: true,
+      bio: true,
       createdAt: true,
     },
   });
@@ -43,6 +44,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
   const serializedPosts: SerializedPost[] = posts.map(serializePost);
   const joined = formatDate(user.createdAt);
+  const bio = user.bio?.trim();
 
   return (
     <div className="space-y-6">
@@ -61,6 +63,9 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         <div className="min-w-0 space-y-1">
           <h1 className="text-2xl font-semibold text-white">{user.name}</h1>
           <p className="text-sm text-white/60">Joined {joined}</p>
+          {bio ? (
+            <p className="text-sm italic text-white/70">“{bio}”</p>
+          ) : null}
         </div>
       </Card>
 

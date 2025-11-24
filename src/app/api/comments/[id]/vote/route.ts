@@ -1,0 +1,101 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { getCommentById } from "@/lib/comments";
+
+export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await db.user.findUnique({ where: { email: session.user.email } });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const commentExists = await db.comment.findUnique({ where: { id }, select: { id: true } });
+  if (!commentExists) {
+    return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const vote = (body as { vote?: unknown }).vote;
+  if (vote !== "up" && vote !== "down") {
+    return NextResponse.json({ error: "Expected vote to be 'up' or 'down'" }, { status: 400 });
+  }
+
+  const value = vote === "up" ? 1 : -1;
+
+  const existing = await db.commentVote.findUnique({
+    where: { userId_commentId: { userId: user.id, commentId: id } },
+  });
+
+  await db.$transaction(async tx => {
+    if (existing) {
+      if (existing.value === value) return;
+      await tx.commentVote.update({
+        where: { userId_commentId: { userId: user.id, commentId: id } },
+        data: { value },
+      });
+      await tx.comment.update({
+        where: { id },
+        data: { score: { increment: value - existing.value } },
+      });
+      return;
+    }
+
+    await tx.commentVote.create({
+      data: { value, userId: user.id, commentId: id },
+    });
+    await tx.comment.update({
+      where: { id },
+      data: { score: { increment: value }, voteCount: { increment: 1 } },
+    });
+  });
+
+  const comment = await getCommentById(id, null, user.id);
+  return NextResponse.json({ comment });
+}
+
+export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await db.user.findUnique({ where: { email: session.user.email } });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const commentExists = await db.comment.findUnique({ where: { id }, select: { id: true } });
+  if (!commentExists) {
+    return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+  }
+
+  const existing = await db.commentVote.findUnique({
+    where: { userId_commentId: { userId: user.id, commentId: id } },
+  });
+
+  if (existing) {
+    await db.$transaction([
+      db.commentVote.delete({ where: { userId_commentId: { userId: user.id, commentId: id } } }),
+      db.comment.update({
+        where: { id },
+        data: { score: { decrement: existing.value }, voteCount: { decrement: 1 } },
+      }),
+    ]);
+  }
+
+  const comment = await getCommentById(id, null, user.id);
+  return NextResponse.json({ comment });
+}

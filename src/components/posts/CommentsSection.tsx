@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import clsx from "clsx";
-import { CornerDownRight, Loader2, MessageCircle } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp, CornerDownRight, Eye, Loader2, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui";
 import Button from "@/components/ui/Button";
 import ReportButton from "@/components/ReportButton";
@@ -26,6 +26,8 @@ type CurrentUser = {
   name: string | null;
   image: string | null;
 };
+
+type SortOption = "recent" | "top";
 
 type CommentsSectionProps = {
   postSlug: string;
@@ -116,6 +118,8 @@ export default function CommentsSection({
   const [comments, setComments] = useState<SerializedComment[]>(initialComments);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [total, setTotal] = useState<number>(initialTotal);
+  const [sortOrder, setSortOrder] = useState<SortOption>("recent");
+  const [sortLoading, setSortLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [replyText, setReplyText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -126,6 +130,9 @@ export default function CommentsSection({
   const [highlightedComment, setHighlightedComment] = useState<string | null>(null);
   const [replyTarget, setReplyTarget] = useState<{ id: string; authorName: string } | null>(null);
   const [visibleRepliesMap, setVisibleRepliesMap] = useState<Record<string, number>>({});
+  const [revealedHidden, setRevealedHidden] = useState<Record<string, boolean>>({});
+  const [voting, setVoting] = useState<Record<string, boolean>>({});
+  const [replyDisplayLimit, setReplyDisplayLimit] = useState(5);
   const focusHandledRef = useRef(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -144,10 +151,56 @@ export default function CommentsSection({
     [flatComments],
   );
 
+  const sortComments = useCallback((items: SerializedComment[], sort: SortOption) => {
+    const sorted = [...items];
+    if (sort === "top") {
+      sorted.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    } else {
+      sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return sorted.map(item => ({ ...item }));
+  }, []);
+
+  const updateCommentTree = useCallback(
+    (items: SerializedComment[], id: string, updater: (comment: SerializedComment) => SerializedComment) => {
+      let updated = false;
+      const next = items.map(item => {
+        if (item.id === id) {
+          updated = true;
+          return updater(item);
+        }
+        if (item.replies.length) {
+          const child = updateCommentTree(item.replies, id, updater);
+          if (child.updated) {
+            updated = true;
+            return { ...item, replies: child.items };
+          }
+        }
+        return item;
+      });
+      return { items: next, updated };
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(min-width: 640px)");
+    const handleChange = () => setReplyDisplayLimit(media.matches ? 5 : 3);
+    handleChange();
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
+
   const fetchComments = useCallback(
-    async (cursorValue: string | null): Promise<CommentResponse> => {
+    async (cursorValue: string | null, sortOverride?: SortOption): Promise<CommentResponse> => {
       const params = new URLSearchParams();
       if (cursorValue) params.set("cursor", cursorValue);
+      const activeSort = sortOverride ?? sortOrder;
+      params.set("sort", activeSort);
       const query = params.toString();
       const res = await fetch(`/api/posts/${postSlug}/comments${query ? `?${query}` : ""}`, {
         credentials: "include",
@@ -159,7 +212,48 @@ export default function CommentsSection({
       }
       return (await res.json()) as CommentResponse;
     },
-    [postSlug],
+    [postSlug, sortOrder],
+  );
+
+  const handleVote = useCallback(
+    async (comment: SerializedComment, direction: "up" | "down") => {
+      if (!canPost) {
+        window.location.href = loginRedirect;
+        return;
+      }
+      if (voting[comment.id]) return;
+
+      setVoting(prev => ({ ...prev, [comment.id]: true }));
+      setError(null);
+      const method = comment.vote === direction ? "DELETE" : "POST";
+      try {
+        const res = await fetch(`/api/comments/${comment.id}/vote`, {
+          method,
+          headers: method === "POST" ? { "Content-Type": "application/json" } : undefined,
+          credentials: "include",
+          body: method === "POST" ? JSON.stringify({ vote: direction }) : undefined,
+        });
+        const data = (await res.json().catch(() => ({}))) as { comment?: SerializedComment; error?: string };
+        if (!res.ok || !data.comment) {
+          throw new Error(data.error ?? "Failed to update vote");
+        }
+        setComments(prev => {
+          const result = updateCommentTree(prev, comment.id, current => ({
+            ...current,
+            score: data.comment!.score,
+            vote: data.comment!.vote,
+          }));
+          const nextList = result.updated ? result.items : prev;
+          return sortComments(nextList, sortOrder);
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to update vote";
+        setError(message);
+      } finally {
+        setVoting(prev => ({ ...prev, [comment.id]: false }));
+      }
+    },
+    [canPost, loginRedirect, sortComments, sortOrder, updateCommentTree, voting],
   );
 
   const handleSubmit = useCallback(
@@ -180,7 +274,7 @@ export default function CommentsSection({
           throw new Error(data.error ?? "Failed to post comment");
         }
         const createdComment = data.comment;
-        setComments(prev => [createdComment, ...prev]);
+        setComments(prev => sortComments([createdComment, ...prev], sortOrder));
         setCommentText("");
         setTotal(prev => (typeof data.total === "number" ? data.total : prev + 1));
         setHighlightedComment(createdComment.id);
@@ -195,7 +289,7 @@ export default function CommentsSection({
         setSubmitting(false);
       }
     },
-    [canPost, submitting, isCommentValid, postSlug, commentText],
+    [canPost, submitting, isCommentValid, postSlug, commentText, sortComments, sortOrder],
   );
 
   const handleReplySubmit = useCallback(
@@ -273,22 +367,53 @@ export default function CommentsSection({
   }, []);
 
   const getVisibleReplies = useCallback(
-    (commentId: string, totalReplies: number, baseline = 1) => {
+    (commentId: string, totalReplies: number, baseline = replyDisplayLimit) => {
       if (totalReplies <= 0) return 0;
       const stored = visibleRepliesMap[commentId];
       const fallback = Math.max(0, Math.min(baseline, totalReplies));
       return Math.min(totalReplies, typeof stored === "number" ? stored : fallback);
     },
-    [visibleRepliesMap],
+    [replyDisplayLimit, visibleRepliesMap],
   );
 
-  const showNextReply = useCallback((commentId: string, totalReplies: number, baseline = 1) => {
-    if (totalReplies <= 0) return;
-    setVisibleRepliesMap(prev => {
-      const current = prev[commentId] ?? Math.max(0, Math.min(baseline, totalReplies));
-      if (current >= totalReplies) return prev;
-      return { ...prev, [commentId]: current + 1 };
-    });
+  const showNextReply = useCallback(
+    (commentId: string, totalReplies: number, baseline = replyDisplayLimit) => {
+      if (totalReplies <= 0) return;
+      setVisibleRepliesMap(prev => {
+        const current = prev[commentId] ?? Math.max(0, Math.min(baseline, totalReplies));
+        if (current >= totalReplies) return prev;
+        return { ...prev, [commentId]: Math.min(totalReplies, current + baseline) };
+      });
+    },
+    [replyDisplayLimit],
+  );
+
+  const handleSortChange = useCallback(
+    async (value: SortOption) => {
+      if (value === sortOrder) return;
+      setSortOrder(value);
+      setSortLoading(true);
+      setError(null);
+      try {
+        const data = await fetchComments(null, value);
+        if (data.error) throw new Error(data.error);
+        setComments(sortComments(data.comments ?? [], value));
+        setCursor(data.nextCursor ?? null);
+        setTotal(data.total ?? total);
+        setVisibleRepliesMap({});
+        setRevealedHidden({});
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to update sort order";
+        setError(message);
+      } finally {
+        setSortLoading(false);
+      }
+    },
+    [fetchComments, sortComments, sortOrder, total],
+  );
+
+  const revealHidden = useCallback((id: string) => {
+    setRevealedHidden(prev => ({ ...prev, [id]: true }));
   }, []);
 
   const loadMore = useCallback(async () => {
@@ -301,7 +426,7 @@ export default function CommentsSection({
       if (data.error) throw new Error(data.error);
       const nextComments = data.comments ?? [];
       if (nextComments.length) {
-        setComments(prev => [...prev, ...nextComments]);
+        setComments(prev => sortComments([...prev, ...nextComments], sortOrder));
       }
       if (typeof data.total === "number") {
         setTotal(data.total);
@@ -313,7 +438,7 @@ export default function CommentsSection({
     } finally {
       setLoadingMore(false);
     }
-  }, [cursor, loadingMore, fetchComments]);
+  }, [cursor, loadingMore, fetchComments, sortComments, sortOrder]);
 
   const visibleCount = flatComments.length;
   const hasMore = Boolean(cursor);
@@ -394,12 +519,86 @@ export default function CommentsSection({
           const isAuthor = comment.author?.id === postAuthorId;
           const isHighlighted = highlightedComment === comment.id;
           const isReplyingHere = replyTargetId === comment.id;
-          const replyBaseline = depth === 0 ? 1 : 0;
+          const replyBaseline = replyDisplayLimit;
           const visibleReplies = getVisibleReplies(comment.id, comment.replies.length, replyBaseline);
           const repliesToRender = comment.replies.slice(0, visibleReplies);
           const hiddenReplies = comment.replies.slice(visibleReplies);
           const remainingReplies = Math.max(hiddenReplies.length, 0);
           const hiddenReplyCount = countNestedReplies(hiddenReplies);
+          const profileHref = comment.author?.name ? `/profile/${comment.author.name}` : null;
+          const isHidden = comment.score < 0 && !revealedHidden[comment.id];
+          const votingHere = Boolean(voting[comment.id]);
+          if (isHidden) {
+            return (
+              <div
+                key={comment.id}
+                className="relative space-y-3"
+                id={`comment-${comment.id}`}
+              >
+                {depth > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -left-4 top-5 h-5 w-5 border-b border-l border-white/15 sm:-left-6 sm:w-6"
+                  />
+                )}
+                <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
+                    <div className="flex items-center gap-2">
+                      {avatarUrl ? (
+                        profileHref ? (
+                          <Link
+                            href={profileHref}
+                            className="h-7 w-7 shrink-0 rounded-full bg-cover bg-center"
+                            style={{ backgroundImage: `url(${avatarUrl})` }}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <span
+                            className="h-7 w-7 shrink-0 rounded-full bg-cover bg-center"
+                            style={{ backgroundImage: `url(${avatarUrl})` }}
+                            aria-hidden="true"
+                          />
+                        )
+                      ) : profileHref ? (
+                        <Link
+                          href={profileHref}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white"
+                        >
+                          {initials(authorName)}
+                        </Link>
+                      ) : (
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white">
+                          {initials(authorName)}
+                        </span>
+                      )}
+                      {profileHref ? (
+                        <Link
+                          href={profileHref}
+                          className="font-semibold text-white underline-offset-4 hover:underline"
+                        >
+                          {authorName}
+                        </Link>
+                      ) : (
+                        <span className="font-semibold text-white">{authorName}</span>
+                      )}
+                    </div>
+                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-white/70">
+                      Hidden comment
+                    </span>
+                    <span className="text-white/50">Score {comment.score}</span>
+                    <button
+                      type="button"
+                      onClick={() => revealHidden(comment.id)}
+                      className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 font-semibold text-white transition hover:bg-white/20"
+                    >
+                      <Eye className="h-3.5 w-3.5" aria-hidden="true" /> View comment
+                    </button>
+                  </div>
+                </article>
+              </div>
+            );
+          }
+
           return (
             <div
               key={comment.id}
@@ -420,11 +619,27 @@ export default function CommentsSection({
               >
                 <div className="flex items-start gap-3">
                   {avatarUrl ? (
-                    <span
-                      className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center"
-                      style={{ backgroundImage: `url(${avatarUrl})` }}
-                      aria-hidden="true"
-                    />
+                    profileHref ? (
+                      <Link
+                        href={profileHref}
+                        className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center"
+                        style={{ backgroundImage: `url(${avatarUrl})` }}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <span
+                        className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center"
+                        style={{ backgroundImage: `url(${avatarUrl})` }}
+                        aria-hidden="true"
+                      />
+                    )
+                  ) : profileHref ? (
+                    <Link
+                      href={profileHref}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white"
+                    >
+                      {initials(authorName)}
+                    </Link>
                   ) : (
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
                       {initials(authorName)}
@@ -432,7 +647,16 @@ export default function CommentsSection({
                   )}
                   <div className="flex-1 space-y-3">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-                      <span className="font-semibold text-white">{authorName}</span>
+                      {profileHref ? (
+                        <Link
+                          href={profileHref}
+                          className="font-semibold text-white underline-offset-4 hover:underline"
+                        >
+                          {authorName}
+                        </Link>
+                      ) : (
+                        <span className="font-semibold text-white">{authorName}</span>
+                      )}
                       <span>•</span>
                       <time dateTime={comment.createdAt}>{formatTimestamp(comment.createdAt)}</time>
                       {isAuthor && (
@@ -443,6 +667,40 @@ export default function CommentsSection({
                     </div>
                     <p className="whitespace-pre-wrap text-sm text-white/80">{comment.content}</p>
                     <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1 py-0.5 text-xs text-white/70">
+                        <button
+                          type="button"
+                          aria-pressed={comment.vote === "up"}
+                          onClick={() => handleVote(comment, "up")}
+                          className={clsx(
+                            "inline-flex h-8 w-8 items-center justify-center rounded-full transition",
+                            comment.vote === "up"
+                              ? "bg-brand-500/20 text-brand-100 ring-1 ring-brand-400"
+                              : "hover:bg-white/10 hover:text-white",
+                          )}
+                          disabled={votingHere}
+                        >
+                          <ArrowBigUp className="h-4 w-4" aria-hidden="true" />
+                          <span className="sr-only">Upvote</span>
+                        </button>
+                        <span className="min-w-[2.5rem] text-center text-sm font-semibold text-white">{comment.score}</span>
+                        <button
+                          type="button"
+                          aria-pressed={comment.vote === "down"}
+                          onClick={() => handleVote(comment, "down")}
+                          className={clsx(
+                            "inline-flex h-8 w-8 items-center justify-center rounded-full transition",
+                            comment.vote === "down"
+                              ? "bg-brand-500/20 text-brand-100 ring-1 ring-brand-400"
+                              : "hover:bg-white/10 hover:text-white",
+                          )}
+                          disabled={votingHere}
+                        >
+                          <ArrowBigDown className="h-4 w-4" aria-hidden="true" />
+                          <span className="sr-only">Downvote</span>
+                        </button>
+                      </div>
+
                       {canPost && (
                         <button
                           type="button"
@@ -466,7 +724,7 @@ export default function CommentsSection({
                     </div>
                   </div>
                 </div>
-              </article>
+      </article>
 
               {isReplyingHere && canPost && (
                 <form className="space-y-2 pl-6" onSubmit={handleReplySubmit}>
@@ -511,7 +769,7 @@ export default function CommentsSection({
                     onClick={() => showNextReply(comment.id, comment.replies.length, replyBaseline)}
                     className="text-xs font-semibold text-brand-200 underline-offset-4 transition hover:text-brand-100 hover:underline"
                   >
-                    Show 1 more reply ({hiddenReplyCount} in thread)
+                    Show in thread ({hiddenReplyCount} more)
                   </button>
                 </div>
               )}
@@ -538,6 +796,44 @@ export default function CommentsSection({
             <Link href={`/login?from=/posts/${postSlug}`} className="inline-flex">
               <Button variant="outline" size="sm">Log in to comment</Button>
             </Link>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-white/70">
+          <div className="flex items-center gap-2">
+            <span className="text-white/50">Sort by:</span>
+            <button
+              type="button"
+              onClick={() => handleSortChange("recent")}
+              className={clsx(
+                "rounded-full border px-3 py-1 font-semibold transition",
+                sortOrder === "recent"
+                  ? "border-brand-300 bg-brand-500/20 text-white"
+                  : "border-white/15 text-white/70 hover:border-white/30 hover:text-white",
+              )}
+              disabled={sortLoading}
+            >
+              Most recent
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSortChange("top")}
+              className={clsx(
+                "rounded-full border px-3 py-1 font-semibold transition",
+                sortOrder === "top"
+                  ? "border-brand-300 bg-brand-500/20 text-white"
+                  : "border-white/15 text-white/70 hover:border-white/30 hover:text-white",
+              )}
+              disabled={sortLoading}
+            >
+              Top voted
+            </button>
+          </div>
+          {sortLoading && (
+            <div className="flex items-center gap-2 text-white/60">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Updating
+            </div>
           )}
         </div>
 

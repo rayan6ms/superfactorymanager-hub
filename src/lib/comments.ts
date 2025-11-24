@@ -15,7 +15,11 @@ type CommentWithAuthor = Prisma.CommentGetPayload<{
   include: { author: { select: typeof authorSelect } };
 }>;
 
-const serializeComment = (comment: CommentWithAuthor, replies: SerializedComment[] = []): SerializedComment => ({
+const serializeComment = (
+  comment: CommentWithAuthor,
+  replies: SerializedComment[] = [],
+  voteMap?: Map<string, "up" | "down">,
+): SerializedComment => ({
   id: comment.id,
   content: comment.content,
   createdAt: comment.createdAt.toISOString(),
@@ -28,6 +32,8 @@ const serializeComment = (comment: CommentWithAuthor, replies: SerializedComment
         image: comment.author.image,
       }
     : null,
+  score: comment.score,
+  vote: voteMap?.get(comment.id) ?? null,
   replies,
 });
 
@@ -63,24 +69,33 @@ function buildChildrenMap(comments: CommentWithAuthor[]) {
 function attachReplies(
   comment: CommentWithAuthor,
   childrenMap: Map<string, CommentWithAuthor[]>,
+  voteMap?: Map<string, "up" | "down">,
 ): SerializedComment {
   const children = childrenMap.get(comment.id) ?? [];
   const replies = children
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-    .map(child => attachReplies(child, childrenMap));
-  return serializeComment(comment, replies);
+    .map(child => attachReplies(child, childrenMap, voteMap));
+  return serializeComment(comment, replies, voteMap);
 }
 
 export async function getPostComments(
   postId: string,
-  options: { take?: number; cursor?: string | null } = {},
+  options: { take?: number; cursor?: string | null; sort?: "recent" | "top"; viewerId?: string | null } = {},
 ): Promise<{ comments: SerializedComment[]; nextCursor: string | null; total: number }> {
   const take = Math.min(Math.max(options.take ?? COMMENT_PAGE_SIZE, 1), 50);
   const cursor = options.cursor ?? null;
+  const sort = options.sort ?? "recent";
+  const viewerId = options.viewerId ?? null;
 
   const roots: CommentWithAuthor[] = await db.comment.findMany({
     where: { postId, parentId: null },
-    orderBy: { createdAt: "desc" },
+    orderBy:
+      sort === "top"
+        ? [
+            { score: "desc" },
+            { createdAt: "desc" },
+          ]
+        : [{ createdAt: "desc" }],
     take: take + 1,
     include: { author: { select: authorSelect } },
     ...(cursor && {
@@ -98,7 +113,23 @@ export async function getPostComments(
   const visibleRoots = roots;
   const descendants = await fetchRepliesForParents(visibleRoots.map(comment => comment.id));
   const childrenMap = buildChildrenMap(descendants);
-  const serialized = visibleRoots.map(comment => attachReplies(comment, childrenMap));
+
+  let voteMap: Map<string, "up" | "down"> | undefined;
+  if (viewerId) {
+    const allIds = [
+      ...visibleRoots.map(item => item.id),
+      ...descendants.map(item => item.id),
+    ];
+    if (allIds.length) {
+      const votes = await db.commentVote.findMany({
+        where: { userId: viewerId, commentId: { in: allIds } },
+        select: { commentId: true, value: true },
+      });
+      voteMap = new Map(votes.map(vote => [vote.commentId, vote.value > 0 ? "up" : "down"]));
+    }
+  }
+
+  const serialized = visibleRoots.map(comment => attachReplies(comment, childrenMap, voteMap));
 
   const total = await db.comment.count({ where: { postId } });
 
@@ -109,7 +140,7 @@ export async function getPostComments(
   };
 }
 
-export async function getCommentById(commentId: string, postId?: string | null) {
+export async function getCommentById(commentId: string, postId?: string | null, viewerId?: string | null) {
   if (!commentId) return null;
   const comment = await db.comment.findUnique({
     where: { id: commentId },
@@ -117,5 +148,15 @@ export async function getCommentById(commentId: string, postId?: string | null) 
   });
   if (!comment) return null;
   if (postId && comment.postId !== postId) return null;
-  return serializeComment(comment);
+  let voteMap: Map<string, "up" | "down"> | undefined;
+  if (viewerId) {
+    const vote = await db.commentVote.findUnique({
+      where: { userId_commentId: { userId: viewerId, commentId } },
+      select: { value: true },
+    });
+    if (vote) {
+      voteMap = new Map([[commentId, vote.value > 0 ? "up" : "down"]]);
+    }
+  }
+  return serializeComment(comment, [], voteMap);
 }
