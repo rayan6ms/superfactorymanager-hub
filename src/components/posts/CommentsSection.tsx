@@ -7,6 +7,7 @@ import { ArrowBigDown, ArrowBigUp, ArrowLeft, CornerDownRight, Eye, Loader2, Mes
 import { Card } from "@/components/ui";
 import Button from "@/components/ui/Button";
 import ReportButton from "@/components/ReportButton";
+import DeletionFlagDialog from "@/components/admin/DeletionFlagDialog";
 import {
   COMMENT_MAX_LENGTH,
   COMMENT_MIN_LENGTH,
@@ -36,6 +37,7 @@ type CommentsSectionProps = {
   initialTotal: number;
   currentUser: CurrentUser | null;
   postAuthorId: string;
+  isAdmin: boolean;
 };
 
 type CommentResponse = {
@@ -157,6 +159,7 @@ export default function CommentsSection({
   initialTotal,
   currentUser,
   postAuthorId,
+  isAdmin,
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<SerializedComment[]>(initialComments);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
@@ -199,6 +202,13 @@ export default function CommentsSection({
     if (!threadRootId) return null;
     return findCommentById(comments, threadRootId);
   }, [comments, threadRootId]);
+
+  const markCommentDeleted = (id: string) => {
+    setComments(prev => {
+      const updated = updateCommentTree(prev, id, comment => ({ ...comment, isDeleted: true }));
+      return updated.updated ? updated.items : prev;
+    });
+  };
 
   const sortComments = useCallback((items: SerializedComment[], sort: SortOption) => {
     const sorted = [...items];
@@ -835,6 +845,17 @@ export default function CommentsSection({
                         >
                           Report
                         </ReportButton>
+                      )}
+                      {isAdmin && !comment.isDeleted && (
+                        <DeletionFlagDialog
+                          type="comment"
+                          targetId={comment.id}
+                          targetLabel={`comment by ${authorName}`}
+                          onFlagged={() => markCommentDeleted(comment.id)}
+                          className="border-none bg-transparent px-0 py-0 text-xs font-semibold text-rose-200 hover:text-rose-100"
+                        >
+                          Flag as deleted
+                        </DeletionFlagDialog>
                       )}
                     </div>
                   </div>

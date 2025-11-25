@@ -11,6 +11,8 @@ import CodeVerification from "@/components/CodeVerification";
 import CommentsSection from "@/components/posts/CommentsSection";
 import { getPostComments } from "@/lib/comments";
 import ReportButton from "@/components/ReportButton";
+import { isAdminEmail } from "@/lib/admin";
+import AdminFlagPostButton from "@/components/posts/AdminFlagPostButton";
 
 type VoteValue = "up" | "down" | null;
 
@@ -56,6 +58,7 @@ function getInitial(name: string | null | undefined) {
 export default async function PostPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
   const session = await auth();
+  const isAdmin = isAdminEmail(session?.user?.email);
 
   const post = await db.post.findUnique({
     where: { slug },
@@ -144,9 +147,14 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 <p className="text-xs uppercase tracking-[0.4em] text-white/40">{post.category?.name ?? "Post"}</p>
                 <h1 className="text-3xl font-semibold text-white">{post.title}</h1>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70">
-                <div>Minecraft {post.gameVersion}</div>
-                <div>SFM {post.modVersion}</div>
+              <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70">
+                  <div>Minecraft {post.gameVersion}</div>
+                  <div>SFM {post.modVersion}</div>
+                </div>
+                {isAdmin && (
+                  <AdminFlagPostButton slug={post.slug} title={post.title} />
+                )}
               </div>
             </div>
             <div className="flex flex-wrap gap-4 text-sm text-white/60">
@@ -339,6 +347,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
         initialTotal={commentData.total}
         currentUser={me}
         postAuthorId={post.authorId}
+        isAdmin={isAdmin}
       />
     </div>
   );

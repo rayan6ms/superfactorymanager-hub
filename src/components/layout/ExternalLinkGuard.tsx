@@ -1,5 +1,8 @@
 "use client";
-import { useEffect } from "react";
+
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { ExternalLink, ShieldAlert, X } from "lucide-react";
 
 function isExternalLink(href: string, currentOrigin: string) {
   if (!href) return false;
@@ -13,9 +16,17 @@ function isExternalLink(href: string, currentOrigin: string) {
   }
 }
 
+type PendingNavigation = {
+  href: string;
+  hostname: string;
+  target: string;
+};
+
 export default function ExternalLinkGuard() {
+  const [pending, setPending] = useState<PendingNavigation | null>(null);
+
   useEffect(() => {
-    function handleClick(event: MouseEvent) {
+    const handleClick = (event: MouseEvent) => {
       if (event.defaultPrevented) return;
       if (event.button !== 0) return;
 
@@ -37,21 +48,95 @@ export default function ExternalLinkGuard() {
         }
       })();
 
-      const confirmed = window.confirm(
-        `You're about to leave superfactorymanager and open ${hostname}.\nWe can't guarantee external sites are safe. Continue?`,
-      );
+      event.preventDefault();
+      event.stopPropagation();
 
-      if (!confirmed) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    }
+      setPending({
+        href: anchor.href,
+        hostname,
+        target: event.metaKey || event.ctrlKey || anchor.target === "_blank" ? "_blank" : anchor.target || "_self",
+      });
+    };
 
     document.addEventListener("click", handleClick);
-    return () => {
-      document.removeEventListener("click", handleClick);
-    };
+    return () => document.removeEventListener("click", handleClick);
   }, []);
 
-  return null;
+  const close = () => setPending(null);
+
+  const proceed = () => {
+    if (!pending) return;
+    window.open(pending.href, pending.target || "_self", pending.target === "_blank" ? "noopener,noreferrer" : undefined);
+    setPending(null);
+  };
+
+  useEffect(() => {
+    if (!pending) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [pending]);
+
+  if (!pending || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 py-6 sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) close();
+      }}
+    >
+      <div className="w-full max-w-lg space-y-4 rounded-3xl border border-white/15 bg-black/80 p-6 text-white shadow-2xl backdrop-blur-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2 text-amber-200">
+            <ShieldAlert className="h-5 w-5" aria-hidden />
+            <p className="text-xs uppercase tracking-[0.3em] text-amber-200">External link</p>
+          </div>
+          <button
+            type="button"
+            onClick={close}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/70 transition hover:border-white/35 hover:text-white"
+          >
+            <X className="h-5 w-5" aria-hidden />
+            <span className="sr-only">Close external link warning</span>
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-white">You are leaving superfactorymanager</h2>
+          <p className="text-sm text-white/70">
+            We cannot guarantee that {pending.hostname} is safe. Continue to this site or stay on the current page.
+          </p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/80 break-words">
+            {pending.href}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={close}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/35 hover:text-white"
+          >
+            Stay here
+          </button>
+          <button
+            type="button"
+            onClick={proceed}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-brand-400/60 bg-brand-500/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-brand-300 hover:bg-brand-500/30"
+          >
+            <ExternalLink className="h-4 w-4" aria-hidden />
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
 }

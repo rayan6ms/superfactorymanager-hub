@@ -9,7 +9,7 @@ export default function Card({
   return (
     <div
       className={clsx(
-        "surface p-4 backdrop-blur-sm wrap-break-word",
+        "surface w-full max-w-full p-4 backdrop-blur-sm wrap-break-word",
         hoverable && "transition hover:shadow-card hover:-translate-y-px",
         className
       )}

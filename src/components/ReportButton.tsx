@@ -166,14 +166,14 @@ export default function ReportButton({
     mounted && open
       ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 py-6 backdrop-blur sm:items-center"
           role="dialog"
           aria-modal="true"
           onMouseDown={event => {
             if (event.target === event.currentTarget) close();
           }}
         >
-          <div className="w-full max-w-lg space-y-5 rounded-3xl border border-white/10 bg-black/70 p-6 text-white shadow-2xl">
+          <div className="w-full max-w-lg space-y-5 rounded-3xl border border-white/10 bg-black/75 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100vh-3rem)] overflow-y-auto">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">Report {type}</p>

@@ -37,11 +37,6 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const total = imgs?.length ?? 0;
   const hasImages = total > 0;
@@ -142,17 +137,17 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
   if (!hasImages) return null;
 
   const overlay =
-    open && mounted
+    open && typeof document !== "undefined"
       ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-3 py-6 sm:px-6 sm:py-10 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-3 py-6 sm:px-6 sm:py-10 backdrop-blur-sm sm:items-center"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               closeViewer();
             }
           }}
         >
-          <div className="flex w-full max-w-7xl max-h-[90vh] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/90 shadow-2xl">
+          <div className="flex w-full max-w-7xl max-h-[calc(100vh-3rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/90 shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">
