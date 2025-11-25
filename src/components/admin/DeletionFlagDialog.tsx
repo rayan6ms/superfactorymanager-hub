@@ -104,24 +104,23 @@ export default function DeletionFlagDialog({
             <div className="mt-3 space-y-2">
               <h2 className="text-xl font-semibold text-white">Flag this {type} as deleted?</h2>
               <p className="text-sm text-white/70">
-                This hides the {type} from everyone immediately. Type “{requireText}” to confirm you want to flag {targetLabel}
-                for removal.
+                This hides the {type} from everyone immediately. Type “{requireText}” to confirm you want to flag {targetLabel} for removal.
               </p>
             </div>
 
-            <form className="mt-4 space-y-3" onSubmit={submit}>
+            <form className="mt-3 space-y-3" onSubmit={submit}>
               <label className="space-y-2 text-sm text-white/80">
                 <span>Type {requireText} to proceed</span>
                 <input
                   type="text"
                   value={confirmValue}
                   onChange={(event) => setConfirmValue(event.target.value)}
-                  className="w-full rounded-2xl border border-white/20 bg-black/40 px-4 py-2 text-white placeholder-white/40 outline-none transition focus:border-white/40"
+                  className="w-full rounded-2xl border border-white/20 bg-black/40 px-4 py-2 mt-1 text-white placeholder-white/40 outline-none transition focus:border-white/40"
                   placeholder={requireText}
                 />
               </label>
               {error && <p className="text-sm text-red-300">{error}</p>}
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <div className="flex flex-col pt-3 gap-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={close}
