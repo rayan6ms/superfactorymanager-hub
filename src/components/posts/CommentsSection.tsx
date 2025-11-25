@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import clsx from "clsx";
-import { ArrowBigDown, ArrowBigUp, CornerDownRight, Eye, Loader2, MessageCircle } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp, ArrowLeft, CornerDownRight, Eye, Loader2, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui";
 import Button from "@/components/ui/Button";
 import ReportButton from "@/components/ReportButton";
@@ -80,6 +80,8 @@ const countNestedReplies = (items: SerializedComment[]): number => {
   return items.reduce((total, item) => total + 1 + countNestedReplies(item.replies), 0);
 };
 
+const MIN_VISIBLE_REPLIES = 1;
+
 const insertReply = (
   items: SerializedComment[],
   parentId: string,
@@ -105,6 +107,17 @@ const insertReply = (
     return item;
   });
   return { updated: inserted ? updated : items, inserted, replyCount };
+};
+
+const findCommentById = (items: SerializedComment[], id: string): SerializedComment | null => {
+  for (const item of items) {
+    if (item.id === id) return item;
+    if (item.replies.length) {
+      const found = findCommentById(item.replies, id);
+      if (found) return found;
+    }
+  }
+  return null;
 };
 
 export default function CommentsSection({
@@ -133,6 +146,7 @@ export default function CommentsSection({
   const [revealedHidden, setRevealedHidden] = useState<Record<string, boolean>>({});
   const [voting, setVoting] = useState<Record<string, boolean>>({});
   const [replyDisplayLimit, setReplyDisplayLimit] = useState(5);
+  const [threadRootId, setThreadRootId] = useState<string | null>(null);
   const focusHandledRef = useRef(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -150,6 +164,11 @@ export default function CommentsSection({
     },
     [flatComments],
   );
+
+  const threadRoot = useMemo(() => {
+    if (!threadRootId) return null;
+    return findCommentById(comments, threadRootId);
+  }, [comments, threadRootId]);
 
   const sortComments = useCallback((items: SerializedComment[], sort: SortOption) => {
     const sorted = [...items];
@@ -194,6 +213,12 @@ export default function CommentsSection({
     media.addEventListener("change", handleChange);
     return () => media.removeEventListener("change", handleChange);
   }, []);
+
+  useEffect(() => {
+    if (threadRootId && !threadRoot) {
+      setThreadRootId(null);
+    }
+  }, [threadRootId, threadRoot]);
 
   const fetchComments = useCallback(
     async (cursorValue: string | null, sortOverride?: SortOption): Promise<CommentResponse> => {
@@ -320,9 +345,10 @@ export default function CommentsSection({
         });
         if (insertedReplyCount > 0) {
           setVisibleRepliesMap(prev => {
-            const current = prev[replyTargetId];
-            if (current && current >= insertedReplyCount) return prev;
-            return { ...prev, [replyTargetId]: insertedReplyCount };
+            const inlineLimit = Math.min(replyDisplayLimit, insertedReplyCount);
+            const current = prev[replyTargetId] ?? Math.min(MIN_VISIBLE_REPLIES, insertedReplyCount);
+            if (current >= inlineLimit) return prev;
+            return { ...prev, [replyTargetId]: Math.min(inlineLimit, current + 1) };
           });
         }
         setReplyText("");
@@ -340,7 +366,7 @@ export default function CommentsSection({
         setReplySubmitting(false);
       }
     },
-    [canPost, replySubmitting, replyTargetId, isReplyValid, postSlug, replyText],
+    [canPost, replySubmitting, replyTargetId, isReplyValid, postSlug, replyText, replyDisplayLimit],
   );
 
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -370,8 +396,10 @@ export default function CommentsSection({
     (commentId: string, totalReplies: number, baseline = replyDisplayLimit) => {
       if (totalReplies <= 0) return 0;
       const stored = visibleRepliesMap[commentId];
-      const fallback = Math.max(0, Math.min(baseline, totalReplies));
-      return Math.min(totalReplies, typeof stored === "number" ? stored : fallback);
+      const fallback = Math.max(0, Math.min(MIN_VISIBLE_REPLIES, totalReplies));
+      const allowedMax = Math.min(baseline, totalReplies);
+      const current = Math.min(typeof stored === "number" ? stored : fallback, allowedMax);
+      return Math.max(fallback, current);
     },
     [replyDisplayLimit, visibleRepliesMap],
   );
@@ -380,9 +408,10 @@ export default function CommentsSection({
     (commentId: string, totalReplies: number, baseline = replyDisplayLimit) => {
       if (totalReplies <= 0) return;
       setVisibleRepliesMap(prev => {
-        const current = prev[commentId] ?? Math.max(0, Math.min(baseline, totalReplies));
-        if (current >= totalReplies) return prev;
-        return { ...prev, [commentId]: Math.min(totalReplies, current + baseline) };
+        const maxInline = Math.min(totalReplies, baseline);
+        const current = prev[commentId] ?? Math.min(MIN_VISIBLE_REPLIES, totalReplies);
+        if (current >= maxInline) return prev;
+        return { ...prev, [commentId]: Math.min(maxInline, current + 1) };
       });
     },
     [replyDisplayLimit],
@@ -402,6 +431,7 @@ export default function CommentsSection({
         setTotal(data.total ?? total);
         setVisibleRepliesMap({});
         setRevealedHidden({});
+        setThreadRootId(null);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to update sort order";
         setError(message);
@@ -498,8 +528,13 @@ export default function CommentsSection({
     replyTextareaRef.current?.focus();
   }, [replyTargetId]);
 
-  const renderThread = (nodes: SerializedComment[], depth = 0): ReactNode => {
+  const renderThread = (
+    nodes: SerializedComment[],
+    depth = 0,
+    options: { limitReplies?: boolean } = {},
+  ): ReactNode => {
     if (!nodes.length) return null;
+    const { limitReplies = true } = options;
     return (
       <div
         className={clsx(
@@ -520,11 +555,16 @@ export default function CommentsSection({
           const isHighlighted = highlightedComment === comment.id;
           const isReplyingHere = replyTargetId === comment.id;
           const replyBaseline = replyDisplayLimit;
-          const visibleReplies = getVisibleReplies(comment.id, comment.replies.length, replyBaseline);
+          const visibleReplies = limitReplies
+            ? getVisibleReplies(comment.id, comment.replies.length, replyBaseline)
+            : comment.replies.length;
           const repliesToRender = comment.replies.slice(0, visibleReplies);
-          const hiddenReplies = comment.replies.slice(visibleReplies);
-          const remainingReplies = Math.max(hiddenReplies.length, 0);
-          const hiddenReplyCount = countNestedReplies(hiddenReplies);
+          const remainingReplies = Math.max(comment.replies.length - visibleReplies, 0);
+          const hiddenReplies = limitReplies ? comment.replies.slice(visibleReplies) : [];
+          const hiddenReplyCount = limitReplies ? countNestedReplies(hiddenReplies) : 0;
+          const inlineLimit = Math.min(replyBaseline, comment.replies.length);
+          const canShowInline = limitReplies && visibleReplies < inlineLimit;
+          const showRestInThread = limitReplies && !canShowInline && remainingReplies > 0;
           const profileHref = comment.author?.name ? `/profile/${comment.author.name}` : null;
           const isHidden = comment.score < 0 && !revealedHidden[comment.id];
           const votingHere = Boolean(voting[comment.id]);
@@ -617,7 +657,7 @@ export default function CommentsSection({
                   isHighlighted && "ring-2 ring-brand-400",
                 )}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                   {avatarUrl ? (
                     profileHref ? (
                       <Link
@@ -667,7 +707,7 @@ export default function CommentsSection({
                     </div>
                     <p className="whitespace-pre-wrap text-sm text-white/80">{comment.content}</p>
                     <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1 py-0.5 text-xs text-white/70">
+                      <div className="flex items-center gap-1 text-xs text-white/70">
                         <button
                           type="button"
                           aria-pressed={comment.vote === "up"}
@@ -675,8 +715,8 @@ export default function CommentsSection({
                           className={clsx(
                             "inline-flex h-8 w-8 items-center justify-center rounded-full transition",
                             comment.vote === "up"
-                              ? "bg-brand-500/20 text-brand-100 ring-1 ring-brand-400"
-                              : "hover:bg-white/10 hover:text-white",
+                              ? "text-brand-100"
+                              : "text-white/60 hover:text-white",
                           )}
                           disabled={votingHere}
                         >
@@ -691,8 +731,8 @@ export default function CommentsSection({
                           className={clsx(
                             "inline-flex h-8 w-8 items-center justify-center rounded-full transition",
                             comment.vote === "down"
-                              ? "bg-brand-500/20 text-brand-100 ring-1 ring-brand-400"
-                              : "hover:bg-white/10 hover:text-white",
+                              ? "text-brand-100"
+                              : "text-white/60 hover:text-white",
                           )}
                           disabled={votingHere}
                         >
@@ -759,17 +799,22 @@ export default function CommentsSection({
 
               {repliesToRender.length > 0 && (
                 <div className="ml-4 sm:ml-6">
-                  {renderThread(repliesToRender, depth + 1)}
+                  {renderThread(repliesToRender, depth + 1, options)}
                 </div>
               )}
-              {remainingReplies > 0 && (
+              {limitReplies && remainingReplies > 0 && (
                 <div className="ml-4 sm:ml-6">
                   <button
                     type="button"
-                    onClick={() => showNextReply(comment.id, comment.replies.length, replyBaseline)}
+                    onClick={() =>
+                      showRestInThread
+                        ? setThreadRootId(comment.id)
+                        : showNextReply(comment.id, comment.replies.length, replyBaseline)
+                    }
                     className="text-xs font-semibold text-brand-200 underline-offset-4 transition hover:text-brand-100 hover:underline"
                   >
-                    Show in thread ({hiddenReplyCount} more)
+                    {showRestInThread ? "Show rest in thread" : "Show 1 more reply"}
+                    {showRestInThread && hiddenReplyCount > 0 ? ` (${hiddenReplyCount} more)` : ""}
                   </button>
                 </div>
               )}
@@ -869,7 +914,29 @@ export default function CommentsSection({
         )}
 
         <div className="space-y-4">
-          {comments.length === 0 ? (
+          {threadRoot ? (
+            <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">Thread view</p>
+                  <p className="text-sm text-white/70">
+                    Showing the rest of the replies in this thread. Use the back button to return to the main comments.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setThreadRootId(null)}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/40"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to comments
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                {renderThread([threadRoot], 0, { limitReplies: false })}
+              </div>
+            </div>
+          ) : comments.length === 0 ? (
             <p className="text-sm text-white/60">No comments yet. Start the discussion!</p>
           ) : (
             renderThread(comments)

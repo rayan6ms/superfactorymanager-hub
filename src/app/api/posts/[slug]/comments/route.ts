@@ -106,16 +106,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     }
   }
 
-  const comment = await db.comment.create({
-    data: {
-      content,
-      postId: post.id,
-      authorId: user.id,
-      parentId,
-    },
-    include: {
-      author: { select: { id: true, name: true, image: true } },
-    },
+  const comment = await db.$transaction(async tx => {
+    const created = await tx.comment.create({
+      data: {
+        content,
+        postId: post.id,
+        authorId: user.id,
+        parentId,
+        score: 1,
+        voteCount: 1,
+      },
+      include: {
+        author: { select: { id: true, name: true, image: true } },
+      },
+    });
+
+    await tx.commentVote.create({
+      data: { value: 1, userId: user.id, commentId: created.id },
+    });
+
+    return created;
   });
 
   const serialized = {
@@ -126,7 +136,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     parentId: comment.parentId,
     author: comment.author,
     score: comment.score,
-    vote: null,
+    vote: "up" as const,
     replies: [],
   };
 
