@@ -13,7 +13,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
   const user = await db.user.findUnique({
     where: { email: session.user.email },
-    select: { id: true, canVotePosts: true, interactionBanUntil: true },
+    select: {
+      id: true,
+      canCreatePosts: true,
+      canCreateComments: true,
+      canVotePosts: true,
+      canVoteComments: true,
+      interactionBanUntil: true,
+    },
   });
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

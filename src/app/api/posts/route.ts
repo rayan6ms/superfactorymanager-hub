@@ -176,6 +176,9 @@ export async function POST(req: Request) {
         name: true,
         email: true,
         canCreatePosts: true,
+        canCreateComments: true,
+        canVotePosts: true,
+        canVoteComments: true,
         interactionBanUntil: true,
       },
     });
