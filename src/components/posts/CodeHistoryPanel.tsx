@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { diffLines } from "diff";
 import { clsx } from "clsx";
-import { Clock, GitPullRequest, History, Loader2, RotateCcw } from "lucide-react";
+import { Clock, GitPullRequest, History, Loader2, Minus, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -38,6 +38,13 @@ type CodeHistoryPanelProps = {
   currentCommitId: string | null;
   isAuthor: boolean;
   contributors: ContributorSummary[];
+};
+
+type DiffRow = {
+  type: "context" | "added" | "removed";
+  text: string;
+  oldLine: number | null;
+  newLine: number | null;
 };
 
 function formatDate(value: string | null) {
@@ -74,9 +81,35 @@ export default function CodeHistoryPanel({
     [commits, secondaryId],
   );
 
-  const diff = useMemo(() => {
+  const diffRows = useMemo<DiffRow[]>(() => {
     if (!primaryCommit || !secondaryCommit) return [];
-    return diffLines(secondaryCommit.code, primaryCommit.code);
+    const changes = diffLines(secondaryCommit.code, primaryCommit.code);
+    let oldLine = 1;
+    let newLine = 1;
+
+    return changes.flatMap(change => {
+      const lines = change.value.split("\n");
+      if (lines[lines.length - 1] === "") lines.pop();
+
+      return lines.map(line => {
+        if (change.added) {
+          const row: DiffRow = { type: "added", text: line, oldLine: null, newLine };
+          newLine += 1;
+          return row;
+        }
+
+        if (change.removed) {
+          const row: DiffRow = { type: "removed", text: line, oldLine, newLine: null };
+          oldLine += 1;
+          return row;
+        }
+
+        const row: DiffRow = { type: "context", text: line, oldLine, newLine };
+        oldLine += 1;
+        newLine += 1;
+        return row;
+      });
+    });
   }, [primaryCommit, secondaryCommit]);
 
   const handleAction = async (commitId: string, action: "merge" | "reject" | "revert") => {
@@ -163,22 +196,42 @@ export default function CodeHistoryPanel({
             </label>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-black/40 font-mono text-sm text-white/80">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 font-mono text-sm text-white/80">
             {primaryCommit && secondaryCommit ? (
-              diff.length ? (
-                diff.map((part, index) => (
-                  <pre
-                    key={`${index}-${part.added}-${part.removed}`}
-                    className={clsx(
-                      "whitespace-pre-wrap border-b border-white/5 px-4 py-2",
-                      part.added && "bg-emerald-500/10 text-emerald-100",
-                      part.removed && "bg-red-500/10 text-red-100",
-                    )}
-                  >
-                    <span className="mr-2 text-white/30">{part.added ? "+" : part.removed ? "-" : " "}</span>
-                    {part.value}
-                  </pre>
-                ))
+              diffRows.length ? (
+                <div className="divide-y divide-white/5">
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-white/5 px-4 py-3 text-xs text-white/70">
+                    <div>
+                      <p className="font-semibold text-white">
+                        Comparing {primaryCommit.title ?? primaryCommit.message} against {secondaryCommit.title ?? secondaryCommit.message}
+                      </p>
+                      <p className="text-white/60">Green lines are additions in the first selection; red lines were removed from the comparison target.</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-1 font-semibold text-emerald-100">
+                        <Plus className="h-3 w-3" /> Added
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 font-semibold text-red-100">
+                        <Minus className="h-3 w-3" /> Removed
+                      </span>
+                    </div>
+                  </div>
+                  {diffRows.map((row, index) => (
+                    <div
+                      key={`${row.type}-${row.oldLine ?? "-"}-${row.newLine ?? "-"}-${index}`}
+                      className={clsx(
+                        "grid grid-cols-[3.25rem_3.25rem_1fr] items-start gap-3 px-4 py-1.5 text-xs sm:text-sm",
+                        row.type === "added" && "bg-emerald-500/10 text-emerald-100",
+                        row.type === "removed" && "bg-red-500/10 text-red-100",
+                        row.type === "context" && "text-white/80",
+                      )}
+                    >
+                      <span className="text-[11px] text-white/40 sm:text-xs">{row.oldLine ?? ""}</span>
+                      <span className="text-[11px] text-white/40 sm:text-xs">{row.newLine ?? ""}</span>
+                      <pre className="whitespace-pre-wrap text-inherit">{row.text || " "}</pre>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <p className="px-4 py-4 text-sm text-white/60">No differences between the selected commits.</p>
               )

@@ -6,6 +6,7 @@ import ViewBeacon from "@/components/ViewBeacon";
 import { Card, Button } from "@/components/ui";
 import ImageGallery from "@/components/ImageGallery";
 import HighlightedCode from "@/components/HighlightedCode";
+import CopyCodeButton from "@/components/CopyCodeButton";
 import CodeVerification from "@/components/CodeVerification";
 import CommentsSection from "@/components/posts/CommentsSection";
 import { getPostComments } from "@/lib/comments";
@@ -192,12 +193,13 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {tags.map(tag => (
-                <span
+                <Link
                   key={tag.slug}
-                  className="rounded-full border border-white/15 px-3 py-1 text-xs uppercase tracking-wide text-white/70"
+                  href={`/tags?tags=${encodeURIComponent(tag.slug)}`}
+                  className="rounded-full border border-white/15 px-3 py-1 text-xs uppercase tracking-wide text-white/70 transition hover:border-white/30 hover:text-white"
                 >
                   #{tag.name}
-                </span>
+                </Link>
               ))}
             </div>
           )}
@@ -221,9 +223,12 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
           )}
 
           <Card className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Code</h2>
-              <span className="text-xs text-white/50">Copy &amp; paste into SuperFactoryManager</span>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Code</h2>
+                <span className="text-xs text-white/50">Copy &amp; paste into SuperFactoryManager</span>
+              </div>
+              <CopyCodeButton value={post.code} />
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20">
               <HighlightedCode code={post.code} />
