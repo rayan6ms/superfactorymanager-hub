@@ -1,14 +1,35 @@
 import { NextResponse } from "next/server";
+import { ReportReason } from "@prisma/client";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
-const reportSchema = z.object({
-  type: z.enum(["post", "comment"]),
-  targetId: z.string().min(1),
-  message: z.string().trim().min(10).max(500),
-});
+const reasonOptions = [
+  { value: "spam", reason: ReportReason.SPAM },
+  { value: "inappropriate_content", reason: ReportReason.INAPPROPRIATE_CONTENT },
+  { value: "harassment_or_bullying", reason: ReportReason.HARASSMENT_OR_BULLYING },
+  { value: "spreads_false_information", reason: ReportReason.SPREADS_FALSE_INFORMATION },
+  { value: "hate_speech_or_symbols", reason: ReportReason.HATE_SPEECH_OR_SYMBOLS },
+  { value: "promotes_violence_or_dangerous_behavior", reason: ReportReason.PROMOTES_VIOLENCE_OR_DANGEROUS_BEHAVIOR },
+  { value: "promotes_illegal_activity", reason: ReportReason.PROMOTES_ILLEGAL_ACTIVITY },
+  { value: "promotes_self_harm_or_suicide", reason: ReportReason.PROMOTES_SELF_HARM_OR_SUICIDE },
+  { value: "other", reason: ReportReason.OTHER },
+] as const;
+
+const reasonValues = reasonOptions.map(option => option.value) as [string, ...string[]];
+
+const reportSchema = z
+  .object({
+    type: z.enum(["post", "comment"]),
+    targetId: z.string().min(1),
+    reason: z.enum(reasonValues),
+    message: z.string().trim().max(500).optional(),
+  })
+  .refine(data => data.reason !== "other" || Boolean(data.message && data.message.trim().length >= 10), {
+    message: "Include at least 10 characters when selecting Other.",
+    path: ["message"],
+  });
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -45,9 +66,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Include a message between 10 and 500 characters." }, { status: 400 });
   }
 
-  const { type, targetId, message } = parsed.data;
+  const { type, targetId, reason: reasonValue, message } = parsed.data;
   let postId: string | null = null;
   let commentId: string | null = null;
+  const selectedReason = reasonOptions.find(option => option.value === reasonValue)?.reason ?? ReportReason.OTHER;
   if (type === "post") {
     const post = await db.post.findUnique({
       where: { slug: targetId },
@@ -74,12 +96,15 @@ export async function POST(request: Request) {
     postId = comment.postId;
   }
 
+  const trimmedMessage = message?.trim() || null;
+
   await db.report.create({
     data: {
       reporterId: user.id,
       postId,
       commentId,
-      message,
+      reason: selectedReason,
+      message: selectedReason === ReportReason.OTHER ? trimmedMessage : null,
     },
   });
 

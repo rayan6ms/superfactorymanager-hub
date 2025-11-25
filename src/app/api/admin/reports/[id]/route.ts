@@ -18,6 +18,7 @@ const moderationSchema = z.object({
   disableVoteComments: z.boolean().optional().default(false),
   timeoutMinutes: z.number().int().positive().max(60 * 24 * 30).optional(),
   note: z.string().trim().max(500).optional(),
+  reopen: z.boolean().optional().default(false),
 });
 
 export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -58,6 +59,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     disableVoteComments,
     timeoutMinutes,
     note,
+    reopen,
   } = parsed.data;
 
   const performedModeration =
@@ -72,7 +74,11 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     disableVoteComments ||
     Boolean(timeoutMinutes);
 
-  if (!performedModeration && !note) {
+  if (reopen && performedModeration) {
+    return NextResponse.json({ error: "Reopening cannot be combined with other actions." }, { status: 400 });
+  }
+
+  if (!performedModeration && !note && !reopen) {
     return NextResponse.json({ error: "Select at least one action or leave a note." }, { status: 400 });
   }
 
@@ -86,6 +92,23 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   if (!report) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 });
+  }
+
+  if (reopen) {
+    await db.$transaction(async tx => {
+      await tx.report.update({ where: { id }, data: { resolvedAt: null } });
+      await tx.reportAction.create({
+        data: {
+          reportId: id,
+          actorId: adminUser.id,
+          type: ReportActionType.RESOLVED,
+          note: note?.trim() || null,
+          metadata: { reopen: true },
+        },
+      });
+    });
+
+    return NextResponse.json({ success: true });
   }
 
   const offenderId = report.comment?.authorId ?? report.post?.authorId ?? null;

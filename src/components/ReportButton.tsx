@@ -7,6 +7,42 @@ import { Flag, Loader2, X } from "lucide-react";
 
 const MIN_LENGTH = 10;
 const MAX_LENGTH = 500;
+const REASONS = [
+  "spam",
+  "inappropriate_content",
+  "harassment_or_bullying",
+  "spreads_false_information",
+  "hate_speech_or_symbols",
+  "promotes_violence_or_dangerous_behavior",
+  "promotes_illegal_activity",
+  "promotes_self_harm_or_suicide",
+  "other",
+] as const;
+
+function labelForReason(value: (typeof REASONS)[number]) {
+  switch (value) {
+    case "spam":
+      return "Spam";
+    case "inappropriate_content":
+      return "Inappropriate content";
+    case "harassment_or_bullying":
+      return "Harassment or Bullying";
+    case "spreads_false_information":
+      return "Spreads false information";
+    case "hate_speech_or_symbols":
+      return "Hate speech or symbols";
+    case "promotes_violence_or_dangerous_behavior":
+      return "Promotes violence or dangerous behavior";
+    case "promotes_illegal_activity":
+      return "Promotes illegal activity";
+    case "promotes_self_harm_or_suicide":
+      return "Promotes self-harm or suicide";
+    case "other":
+      return "Other";
+    default:
+      return value;
+  }
+}
 
 type ReportButtonProps = {
   type: "post" | "comment";
@@ -28,6 +64,7 @@ export default function ReportButton({
   children,
 }: ReportButtonProps) {
   const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState<(typeof REASONS)[number] | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -39,11 +76,13 @@ export default function ReportButton({
   }, []);
 
   const remainingChars = useMemo(() => MAX_LENGTH - message.length, [message]);
-  const tooShort = message.trim().length < MIN_LENGTH;
+  const isOtherReason = reason === "other";
+  const tooShort = isOtherReason && message.trim().length < MIN_LENGTH;
 
   const close = useCallback(() => {
     if (submitting) return;
     setOpen(false);
+    setReason(null);
     setMessage("");
     setError(null);
     setResult("idle");
@@ -82,6 +121,10 @@ export default function ReportButton({
   const submitReport = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
+      if (!reason) {
+        setError("Choose a reason for the report.");
+        return;
+      }
       if (tooShort) {
         setError("Explain what’s wrong so our team can review it quickly.");
         return;
@@ -94,7 +137,12 @@ export default function ReportButton({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ type, targetId, message: message.trim() }),
+          body: JSON.stringify({
+            type,
+            targetId,
+            reason,
+            message: isOtherReason ? message.trim() : undefined,
+          }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -102,6 +150,7 @@ export default function ReportButton({
         }
         setResult("success");
         setMessage("");
+        setReason(null);
       } catch (err) {
         const fallback = err instanceof Error ? err.message : "We couldn’t send your report.";
         setError(fallback);
@@ -110,7 +159,7 @@ export default function ReportButton({
         setSubmitting(false);
       }
     },
-    [message, targetId, type, tooShort],
+    [isOtherReason, message, reason, targetId, type, tooShort],
   );
 
   const dialog =
@@ -141,22 +190,49 @@ export default function ReportButton({
             </div>
 
             <form className="space-y-4" onSubmit={submitReport}>
-              <label className="space-y-2 text-sm text-white/80">
-                <span>What’s going on?</span>
-                <textarea
-                  rows={5}
-                  value={message}
-                  onChange={event => setMessage(event.target.value.slice(0, MAX_LENGTH))}
-                  className="w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white outline-none transition focus:border-white/40"
-                  placeholder="Explain why this content should be reviewed"
-                />
-              </label>
-              <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-white/50">
-                <span>
-                  {Math.max(message.trim().length, 0)} / {MAX_LENGTH} characters ({remainingChars} left)
-                </span>
-                <span>Minimum {MIN_LENGTH} characters</span>
+              <div className="space-y-2 text-sm text-white/80">
+                <span className="block">What’s going on?</span>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {REASONS.map(value => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setReason(value)}
+                      className={clsx(
+                        "flex w-full items-center justify-between rounded-2xl border px-4 py-2 text-left transition",
+                        reason === value
+                          ? "border-red-400/60 bg-red-500/20 text-white"
+                          : "border-white/15 bg-black/30 text-white/80 hover:border-white/30 hover:text-white",
+                      )}
+                      aria-pressed={reason === value}
+                    >
+                      <span className="text-sm font-semibold">{labelForReason(value)}</span>
+                      {reason === value && <span className="text-xs text-white/60">Selected</span>}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {isOtherReason && (
+                <>
+                  <label className="space-y-2 text-sm text-white/80">
+                    <span>Share more details (required)</span>
+                    <textarea
+                      rows={5}
+                      value={message}
+                      onChange={event => setMessage(event.target.value.slice(0, MAX_LENGTH))}
+                      className="w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white outline-none transition focus:border-white/40"
+                      placeholder="Explain why this content should be reviewed"
+                    />
+                  </label>
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-white/50">
+                    <span>
+                      {Math.max(message.trim().length, 0)} / {MAX_LENGTH} characters ({remainingChars} left)
+                    </span>
+                    <span>Minimum {MIN_LENGTH} characters</span>
+                  </div>
+                </>
+              )}
               {error && (
                 <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div>
               )}

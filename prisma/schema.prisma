@@ -285,7 +285,8 @@ model Report {
   post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   commentId  String?
   comment    Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  message    String
+  reason     ReportReason @default(OTHER)
+  message    String?
   createdAt  DateTime @default(now())
   resolvedAt DateTime?
   actions    ReportAction[]
@@ -310,6 +311,18 @@ enum ReportActionType {
   NOTE
   RESOLVED
   MODERATION
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE_CONTENT
+  HARASSMENT_OR_BULLYING
+  SPREADS_FALSE_INFORMATION
+  HATE_SPEECH_OR_SYMBOLS
+  PROMOTES_VIOLENCE_OR_DANGEROUS_BEHAVIOR
+  PROMOTES_ILLEGAL_ACTIVITY
+  PROMOTES_SELF_HARM_OR_SUICIDE
+  OTHER
 }
 
 model Account {
