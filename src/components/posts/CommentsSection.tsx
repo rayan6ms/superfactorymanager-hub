@@ -80,8 +80,6 @@ const countNestedReplies = (items: SerializedComment[]): number => {
   return items.reduce((total, item) => total + 1 + countNestedReplies(item.replies), 0);
 };
 
-const MIN_VISIBLE_REPLIES = 1;
-
 const insertReply = (
   items: SerializedComment[],
   parentId: string,
@@ -119,6 +117,38 @@ const findCommentById = (items: SerializedComment[], id: string): SerializedComm
   }
   return null;
 };
+
+type UpdateCommentTreeResult = {
+  items: SerializedComment[];
+  updated: boolean;
+};
+
+function updateCommentTree(
+  items: SerializedComment[],
+  id: string,
+  updater: (comment: SerializedComment) => SerializedComment,
+): UpdateCommentTreeResult {
+  let updated = false;
+
+  const next = items.map(item => {
+    if (item.id === id) {
+      updated = true;
+      return updater(item);
+    }
+
+    if (item.replies.length) {
+      const child = updateCommentTree(item.replies, id, updater);
+      if (child.updated) {
+        updated = true;
+        return { ...item, replies: child.items };
+      }
+    }
+
+    return item;
+  });
+
+  return { items: next, updated };
+}
 
 export default function CommentsSection({
   postSlug,
@@ -182,28 +212,6 @@ export default function CommentsSection({
     }
     return sorted.map(item => ({ ...item }));
   }, []);
-
-  const updateCommentTree = useCallback(
-    (items: SerializedComment[], id: string, updater: (comment: SerializedComment) => SerializedComment) => {
-      let updated = false;
-      const next = items.map(item => {
-        if (item.id === id) {
-          updated = true;
-          return updater(item);
-        }
-        if (item.replies.length) {
-          const child = updateCommentTree(item.replies, id, updater);
-          if (child.updated) {
-            updated = true;
-            return { ...item, replies: child.items };
-          }
-        }
-        return item;
-      });
-      return { items: next, updated };
-    },
-    [],
-  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -345,10 +353,10 @@ export default function CommentsSection({
         });
         if (insertedReplyCount > 0) {
           setVisibleRepliesMap(prev => {
-            const inlineLimit = Math.min(replyDisplayLimit, insertedReplyCount);
-            const current = prev[replyTargetId] ?? Math.min(MIN_VISIBLE_REPLIES, insertedReplyCount);
-            if (current >= inlineLimit) return prev;
-            return { ...prev, [replyTargetId]: Math.min(inlineLimit, current + 1) };
+            const current = prev[replyTargetId] ?? 0;
+            const next = Math.min(insertedReplyCount, current + 1);
+            if (next === current) return prev;
+            return { ...prev, [replyTargetId]: next };
           });
         }
         setReplyText("");
@@ -393,28 +401,39 @@ export default function CommentsSection({
   }, []);
 
   const getVisibleReplies = useCallback(
-    (commentId: string, totalReplies: number, baseline = replyDisplayLimit) => {
+    (commentId: string, depth: number, totalReplies: number, baseline?: number) => {
       if (totalReplies <= 0) return 0;
+
+      const allowedMax =
+        typeof baseline === "number" ? Math.min(baseline, totalReplies) : totalReplies;
+
       const stored = visibleRepliesMap[commentId];
-      const fallback = Math.max(0, Math.min(MIN_VISIBLE_REPLIES, totalReplies));
-      const allowedMax = Math.min(baseline, totalReplies);
-      const current = Math.min(typeof stored === "number" ? stored : fallback, allowedMax);
-      return Math.max(fallback, current);
+      const initial = getInitialVisibleReplies(depth, allowedMax);
+
+      const current = typeof stored === "number" ? stored : initial;
+      return Math.min(current, allowedMax);
     },
-    [replyDisplayLimit, visibleRepliesMap],
+    [visibleRepliesMap],
   );
 
   const showNextReply = useCallback(
-    (commentId: string, totalReplies: number, baseline = replyDisplayLimit) => {
+    (commentId: string, depth: number, totalReplies: number, baseline?: number) => {
       if (totalReplies <= 0) return;
+
       setVisibleRepliesMap(prev => {
-        const maxInline = Math.min(totalReplies, baseline);
-        const current = prev[commentId] ?? Math.min(MIN_VISIBLE_REPLIES, totalReplies);
-        if (current >= maxInline) return prev;
-        return { ...prev, [commentId]: Math.min(maxInline, current + 1) };
+        const allowedMax =
+          typeof baseline === "number" ? Math.min(baseline, totalReplies) : totalReplies;
+
+        const stored = prev[commentId];
+        const initial = getInitialVisibleReplies(depth, allowedMax);
+        const current = typeof stored === "number" ? stored : initial;
+
+        if (current >= allowedMax) return prev;
+
+        return { ...prev, [commentId]: current + 1 };
       });
     },
-    [replyDisplayLimit],
+    [setVisibleRepliesMap],
   );
 
   const handleSortChange = useCallback(
@@ -528,6 +547,18 @@ export default function CommentsSection({
     replyTextareaRef.current?.focus();
   }, [replyTargetId]);
 
+  const INITIAL_VISIBLE_REPLIES = 2;
+
+  const AUTO_EXPANDED_DEPTH = 2;
+
+  const getInitialVisibleReplies = (depth: number, totalReplies: number): number => {
+    if (totalReplies <= 0) return 0;
+    if (depth < AUTO_EXPANDED_DEPTH) {
+      return Math.min(INITIAL_VISIBLE_REPLIES, totalReplies);
+    }
+    return 0;
+  };
+
   const renderThread = (
     nodes: SerializedComment[],
     depth = 0,
@@ -535,17 +566,18 @@ export default function CommentsSection({
   ): ReactNode => {
     if (!nodes.length) return null;
     const { limitReplies = true } = options;
+
     return (
       <div
         className={clsx(
-          "space-y-4",
-          depth > 0 && "relative border-l border-white/10 pl-4 sm:pl-6",
+          "relative space-y-4",
+          depth > 0 && "pl-4 sm:pl-6",
         )}
       >
         {depth > 0 && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute -left-px top-2 bottom-0 w-px bg-linear-to-b from-white/20 via-white/10 to-transparent"
+            className="pointer-events-none absolute left-0 top-0 bottom-0 w-px bg-linear-to-b from-white/20 via-white/20 to-white/20"
           />
         )}
         {nodes.map(comment => {
@@ -554,20 +586,41 @@ export default function CommentsSection({
           const isAuthor = comment.author?.id === postAuthorId;
           const isHighlighted = highlightedComment === comment.id;
           const isReplyingHere = replyTargetId === comment.id;
-          const replyBaseline = replyDisplayLimit;
-          const visibleReplies = limitReplies
-            ? getVisibleReplies(comment.id, comment.replies.length, replyBaseline)
-            : comment.replies.length;
+
+          const maxInlineDepth = replyDisplayLimit;
+          const isAtDepthLimit = limitReplies && depth >= maxInlineDepth;
+
+          const totalReplies = comment.replies.length;
+
+          let visibleReplies = 0;
+          let remainingReplies = 0;
+          let hiddenReplies: SerializedComment[] = [];
+
+          if (!limitReplies) {
+            visibleReplies = totalReplies;
+            remainingReplies = 0;
+            hiddenReplies = [];
+          } else if (isAtDepthLimit) {
+            visibleReplies = 0;
+            remainingReplies = totalReplies;
+            hiddenReplies = comment.replies;
+          } else {
+            visibleReplies = getVisibleReplies(comment.id, depth, totalReplies);
+            remainingReplies = Math.max(totalReplies - visibleReplies, 0);
+            hiddenReplies = comment.replies.slice(visibleReplies);
+          }
+
           const repliesToRender = comment.replies.slice(0, visibleReplies);
-          const remainingReplies = Math.max(comment.replies.length - visibleReplies, 0);
-          const hiddenReplies = limitReplies ? comment.replies.slice(visibleReplies) : [];
           const hiddenReplyCount = limitReplies ? countNestedReplies(hiddenReplies) : 0;
-          const inlineLimit = Math.min(replyBaseline, comment.replies.length);
-          const canShowInline = limitReplies && visibleReplies < inlineLimit;
-          const showRestInThread = limitReplies && !canShowInline && remainingReplies > 0;
+
+          const canShowMoreInline = limitReplies && !isAtDepthLimit && remainingReplies > 0;
+
+          const showRestInThread = limitReplies && remainingReplies > 0 && isAtDepthLimit;
+
           const profileHref = comment.author?.name ? `/profile/${comment.author.name}` : null;
           const isHidden = comment.score < 0 && !revealedHidden[comment.id];
           const votingHere = Boolean(voting[comment.id]);
+
           if (isHidden) {
             return (
               <div
@@ -578,7 +631,7 @@ export default function CommentsSection({
                 {depth > 0 && (
                   <span
                     aria-hidden="true"
-                    className="pointer-events-none absolute -left-4 top-5 h-5 w-5 border-b border-l border-white/15 sm:-left-6 sm:w-6"
+                    className="pointer-events-none hidden sm:block absolute -left-4 sm:-left-6 top-6 h-6 w-6 rounded-bl-2xl border-b border-l border-[#413a40]"
                   />
                 )}
                 <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -602,24 +655,24 @@ export default function CommentsSection({
                       ) : profileHref ? (
                         <Link
                           href={profileHref}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white"
                         >
                           {initials(authorName)}
                         </Link>
                       ) : (
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
                           {initials(authorName)}
                         </span>
                       )}
                       {profileHref ? (
                         <Link
                           href={profileHref}
-                          className="font-semibold text-white underline-offset-4 hover:underline"
+                          className="font-semibold text-white text-sm underline-offset-4 hover:underline"
                         >
                           {authorName}
                         </Link>
                       ) : (
-                        <span className="font-semibold text-white">{authorName}</span>
+                        <span className="font-semibold text-white text-sm">{authorName}</span>
                       )}
                     </div>
                     <span className="rounded-full border border-white/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-white/70">
@@ -648,7 +701,7 @@ export default function CommentsSection({
               {depth > 0 && (
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute -left-4 top-5 h-5 w-5 border-b border-l border-white/15 sm:-left-6 sm:w-6"
+                  className="pointer-events-none hidden sm:block absolute -left-4 sm:-left-6 top-6 h-6 w-6 rounded-bl-2xl border-b border-l border-[#413a40]"
                 />
               )}
               <article
@@ -657,18 +710,18 @@ export default function CommentsSection({
                   isHighlighted && "ring-2 ring-brand-400",
                 )}
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-2 sm:items-start">
                   {avatarUrl ? (
                     profileHref ? (
                       <Link
                         href={profileHref}
-                        className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center"
+                        className="sm:row-span-2 h-10 w-10 shrink-0 rounded-full bg-cover bg-center"
                         style={{ backgroundImage: `url(${avatarUrl})` }}
                         aria-hidden="true"
                       />
                     ) : (
                       <span
-                        className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center"
+                        className="sm:row-span-2 h-10 w-10 shrink-0 rounded-full bg-cover bg-center"
                         style={{ backgroundImage: `url(${avatarUrl})` }}
                         aria-hidden="true"
                       />
@@ -676,44 +729,51 @@ export default function CommentsSection({
                   ) : profileHref ? (
                     <Link
                       href={profileHref}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white"
+                      className="sm:row-span-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white"
                     >
                       {initials(authorName)}
                     </Link>
                   ) : (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
+                    <span className="sm:row-span-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
                       {initials(authorName)}
                     </span>
                   )}
-                  <div className="flex-1 space-y-3">
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-                      {profileHref ? (
-                        <Link
-                          href={profileHref}
-                          className="font-semibold text-white underline-offset-4 hover:underline"
-                        >
-                          {authorName}
-                        </Link>
-                      ) : (
-                        <span className="font-semibold text-white">{authorName}</span>
-                      )}
-                      <span>•</span>
-                      <time dateTime={comment.createdAt}>{formatTimestamp(comment.createdAt)}</time>
-                      {isAuthor && (
-                        <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-emerald-100">
-                          Author
-                        </span>
-                      )}
-                    </div>
-                    <p className="whitespace-pre-wrap text-sm text-white/80">{comment.content}</p>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
+                    {profileHref ? (
+                      <Link
+                        href={profileHref}
+                        className="font-semibold text-white text-sm underline-offset-4 hover:underline"
+                      >
+                        {authorName}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold text-white text-sm">{authorName}</span>
+                    )}
+                    <span>•</span>
+                    <time dateTime={comment.createdAt}>
+                      {formatTimestamp(comment.createdAt)}
+                    </time>
+                    {isAuthor && (
+                      <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-emerald-100">
+                        Author
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1 sm:col-start-2 space-y-3">
+                    <p className="whitespace-pre-wrap wrap-anywhere text-sm text-white/80">
+                      {comment.content}
+                    </p>
+
                     <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-1 text-xs text-white/70">
+                      <div className="flex items-center text-xs text-white/70">
                         <button
                           type="button"
                           aria-pressed={comment.vote === "up"}
                           onClick={() => handleVote(comment, "up")}
                           className={clsx(
-                            "inline-flex h-8 w-8 items-center justify-center rounded-full transition",
+                            "inline-flex h-4 w-4 items-center justify-center rounded-full transition",
                             comment.vote === "up"
                               ? "text-brand-100"
                               : "text-white/60 hover:text-white",
@@ -723,13 +783,15 @@ export default function CommentsSection({
                           <ArrowBigUp className="h-4 w-4" aria-hidden="true" />
                           <span className="sr-only">Upvote</span>
                         </button>
-                        <span className="min-w-[2.5rem] text-center text-sm font-semibold text-white">{comment.score}</span>
+                        <span className="min-w-3 px-2 text-center text-sm font-semibold text-white">
+                          {comment.score}
+                        </span>
                         <button
                           type="button"
                           aria-pressed={comment.vote === "down"}
                           onClick={() => handleVote(comment, "down")}
                           className={clsx(
-                            "inline-flex h-8 w-8 items-center justify-center rounded-full transition",
+                            "inline-flex h-4 w-4 items-center justify-center rounded-full transition",
                             comment.vote === "down"
                               ? "text-brand-100"
                               : "text-white/60 hover:text-white",
@@ -751,6 +813,7 @@ export default function CommentsSection({
                           Reply
                         </button>
                       )}
+
                       <ReportButton
                         type="comment"
                         targetId={comment.id}
@@ -764,11 +827,13 @@ export default function CommentsSection({
                     </div>
                   </div>
                 </div>
-      </article>
+              </article>
 
               {isReplyingHere && canPost && (
                 <form className="space-y-2 pl-6" onSubmit={handleReplySubmit}>
-                  <p className="text-xs text-white/50">Replying to {replyTarget?.authorName ?? "this comment"}</p>
+                  <p className="text-xs text-white/50">
+                    Replying to {replyTarget?.authorName ?? "this comment"}
+                  </p>
                   <textarea
                     ref={replyTextareaRef}
                     rows={3}
@@ -782,8 +847,18 @@ export default function CommentsSection({
                       {replyText.length} / {COMMENT_MAX_LENGTH} characters
                     </span>
                     <div className="flex items-center gap-2">
-                      <Button type="submit" size="sm" disabled={!isReplyValid || replySubmitting}>
-                        {replySubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />} Submit reply
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={!isReplyValid || replySubmitting}
+                      >
+                        {replySubmitting && (
+                          <Loader2
+                            className="h-3.5 w-3.5 animate-spin"
+                            aria-hidden="true"
+                          />
+                        )}{" "}
+                        Submit reply
                       </Button>
                       <button
                         type="button"
@@ -802,6 +877,7 @@ export default function CommentsSection({
                   {renderThread(repliesToRender, depth + 1, options)}
                 </div>
               )}
+
               {limitReplies && remainingReplies > 0 && (
                 <div className="ml-4 sm:ml-6">
                   <button
@@ -809,7 +885,7 @@ export default function CommentsSection({
                     onClick={() =>
                       showRestInThread
                         ? setThreadRootId(comment.id)
-                        : showNextReply(comment.id, comment.replies.length, replyBaseline)
+                        : showNextReply(comment.id, depth, totalReplies)
                     }
                     className="text-xs font-semibold text-brand-200 underline-offset-4 transition hover:text-brand-100 hover:underline"
                   >

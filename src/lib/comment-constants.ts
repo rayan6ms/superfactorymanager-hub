@@ -1,6 +1,6 @@
 export const COMMENT_PAGE_SIZE = 10;
 export const COMMENT_MIN_LENGTH = 3;
-export const COMMENT_MAX_LENGTH = 2000;
+export const COMMENT_MAX_LENGTH = 720;
 
 export type CommentAuthor = {
   id: string;
