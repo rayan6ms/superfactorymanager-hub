@@ -759,11 +759,21 @@ export default function CommentsSection({
                         Author
                       </span>
                     )}
+                    {comment.isDeleted && (
+                      <span className="rounded-full border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-rose-100">
+                        Removed
+                      </span>
+                    )}
                   </div>
 
                   <div className="col-span-2 sm:col-span-1 sm:col-start-2 space-y-3">
-                    <p className="whitespace-pre-wrap wrap-anywhere text-sm text-white/80">
-                      {comment.content}
+                    <p
+                      className={clsx(
+                        "whitespace-pre-wrap wrap-anywhere text-sm",
+                        comment.isDeleted ? "text-white/50" : "text-white/80",
+                      )}
+                    >
+                      {comment.isDeleted ? "This comment was removed by moderators." : comment.content}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -778,7 +788,7 @@ export default function CommentsSection({
                               ? "text-brand-100"
                               : "text-white/60 hover:text-white",
                           )}
-                          disabled={votingHere}
+                          disabled={votingHere || comment.isDeleted}
                         >
                           <ArrowBigUp className="h-4 w-4" aria-hidden="true" />
                           <span className="sr-only">Upvote</span>
@@ -796,14 +806,14 @@ export default function CommentsSection({
                               ? "text-brand-100"
                               : "text-white/60 hover:text-white",
                           )}
-                          disabled={votingHere}
+                          disabled={votingHere || comment.isDeleted}
                         >
                           <ArrowBigDown className="h-4 w-4" aria-hidden="true" />
                           <span className="sr-only">Downvote</span>
                         </button>
                       </div>
 
-                      {canPost && (
+                      {canPost && !comment.isDeleted && (
                         <button
                           type="button"
                           onClick={() => toggleReply(comment)}
@@ -814,22 +824,24 @@ export default function CommentsSection({
                         </button>
                       )}
 
-                      <ReportButton
-                        type="comment"
-                        targetId={comment.id}
-                        targetLabel={`comment by ${authorName}`}
-                        canReport={canPost}
-                        loginHref={loginRedirect}
-                        className="border-none px-0 py-0 text-xs font-semibold text-white/60 hover:text-white"
-                      >
-                        Report
-                      </ReportButton>
+                      {!comment.isDeleted && (
+                        <ReportButton
+                          type="comment"
+                          targetId={comment.id}
+                          targetLabel={`comment by ${authorName}`}
+                          canReport={canPost}
+                          loginHref={loginRedirect}
+                          className="border-none px-0 py-0 text-xs font-semibold text-white/60 hover:text-white"
+                        >
+                          Report
+                        </ReportButton>
+                      )}
                     </div>
                   </div>
                 </div>
               </article>
 
-              {isReplyingHere && canPost && (
+              {isReplyingHere && canPost && !comment.isDeleted && (
                 <form className="space-y-2 pl-6" onSubmit={handleReplySubmit}>
                   <p className="text-xs text-white/50">
                     Replying to {replyTarget?.authorName ?? "this comment"}

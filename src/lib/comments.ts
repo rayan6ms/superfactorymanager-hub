@@ -22,6 +22,7 @@ const serializeComment = (
 ): SerializedComment => ({
   id: comment.id,
   content: comment.content,
+  isDeleted: comment.isDeleted,
   createdAt: comment.createdAt.toISOString(),
   updatedAt: comment.updatedAt.toISOString(),
   parentId: comment.parentId ?? null,

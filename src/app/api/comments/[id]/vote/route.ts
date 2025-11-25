@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getCommentById } from "@/lib/comments";
+import { interactionBlockReason } from "@/lib/moderation";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -10,14 +11,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await db.user.findUnique({ where: { email: session.user.email } });
+  const user = await db.user.findUnique({
+    where: { email: session.user.email },
+    select: {
+      id: true,
+      canVoteComments: true,
+      interactionBanUntil: true,
+    },
+  });
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const commentExists = await db.comment.findUnique({ where: { id }, select: { id: true } });
-  if (!commentExists) {
+  const commentExists = await db.comment.findUnique({ where: { id }, select: { id: true, isDeleted: true } });
+  if (!commentExists || commentExists.isDeleted) {
     return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+  }
+
+  const restriction = interactionBlockReason(user, "vote-comment");
+  if (restriction) {
+    return NextResponse.json({ error: restriction }, { status: 403 });
   }
 
   let body: unknown;

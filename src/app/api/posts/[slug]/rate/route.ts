@@ -1,41 +1,26 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { indexPost } from "@/lib/search";
+import { recomputePostRating } from "@/lib/posts";
+import { interactionBlockReason } from "@/lib/moderation";
 
 const COOLDOWN_SEC = 10;
-
-async function recompute(postId: string) {
-  const groups = await db.rating.groupBy({
-    where: { postId },
-    by: ["value"],
-    _count: { value: true },
-  });
-
-  let worked = 0;
-  let broken = 0;
-  for (const entry of groups) {
-    if (entry.value > 0) worked += entry._count.value;
-    else if (entry.value < 0) broken += entry._count.value;
-  }
-
-  const total = worked + broken;
-  const updated = await db.post.update({
-    where: { id: postId },
-    data: { rating: worked, ratingCount: total },
-    include: { dependencies: true, category: true, tags: { include: { tag: true } } },
-  });
-  await indexPost(updated);
-  return { updated, worked, broken, total };
-}
 
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await db.user.findUnique({ where: { email: session.user.email } });
+  const user = await db.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true, canVotePosts: true, interactionBanUntil: true },
+  });
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const restriction = interactionBlockReason(user, "vote-post");
+  if (restriction) {
+    return NextResponse.json({ error: restriction }, { status: 403 });
+  }
 
   let body: unknown;
   try {
@@ -51,7 +36,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
   const value = vote === "up" ? 1 : -1;
 
-  const post = await db.post.findUnique({ where: { slug } });
+  const post = await db.post.findFirst({ where: { slug, isDeleted: false } });
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (post.authorId === user.id) {
@@ -75,7 +60,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     update: { value, ratedAt: new Date() },
   });
 
-  const { updated, worked, broken, total } = await recompute(post.id);
+  const { updated, worked, broken, total } = await recomputePostRating(post.id);
   return NextResponse.json({ worked, broken, total, my: vote, post: updated });
 }
 
@@ -94,7 +79,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ slug: strin
     where: { userId_postId: { userId: user.id, postId: post.id } },
   }).catch(() => null);
 
-  const { updated, worked, broken, total } = await recompute(post.id);
+  const { updated, worked, broken, total } = await recomputePostRating(post.id);
   return NextResponse.json({ worked, broken, total, my: null, post: updated });
 }
 
@@ -104,7 +89,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   if (!session?.user?.email) return NextResponse.json({ my: null });
 
   const user = await db.user.findUnique({ where: { email: session.user.email } });
-  const post = await db.post.findUnique({ where: { slug } });
+  const post = await db.post.findFirst({ where: { slug, isDeleted: false } });
   if (!user || !post) return NextResponse.json({ my: null });
 
   const r = await db.rating.findUnique({

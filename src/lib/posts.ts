@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { db } from "@/lib/db";
+import { indexPost } from "@/lib/search";
 import { subDays } from "date-fns";
 
 export const POST_CARD_INCLUDE = {
@@ -19,6 +20,30 @@ export type PrismaClientOrTransaction = Pick<
   PrismaClient,
   "rating" | "post" | "postContributor"
 >;
+
+export async function recomputePostRating(postId: string) {
+  const groups = await db.rating.groupBy({
+    where: { postId },
+    by: ["value"],
+    _count: { value: true },
+  });
+
+  let worked = 0;
+  let broken = 0;
+  for (const entry of groups) {
+    if (entry.value > 0) worked += entry._count.value;
+    else if (entry.value < 0) broken += entry._count.value;
+  }
+
+  const total = worked + broken;
+  const updated = await db.post.update({
+    where: { id: postId },
+    data: { rating: worked, ratingCount: total },
+    include: { dependencies: true, category: true, tags: { include: { tag: true } } },
+  });
+  await indexPost(updated);
+  return { updated, worked, broken, total };
+}
 
 export async function resetPostRatings(client: PrismaClientOrTransaction, postId: string) {
   await client.rating.deleteMany({ where: { postId } });
@@ -58,6 +83,7 @@ export async function getPopularTags(limit = 12) {
 
 export async function getRecentPosts(limit = 6) {
   const posts = await db.post.findMany({
+    where: { isDeleted: false },
     orderBy: { uploadDate: "desc" },
     include: POST_CARD_INCLUDE,
     take: limit,
@@ -80,7 +106,7 @@ export async function getTrendingPosts(limit = 6) {
 
   const posts = ids.length
     ? await db.post.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: ids }, isDeleted: false },
       include: POST_CARD_INCLUDE,
     })
     : [];
@@ -95,6 +121,7 @@ export async function getTrendingPosts(limit = 6) {
   if (ordered.length >= limit) return ordered.slice(0, limit);
 
   const fallback = await db.post.findMany({
+    where: { isDeleted: false },
     orderBy: [
       { ratingCount: "desc" },
       { rating: "desc" },
@@ -139,7 +166,7 @@ export async function getRecommendedPosts(opts: {
   const { userId, searchTerm, limit = 6 } = opts;
   const recentUserPosts = userId
     ? await db.post.findMany({
-      where: { authorId: userId },
+      where: { authorId: userId, isDeleted: false },
       include: { tags: { include: { tag: true } } },
       orderBy: { uploadDate: "desc" },
       take: 5,
@@ -176,6 +203,7 @@ export async function getRecommendedPosts(opts: {
   const where: Prisma.PostWhereInput = {
     NOT: userId ? { authorId: userId } : undefined,
     OR: orFilters,
+    isDeleted: false,
   };
 
   const posts = await db.post.findMany({
@@ -219,7 +247,7 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
     limit = 24,
   } = opts;
 
-  const baseWhere: Prisma.PostWhereInput = {};
+  const baseWhere: Prisma.PostWhereInput = { isDeleted: false };
   if (minRating && minRating > 0) baseWhere.rating = { gte: minRating };
   if (categoryKey) baseWhere.category = { key: categoryKey };
   if (gameVersion) baseWhere.gameVersion = gameVersion;

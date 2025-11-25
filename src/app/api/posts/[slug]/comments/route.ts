@@ -7,6 +7,7 @@ import { getPostComments } from "@/lib/comments";
 import { COMMENT_PAGE_SIZE } from "@/lib/comment-constants";
 import { createNotification } from "@/lib/notifications";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
+import { interactionBlockReason } from "@/lib/moderation";
 
 function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
@@ -27,7 +28,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
   const sort = sortParam === "top" ? "top" : "recent";
 
-  const post = await db.post.findUnique({ where: { slug }, select: { id: true } });
+  const post = await db.post.findFirst({ where: { slug, isDeleted: false }, select: { id: true } });
   if (!post) {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
@@ -75,12 +76,29 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   }
 
   const [user, post] = await Promise.all([
-    db.user.findUnique({ where: { email: session.user.email }, select: { id: true, name: true, image: true } }),
-    db.post.findUnique({ where: { slug }, select: { id: true, authorId: true, slug: true, title: true } }),
+    db.user.findUnique({
+      where: { email: session.user.email },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        canCreateComments: true,
+        interactionBanUntil: true,
+      },
+    }),
+    db.post.findFirst({
+      where: { slug, isDeleted: false },
+      select: { id: true, authorId: true, slug: true, title: true },
+    }),
   ]);
 
   if (!user || !post) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const restriction = interactionBlockReason(user, "create-comment");
+  if (restriction) {
+    return NextResponse.json({ error: restriction }, { status: 403 });
   }
 
   try {
@@ -99,10 +117,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   if (parentId) {
     parentComment = await db.comment.findUnique({
       where: { id: parentId },
-      select: { id: true, authorId: true, postId: true },
+      select: { id: true, authorId: true, postId: true, isDeleted: true },
     });
     if (!parentComment || parentComment.postId !== post.id) {
       return badRequest("Invalid parent comment");
+    }
+    if (parentComment.isDeleted) {
+      return badRequest("Cannot reply to a removed comment");
     }
   }
 
@@ -131,6 +152,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   const serialized = {
     id: comment.id,
     content: comment.content,
+    isDeleted: false,
     createdAt: comment.createdAt.toISOString(),
     updatedAt: comment.updatedAt.toISOString(),
     parentId: comment.parentId,

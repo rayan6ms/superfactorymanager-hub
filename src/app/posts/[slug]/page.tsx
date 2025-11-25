@@ -71,6 +71,20 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
     return <div className="opacity-70">Not found</div>;
   }
 
+  if (post.isDeleted) {
+    return (
+      <Card className="space-y-4 p-6">
+        <h1 className="text-2xl font-semibold text-white">Post removed</h1>
+        <p className="text-white/70">
+          This post has been removed by the moderation team and is no longer available.
+        </p>
+        <Link href="/" className="text-brand-200 hover:text-brand-100 hover:underline">
+          Return to the homepage
+        </Link>
+      </Card>
+    );
+  }
+
   const groups = await db.rating.groupBy({
     where: { postId: post.id },
     by: ["value"],

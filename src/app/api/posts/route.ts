@@ -11,6 +11,7 @@ import { parseDependency, type ParsedDep } from "@/lib/deps";
 import { getSfmMatrix } from "@/lib/sfm";
 import { normalizeTags } from "@/lib/tags";
 import { recordPostContributor } from "@/lib/posts";
+import { interactionBlockReason } from "@/lib/moderation";
 import { ZodError } from "zod";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
@@ -47,7 +48,7 @@ export async function GET(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Bad query" }, { status: 400 });
   const { q, category, version, page, perPage } = parsed.data;
 
-  const baseWhere: Prisma.PostWhereInput = {};
+  const baseWhere: Prisma.PostWhereInput = { isDeleted: false };
   if (category) baseWhere.category = { key: category };
   if (version) baseWhere.modVersion = version;
   if (q && q.trim().length) {
@@ -168,9 +169,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Add more distinct tags to describe your post." }, { status: 400 });
     }
 
-    const user = await db.user.findUnique({ where: { email: session.user.email } });
+    const user = await db.user.findUnique({
+      where: { email: session.user.email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        canCreatePosts: true,
+        interactionBanUntil: true,
+      },
+    });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
+
+    const restriction = interactionBlockReason(user, "create-post");
+    if (restriction) {
+      return NextResponse.json({ error: restriction }, { status: 403 });
     }
 
     try {

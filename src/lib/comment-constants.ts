@@ -11,6 +11,7 @@ export type CommentAuthor = {
 export type SerializedComment = {
   id: string;
   content: string;
+  isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
   parentId: string | null;
