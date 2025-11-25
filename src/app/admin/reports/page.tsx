@@ -124,8 +124,15 @@ async function loadReports() {
 export default async function AdminReportsPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+
+  const tabParam = resolvedSearchParams.tab;
+  const tab = Array.isArray(tabParam) ? tabParam[0] : tabParam;
+
+  const activeTab = tab === "solved" ? "solved" : "open";
+
   const session = await auth();
   if (!isAdminEmail(session?.user?.email)) {
     notFound();
@@ -134,7 +141,6 @@ export default async function AdminReportsPage({
   const reports = await loadReports();
   const unresolved = reports.filter(report => !report.resolvedAt);
   const resolved = reports.filter(report => report.resolvedAt);
-  const activeTab = searchParams?.tab === "solved" ? "solved" : "open";
 
   return (
     <div className="space-y-6">
@@ -178,17 +184,15 @@ export default async function AdminReportsPage({
             <div className="flex overflow-hidden rounded-full border border-white/15">
               <Link
                 href="/admin/reports"
-                className={`px-3 py-1 text-xs font-semibold transition ${
-                  activeTab === "open" ? "bg-white/10 text-white" : "text-white/70 hover:text-white"
-                }`}
+                className={`px-3 py-1 text-xs font-semibold transition ${activeTab === "open" ? "bg-white/10 text-white" : "text-white/70 hover:text-white"
+                  }`}
               >
                 Open reports
               </Link>
               <Link
                 href="/admin/reports?tab=solved"
-                className={`px-3 py-1 text-xs font-semibold transition ${
-                  activeTab === "solved" ? "bg-white/10 text-white" : "text-white/70 hover:text-white"
-                }`}
+                className={`px-3 py-1 text-xs font-semibold transition ${activeTab === "solved" ? "bg-white/10 text-white" : "text-white/70 hover:text-white"
+                  }`}
               >
                 Solved reports
               </Link>
