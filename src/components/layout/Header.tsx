@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Search from "@/components/ui/Search";
-import { LogIn, LogOut, Plus, UserRoundPen } from "lucide-react";
+import { BookOpen, History, LogIn, LogOut, MessagesSquare, Plus, UserRoundPen } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import type { Session } from "next-auth";
 import type { SerializedNotification } from "@/lib/notifications";
@@ -76,6 +76,23 @@ export default function Header({ session, notifications }: HeaderProps) {
                           initialUnreadCount={unreadCount}
                         />
                         <div className="grid gap-2">
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                            <Link href="/guide" className="inline-flex">
+                              <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
+                                <BookOpen className="h-4 w-4" /> Guide
+                              </Button>
+                            </Link>
+                            <Link href="/contact" className="inline-flex">
+                              <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
+                                <MessagesSquare className="h-4 w-4" /> Contact
+                              </Button>
+                            </Link>
+                            <Link href="/changelog" className="inline-flex">
+                              <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
+                                <History className="h-4 w-4" /> Changelog
+                              </Button>
+                            </Link>
+                          </div>
                           <Link href="/posts/new" className="inline-flex">
                             <Button size="md" className="w-full justify-center gap-2">
                               <Plus /> New post
@@ -148,20 +165,39 @@ export default function Header({ session, notifications }: HeaderProps) {
                       scrollClassName="max-h-64"
                     />
                   )}
-                  {user && (
-                    <Link href="/profile" className="inline-flex">
-                      <Button size="md" variant="outline" className="w-full justify-center px-4">
-                        <UserRoundPen /> Edit profile
-                      </Button>
-                    </Link>
-                  )}
-                  {user && (
-                    <Link href="/posts/new" className="inline-flex">
-                      <Button size="md" className="w-full justify-center px-4">
-                        <Plus /> New post
-                      </Button>
-                    </Link>
-                  )}
+                  <div className="grid gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <Link href="/guide" className="inline-flex">
+                        <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
+                          <BookOpen className="h-4 w-4" /> Guide
+                        </Button>
+                      </Link>
+                      <Link href="/contact" className="inline-flex">
+                        <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
+                          <MessagesSquare className="h-4 w-4" /> Contact
+                        </Button>
+                      </Link>
+                      <Link href="/changelog" className="inline-flex">
+                        <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
+                          <History className="h-4 w-4" /> Changelog
+                        </Button>
+                      </Link>
+                    </div>
+                    {user && (
+                      <Link href="/profile" className="inline-flex">
+                        <Button size="md" variant="outline" className="w-full justify-center px-4">
+                          <UserRoundPen /> Edit profile
+                        </Button>
+                      </Link>
+                    )}
+                    {user && (
+                      <Link href="/posts/new" className="inline-flex">
+                        <Button size="md" className="w-full justify-center px-4">
+                          <Plus /> New post
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
                   {user ? (
                     <form
                       className="inline-flex"

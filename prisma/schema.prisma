@@ -35,6 +35,7 @@ model User {
   accounts               Account[]
   sessions               Session[]
   emailVerificationTokens EmailVerificationToken[]
+  suggestions            Suggestion[]
 }
 
 model Category {
@@ -140,6 +141,16 @@ model SfmVersion {
   @@index([uploadedAt])
 }
 
+model ChangelogEntry {
+  id          String   @id @default(cuid())
+  versionCode String   @unique
+  title       String
+  body        String
+  isLatest    Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+}
+
 model Post {
   id           String       @id @default(cuid())
   slug         String       @unique
@@ -238,6 +249,16 @@ model Comment {
   @@index([postId, createdAt])
   @@index([authorId, createdAt])
   @@index([parentId])
+}
+
+model Suggestion {
+  id        String   @id @default(cuid())
+  message   String
+  contactName  String?
+  contactEmail String?
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
 }
 
 model CommentVote {
