@@ -2,12 +2,36 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { Card } from "@/components/ui";
+import Pagination from "@/components/ui/Pagination";
 import { auth } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import RestoreDeletionButton from "./restore-deletion-button";
 
-async function loadFlaggedContent() {
+export default async function AdminDeletionsPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = searchParams ? await searchParams : undefined;
+  const postPageParam = params?.postPage;
+  const commentPageParam = params?.commentPage;
+  const requestedPostPage = parsePageParam(Array.isArray(postPageParam) ? postPageParam[0] : postPageParam, 1);
+  const requestedCommentPage = parsePageParam(Array.isArray(commentPageParam) ? commentPageParam[0] : commentPageParam, 1);
+  const PAGE_SIZE = 20;
+
+  const session = await auth();
+  if (!isAdminEmail(session?.user?.email)) {
+    notFound();
+  }
+
+  const [postCount, commentCount] = await Promise.all([
+    db.post.count({ where: { isDeleted: true } }),
+    db.comment.count({ where: { isDeleted: true } }),
+  ]);
+
+  const postTotalPages = getTotalPages(postCount, PAGE_SIZE);
+  const commentTotalPages = getTotalPages(commentCount, PAGE_SIZE);
+  const postPage = Math.min(requestedPostPage, postTotalPages);
+  const commentPage = Math.min(requestedCommentPage, commentTotalPages);
+
   const [posts, comments] = await Promise.all([
     db.post.findMany({
       where: { isDeleted: true },
@@ -16,6 +40,8 @@ async function loadFlaggedContent() {
         author: { select: { id: true, name: true, email: true } },
         category: { select: { name: true } },
       },
+      skip: (postPage - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
     }),
     db.comment.findMany({
       where: { isDeleted: true },
@@ -24,19 +50,26 @@ async function loadFlaggedContent() {
         author: { select: { id: true, name: true, email: true } },
         post: { select: { slug: true, title: true } },
       },
+      skip: (commentPage - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
     }),
   ]);
 
-  return { posts, comments };
-}
+  const buildPostPageHref = (page: number) => {
+    const qs = new URLSearchParams();
+    if (page > 1) qs.set("postPage", String(page));
+    if (commentPage > 1) qs.set("commentPage", String(commentPage));
+    const suffix = qs.toString();
+    return suffix ? `/admin/deletions?${suffix}` : "/admin/deletions";
+  };
 
-export default async function AdminDeletionsPage() {
-  const session = await auth();
-  if (!isAdminEmail(session?.user?.email)) {
-    notFound();
-  }
-
-  const { posts, comments } = await loadFlaggedContent();
+  const buildCommentPageHref = (page: number) => {
+    const qs = new URLSearchParams();
+    if (postPage > 1) qs.set("postPage", String(postPage));
+    if (page > 1) qs.set("commentPage", String(page));
+    const suffix = qs.toString();
+    return suffix ? `/admin/deletions?${suffix}` : "/admin/deletions";
+  };
 
   return (
     <div className="space-y-6">
@@ -51,17 +84,17 @@ export default async function AdminDeletionsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="space-y-1 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Posts</p>
-          <p className="text-2xl font-semibold text-white">{posts.length}</p>
+          <p className="text-2xl font-semibold text-white">{postCount}</p>
           <p className="text-xs text-white/60">Flagged posts hidden from the public feed.</p>
         </Card>
         <Card className="space-y-1 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Comments</p>
-          <p className="text-2xl font-semibold text-white">{comments.length}</p>
+          <p className="text-2xl font-semibold text-white">{commentCount}</p>
           <p className="text-xs text-white/60">Comments removed by moderators.</p>
         </Card>
         <Card className="space-y-1 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Total</p>
-          <p className="text-2xl font-semibold text-white">{posts.length + comments.length}</p>
+          <p className="text-2xl font-semibold text-white">{postCount + commentCount}</p>
           <p className="text-xs text-white/60">All content currently carrying a deletion flag.</p>
         </Card>
       </div>
@@ -75,7 +108,7 @@ export default async function AdminDeletionsPage() {
               <p className="text-sm text-white/60">Restore posts after confirming their content is safe.</p>
             </div>
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/70">
-              {posts.length} items
+              {postCount} items
             </span>
           </div>
 
@@ -107,6 +140,13 @@ export default async function AdminDeletionsPage() {
               </div>
             ))}
           </div>
+
+          <Pagination
+            currentPage={postPage}
+            pageSize={PAGE_SIZE}
+            total={postCount}
+            buildHref={buildPostPageHref}
+          />
         </Card>
 
         <Card className="space-y-4 p-5">
@@ -117,7 +157,7 @@ export default async function AdminDeletionsPage() {
               <p className="text-sm text-white/60">Unhide comment threads after issues are resolved.</p>
             </div>
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/70">
-              {comments.length} items
+              {commentCount} items
             </span>
           </div>
 
@@ -147,6 +187,13 @@ export default async function AdminDeletionsPage() {
               </div>
             ))}
           </div>
+
+          <Pagination
+            currentPage={commentPage}
+            pageSize={PAGE_SIZE}
+            total={commentCount}
+            buildHref={buildCommentPageHref}
+          />
         </Card>
       </div>
     </div>

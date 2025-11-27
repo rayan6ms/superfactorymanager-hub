@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui";
+import Pagination from "@/components/ui/Pagination";
 import PostCard from "@/components/posts/PostCard";
 import { db } from "@/lib/db";
 import { POST_CARD_INCLUDE, serializePost, type SerializedPost } from "@/lib/posts";
+import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -17,8 +19,14 @@ function getInitial(name: string | null | undefined) {
   return base.charAt(0).toUpperCase();
 }
 
-export default async function PublicProfilePage(props: { params: Promise<{ username: string }> }) {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function PublicProfilePage(props: { params: Promise<{ username: string }>; searchParams?: SearchParams }) {
   const { username } = await props.params;
+  const resolvedSearch = props.searchParams ? await props.searchParams : undefined;
+  const pageParam = resolvedSearch?.page;
+  const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
+  const PAGE_SIZE = 12;
   const normalized = username.toLowerCase();
 
   const user = await db.user.findUnique({
@@ -36,15 +44,27 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
     notFound();
   }
 
+  const totalPosts = await db.post.count({ where: { authorId: user.id, isDeleted: false } });
+  const totalPages = getTotalPages(totalPosts, PAGE_SIZE);
+  const currentPage = Math.min(requestedPage, totalPages);
   const posts = await db.post.findMany({
-    where: { authorId: user.id },
+    where: { authorId: user.id, isDeleted: false },
     orderBy: { uploadDate: "desc" },
     include: POST_CARD_INCLUDE,
+    skip: (currentPage - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
   });
 
   const serializedPosts: SerializedPost[] = posts.map(serializePost);
   const joined = formatDate(user.createdAt);
   const bio = user.bio?.trim();
+
+  const buildPageHref = (page: number) => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set("page", String(page));
+    const suffix = params.toString();
+    return suffix ? `/profile/${username}?${suffix}` : `/profile/${username}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -83,6 +103,14 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         ) : (
           <p className="text-sm text-white/60">No posts published yet.</p>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          pageSize={PAGE_SIZE}
+          total={totalPosts}
+          buildHref={buildPageHref}
+          className="pt-2"
+        />
       </Card>
     </div>
   );

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { parsePageParam } from "@/lib/pagination";
 
 const categorySchema = z.object({
   key: z.string().trim().min(1).max(50),
@@ -17,16 +18,29 @@ async function requireAdmin() {
   return session;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Not authorized." }, { status: 403 });
   }
 
-  const categories = await db.category.findMany({
-    orderBy: { name: "asc" },
-    include: { _count: { select: { posts: true } } },
-  });
+  const url = new URL(request.url);
+  const pageParam = url.searchParams.get("page") ?? undefined;
+  const limitParam = url.searchParams.get("limit") ?? undefined;
+  const page = parsePageParam(pageParam, 1);
+  const limit = parsePageParam(limitParam, 25);
+  const pageSize = Math.max(1, Math.min(limit, 100));
+  const skip = (page - 1) * pageSize;
+
+  const [categories, total] = await Promise.all([
+    db.category.findMany({
+      orderBy: { name: "asc" },
+      include: { _count: { select: { posts: true } } },
+      skip,
+      take: pageSize,
+    }),
+    db.category.count(),
+  ]);
 
   return NextResponse.json({
     categories: categories.map(category => ({
@@ -35,6 +49,7 @@ export async function GET() {
       name: category.name,
       postCount: category._count.posts,
     })),
+    total,
   });
 }
 

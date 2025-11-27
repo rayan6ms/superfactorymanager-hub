@@ -1,9 +1,34 @@
 import ChangelogList from "@/components/changelog/ChangelogList";
+import Pagination from "@/components/ui/Pagination";
 import { getChangelogEntries, refreshChangelog } from "@/lib/changelog";
+import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
-export default async function ChangelogPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+type Props = {
+  searchParams?: SearchParams;
+};
+
+export default async function ChangelogPage({ searchParams }: Props) {
+  const params = searchParams ? await searchParams : undefined;
+  const pageParam = params?.page;
+  const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
+  const PAGE_SIZE = 10;
+
   await refreshChangelog();
-  const entries = await getChangelogEntries();
+  const initial = await getChangelogEntries({ page: requestedPage, limit: PAGE_SIZE });
+  const totalPages = getTotalPages(initial.total, PAGE_SIZE);
+  const currentPage = Math.min(requestedPage, totalPages);
+  const result = currentPage === requestedPage
+    ? initial
+    : await getChangelogEntries({ page: currentPage, limit: PAGE_SIZE });
+
+  const buildPageHref = (page: number) => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set("page", String(page));
+    const suffix = params.toString();
+    return suffix ? `/changelog?${suffix}` : "/changelog";
+  };
 
   return (
     <main className="space-y-6 px-4 pb-16 pt-12">
@@ -15,7 +40,14 @@ export default async function ChangelogPage() {
         </p>
       </div>
 
-      <ChangelogList entries={entries} />
+      <ChangelogList entries={result.entries} />
+
+      <Pagination
+        currentPage={currentPage}
+        pageSize={PAGE_SIZE}
+        total={result.total}
+        buildHref={buildPageHref}
+      />
     </main>
   );
 }

@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { ReportReason } from "@prisma/client";
 import { Card } from "@/components/ui";
+import Pagination from "@/components/ui/Pagination";
 import { auth } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import ReportActionControls from "./ReportActionControls";
 import ReopenReportButton from "./ReopenReportButton";
 
@@ -81,43 +83,41 @@ function formatReason(reason: ReportReason) {
   }
 }
 
-async function loadReports() {
-  const [reports, counts] = await Promise.all([
-    db.report.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        reporter: { select: { id: true, name: true, email: true, image: true } },
-        post: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            isDeleted: true,
-            author: { select: { id: true, name: true, email: true, image: true } },
-          },
-        },
-        comment: {
-          select: {
-            id: true,
-            isDeleted: true,
-            author: { select: { id: true, name: true, email: true, image: true } },
-            post: { select: { slug: true, title: true } },
-          },
-        },
-        actions: {
-          include: { actor: { select: { id: true, name: true, email: true, image: true } } },
-          orderBy: { createdAt: "desc" },
+async function loadReports(where: { resolvedAt?: { equals?: Date | null; not?: null } }, skip: number, take: number, reporterCountMap: Map<string | null, number>) {
+  const reports = await db.report.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      reporter: { select: { id: true, name: true, email: true, image: true } },
+      post: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          isDeleted: true,
+          author: { select: { id: true, name: true, email: true, image: true } },
         },
       },
-    }),
-    db.report.groupBy({ by: ["reporterId"], _count: { _all: true } }),
-  ]);
-
-  const countMap = new Map(counts.map(item => [item.reporterId, item._count._all]));
+      comment: {
+        select: {
+          id: true,
+          isDeleted: true,
+          author: { select: { id: true, name: true, email: true, image: true } },
+          post: { select: { slug: true, title: true } },
+        },
+      },
+      actions: {
+        include: { actor: { select: { id: true, name: true, email: true, image: true } } },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+    skip,
+    take,
+  });
 
   return reports.map(report => ({
     ...report,
-    otherReportsByReporter: Math.max(0, (countMap.get(report.reporterId) ?? 1) - 1),
+    otherReportsByReporter: Math.max(0, (reporterCountMap.get(report.reporterId ?? null) ?? 1) - 1),
   }));
 }
 
@@ -138,9 +138,35 @@ export default async function AdminReportsPage({
     notFound();
   }
 
-  const reports = await loadReports();
-  const unresolved = reports.filter(report => !report.resolvedAt);
-  const resolved = reports.filter(report => report.resolvedAt);
+  const reporterCounts = await db.report.groupBy({ by: ["reporterId"], _count: { _all: true } });
+  const reporterCountMap = new Map(reporterCounts.map(item => [item.reporterId ?? null, item._count._all]));
+
+  const PAGE_SIZE = 20;
+  const pageParam = resolvedSearchParams.page;
+  const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
+
+  const openCountPromise = db.report.count({ where: { resolvedAt: null } });
+  const solvedCountPromise = db.report.count({ where: { resolvedAt: { not: null } } });
+
+  const [openCount, solvedCount] = await Promise.all([openCountPromise, solvedCountPromise]);
+  const totalCount = openCount + solvedCount;
+
+  const activeWhere = activeTab === "solved" ? { resolvedAt: { not: null } } : { resolvedAt: null };
+  const totalForTab = activeTab === "solved" ? solvedCount : openCount;
+  const totalPages = getTotalPages(totalForTab, PAGE_SIZE);
+  const currentPage = Math.min(requestedPage, totalPages);
+  const reports = await loadReports(activeWhere, (currentPage - 1) * PAGE_SIZE, PAGE_SIZE, reporterCountMap);
+
+  const buildPageHref = (page: number) => {
+    const params = new URLSearchParams();
+    if (activeTab === "solved") params.set("tab", "solved");
+    if (page > 1) params.set("page", String(page));
+    const suffix = params.toString();
+    return suffix ? `/admin/reports?${suffix}` : "/admin/reports";
+  };
+
+  const openReports = activeTab === "open" ? reports : [];
+  const resolvedReports = activeTab === "solved" ? reports : [];
 
   return (
     <div className="space-y-6">
@@ -156,17 +182,17 @@ export default async function AdminReportsPage({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="space-y-1 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Open</p>
-          <p className="text-2xl font-semibold text-white">{unresolved.length}</p>
+          <p className="text-2xl font-semibold text-white">{openCount}</p>
           <p className="text-xs text-white/60">Reports without a resolution timestamp.</p>
         </Card>
         <Card className="space-y-1 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Solved</p>
-          <p className="text-2xl font-semibold text-white">{resolved.length}</p>
+          <p className="text-2xl font-semibold text-white">{solvedCount}</p>
           <p className="text-xs text-white/60">Reports closed by moderators.</p>
         </Card>
         <Card className="space-y-1 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Total</p>
-          <p className="text-2xl font-semibold text-white">{reports.length}</p>
+          <p className="text-2xl font-semibold text-white">{totalCount}</p>
           <p className="text-xs text-white/60">Stored reports ordered by newest first.</p>
         </Card>
       </div>
@@ -201,11 +227,11 @@ export default async function AdminReportsPage({
         </div>
 
         {activeTab === "open" ? (
-          unresolved.length === 0 ? (
+          openReports.length === 0 ? (
             <div className="px-5 py-10 text-center text-sm text-white/60">No open reports.</div>
           ) : (
             <ul className="divide-y divide-white/10">
-              {unresolved.map(report => {
+              {openReports.map(report => {
                 const target = formatTarget(report);
                 const created = formatDistanceToNow(new Date(report.createdAt), { addSuffix: true });
                 const offender = report.comment?.author ?? report.post?.author ?? null;
@@ -370,11 +396,11 @@ export default async function AdminReportsPage({
               })}
             </ul>
           )
-        ) : resolved.length === 0 ? (
+        ) : resolvedReports.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-white/60">No solved reports yet.</div>
         ) : (
           <ul className="divide-y divide-white/10">
-            {resolved.map(report => {
+            {resolvedReports.map(report => {
               const target = formatTarget(report);
               const reporterName = report.reporter?.name ?? "Unknown reporter";
               const offender = report.comment?.author ?? report.post?.author ?? null;
@@ -425,6 +451,14 @@ export default async function AdminReportsPage({
             })}
           </ul>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          pageSize={PAGE_SIZE}
+          total={totalForTab}
+          buildHref={buildPageHref}
+          className="px-5 py-4"
+        />
       </Card>
     </div>
   );

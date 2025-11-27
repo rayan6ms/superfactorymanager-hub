@@ -108,24 +108,37 @@ export async function refreshChangelog(opts?: { ignoreCooldown?: boolean }) {
   return { inserted: newEntries.length };
 }
 
-export async function getChangelogEntries(): Promise<ChangelogEntry[]> {
-  const rows = await db.changelogEntry.findMany({
-    orderBy: [
-      { publishedAt: "desc" },
-      { createdAt: "desc" },
-    ],
-  });
+export async function getChangelogEntries(opts?: { page?: number; limit?: number }): Promise<{ entries: ChangelogEntry[]; total: number }> {
+  const pageSize = Math.max(1, Math.min(opts?.limit ?? 10, 50));
+  const currentPage = Math.max(1, Math.floor(opts?.page ?? 1));
+  const skip = (currentPage - 1) * pageSize;
 
-  if (!rows.length) {
-    await refreshChangelog({ ignoreCooldown: true });
-    const refreshed = await db.changelogEntry.findMany({
+  let [rows, total] = await Promise.all([
+    db.changelogEntry.findMany({
       orderBy: [
         { publishedAt: "desc" },
         { createdAt: "desc" },
       ],
-    });
-    return refreshed;
+      skip,
+      take: pageSize,
+    }),
+    db.changelogEntry.count(),
+  ]);
+
+  if (!total) {
+    await refreshChangelog({ ignoreCooldown: true });
+    [rows, total] = await Promise.all([
+      db.changelogEntry.findMany({
+        orderBy: [
+          { publishedAt: "desc" },
+          { createdAt: "desc" },
+        ],
+        skip,
+        take: pageSize,
+      }),
+      db.changelogEntry.count(),
+    ]);
   }
 
-  return rows;
+  return { entries: rows, total };
 }

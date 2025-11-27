@@ -4,6 +4,14 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 import { Card } from "@/components/ui";
+import Pagination from "@/components/ui/Pagination";
+import { parsePageParam, getTotalPages } from "@/lib/pagination";
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+type Props = {
+  searchParams?: SearchParams;
+};
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -13,7 +21,12 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: Props) {
+  const params = searchParams ? await searchParams : undefined;
+  const pageParam = params?.page;
+  const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
+  const PAGE_SIZE = 10;
+
   const session = await auth();
 
   if (!session?.user?.email) {
@@ -28,23 +41,37 @@ export default async function ProfilePage() {
       email: true,
       image: true,
       bio: true,
-      posts: {
-        orderBy: { uploadDate: "desc" },
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          uploadDate: true,
-          rating: true,
-          ratingCount: true,
-        },
-      },
     },
   });
 
   if (!user) {
     redirect(`/login?next=${encodeURIComponent("/profile")}`);
   }
+
+  const totalPosts = await db.post.count({ where: { authorId: user.id } });
+  const totalPages = getTotalPages(totalPosts, PAGE_SIZE);
+  const currentPage = Math.min(requestedPage, totalPages);
+  const posts = await db.post.findMany({
+    where: { authorId: user.id },
+    orderBy: { uploadDate: "desc" },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      uploadDate: true,
+      rating: true,
+      ratingCount: true,
+    },
+    skip: (currentPage - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
+  });
+
+  const buildPageHref = (page: number) => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set("page", String(page));
+    const suffix = params.toString();
+    return suffix ? `/profile?${suffix}` : "/profile";
+  };
 
   return (
     <main className="container-max flex flex-col gap-6 pb-12 pt-8">
@@ -62,11 +89,11 @@ export default async function ProfilePage() {
             Create new post
           </Link>
         </div>
-        {user.posts.length === 0 ? (
+        {posts.length === 0 ? (
           <p className="text-sm text-white/60">You haven’t published any posts yet.</p>
         ) : (
           <ul className="divide-y divide-white/10 text-sm text-white/80">
-            {user.posts.map(post => (
+            {posts.map(post => (
               <li key={post.id} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <Link href={`/posts/${post.slug}`} className="text-base font-semibold text-white transition hover:text-brand-300">
@@ -95,6 +122,14 @@ export default async function ProfilePage() {
             ))}
           </ul>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          pageSize={PAGE_SIZE}
+          total={totalPosts}
+          buildHref={buildPageHref}
+          className="pt-2"
+        />
       </Card>
     </main>
   );

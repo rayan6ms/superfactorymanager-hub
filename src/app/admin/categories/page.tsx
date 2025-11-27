@@ -1,21 +1,41 @@
 import { notFound } from "next/navigation";
 import { PlusCircle } from "lucide-react";
 import { Card } from "@/components/ui";
+import Pagination from "@/components/ui/Pagination";
 import { auth } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import CategoryManager from "./CategoryManager";
 
-export default async function AdminCategoriesPage() {
+export default async function AdminCategoriesPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = searchParams ? await searchParams : undefined;
+  const pageParam = params?.page;
+  const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
+  const PAGE_SIZE = 25;
+
   const session = await auth();
   if (!isAdminEmail(session?.user?.email)) {
     notFound();
   }
 
+  const totalCount = await db.category.count();
+  const totalPages = getTotalPages(totalCount, PAGE_SIZE);
+  const currentPage = Math.min(requestedPage, totalPages);
+
   const categories = await db.category.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { posts: true } } },
+    skip: (currentPage - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
   });
+
+  const buildPageHref = (page: number) => {
+    const qs = new URLSearchParams();
+    if (page > 1) qs.set("page", String(page));
+    const suffix = qs.toString();
+    return suffix ? `/admin/categories?${suffix}` : "/admin/categories";
+  };
 
   return (
     <div className="space-y-6">
@@ -41,6 +61,16 @@ export default async function AdminCategoriesPage() {
           name: category.name,
           postCount: category._count.posts,
         }))}
+        totalCount={totalCount}
+        currentPage={currentPage}
+        pageSize={PAGE_SIZE}
+      />
+
+      <Pagination
+        currentPage={currentPage}
+        pageSize={PAGE_SIZE}
+        total={totalCount}
+        buildHref={buildPageHref}
       />
     </div>
   );

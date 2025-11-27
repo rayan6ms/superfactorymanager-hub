@@ -1,8 +1,10 @@
 import Link from "next/link";
 import PostCard from "@/components/posts/PostCard";
 import Card from "@/components/ui/Card";
+import Pagination from "@/components/ui/Pagination";
 import { db } from "@/lib/db";
 import { POST_CARD_INCLUDE, serializePost } from "@/lib/posts";
+import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
 function parseTagsParam(value: string) {
   return value
@@ -26,10 +28,20 @@ export default async function TagsPage({ searchParams }: Props) {
 
   const selectedSlugs =
     typeof tagsParam === "string" ? parseTagsParam(tagsParam) : [];
+  const pageParam = Array.isArray(params.page) ? params.page[0] : params.page;
+  const requestedPage = parsePageParam(pageParam, 1);
+  const PAGE_SIZE = 30;
+
+  const totalTags = await db.tag.count();
+  const totalPages = getTotalPages(totalTags, PAGE_SIZE);
+  const currentPage = Math.min(requestedPage, totalPages);
+  const skip = (currentPage - 1) * PAGE_SIZE;
 
   const tags = await db.tag.findMany({
     orderBy: { posts: { _count: "desc" } },
     include: { _count: { select: { posts: true } } },
+    skip,
+    take: PAGE_SIZE,
   });
 
   const selectedSet = new Set(selectedSlugs);
@@ -68,6 +80,16 @@ export default async function TagsPage({ searchParams }: Props) {
     return `/tags${query}`;
   };
 
+  const buildPageHref = (page: number) => {
+    const query = new URLSearchParams();
+    if (selectedSlugs.length) {
+      query.set("tags", selectedSlugs.join(","));
+    }
+    if (page > 1) query.set("page", String(page));
+    const suffix = query.toString();
+    return suffix ? `/tags?${suffix}` : "/tags";
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-3">
@@ -102,6 +124,13 @@ export default async function TagsPage({ searchParams }: Props) {
             );
           })}
         </div>
+        <Pagination
+          currentPage={currentPage}
+          pageSize={PAGE_SIZE}
+          total={totalTags}
+          buildHref={buildPageHref}
+          className="mt-4"
+        />
         {selectedSlugs.length > 1 && (
           <p className="mt-3 text-xs text-white/60">
             Multiple tags are separated by commas in the URL so you

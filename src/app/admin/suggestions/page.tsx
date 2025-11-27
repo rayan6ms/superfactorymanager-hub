@@ -1,27 +1,42 @@
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { Card, Badge } from "@/components/ui";
+import Pagination from "@/components/ui/Pagination";
 import { auth } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { Inbox, Mail, User } from "lucide-react";
+import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
-async function loadSuggestions() {
-  return db.suggestion.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      author: { select: { id: true, name: true, email: true } },
-    },
-  });
-}
+export default async function AdminSuggestionsPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = searchParams ? await searchParams : undefined;
+  const pageParam = params?.page;
+  const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
+  const PAGE_SIZE = 20;
 
-export default async function AdminSuggestionsPage() {
   const session = await auth();
   if (!isAdminEmail(session?.user?.email)) {
     notFound();
   }
 
-  const suggestions = await loadSuggestions();
+  const total = await db.suggestion.count();
+  const totalPages = getTotalPages(total, PAGE_SIZE);
+  const currentPage = Math.min(requestedPage, totalPages);
+  const suggestions = await db.suggestion.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      author: { select: { id: true, name: true, email: true } },
+    },
+    skip: (currentPage - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
+  });
+
+  const buildPageHref = (page: number) => {
+    const qs = new URLSearchParams();
+    if (page > 1) qs.set("page", String(page));
+    const suffix = qs.toString();
+    return suffix ? `/admin/suggestions?${suffix}` : "/admin/suggestions";
+  };
 
   return (
     <div className="space-y-6">
@@ -40,7 +55,7 @@ export default async function AdminSuggestionsPage() {
             <p className="text-sm text-white/60">Newest submissions appear first.</p>
           </div>
           <Badge className="border border-white/20 text-white/80">
-            {suggestions.length} item{suggestions.length === 1 ? "" : "s"}
+            {total} item{total === 1 ? "" : "s"}
           </Badge>
         </div>
 
@@ -73,6 +88,13 @@ export default async function AdminSuggestionsPage() {
             ))}
           </ul>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          pageSize={PAGE_SIZE}
+          total={total}
+          buildHref={buildPageHref}
+        />
       </Card>
     </div>
   );

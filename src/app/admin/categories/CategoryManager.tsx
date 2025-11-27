@@ -13,10 +13,14 @@ type CategorySummary = {
 
 type Props = {
   initialCategories: CategorySummary[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
 };
 
-export default function CategoryManager({ initialCategories }: Props) {
+export default function CategoryManager({ initialCategories, totalCount, currentPage, pageSize }: Props) {
   const [categories, setCategories] = useState<CategorySummary[]>(initialCategories);
+  const [total, setTotal] = useState(totalCount);
   const [key, setKey] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -44,6 +48,7 @@ export default function CategoryManager({ initialCategories }: Props) {
         return;
       }
       setCategories(prev => [...prev, data.category]);
+      setTotal(prev => prev + 1);
       setKey("");
       setName("");
       setMessage("Category created.");
@@ -70,6 +75,7 @@ export default function CategoryManager({ initialCategories }: Props) {
         return;
       }
       setCategories(prev => prev.filter(category => category.key !== categoryKey));
+      setTotal(prev => Math.max(0, prev - 1));
       setMessage("Category deleted.");
     } catch (error) {
       console.error(error);
@@ -83,13 +89,19 @@ export default function CategoryManager({ initialCategories }: Props) {
     setBusy(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/admin/categories");
+      const params = new URLSearchParams();
+      params.set("page", String(currentPage));
+      params.set("limit", String(pageSize));
+      const res = await fetch(`/api/admin/categories?${params.toString()}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setMessage(data?.error || "Could not refresh categories.");
         return;
       }
       setCategories(data.categories ?? []);
+      if (typeof data.total === "number") {
+        setTotal(data.total);
+      }
       setMessage("List refreshed.");
     } catch (error) {
       console.error(error);
@@ -153,7 +165,7 @@ export default function CategoryManager({ initialCategories }: Props) {
             <p className="text-sm text-white/60">Only empty categories can be removed.</p>
           </div>
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
-            {sorted.length} total
+            {total} total
           </span>
         </div>
         {sorted.length ? (

@@ -2,8 +2,10 @@ import HideHeaderSearch from "@/components/layout/HideHeaderSearch";
 import PostCard from "@/components/posts/PostCard";
 import PostsFilterBar from "@/components/posts/PostsFilterBar";
 import Card from "@/components/ui/Card";
+import Pagination from "@/components/ui/Pagination";
 import { db } from "@/lib/db";
 import { searchPostsWithFilters, type PostsFilterOptions } from "@/lib/posts";
+import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import { getSfmMatrix } from "@/lib/sfm";
 
 const ORDER_VALUES: PostsFilterOptions["order"][] = [
@@ -40,14 +42,17 @@ export default async function PostsPage({ searchParams }: Props) {
   const category = getParam(params, "category");
   const gameVersion = getParam(params, "gameVersion");
   const sfmVersion = getParam(params, "sfmVersion");
+  const pageParam = getParam(params, "page");
 
   const order = ORDER_VALUES.includes(orderParam as PostsFilterOptions["order"])
     ? (orderParam as PostsFilterOptions["order"])
     : "most-views";
 
   const minRatingNumber = Number(minRatingParam) || undefined;
+  const requestedPage = parsePageParam(pageParam, 1);
+  const PAGE_SIZE = 30;
 
-  const [categories, sfmMatrix, posts] = await Promise.all([
+  const [categories, sfmMatrix, initialResult] = await Promise.all([
     db.category.findMany({
       orderBy: { name: "asc" },
       select: { id: true, key: true, name: true },
@@ -60,9 +65,40 @@ export default async function PostsPage({ searchParams }: Props) {
       categoryKey: category || undefined,
       gameVersion: gameVersion || undefined,
       sfmVersion: sfmVersion || undefined,
-      limit: 30,
+      limit: PAGE_SIZE,
+      page: requestedPage,
     }),
   ]);
+
+  const totalPages = getTotalPages(initialResult.total, PAGE_SIZE);
+  const activePage = Math.min(requestedPage, totalPages);
+  const needsRefetch = activePage !== requestedPage;
+  const finalResult = needsRefetch
+    ? await searchPostsWithFilters({
+      q: q || undefined,
+      order,
+      minRating: minRatingNumber,
+      categoryKey: category || undefined,
+      gameVersion: gameVersion || undefined,
+      sfmVersion: sfmVersion || undefined,
+      limit: PAGE_SIZE,
+      page: activePage,
+    })
+    : initialResult;
+
+  const posts = finalResult.posts;
+  const buildPageHref = (page: number) => {
+    const query = new URLSearchParams();
+    if (q) query.set("q", q);
+    if (order) query.set("order", order);
+    if (minRatingParam) query.set("minRating", minRatingParam);
+    if (category) query.set("category", category);
+    if (gameVersion) query.set("gameVersion", gameVersion);
+    if (sfmVersion) query.set("sfmVersion", sfmVersion);
+    if (page > 1) query.set("page", String(page));
+    const suffix = query.toString();
+    return suffix ? `/posts?${suffix}` : "/posts";
+  };
 
   return (
     <div className="space-y-8">
@@ -101,6 +137,14 @@ export default async function PostsPage({ searchParams }: Props) {
         ) : (
           <Card className="p-8 text-center text-white/70">No posts match the selected filters.</Card>
         )}
+
+        <Pagination
+          currentPage={activePage}
+          pageSize={PAGE_SIZE}
+          total={finalResult.total}
+          buildHref={buildPageHref}
+          className="pt-2"
+        />
       </section>
     </div>
   );

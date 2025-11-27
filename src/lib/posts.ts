@@ -234,6 +234,7 @@ export type PostsFilterOptions = {
   gameVersion?: string;
   sfmVersion?: string;
   limit?: number;
+  page?: number;
 };
 
 export async function searchPostsWithFilters(opts: PostsFilterOptions) {
@@ -245,7 +246,12 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
     gameVersion,
     sfmVersion,
     limit = 24,
+    page = 1,
   } = opts;
+
+  const pageSize = Math.max(1, Math.min(limit, 100));
+  const currentPage = Math.max(1, Math.floor(page));
+  const skip = (currentPage - 1) * pageSize;
 
   const baseWhere: Prisma.PostWhereInput = { isDeleted: false };
   if (minRating && minRating > 0) baseWhere.rating = { gte: minRating };
@@ -257,7 +263,8 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
     try {
       const { postsIndex } = await import("@/lib/search");
       const res = await postsIndex().search(q, {
-        limit,
+        limit: pageSize,
+        offset: skip,
         filter: [
           ...(categoryKey ? [`categoryKey = "${categoryKey}"`] : []),
           ...(gameVersion ? [`gameVersion = "${gameVersion}"`] : []),
@@ -272,7 +279,8 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
           .map((id: string) => map.get(id))
           .filter((post): post is PostWithRelations => Boolean(post))
           .map(serializePost);
-        return ordered;
+        const total = res.estimatedTotalHits ?? ordered.length;
+        return { posts: ordered, total };
       }
     } catch {
       // fall through to Prisma search
@@ -320,6 +328,10 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
       break;
   }
 
-  const posts = await db.post.findMany({ where, orderBy, include: POST_CARD_INCLUDE, take: limit });
-  return posts.map(serializePost);
+  const [posts, total] = await Promise.all([
+    db.post.findMany({ where, orderBy, include: POST_CARD_INCLUDE, take: pageSize, skip }),
+    db.post.count({ where }),
+  ]);
+
+  return { posts: posts.map(serializePost), total };
 }
