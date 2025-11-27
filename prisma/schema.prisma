@@ -157,6 +157,7 @@ model Post {
   ratings      Rating[]
   views        Int          @default(0)
   uploadDate   DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt @default(now())
   code         String
   codeStatus   CodeStatus   @default(UNVERIFIED)
   codeNote     String?

@@ -85,14 +85,14 @@ export default function ExternalLinkGuard() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 py-6 sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
       role="dialog"
       aria-modal="true"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) close();
       }}
     >
-      <div className="w-full max-w-lg space-y-4 rounded-3xl border border-white/15 bg-black/80 p-6 text-white shadow-2xl backdrop-blur-sm">
+      <div className="w-full max-w-lg space-y-4 rounded-3xl border border-white/15 bg-black/80 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100vh-3rem)] overflow-y-auto">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 text-amber-200">
             <ShieldAlert className="h-5 w-5" aria-hidden />

@@ -166,7 +166,7 @@ export default function ReportButton({
     mounted && open
       ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 py-6 backdrop-blur sm:items-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur"
           role="dialog"
           aria-modal="true"
           onMouseDown={event => {

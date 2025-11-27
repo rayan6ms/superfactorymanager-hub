@@ -78,14 +78,14 @@ export default function DeletionFlagDialog({
     open && typeof document !== "undefined"
       ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/75 px-4 py-6 sm:items-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-6"
           role="dialog"
           aria-modal="true"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) close();
           }}
         >
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-black/80 p-6 shadow-2xl backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-black/80 p-6 shadow-2xl backdrop-blur-sm max-h-[calc(100vh-3rem)] overflow-y-auto">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2 text-amber-200">
                 <AlertTriangle className="h-5 w-5" aria-hidden />

@@ -11,7 +11,7 @@ async function loadFlaggedContent() {
   const [posts, comments] = await Promise.all([
     db.post.findMany({
       where: { isDeleted: true },
-      orderBy: { uploadDate: "desc" },
+      orderBy: { updatedAt: "desc" },
       include: {
         author: { select: { id: true, name: true, email: true } },
         category: { select: { name: true } },
@@ -19,7 +19,7 @@ async function loadFlaggedContent() {
     }),
     db.comment.findMany({
       where: { isDeleted: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
       include: {
         author: { select: { id: true, name: true, email: true } },
         post: { select: { slug: true, title: true } },
@@ -93,7 +93,7 @@ export default async function AdminDeletionsPage() {
                     </Link>
                     <p className="text-sm text-white/60">Category: {post.category?.name ?? "—"}</p>
                     <p className="text-xs text-white/50">
-                      Flagged {formatDistanceToNow(post.uploadDate, { addSuffix: true })}
+                      Flagged {formatDistanceToNow(post.updatedAt ?? post.uploadDate, { addSuffix: true })}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2 text-right text-xs text-white/60">
@@ -138,7 +138,7 @@ export default async function AdminDeletionsPage() {
                       View thread on “{comment.post?.title ?? "Unknown post"}”
                     </Link>
                     <p className="text-xs text-white/50">
-                      Flagged {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
+                      Flagged {formatDistanceToNow(comment.updatedAt, { addSuffix: true })}
                     </p>
                   </div>
                   <RestoreDeletionButton type="comment" targetId={comment.id} label="Reinstate" />
