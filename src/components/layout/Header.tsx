@@ -54,7 +54,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                     </Link>
                   )}
                   <details className="relative" data-user-menu>
-                    <summary className="group flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-(--surface-2)/85 text-white transition hover:border-white/25 hover:bg-(--surface-2)/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
+                    <summary className="group flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-(--surface-2)/85 text-white transition hover:border-white/25 hover:bg-(--surface-2)/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden" role="button" tabIndex={0}>
                       {avatarUrl ? (
                         <span
                           className="h-10 w-10 rounded-full bg-cover bg-center"

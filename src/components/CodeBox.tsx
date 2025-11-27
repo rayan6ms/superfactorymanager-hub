@@ -4,48 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import type * as monacoNs from "monaco-editor";
 import { clsx } from "clsx";
-import { CODE_CANVAS_BG } from "@/lib/highlight-sfml";
 
 const SFML_LANGUAGE_ID = "sfml";
 const SFML_THEME_ID = "sfm-dracula";
 const MIN_HEIGHT = 256;
 const MAX_HEIGHT = 560;
-
-const KEYWORDS = [
-  "EXCEPT",
-  "MOVE",
-  "FROM",
-  "TO",
-  "INPUT",
-  "OUTPUT",
-  "WHERE",
-  "SLOTS",
-  "RETAIN",
-  "EACH",
-  "TOP",
-  "BOTTOM",
-  "NORTH",
-  "EAST",
-  "SOUTH",
-  "WEST",
-  "SIDE",
-  "SELF",
-  "SECONDS",
-  "EVERY",
-  "PULSE",
-  "WORLD",
-  "PROGRAM",
-  "WITH",
-  "WITHOUT",
-  "DO",
-  "END",
-  "IF",
-  "ELSE",
-  "THEN",
-];
-
-const TYPES = ["TICKS", "TICK", "ROUND", "ROBIN", "NAME", "FORGET", "FLUID", "GAS", "ITEM", "FE"];
-const OPERATORS = ["=", ">", "<", ">=", "<=", "EQ", "GT", "LT", "LE", "GE"];
 
 const theme: monacoNs.editor.IStandaloneThemeData = {
   base: "vs-dark",
@@ -59,17 +22,31 @@ const theme: monacoNs.editor.IStandaloneThemeData = {
     "editorIndentGuide.activeBackground": "#6b7280",
     "editorLineHighlightBackground": "#111827",
     "editorGutter.background": "#0c0e12",
-    "editor.selectionBackground": "#5b21b6",
+    "editor.selectionBackground": "#5b21b6"
   },
   rules: [
-    { token: "comment", foreground: "#aaaaaa" },
-    { token: "string", foreground: "#f1fa8c" },
-    { token: "number", foreground: "#8be9fd" },
-    { token: "keyword", foreground: "#938bfd" },
-    { token: "type", foreground: "#fdca8b" },
-    { token: "operator", foreground: "#ffffffff" },
-    { token: "identifier", foreground: "#8bfd95" },
-  ],
+    { token: "comment", foreground: "#A8A8A8" },
+
+    { token: "punctuation.simple", foreground: "#FFFFFF" },
+
+    { token: "keyword.core", foreground: "#767DFF" },
+    { token: "keyword.io", foreground: "#FE82F6" },
+    { token: "keyword.position", foreground: "#B833C6" },
+
+    { token: "keyword.logic", foreground: "#FFC47C" },
+    { token: "number.tick", foreground: "#FFC47C" },
+
+    { token: "number", foreground: "#7DE7FF" },
+    { token: "operator.logic", foreground: "#7DE7FF" },
+
+    { token: "identifier", foreground: "#80ED89" },
+    { token: "string", foreground: "#80ED89" },
+
+    { token: "keyword.redstone", foreground: "#F96767" },
+    { token: "invalid", foreground: "#F96767" },
+
+    { token: "keyword.special", foreground: "#F1FA8C" }
+  ]
 };
 
 type CodeBoxProps = {
@@ -148,30 +125,66 @@ function ensureLanguage(monaco: typeof monacoNs) {
     });
 
     monaco.languages.setMonarchTokensProvider(SFML_LANGUAGE_ID, {
-      keywords: KEYWORDS,
-      typeKeywords: TYPES,
-      operators: OPERATORS,
       ignoreCase: true,
       tokenizer: {
         root: [
+          // comments
           [/--.*$/, "comment"],
-          [/\"([^\\\"]|\\.)*\"/, "string"],
+
+          // closed strings
+          [/\"([^\"\\]|\\.)*\"/, "string"],
+
+          // unclosed strings -> red
+          [/\"([^\"\\]|\\.)*$/, "invalid"],
+
+          // numbers before g -> orange
+          [/\b(\d+)(?=\s*[gG]\b)/, "number.tick"],
+
+          // other numbers -> teal
           [/\b\d+\b/, "number"],
 
-          [/[A-Z_][A-Z0-9_]*/, {
-            cases: {
-              "@typeKeywords": "type",
-              "@keywords": "keyword",
-              "@operators": "operator",
-              "@default": "identifier",
-            },
-          }],
+          // strategies
+          [/\bround robin by block\b/i, "keyword.special"],
+          [/\bround robin by label\b/i, "keyword.special"],
 
-          [/[=><!~?:&|+\-*\/\^%]+/, "operator"],
+          // core keywords
+          [
+            /\b(name|every|do|if|end|has|then|forget|else|true|false)\b/i,
+            "keyword.core"
+          ],
 
-          [/\w+/, "identifier"],
-        ],
-      },
+          // IO
+          [/\b(input|from|output|to)\b/i, "keyword.io"],
+
+          // position
+          [
+            /\b(top|bottom|left|right|front|back|west|east|north|south|side|each)\b/i,
+            "keyword.position"
+          ],
+
+          // logic/timing/g
+          [
+            /\b(ticks|tick|some|retain|slots|except|second|overall|lone|one|in|empty|seconds|slot|and|not|or|global|g)\b/i,
+            "keyword.logic"
+          ],
+
+          // operators / helpers
+          [/\b(ge|le|eq|gt|lt|plus|with|without|tag)\b/i, "operator.logic"],
+          [/[=<>]=?|[#\+]/, "operator.logic"],
+
+          // redstone / pulse
+          [/\b(redstone|pulse)\b/i, "keyword.redstone"],
+
+          // punctuation: , - : /
+          [/[,:\-\/]/, "punctuation.simple"],
+
+          // wildcard *
+          [/\*/, "identifier"], // same green group
+
+          // fallback identifiers
+          [/\w+/, "identifier"]
+        ]
+      }
     });
 
     monaco.editor.defineTheme(SFML_THEME_ID, theme);
@@ -294,14 +307,14 @@ export function CodeBox({
     >
       <div
         className="relative"
-        style={{ backgroundColor: `rgba${CODE_CANVAS_BG}`, minHeight: MIN_HEIGHT }}
+        style={{ backgroundColor: 'rgba(0,0,0,0)', minHeight: MIN_HEIGHT }}
       >
         <Editor
           height={editorHeight}
           defaultLanguage={SFML_LANGUAGE_ID}
           language={SFML_LANGUAGE_ID}
           theme={SFML_THEME_ID}
-          defaultValue={value}
+          value={value}
           onChange={next => onChange(next ?? "")}
           onMount={handleMount}
           options={{

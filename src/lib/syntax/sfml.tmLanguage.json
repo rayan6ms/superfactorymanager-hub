@@ -13,14 +13,45 @@
     },
     {
       "include": "#comments"
+    },
+    {
+      "include": "#punctuation"
     }
   ],
   "repository": {
     "keywords": {
       "patterns": [
         {
-          "name": "variable.parameter.sfml",
-          "match": "(?i)\\b(TICKS|TICK)\\b"
+          "name": "keyword.other.redstone.sfml",
+          "match": "(?i)\\b(REDSTONE|PULSE)\\b"
+        },
+        {
+          "name": "keyword.other.strategy.sfml",
+          "match": "(?i)\\bROUND\\s+ROBIN\\s+BY\\s+(BLOCK|LABEL)\\b"
+        },
+        {
+          "name": "keyword.other.core.sfml",
+          "match": "(?i)\\b(NAME|EVERY|DO|END|IF|ELSE|THEN|HAS|TRUE|FALSE|FORGET)\\b"
+        },
+        {
+          "name": "keyword.other.io.sfml",
+          "match": "(?i)\\b(INPUT|FROM|OUTPUT|TO)\\b"
+        },
+        {
+          "name": "keyword.other.position.sfml",
+          "match": "(?i)\\b(TOP|BOTTOM|LEFT|RIGHT|FRONT|BACK|WEST|EAST|NORTH|SOUTH|SIDE|EACH)\\b"
+        },
+        {
+          "name": "keyword.other.logic.sfml",
+          "match": "(?i)\\b(TICKS|TICK|SOME|RETAIN|SLOTS|EXCEPT|SECOND|OVERALL|LONE|ONE|IN|EMPTY|SECONDS|SLOT|AND|NOT|OR|GLOBAL|G)\\b"
+        },
+        {
+          "name": "keyword.operator.logic.sfml",
+          "match": "(?i)\\b(GE|LE|EQ|GT|LT|PLUS|WITH|WITHOUT|TAG)\\b"
+        },
+        {
+          "name": "keyword.operator.logic.sfml",
+          "match": "(?<=\\s)(=|>|<|<=|>=)(?=\\s)"
         },
         {
           "name": "variable.parameter.sfml",
@@ -35,39 +66,23 @@
           "match": "(?i)(?<=OUTPUT\\s)(.*?)\\s+(?=TO|EXCEPT|RETAIN|WITH|WITHOUT)"
         },
         {
-          "name": "storage.type.primitive.sfml",
-          "match": "(?i)\\b(FORGET)\\b"
+          "name": "keyword.other.star.sfml",
+          "match": "\\*"
         },
         {
-          "name": "storage.type.primitive.sfml",
-          "match": "(?i)\\bROUND(\\s+ROBIN(\\s+BY(\\s+(LABEL|BLOCK))?)?)?\\b"
-        },
-        {
-          "name": "storage.type.primitive.sfml",
-          "match": "(?i)(?<=\\s)(EQ|GT|LT|LE|GE)(?=\\s)"
-        },
-        {
-          "name": "storage.type.primitive.sfml",
-          "match": "(?<=\\s)(=|>|<|<=|>=)(?=\\s)"
-        },
-        {
-          "name": "keyword.control.sfml",
-          "match": "(?i)\\b(EXCEPT|MOVE|FROM|TO|INPUT|OUTPUT|WHERE|SLOTS|RETAIN|EACH|TOP|BOTTOM|NORTH|EAST|SOUTH|WEST|SIDE|SELF|SECONDS|EVERY|PULSE|WORLD|PROGRAM|WITH|WITHOUT)\\b"
-        },
-        {
-          "name": "storage.type.name.sfml",
-          "match": "(?i)\\b(NAME)\\b"
+          "name": "keyword.other.sfml",
+          "match": "(?i)\\b(MOVE|WHERE|SLOTS|SELF|SECONDS|WORLD|PROGRAM)\\b"
         },
         {
           "name": "keyword.control.flow.sfml",
-          "match": "(?i)\\b(DO|END|IF|ELSE|THEN)\\b"
+          "match": "(?i)\\b(IF|ELSE|THEN|DO|END)\\b"
         },
         {
-          "name": "invalid",
+          "name": "invalid.illegal.redstone.sfml",
           "match": "(?i)(?<=\\bEVERY\\s+)REDSTONE(?=\\s+PULSE\\b)"
         },
         {
-          "name": "invalid",
+          "name": "invalid.illegal.redstone.sfml",
           "match": "(?i)(?<=\\bIF\\s+)REDSTONE(?=\\s+(EQ|GT|LT|LE|GE)\\b)"
         }
       ]
@@ -89,6 +104,10 @@
     "numbers": {
       "patterns": [
         {
+          "name": "constant.numeric.tick.sfml",
+          "match": "\\b\\d+(?=\\s*[gG]\\b)"
+        },
+        {
           "name": "constant.numeric.sfml",
           "match": "\\b\\d+\\b"
         }
@@ -102,6 +121,18 @@
         {
           "name": "constant.character.escape.sfml",
           "match": "\\\\."
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.sfml",
+          "match": "[,\\-:/]"
+        },
+        {
+          "name": "keyword.operator.symbol.sfml",
+          "match": "[#+]"
         }
       ]
     }

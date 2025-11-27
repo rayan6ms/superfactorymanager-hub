@@ -1,18 +1,17 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import ViewBeacon from "@/components/ViewBeacon";
 import { Card, Button } from "@/components/ui";
 import ImageGallery from "@/components/ImageGallery";
-import HighlightedCode from "@/components/HighlightedCode";
-import CopyCodeButton from "@/components/CopyCodeButton";
+import PostCodePanel from "@/components/posts/PostCodePanel";
 import CodeVerification from "@/components/CodeVerification";
 import CommentsSection from "@/components/posts/CommentsSection";
 import { getPostComments } from "@/lib/comments";
 import ReportButton from "@/components/ReportButton";
 import { isAdminEmail } from "@/lib/admin";
 import AdminFlagPostButton from "@/components/posts/AdminFlagPostButton";
+import { Eye } from 'lucide-react';
 
 type VoteValue = "up" | "down" | null;
 
@@ -157,9 +156,12 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap gap-4 text-sm text-white/60">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-white/60">
               <span>Uploaded {uploadDate}</span>
-              <span>{views} views</span>
+              <div className="flex items-center gap-1">
+                <Eye className="flex h-4 w-4" aria-hidden="true" />
+                <span>{views} views</span>
+              </div>
               {verification.isAuthor && (
                 <Link
                   href={`/posts/${slug}/edit`}
@@ -214,7 +216,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
         </div>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           {post.youtubeUrl && (
             <Card className="overflow-hidden">
@@ -231,16 +233,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
           )}
 
           <Card className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold text-white">Code</h2>
-                <span className="text-xs text-white/50">Copy &amp; paste into SuperFactoryManager</span>
-              </div>
-              <CopyCodeButton value={post.code} />
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20">
-              <HighlightedCode code={post.code} />
-            </div>
+            <PostCodePanel initialCode={post.code} />
           </Card>
 
           <Card className="space-y-4">

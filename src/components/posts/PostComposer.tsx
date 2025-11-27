@@ -6,18 +6,16 @@ import { clsx } from "clsx";
 import { Images, Loader2, Tag as TagIcon, UploadCloud } from "lucide-react";
 import { CodeBox } from "@/components/CodeBox";
 import { Card, Button, Input } from "@/components/ui";
-import { validateSyntax, type SyntaxErrorItem } from "@/lib/sfml/syntax";
-import { collectWarnings, type WarningItem } from "@/lib/sfml/warnings";
 import { MAX_POST_IMAGES } from "@/lib/images";
 import { MAX_TAG_LENGTH, TAG_MAX_COUNT, TAG_MIN_COUNT, tagSchema } from "@/lib/validation";
 import { analyzeYoutubeUrl } from "@/lib/youtube";
+import { analyzeSfmlCode, type CodeFeedback } from "@/lib/sfml/analysis";
 import { normalizeTag, type NormalizedTag } from "@/lib/tags";
 
 const MAX_IMAGE_MB = 5;
 const MAX_IMAGE_COUNT = MAX_POST_IMAGES;
 const MAX_TITLE_LENGTH = 120;
 const MIN_DESCRIPTION_LENGTH = 50;
-const CONTROL_CHAR_REGEX = /[\x00-\x08\x0B\x0C\x0E-\x1F]/;
 const CODE_ANALYZE_DEBOUNCE = 350;
 
 type Matrix = { byGame: Record<string, string[]>; gameVersions: string[] };
@@ -43,13 +41,6 @@ type FormState = {
 
 type TextFieldKey = Exclude<keyof FormState, "openForImprovement">;
 type FormErrorKey = TextFieldKey | "images" | "tags";
-
-type CodeFeedback = {
-  status: "idle" | "ok" | "error";
-  message: string | null;
-  syntaxErrors: SyntaxErrorItem[];
-  warnings: WarningItem[];
-};
 
 type YoutubePreview = {
   title: string;
@@ -189,46 +180,6 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     return null;
   }, []);
 
-  const analyzeCode = useCallback((code: string): CodeFeedback => {
-    const trimmed = code.trim();
-    if (!trimmed) {
-      return { status: "error", message: "Code is required.", syntaxErrors: [], warnings: [] };
-    }
-    if (trimmed.length < 3) {
-      return {
-        status: "error",
-        message: `Code must be at least 3 characters long (currently ${trimmed.length}).`,
-        syntaxErrors: [],
-        warnings: [],
-      };
-    }
-    if (CONTROL_CHAR_REGEX.test(trimmed)) {
-      return {
-        status: "error",
-        message: "Code contains invalid control characters.",
-        syntaxErrors: [],
-        warnings: [],
-      };
-    }
-
-    const syntax = validateSyntax(trimmed);
-    if (!syntax.ok) {
-      const first = syntax.errors[0];
-      const location = first
-        ? `line ${first.lineStart}${typeof first.columnStart === "number" ? `, column ${first.columnStart + 1}` : ""}`
-        : "the script";
-      return {
-        status: "error",
-        message: first ? `Syntax error on ${location}: ${first.message}` : "Syntax error in script.",
-        syntaxErrors: syntax.errors,
-        warnings: [],
-      };
-    }
-
-    const warnings = collectWarnings(trimmed);
-    return { status: "ok", message: null, syntaxErrors: [], warnings };
-  }, []);
-
   const validateField = useCallback((key: TextFieldKey, value: string, current: FormState): string | null => {
     const trimmed = value.trim();
     switch (key) {
@@ -329,7 +280,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       images: null,
       tags: validateTags(tags),
     };
-    const codeCheck = analyzeCode(form.code);
+    const codeCheck = analyzeSfmlCode(form.code, { required: true });
     next.code = codeCheck.message;
     const imageMessage = isEditMode
       ? null
@@ -341,7 +292,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   }, [
     form,
     validateField,
-    analyzeCode,
+    analyzeSfmlCode,
     limitedByMax,
     computeImagesError,
     mediaFiles,
@@ -546,10 +497,10 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
   useEffect(() => {
     const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
-      setCodeFeedback(analyzeCode(form.code));
+      setCodeFeedback(analyzeSfmlCode(form.code, { required: true }));
     }, CODE_ANALYZE_DEBOUNCE);
     return () => clearTimeout(timer);
-  }, [form.code, analyzeCode]);
+  }, [form.code]);
 
   useEffect(() => {
     setErrors(prev => {
@@ -639,7 +590,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     touchAll();
     setSubmitError(null);
 
-    const codeAnalysis = analyzeCode(form.code);
+    const codeAnalysis = analyzeSfmlCode(form.code, { required: true });
     setCodeFeedback(codeAnalysis);
     const imageMessage = isEditMode
       ? null

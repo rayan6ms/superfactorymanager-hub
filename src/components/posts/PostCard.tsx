@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
-import { Search as SearchIcon, Star } from "lucide-react";
+import { Eye, Search as SearchIcon, Star } from "lucide-react";
 import type { SerializedPost } from "@/lib/posts";
 
 const viewsFormatter = new Intl.NumberFormat(undefined, {
@@ -98,7 +98,10 @@ export default function PostCard({ post }: Props) {
               ) : null}
               <div className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-white/60">
                 <span>v{post.modVersion}</span>
-                <span>{viewsFormatter.format(post.views)} views</span>
+                <div className="flex items-center gap-1">
+                  <Eye className="flex h-4 w-4" aria-hidden="true" />
+                  <span>{viewsFormatter.format(post.views)} views</span>
+                </div>
                 <span className="inline-flex items-center gap-1 text-white/80">
                   <Star className="h-3 w-3 text-amber-300" aria-hidden />
                   {renderRating(post.rating, post.ratingCount)}
