@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
-import { Images, Loader2, Tag as TagIcon, UploadCloud } from "lucide-react";
+import Link from "next/link";
+import { Images, Loader2, Tag as TagIcon, UploadCloud, BookOpen } from "lucide-react";
 import { CodeBox } from "@/components/CodeBox";
 import { Card, Button, Input } from "@/components/ui";
 import { MAX_POST_IMAGES } from "@/lib/images";
@@ -1216,6 +1217,24 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
             title="Code"
             description="Paste the SuperFactoryManager script that powers your build."
           />
+
+          <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/75 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-xl text-white/70">
+              Need inspiration or not sure how to structure your script? Open the code guide in a new tab to see some
+              complete SuperFactoryManager examples.
+            </p>
+            <Link
+              href="/guide"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex sm:shrink-0"
+            >
+              <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Open guide
+              </Button>
+            </Link>
+          </div>
 
           <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-white/65">

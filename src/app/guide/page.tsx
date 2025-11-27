@@ -6,6 +6,7 @@ import { Card, Button } from "@/components/ui";
 import { CodeBox } from "@/components/CodeBox";
 import { analyzeSfmlCode, type CodeFeedback } from "@/lib/sfml/analysis";
 import CopyCodeButton from '@/components/CopyCodeButton';
+import Link from 'next/link';
 
 const CODE_ANALYZE_DEBOUNCE = 350;
 
@@ -528,7 +529,7 @@ export default function GuidePage() {
           behave the same.
         </p>
         <p className="text-sm text-white/80">
-          Super-nerds can read the full grammar file for the language if they
+          Super-nerds can read <Link href="https://github.com/TeamDman/SuperFactoryManager/blob/1.18/src/main/antlr/SFML.g">the full grammar file</Link> for the language if they
           want to see exactly how everything is parsed.
         </p>
       </section>

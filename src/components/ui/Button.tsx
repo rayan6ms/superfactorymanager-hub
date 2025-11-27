@@ -4,8 +4,8 @@ import { clsx } from "clsx";
 
 const button = cva(
   "inline-flex items-center justify-center gap-2 rounded-xl font-semibold tracking-tight transition-all duration-200 text-center leading-none " +
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed " +
-    "[&_svg]:block [&_svg]:shrink-0",
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed " +
+  "[&_svg]:block [&_svg]:shrink-0",
   {
     variants: {
       variant: {

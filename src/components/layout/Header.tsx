@@ -76,22 +76,24 @@ export default function Header({ session, notifications }: HeaderProps) {
                           initialUnreadCount={unreadCount}
                         />
                         <div className="grid gap-2">
-                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                            <Link href="/guide" className="inline-flex">
-                              <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
-                                <BookOpen className="h-4 w-4" /> Guide
-                              </Button>
-                            </Link>
-                            <Link href="/contact" className="inline-flex">
-                              <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
-                                <MessagesSquare className="h-4 w-4" /> Contact
-                              </Button>
-                            </Link>
-                            <Link href="/changelog" className="inline-flex">
-                              <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
-                                <History className="h-4 w-4" /> Changelog
-                              </Button>
-                            </Link>
+                          <div className="-mx-4">
+                            <div className="flex justify-center gap-1 px-1">
+                              <Link href="/guide" className="inline-flex">
+                                <Button size="sm" variant="ghost" className="w-full justify-center gap-2 px-2.5!">
+                                  <BookOpen className="h-4 w-4" /> Guide
+                                </Button>
+                              </Link>
+                              <Link href="/contact" className="inline-flex">
+                                <Button size="sm" variant="ghost" className="w-full justify-center gap-2 px-2.5!">
+                                  <MessagesSquare className="h-4 w-4" /> Contact
+                                </Button>
+                              </Link>
+                              <Link href="/changelog" className="inline-flex">
+                                <Button size="sm" variant="ghost" className="w-full justify-center gap-2 px-2.5!">
+                                  <History className="h-4 w-4" /> Changelog
+                                </Button>
+                              </Link>
+                            </div>
                           </div>
                           <Link href="/posts/new" className="inline-flex">
                             <Button size="md" className="w-full justify-center gap-2">
@@ -152,7 +154,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                 )}
                 <span className="sr-only">Toggle navigation</span>
               </summary>
-              <div className="absolute right-0 top-full mt-2 min-w-[16rem] rounded-xl border border-white/15 bg-(--surface)/80 p-4 shadow-lg backdrop-blur-lg">
+              <div className="absolute right-0 top-full mt-2 min-w-[20rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/15 bg-(--surface)/80 p-4 shadow-lg backdrop-blur-lg">
                 <div className="flex flex-col gap-4">
                   <div className="space-y-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Search posts</p>
@@ -166,22 +168,24 @@ export default function Header({ session, notifications }: HeaderProps) {
                     />
                   )}
                   <div className="grid gap-2">
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                      <Link href="/guide" className="inline-flex">
-                        <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
-                          <BookOpen className="h-4 w-4" /> Guide
-                        </Button>
-                      </Link>
-                      <Link href="/contact" className="inline-flex">
-                        <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
-                          <MessagesSquare className="h-4 w-4" /> Contact
-                        </Button>
-                      </Link>
-                      <Link href="/changelog" className="inline-flex">
-                        <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
-                          <History className="h-4 w-4" /> Changelog
-                        </Button>
-                      </Link>
+                    <div className="-mx-4">
+                      <div className="flex justify-center gap-1 px-1">
+                        <Link href="/guide" className="inline-flex">
+                          <Button size="sm" variant="ghost" className="w-full justify-center gap-2 px-2.5!">
+                            <BookOpen className="h-4 w-4" /> Guide
+                          </Button>
+                        </Link>
+                        <Link href="/contact" className="inline-flex">
+                          <Button size="sm" variant="ghost" className="w-full justify-center gap-2 px-2.5!">
+                            <MessagesSquare className="h-4 w-4" /> Contact
+                          </Button>
+                        </Link>
+                        <Link href="/changelog" className="inline-flex">
+                          <Button size="sm" variant="ghost" className="w-full justify-center gap-2 px-2.5!">
+                            <History className="h-4 w-4" /> Changelog
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                     {user && (
                       <Link href="/profile" className="inline-flex">
