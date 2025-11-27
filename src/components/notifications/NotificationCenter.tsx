@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCheck, Loader2, RefreshCw } from "lucide-react";
 import clsx from "clsx";
+import Pagination from "@/components/ui/Pagination";
 import {
   NOTIFICATION_PAGE_SIZE,
   NOTIFICATION_PREVIEW_LIMIT,
@@ -53,9 +54,19 @@ export default function NotificationCenter({
   const [bulkLoading, setBulkLoading] = useState(false);
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
-  const unreadIds = useMemo(() => notifications.filter(item => !item.readAt).map(item => item.id), [notifications]);
+  const unreadIds = useMemo(
+    () => notifications.filter(item => !item.readAt).map(item => item.id),
+    [notifications],
+  );
   const totalLoaded = notifications.length;
+
+  const pageNotifications = useMemo(() => {
+    const start = (page - 1) * NOTIFICATION_PAGE_SIZE;
+    const end = start + NOTIFICATION_PAGE_SIZE;
+    return notifications.slice(start, end);
+  }, [notifications, page]);
 
   const updatePending = useCallback((id: string, add: boolean) => {
     setPendingIds(prev => {
@@ -89,13 +100,17 @@ export default function NotificationCenter({
     return () => window.removeEventListener(NOTIFICATION_SYNC_EVENT, handle as EventListener);
   }, []);
 
-  const applyUpdates = useCallback((next: SerializedNotification[], unread: number, nextCursorValue?: string | null) => {
-    setNotifications(next);
-    setUnreadCount(unread);
-    if (typeof nextCursorValue !== "undefined") {
-      setCursor(nextCursorValue);
-    }
-  }, []);
+  const applyUpdates = useCallback(
+    (next: SerializedNotification[], unread: number, nextCursorValue?: string | null) => {
+      setNotifications(next);
+      setUnreadCount(unread);
+      if (typeof nextCursorValue !== "undefined") {
+        setCursor(nextCursorValue);
+      }
+      setPage(1);
+    },
+    [],
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -230,6 +245,11 @@ export default function NotificationCenter({
 
   const hasNotifications = notifications.length > 0;
 
+  const handlePageChange = useCallback((nextPage: number) => {
+    if (!Number.isFinite(nextPage)) return;
+    setPage(Math.max(1, Math.floor(nextPage)));
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
@@ -244,7 +264,11 @@ export default function NotificationCenter({
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
             Refresh
           </button>
           <button
@@ -253,7 +277,11 @@ export default function NotificationCenter({
             disabled={!unreadIds.length || bulkLoading}
             className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />}
+            {bulkLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
             Mark all read
           </button>
         </div>
@@ -277,7 +305,7 @@ export default function NotificationCenter({
       {hasNotifications && (
         <div className="space-y-4">
           <ul className="space-y-3">
-            {notifications.map(item => {
+            {pageNotifications.map(item => {
               const created = formatNotificationTimestamp(item.createdAt);
               const unread = !item.readAt;
               const pending = pendingIds.has(item.id);
@@ -300,15 +328,28 @@ export default function NotificationCenter({
                     )}
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2 text-xs text-white/50">
-                        <span className={clsx("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide", ORIGIN_COLOR[item.origin])}>
+                        <span
+                          className={clsx(
+                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide",
+                            ORIGIN_COLOR[item.origin],
+                          )}
+                        >
                           {ORIGIN_LABEL[item.origin]}
                         </span>
                         <span>{created}</span>
-                        {unread && <span className="inline-flex h-2 w-2 rounded-full bg-brand-400" aria-label="Unread" />}
+                        {unread && (
+                          <span
+                            className="inline-flex h-2 w-2 rounded-full bg-brand-400"
+                            aria-label="Unread"
+                          />
+                        )}
                       </div>
                       <div className="space-y-1">
                         {item.link ? (
-                          <Link href={item.link} className="block font-semibold text-white hover:underline">
+                          <Link
+                            href={item.link}
+                            className="block font-semibold text-white hover:underline"
+                          >
                             {item.title}
                           </Link>
                         ) : (
@@ -349,6 +390,14 @@ export default function NotificationCenter({
             })}
           </ul>
 
+          <Pagination
+            currentPage={page}
+            pageSize={NOTIFICATION_PAGE_SIZE}
+            total={totalLoaded}
+            buildHref={targetPage => `?page=${targetPage}`}
+            onPageChange={handlePageChange}
+          />
+
           {cursor && (
             <div className="flex justify-center">
               <button
@@ -357,7 +406,9 @@ export default function NotificationCenter({
                 disabled={loadingMore}
                 className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+                {loadingMore ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : null}
                 Load more
               </button>
             </div>

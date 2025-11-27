@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -13,13 +14,30 @@ type Props = {
   post: SerializedPost;
 };
 
-function renderRating(rating: number | null | undefined, ratingCount: number | null | undefined) {
+function renderRating(
+  rating: number | null | undefined,
+  ratingCount: number | null | undefined,
+): ReactNode {
   const worked = Math.max(Math.round(rating ?? 0), 0);
   const total = Math.max(Math.round(ratingCount ?? 0), 0);
   const broken = Math.max(total - worked, 0);
   if (total === 0) return "No votes yet";
   const rate = Math.round((worked / Math.max(total, 1)) * 100);
-  return `${rate}% success (${worked}\u2713 / ${broken}\u2715)`;
+
+  return (
+    <>
+      {rate}% success (
+      {worked}
+      <span className="text-emerald-400">
+        {"\u2713"}
+      </span>{" "}
+      / {broken}
+      <span className="text-red-400">
+        {"\u2715"}
+      </span>
+      )
+    </>
+  );
 }
 
 function getInitial(name: string | null | undefined) {

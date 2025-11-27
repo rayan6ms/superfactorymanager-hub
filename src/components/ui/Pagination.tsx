@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { MouseEvent } from "react";
 import { getTotalPages } from "@/lib/pagination";
 
 const baseButtonClasses =
@@ -17,6 +18,7 @@ type PaginationProps = {
   total: number;
   buildHref: (page: number) => string;
   className?: string;
+  onPageChange?: (page: number) => void;
 };
 
 export default function Pagination({
@@ -25,6 +27,7 @@ export default function Pagination({
   total,
   buildHref,
   className,
+  onPageChange,
 }: PaginationProps) {
   const totalPages = getTotalPages(total, pageSize);
   if (totalPages <= 1) return null;
@@ -32,6 +35,18 @@ export default function Pagination({
   const page = Math.min(Math.max(currentPage, 1), totalPages);
   const prevPage = Math.max(page - 1, 1);
   const nextPage = Math.min(page + 1, totalPages);
+
+  const isPrevDisabled = page === 1;
+  const isNextDisabled = page === totalPages;
+
+  const handleNavigate =
+    (targetPage: number) =>
+      (event: MouseEvent<HTMLAnchorElement>) => {
+        if (!onPageChange) return;
+        event.preventDefault();
+        if (targetPage === page) return;
+        onPageChange(targetPage);
+      };
 
   return (
     <div className={`flex flex-wrap items-center justify-between gap-3 ${className ?? ""}`}>
@@ -41,15 +56,17 @@ export default function Pagination({
       <div className="flex items-center gap-2">
         <Link
           href={buildHref(prevPage)}
-          aria-disabled={page === 1}
-          className={buildButtonClasses(page === 1)}
+          aria-disabled={isPrevDisabled}
+          onClick={onPageChange && !isPrevDisabled ? handleNavigate(prevPage) : undefined}
+          className={buildButtonClasses(isPrevDisabled)}
         >
           Previous
         </Link>
         <Link
           href={buildHref(nextPage)}
-          aria-disabled={page === totalPages}
-          className={buildButtonClasses(page === totalPages)}
+          aria-disabled={isNextDisabled}
+          onClick={onPageChange && !isNextDisabled ? handleNavigate(nextPage) : undefined}
+          className={buildButtonClasses(isNextDisabled)}
         >
           Next
         </Link>
