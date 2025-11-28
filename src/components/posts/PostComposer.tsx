@@ -593,12 +593,14 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
     const codeAnalysis = analyzeSfmlCode(form.code, { required: true });
     setCodeFeedback(codeAnalysis);
+
     const imageMessage = isEditMode
       ? null
       : limitedByMax
         ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
         : computeImagesError(mediaFiles);
     const tagMessage = validateTags(tags);
+
     const nextErrors: Record<FormErrorKey, string | null> = {
       title: validateField("title", form.title, form),
       gameVersion: validateField("gameVersion", form.gameVersion, form),
@@ -614,6 +616,43 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
 
+    if (!isEditMode && mediaFiles.length) {
+      const fd = new FormData();
+      for (const file of mediaFiles) {
+        fd.append("file", file);
+      }
+
+      try {
+        const checkRes = await fetch("/api/nsfw-check", {
+          method: "POST",
+          body: fd,
+          credentials: "include",
+        });
+
+        let payload: any = null;
+        try {
+          payload = await checkRes.json();
+        } catch {
+          payload = null;
+        }
+
+        if (!checkRes.ok) {
+          setSubmitError(
+            payload?.error ??
+            "One of your images looks unsafe to share. Please choose a different image.",
+          );
+          return;
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "We couldn't analyze your images for safety. Please try again.";
+        setSubmitError(message);
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       const body = {
@@ -621,8 +660,8 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
         gameVersion: form.gameVersion,
         modVersion: form.modVersion,
         categoryKey: form.categoryKey.trim(),
-        dependencies: deps.map(d => d.url),
-        tags: tags.map(tag => tag.name),
+        dependencies: deps.map((d) => d.url),
+        tags: tags.map((tag) => tag.name),
         images: [],
         code: form.code,
         description: form.description.trim(),
@@ -670,13 +709,17 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
           }
         }
       }
+
       if (isEditMode && slug) {
         r.push(`/posts/${slug}`);
       } else {
         r.push(`/posts/${data.slug}`);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Something went wrong while publishing your post.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while publishing your post.";
       setSubmitError(message);
     } finally {
       setLoading(false);

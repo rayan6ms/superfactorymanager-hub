@@ -6,6 +6,7 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 import { MAX_POST_IMAGES } from "@/lib/images";
+import { detectNsfwInBuffer } from "@/lib/nsfw";
 
 export const runtime = "nodejs";
 
@@ -44,6 +45,19 @@ export async function POST(
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());
+
+  const nsfw = await detectNsfwInBuffer(bytes, 0.5);
+  if (nsfw) {
+    return NextResponse.json(
+      {
+        error: `This image looks unsafe to share (${nsfw.label} ${Math.round(
+          nsfw.probability * 100,
+        )}% confidence). Please choose a different image.`,
+      },
+      { status: 400 },
+    );
+  }
+
   const id = randomUUID();
   const baseDir = path.join(process.cwd(), "public", "uploads", postId);
   await mkdir(baseDir, { recursive: true });

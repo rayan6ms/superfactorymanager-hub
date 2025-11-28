@@ -205,18 +205,6 @@ export async function POST(req: Request) {
     }
 
     const normalizedImages = normalizeImages(parsed.images);
-    const nsfwDetection = await detectNsfwInImages(normalizedImages.map(img => img.original).filter(Boolean));
-    if (nsfwDetection) {
-      return NextResponse.json(
-        {
-          error: `One of your images looks unsafe to share (${nsfwDetection.label} ${Math.round(
-            nsfwDetection.probability * 100,
-          )}% confidence). Please choose a different image.`,
-        },
-        { status: 400 },
-      );
-    }
-
     const derivedAuthorName = user.name?.trim() || (user.email?.split("@")[0] ?? "user");
 
     const category = await db.category.findUnique({ where: { key: parsed.categoryKey } });
