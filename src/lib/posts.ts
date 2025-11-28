@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { db } from "@/lib/db";
 import { indexPost } from "@/lib/search";
+import { wilsonScore } from "@/lib/wilson-score";
 import { subDays } from "date-fns";
 
 export const POST_CARD_INCLUDE = {
@@ -36,9 +37,10 @@ export async function recomputePostRating(postId: string) {
   }
 
   const total = worked + broken;
+  const rating = wilsonScore(worked, broken);
   const updated = await db.post.update({
     where: { id: postId },
-    data: { rating: worked, ratingCount: total },
+    data: { rating, ratingCount: total },
     include: { dependencies: true, category: true, tags: { include: { tag: true } } },
   });
   await indexPost(updated);

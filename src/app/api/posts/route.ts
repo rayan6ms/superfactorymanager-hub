@@ -14,6 +14,7 @@ import { recordPostContributor } from "@/lib/posts";
 import { interactionBlockReason } from "@/lib/moderation";
 import { ZodError } from "zod";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
+import { detectNsfwInImages } from "@/lib/nsfw";
 
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
@@ -203,6 +204,19 @@ export async function POST(req: Request) {
       throw err;
     }
 
+    const normalizedImages = normalizeImages(parsed.images);
+    const nsfwDetection = await detectNsfwInImages(normalizedImages.map(img => img.original).filter(Boolean));
+    if (nsfwDetection) {
+      return NextResponse.json(
+        {
+          error: `One of your images looks unsafe to share (${nsfwDetection.label} ${Math.round(
+            nsfwDetection.probability * 100,
+          )}% confidence). Please choose a different image.`,
+        },
+        { status: 400 },
+      );
+    }
+
     const derivedAuthorName = user.name?.trim() || (user.email?.split("@")[0] ?? "user");
 
     const category = await db.category.findUnique({ where: { key: parsed.categoryKey } });
@@ -260,7 +274,7 @@ export async function POST(req: Request) {
         youtubeUrl: yt,
         openForImprovement: parsed.openForImprovement ?? false,
         images: {
-          create: normalizeImages(parsed.images).map(i => ({
+          create: normalizedImages.map(i => ({
             original: i.original,
             thumbSm: i.thumbSm,
             thumbMd: i.thumbMd,

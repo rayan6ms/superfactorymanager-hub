@@ -34,6 +34,7 @@ const serializeComment = (
       }
     : null,
   score: comment.score,
+  voteCount: comment.voteCount,
   vote: voteMap?.get(comment.id) ?? null,
   replies,
 });

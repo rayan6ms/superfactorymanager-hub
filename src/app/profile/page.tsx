@@ -101,14 +101,12 @@ export default async function ProfilePage({ searchParams }: Props) {
                   </Link>
                   <p className="text-xs text-white/50">
                     Published {formatDate(post.uploadDate)} · {(() => {
-                      const worked = Math.max(Math.round(post.rating ?? 0), 0);
                       const total = Math.max(post.ratingCount ?? 0, 0);
-                      const broken = Math.max(total - worked, 0);
                       if (total === 0) {
                         return "No verification votes yet";
                       }
-                      const success = Math.round((worked / total) * 100);
-                      return `${success}% success (${worked}✓ / ${broken}✕)`;
+                      const confidence = Math.round(Math.max(0, Math.min(1, post.rating ?? 0)) * 100);
+                      return `${confidence}% confidence (${total} vote${total === 1 ? "" : "s"})`;
                     })()}
                   </p>
                 </div>

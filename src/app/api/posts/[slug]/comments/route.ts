@@ -4,13 +4,29 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { commentSchema } from "@/lib/validation";
 import { getPostComments } from "@/lib/comments";
-import { COMMENT_PAGE_SIZE } from "@/lib/comment-constants";
+import { COMMENT_MAX_DEPTH, COMMENT_PAGE_SIZE } from "@/lib/comment-constants";
 import { createNotification } from "@/lib/notifications";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 import { interactionBlockReason } from "@/lib/moderation";
 
 function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
+}
+
+async function getCommentDepth(commentId: string): Promise<number | null> {
+  let depth = 0;
+  let currentId: string | null = commentId;
+
+  while (currentId) {
+    const comment = await db.comment.findUnique({ where: { id: currentId }, select: { parentId: true } });
+    if (!comment) return null;
+    if (!comment.parentId) break;
+    depth += 1;
+    currentId = comment.parentId;
+    if (depth > COMMENT_MAX_DEPTH + 2) break;
+  }
+
+  return depth;
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
@@ -125,6 +141,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     if (parentComment.isDeleted) {
       return badRequest("Cannot reply to a removed comment");
     }
+
+    const parentDepth = await getCommentDepth(parentId);
+    if (parentDepth === null) {
+      return badRequest("Invalid parent comment");
+    }
+    if (parentDepth >= COMMENT_MAX_DEPTH) {
+      return badRequest("This thread reached the maximum reply depth. Please start a new top-level comment.");
+    }
   }
 
   const comment = await db.$transaction(async tx => {
@@ -158,6 +182,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     parentId: comment.parentId,
     author: comment.author,
     score: comment.score,
+    voteCount: comment.voteCount,
     vote: "up" as const,
     replies: [],
   };

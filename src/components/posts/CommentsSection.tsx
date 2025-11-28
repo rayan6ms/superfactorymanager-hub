@@ -10,9 +10,11 @@ import ReportButton from "@/components/ReportButton";
 import DeletionFlagDialog from "@/components/admin/DeletionFlagDialog";
 import {
   COMMENT_MAX_LENGTH,
+  COMMENT_MAX_DEPTH,
   COMMENT_MIN_LENGTH,
   type SerializedComment,
 } from "@/lib/comment-constants";
+import { splitVotesFromScore, wilsonScore } from "@/lib/wilson-score";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en", {
   year: "numeric",
@@ -81,6 +83,8 @@ const flattenComments = (items: SerializedComment[]): SerializedComment[] => {
 const countNestedReplies = (items: SerializedComment[]): number => {
   return items.reduce((total, item) => total + 1 + countNestedReplies(item.replies), 0);
 };
+
+const COMMENT_HIDE_THRESHOLD = 0.35;
 
 const insertReply = (
   items: SerializedComment[],
@@ -174,12 +178,15 @@ export default function CommentsSection({
   const [error, setError] = useState<string | null>(null);
   const [targetCommentId, setTargetCommentId] = useState<string | null>(null);
   const [highlightedComment, setHighlightedComment] = useState<string | null>(null);
-  const [replyTarget, setReplyTarget] = useState<{ id: string; authorName: string } | null>(null);
+  const [replyTarget, setReplyTarget] = useState<
+    { id: string; authorName: string; depth: number } | null
+  >(null);
   const [visibleRepliesMap, setVisibleRepliesMap] = useState<Record<string, number>>({});
   const [revealedHidden, setRevealedHidden] = useState<Record<string, boolean>>({});
   const [voting, setVoting] = useState<Record<string, boolean>>({});
   const [replyDisplayLimit, setReplyDisplayLimit] = useState(5);
   const [threadRootId, setThreadRootId] = useState<string | null>(null);
+  const [threadRootDepth, setThreadRootDepth] = useState(0);
   const focusHandledRef = useRef(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -188,6 +195,7 @@ export default function CommentsSection({
   const isCommentValid = commentText.trim().length >= COMMENT_MIN_LENGTH;
   const isReplyValid = replyText.trim().length >= COMMENT_MIN_LENGTH;
   const replyTargetId = replyTarget?.id ?? null;
+  const replyTargetDepth = replyTarget?.depth ?? null;
 
   const flatComments = useMemo(() => flattenComments(comments), [comments]);
   const commentExists = useCallback(
@@ -235,8 +243,17 @@ export default function CommentsSection({
   useEffect(() => {
     if (threadRootId && !threadRoot) {
       setThreadRootId(null);
+      setThreadRootDepth(0);
+    }
+    if (!threadRootId) {
+      setThreadRootDepth(0);
     }
   }, [threadRootId, threadRoot]);
+
+  const openThread = useCallback((id: string, depth: number) => {
+    setThreadRootId(id);
+    setThreadRootDepth(depth);
+  }, []);
 
   const fetchComments = useCallback(
     async (cursorValue: string | null, sortOverride?: SortOption): Promise<CommentResponse> => {
@@ -284,6 +301,7 @@ export default function CommentsSection({
           const result = updateCommentTree(prev, comment.id, current => ({
             ...current,
             score: data.comment!.score,
+            voteCount: data.comment!.voteCount,
             vote: data.comment!.vote,
           }));
           const nextList = result.updated ? result.items : prev;
@@ -339,6 +357,10 @@ export default function CommentsSection({
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (!canPost || replySubmitting || !replyTargetId || !isReplyValid) return;
+      if (replyTargetDepth !== null && replyTargetDepth >= COMMENT_MAX_DEPTH) {
+        setError("This thread reached the maximum reply depth. Please start a new top-level comment to continue.");
+        return;
+      }
       setReplySubmitting(true);
       setError(null);
       try {
@@ -384,7 +406,16 @@ export default function CommentsSection({
         setReplySubmitting(false);
       }
     },
-    [canPost, replySubmitting, replyTargetId, isReplyValid, postSlug, replyText, replyDisplayLimit],
+    [
+      canPost,
+      replySubmitting,
+      replyTargetId,
+      replyTargetDepth,
+      isReplyValid,
+      postSlug,
+      replyText,
+      replyDisplayLimit,
+    ],
   );
 
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -397,11 +428,12 @@ export default function CommentsSection({
     setReplyText(value);
   }, []);
 
-  const toggleReply = useCallback((comment: SerializedComment) => {
+  const toggleReply = useCallback((comment: SerializedComment, depth: number) => {
+    if (depth >= COMMENT_MAX_DEPTH) return;
     setReplyText("");
     setReplyTarget(prev => {
       if (prev?.id === comment.id) return null;
-      return { id: comment.id, authorName: comment.author?.name ?? "Deleted user" };
+      return { id: comment.id, authorName: comment.author?.name ?? "Deleted user", depth };
     });
   }, []);
 
@@ -599,6 +631,7 @@ export default function CommentsSection({
 
           const maxInlineDepth = replyDisplayLimit;
           const isAtDepthLimit = limitReplies && depth >= maxInlineDepth;
+          const isReplyDepthCapped = depth >= COMMENT_MAX_DEPTH;
 
           const totalReplies = comment.replies.length;
 
@@ -623,12 +656,14 @@ export default function CommentsSection({
           const repliesToRender = comment.replies.slice(0, visibleReplies);
           const hiddenReplyCount = limitReplies ? countNestedReplies(hiddenReplies) : 0;
 
-          const canShowMoreInline = limitReplies && !isAtDepthLimit && remainingReplies > 0;
-
           const showRestInThread = limitReplies && remainingReplies > 0 && isAtDepthLimit;
 
           const profileHref = comment.author?.name ? `/profile/${comment.author.name}` : null;
-          const isHidden = comment.score < 0 && !revealedHidden[comment.id];
+          const { upvotes, downvotes, totalVotes } = splitVotesFromScore(comment.score, comment.voteCount);
+          const confidence = wilsonScore(upvotes, downvotes);
+          const isScoreHidden =
+            totalVotes > 0 && downvotes > upvotes && confidence < COMMENT_HIDE_THRESHOLD;
+          const isHidden = isScoreHidden && !revealedHidden[comment.id];
           const votingHere = Boolean(voting[comment.id]);
 
           if (isHidden) {
@@ -688,7 +723,10 @@ export default function CommentsSection({
                     <span className="rounded-full border border-white/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-white/70">
                       Hidden comment
                     </span>
-                    <span className="text-white/50">Score {comment.score}</span>
+                    <span className="text-white/50">
+                      Hidden due to low rating ({Math.round(confidence * 100)}% score from {totalVotes} vote
+                      {totalVotes === 1 ? "" : "s"})
+                    </span>
                     <button
                       type="button"
                       onClick={() => revealHidden(comment.id)}
@@ -823,15 +861,21 @@ export default function CommentsSection({
                         </button>
                       </div>
 
-                      {canPost && !comment.isDeleted && (
+                      {canPost && !comment.isDeleted && !isReplyDepthCapped && (
                         <button
                           type="button"
-                          onClick={() => toggleReply(comment)}
+                          onClick={() => toggleReply(comment, depth)}
                           className="inline-flex items-center gap-1 text-xs font-semibold text-white/70 transition hover:text-white"
                         >
                           <CornerDownRight className="h-3.5 w-3.5" aria-hidden="true" />
                           Reply
                         </button>
+                      )}
+
+                      {isReplyDepthCapped && (
+                        <span className="text-[0.7rem] text-white/60">
+                          Reply limit reached. Start a new top-level comment to continue.
+                        </span>
                       )}
 
                       {!comment.isDeleted && (
@@ -862,7 +906,7 @@ export default function CommentsSection({
                 </div>
               </article>
 
-              {isReplyingHere && canPost && !comment.isDeleted && (
+              {isReplyingHere && canPost && !comment.isDeleted && depth < COMMENT_MAX_DEPTH && (
                 <form className="space-y-2 pl-6" onSubmit={handleReplySubmit}>
                   <p className="text-xs text-white/50">
                     Replying to {replyTarget?.authorName ?? "this comment"}
@@ -917,7 +961,7 @@ export default function CommentsSection({
                     type="button"
                     onClick={() =>
                       showRestInThread
-                        ? setThreadRootId(comment.id)
+                        ? openThread(comment.id, depth)
                         : showNextReply(comment.id, depth, totalReplies)
                     }
                     className="text-xs font-semibold text-brand-200 underline-offset-4 transition hover:text-brand-100 hover:underline"
@@ -1042,7 +1086,7 @@ export default function CommentsSection({
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                {renderThread([threadRoot], 0, { limitReplies: false })}
+                {renderThread([threadRoot], threadRootDepth, { limitReplies: false })}
               </div>
             </div>
           ) : comments.length === 0 ? (
