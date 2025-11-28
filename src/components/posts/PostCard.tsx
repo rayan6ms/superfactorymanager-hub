@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import clsx from "clsx";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
-import { Eye, Search as SearchIcon, Star } from "lucide-react";
+import { CheckCircle, Eye, Search as SearchIcon, XCircle } from "lucide-react";
 import type { SerializedPost } from "@/lib/posts";
 
 const viewsFormatter = new Intl.NumberFormat(undefined, {
@@ -22,11 +23,18 @@ function renderRating(
   if (total === 0) return "No votes yet";
   const score = Math.max(0, Math.min(1, rating ?? 0));
   const rate = Math.round(score * 100);
+  const majorityPositive = score >= 0.5;
+  const Icon = majorityPositive ? CheckCircle : XCircle;
 
   return (
-    <>
-      {rate}% confidence ({total} vote{total === 1 ? "" : "s"})
-    </>
+    <span className="inline-flex items-center gap-1">
+      <Icon
+        className={clsx("h-4 w-4", majorityPositive ? "text-emerald-300" : "text-red-300")}
+        aria-hidden
+      />
+      <span className="font-semibold text-white">{rate}% {majorityPositive ? "positive" : "negative"}</span>
+      <span className="text-white/70">({total} vote{total === 1 ? "" : "s"})</span>
+    </span>
   );
 }
 
@@ -111,7 +119,6 @@ export default function PostCard({ post }: Props) {
                   <span>{viewsFormatter.format(post.views)} views</span>
                 </div>
                 <span className="inline-flex items-center gap-1 text-white/80">
-                  <Star className="h-3 w-3 text-amber-300" aria-hidden />
                   {renderRating(post.rating, post.ratingCount)}
                 </span>
               </div>

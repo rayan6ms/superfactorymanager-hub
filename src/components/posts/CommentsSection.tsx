@@ -604,10 +604,10 @@ export default function CommentsSection({
   const renderThread = (
     nodes: SerializedComment[],
     depth = 0,
-    options: { limitReplies?: boolean } = {},
+    options: { limitReplies?: boolean; depthOffset?: number; maxDepthOverride?: number } = {},
   ): ReactNode => {
     if (!nodes.length) return null;
-    const { limitReplies = true } = options;
+    const { limitReplies = true, depthOffset = 0, maxDepthOverride } = options;
 
     return (
       <div
@@ -629,8 +629,9 @@ export default function CommentsSection({
           const isHighlighted = highlightedComment === comment.id;
           const isReplyingHere = replyTargetId === comment.id;
 
-          const maxInlineDepth = replyDisplayLimit;
-          const isAtDepthLimit = limitReplies && depth >= maxInlineDepth;
+          const relativeDepth = Math.max(0, depth - depthOffset);
+          const maxInlineDepth = typeof maxDepthOverride === "number" ? maxDepthOverride : replyDisplayLimit;
+          const isAtDepthLimit = limitReplies && relativeDepth >= maxInlineDepth;
           const isReplyDepthCapped = depth >= COMMENT_MAX_DEPTH;
 
           const totalReplies = comment.replies.length;
@@ -648,7 +649,7 @@ export default function CommentsSection({
             remainingReplies = totalReplies;
             hiddenReplies = comment.replies;
           } else {
-            visibleReplies = getVisibleReplies(comment.id, depth, totalReplies);
+            visibleReplies = getVisibleReplies(comment.id, relativeDepth, totalReplies);
             remainingReplies = Math.max(totalReplies - visibleReplies, 0);
             hiddenReplies = comment.replies.slice(visibleReplies);
           }
@@ -962,7 +963,7 @@ export default function CommentsSection({
                     onClick={() =>
                       showRestInThread
                         ? openThread(comment.id, depth)
-                        : showNextReply(comment.id, depth, totalReplies)
+                        : showNextReply(comment.id, relativeDepth, totalReplies)
                     }
                     className="text-xs font-semibold text-brand-200 underline-offset-4 transition hover:text-brand-100 hover:underline"
                   >
@@ -1086,7 +1087,11 @@ export default function CommentsSection({
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                {renderThread([threadRoot], threadRootDepth, { limitReplies: false })}
+                {renderThread([threadRoot], threadRootDepth, {
+                  limitReplies: true,
+                  depthOffset: threadRootDepth,
+                  maxDepthOverride: 5,
+                })}
               </div>
             </div>
           ) : comments.length === 0 ? (

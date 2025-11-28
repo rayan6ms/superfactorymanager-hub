@@ -166,14 +166,14 @@ export default function ReportButton({
     mounted && open
       ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e111a]/75 px-4 py-6 backdrop-blur"
           role="dialog"
           aria-modal="true"
           onMouseDown={event => {
             if (event.target === event.currentTarget) close();
           }}
         >
-          <div className="w-full max-w-lg space-y-5 rounded-3xl border border-white/10 bg-black/75 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100vh-3rem)] overflow-y-auto">
+          <div className="w-full max-w-lg space-y-5 rounded-3xl border border-white/10 bg-[#111827]/90 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">Report {type}</p>
@@ -202,7 +202,7 @@ export default function ReportButton({
                         "flex w-full items-center justify-between rounded-2xl border px-4 py-2 text-left transition",
                         reason === value
                           ? "border-red-400/60 bg-red-500/20 text-white"
-                          : "border-white/15 bg-black/30 text-white/80 hover:border-white/30 hover:text-white",
+                          : "border-white/15 bg-white/5 text-white/80 hover:border-white/30 hover:text-white",
                       )}
                       aria-pressed={reason === value}
                     >
@@ -221,7 +221,7 @@ export default function ReportButton({
                       rows={5}
                       value={message}
                       onChange={event => setMessage(event.target.value.slice(0, MAX_LENGTH))}
-                      className="w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white outline-none transition focus:border-white/40"
+                      className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-white/40"
                       placeholder="Explain why this content should be reviewed"
                     />
                   </label>

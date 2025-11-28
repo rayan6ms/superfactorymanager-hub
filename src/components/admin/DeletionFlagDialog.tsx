@@ -78,14 +78,14 @@ export default function DeletionFlagDialog({
     open && typeof document !== "undefined"
       ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e111a]/80 px-4 py-6 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) close();
           }}
         >
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-black/80 p-6 shadow-2xl backdrop-blur-sm max-h-[calc(100vh-3rem)] overflow-y-auto">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#111827]/90 p-6 shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2 text-amber-200">
                 <AlertTriangle className="h-5 w-5" aria-hidden />
@@ -115,7 +115,7 @@ export default function DeletionFlagDialog({
                   type="text"
                   value={confirmValue}
                   onChange={(event) => setConfirmValue(event.target.value)}
-                  className="w-full rounded-2xl border border-white/20 bg-black/40 px-4 py-2 mt-1 text-white placeholder-white/40 outline-none transition focus:border-white/40"
+                  className="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2 mt-1 text-white placeholder-white/40 outline-none transition focus:border-white/40"
                   placeholder={requireText}
                 />
               </label>

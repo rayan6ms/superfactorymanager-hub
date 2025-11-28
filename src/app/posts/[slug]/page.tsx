@@ -172,29 +172,33 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
               )}
             </div>
 
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              {authorImage ? (
-                <span
-                  className="h-12 w-12 rounded-full bg-cover bg-center"
-                  style={{ backgroundImage: `url(${authorImage})` }}
-                  aria-hidden="true"
-                />
-              ) : (
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
-                  {getInitial(authorDisplayName)}
-                </span>
-              )}
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Author</p>
-                {authorProfile ? (
-                  <Link href={authorProfile} className="text-lg font-semibold text-white underline-offset-4 hover:underline">
-                    {authorDisplayName}
-                  </Link>
+            <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                {authorImage ? (
+                  <span
+                    className="h-12 w-12 rounded-full bg-cover bg-center"
+                    style={{ backgroundImage: `url(${authorImage})` }}
+                    aria-hidden="true"
+                  />
                 ) : (
-                  <p className="text-lg font-semibold text-white">{authorDisplayName}</p>
+                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
+                    {getInitial(authorDisplayName)}
+                  </span>
                 )}
-                {authorBio ? <p className="mt-1 text-sm italic text-white/70">“{authorBio}”</p> : null}
+                <div className="min-w-0">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">Author</p>
+                  {authorProfile ? (
+                    <Link href={authorProfile} className="text-lg font-semibold text-white underline-offset-4 hover:underline">
+                      {authorDisplayName}
+                    </Link>
+                  ) : (
+                    <p className="text-lg font-semibold text-white">{authorDisplayName}</p>
+                  )}
+                </div>
               </div>
+              {authorBio ? (
+                <p className="text-sm italic text-white/70 sm:max-w-md sm:text-right sm:pl-4">“{authorBio}”</p>
+              ) : null}
             </div>
           </div>
 

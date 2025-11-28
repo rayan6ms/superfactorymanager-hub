@@ -140,14 +140,14 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
     open && typeof document !== "undefined"
       ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-3 py-6 sm:px-6 sm:py-10 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-[#0e111a]/75 px-3 py-6 sm:px-6 sm:py-10 backdrop-blur-sm sm:items-center"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               closeViewer();
             }
           }}
         >
-          <div className="flex w-full max-w-7xl max-h-[calc(100vh-3rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/90 shadow-2xl">
+          <div className="flex w-full max-w-7xl max-h-[calc(100dvh-3rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#111827]/90 shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">
@@ -201,9 +201,9 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
               </div>
             </div>
 
-            <div className="relative flex-1 bg-black/80 px-6 py-4 sm:px-10 sm:py-6">
+            <div className="relative flex-1 bg-[#0d1422]/85 px-6 py-4 sm:px-10 sm:py-6">
               <div
-                className="h-full w-full overflow-auto rounded-2xl bg-black/60 dark-scrollbar"
+                className="h-full w-full overflow-auto rounded-2xl bg-white/5 dark-scrollbar"
                 onWheel={handleWheel}
               >
                 <div className="flex min-h-full min-w-full items-center justify-center p-4">
@@ -211,8 +211,8 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                     <img
                       src={currentImageSrc}
                       alt=""
-                      className="max-h-[58vh] w-auto max-w-full object-contain"
-                      style={{ transform: `scale(${zoom})` }}
+                      className="w-auto max-w-full object-contain"
+                      style={{ transform: `scale(${zoom})`, maxHeight: "min(70vh, 70dvh)" }}
                     />
                   )}
                 </div>
@@ -223,7 +223,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                   <button
                     type="button"
                     onClick={goToPrev}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/70 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/50 hover:bg-black/90"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/50 hover:bg-white/15"
                   >
                     <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                     <span>Previous</span>
@@ -234,7 +234,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                   <button
                     type="button"
                     onClick={goToNext}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/70 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/50 hover:bg-black/90"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/50 hover:bg-white/15"
                   >
                     <span>Next</span>
                     <ChevronRight className="h-5 w-5" aria-hidden="true" />
@@ -243,7 +243,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
               )}
             </div>
 
-            <div className="border-t border-white/10 bg-black/70 px-4 py-3">
+            <div className="border-t border-white/10 bg-[#0f172a]/80 px-4 py-3">
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {imgs.map((image, index) => {
                   const preview =
@@ -296,7 +296,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
               type="button"
               key={img.id}
               onClick={() => openViewer(index)}
-              className="group relative block overflow-hidden rounded-2xl border border-white/10 bg-black/20"
+              className="group relative block overflow-hidden rounded-2xl border border-white/10 bg-white/5"
             >
               <img
                 src={preview}
@@ -304,7 +304,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                 loading="lazy"
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
               />
-              <span className="pointer-events-none absolute left-2 top-2 inline-flex h-7 min-w-8 items-center justify-center rounded-full bg-black/70 px-2 text-xs font-semibold text-white">
+              <span className="pointer-events-none absolute left-2 top-2 inline-flex h-7 min-w-8 items-center justify-center rounded-full bg-[#0e111a]/80 px-2 text-xs font-semibold text-white">
                 #{index + 1}
               </span>
               <span className="pointer-events-none absolute inset-0 border-2 border-transparent transition group-hover:border-white/20" />
