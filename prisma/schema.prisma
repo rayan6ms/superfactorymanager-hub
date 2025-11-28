@@ -9,33 +9,33 @@ generator client {
 }
 
 model User {
-  id                     String   @id @default(cuid())
-  email                  String   @unique
-  name                   String? @unique
-  image                  String?
-  bio                    String?
-  passwordHash           String?
-  emailVerified          DateTime?
-  createdAt              DateTime @default(now())
-  canCreatePosts         Boolean  @default(true)
-  canCreateComments      Boolean  @default(true)
-  canVotePosts           Boolean  @default(true)
-  canVoteComments        Boolean  @default(true)
-  interactionBanUntil    DateTime?
-  posts                  Post[]
-  ratings                Rating[]
-  postCommits            PostCommit[]
-  postContributions      PostContributor[]
-  comments               Comment[]
-  commentVotes           CommentVote[]
-  reports                Report[]
-  passwordResetTokens    PasswordResetToken[]
-  notifications          Notification[]
-  reportActions          ReportAction[] @relation("ReportActionActor")
-  accounts               Account[]
-  sessions               Session[]
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  name                    String?                  @unique
+  image                   String?
+  bio                     String?
+  passwordHash            String?
+  emailVerified           DateTime?
+  createdAt               DateTime                 @default(now())
+  canCreatePosts          Boolean                  @default(true)
+  canCreateComments       Boolean                  @default(true)
+  canVotePosts            Boolean                  @default(true)
+  canVoteComments         Boolean                  @default(true)
+  interactionBanUntil     DateTime?
+  posts                   Post[]
+  ratings                 Rating[]
+  postCommits             PostCommit[]
+  postContributions       PostContributor[]
+  comments                Comment[]
+  commentVotes            CommentVote[]
+  reports                 Report[]
+  passwordResetTokens     PasswordResetToken[]
+  notifications           Notification[]
+  reportActions           ReportAction[]           @relation("ReportActionActor")
+  accounts                Account[]
+  sessions                Session[]
   emailVerificationTokens EmailVerificationToken[]
-  suggestions            Suggestion[]
+  suggestions             Suggestion[]
 }
 
 model Category {
@@ -46,16 +46,16 @@ model Category {
 }
 
 model Tag {
-  id    String   @id @default(cuid())
-  slug  String   @unique
+  id    String    @id @default(cuid())
+  slug  String    @unique
   name  String
   posts PostTag[]
 }
 
 model PostTag {
-  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId String
-  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
   tagId  String
 
   @@id([postId, tagId])
@@ -85,22 +85,22 @@ model Rating {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 }
 
 model EmailVerificationToken {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
   consumedAt DateTime?
 }
 
@@ -142,48 +142,50 @@ model SfmVersion {
 }
 
 model ChangelogEntry {
-  id          String   @id @default(cuid())
-  versionCode String   @unique
+  id          String    @id @default(cuid())
+  versionCode String    @unique
   title       String
   body        String
-  isLatest    Boolean  @default(false)
+  isLatest    Boolean   @default(false)
   publishedAt DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 }
 
 model Post {
-  id           String       @id @default(cuid())
-  slug         String       @unique
-  title        String
-  modVersion   String
-  gameVersion  String
-  categoryId   String
-  category     Category     @relation(fields: [categoryId], references: [id])
-  authorId     String
-  author       User         @relation(fields: [authorId], references: [id])
-  authorName   String
-  rating       Float        @default(0)
-  ratingCount  Int          @default(0)
-  isDeleted    Boolean      @default(false)
-  ratings      Rating[]
-  views        Int          @default(0)
-  uploadDate   DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt @default(now())
-  code         String
-  codeStatus   CodeStatus   @default(UNVERIFIED)
-  codeNote     String?
-  description  String
-  youtubeUrl   String?
-  images       PostImage[]
-  dependencies Dependency[]
-  tags         PostTag[]
-  openForImprovement Boolean   @default(false)
-  currentCommitId   String?      @unique
-  currentCommit     PostCommit? @relation("PostCurrentCommit", fields: [currentCommitId], references: [id])
-  commits           PostCommit[]
-  contributors      PostContributor[]
-  comments          Comment[]
-  reports           Report[]
+  id                 String            @id @default(cuid())
+  slug               String            @unique
+  title              String
+  modVersion         String
+  gameVersion        String
+  categoryId         String
+  category           Category          @relation(fields: [categoryId], references: [id])
+  authorId           String
+  author             User              @relation(fields: [authorId], references: [id])
+  authorName         String
+  rating             Float             @default(0)
+  ratingCount        Int               @default(0)
+  workedCount        Int               @default(0)
+  brokenCount        Int               @default(0)
+  isDeleted          Boolean           @default(false)
+  ratings            Rating[]
+  views              Int               @default(0)
+  uploadDate         DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+  code               String
+  codeStatus         CodeStatus        @default(UNVERIFIED)
+  codeNote           String?
+  description        String
+  youtubeUrl         String?
+  images             PostImage[]
+  dependencies       Dependency[]
+  tags               PostTag[]
+  openForImprovement Boolean           @default(false)
+  currentCommitId    String?           @unique
+  currentCommit      PostCommit?       @relation("PostCurrentCommit", fields: [currentCommitId], references: [id])
+  commits            PostCommit[]
+  contributors       PostContributor[]
+  comments           Comment[]
+  reports            Report[]
 }
 
 enum PostCommitStatus {
@@ -193,58 +195,58 @@ enum PostCommitStatus {
 }
 
 model PostCommit {
-  id          String            @id @default(cuid())
-  postId      String
-  post        Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId    String
-  author      User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  title       String?
-  message     String
-  code        String
-  status      PostCommitStatus  @default(PENDING)
-  createdAt   DateTime          @default(now())
-  mergedAt    DateTime?
-  rejectedAt  DateTime?
-  baseCommitId String?
-  baseCommit  PostCommit?       @relation("PostCommitBase", fields: [baseCommitId], references: [id])
-  derivedCommits PostCommit[]   @relation("PostCommitBase")
-  currentForPost Post?          @relation("PostCurrentCommit")
+  id             String           @id @default(cuid())
+  postId         String
+  post           Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title          String?
+  message        String
+  code           String
+  status         PostCommitStatus @default(PENDING)
+  createdAt      DateTime         @default(now())
+  mergedAt       DateTime?
+  rejectedAt     DateTime?
+  baseCommitId   String?
+  baseCommit     PostCommit?      @relation("PostCommitBase", fields: [baseCommitId], references: [id])
+  derivedCommits PostCommit[]     @relation("PostCommitBase")
+  currentForPost Post?            @relation("PostCurrentCommit")
 
   @@index([postId, createdAt])
   @@index([status])
 }
 
 model PostContributor {
-  id                  String   @id @default(cuid())
-  postId              String
-  post                Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId              String
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mergedCommits       Int      @default(0)
-  lastContributionAt  DateTime @default(now())
+  id                 String   @id @default(cuid())
+  postId             String
+  post               Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mergedCommits      Int      @default(0)
+  lastContributionAt DateTime @default(now())
 
   @@unique([postId, userId])
   @@index([postId, mergedCommits])
 }
 
 model Comment {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   content   String
   parentId  String?
-  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
-  score     Int      @default(0)
-  voteCount Int      @default(0)
-  isDeleted Boolean  @default(false)
+  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]     @relation("CommentReplies")
+  score     Int           @default(0)
+  voteCount Int           @default(0)
+  isDeleted Boolean       @default(false)
   votes     CommentVote[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
-  reports   Report[]
+  reports Report[]
 
   @@index([postId, createdAt])
   @@index([authorId, createdAt])
@@ -252,13 +254,13 @@ model Comment {
 }
 
 model Suggestion {
-  id        String   @id @default(cuid())
-  message   String
+  id           String   @id @default(cuid())
+  message      String
   contactName  String?
   contactEmail String?
-  authorId  String?
-  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
+  authorId     String?
+  author       User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
 }
 
 model CommentVote {
@@ -283,16 +285,16 @@ enum NotificationOrigin {
 }
 
 model Notification {
-  id        String              @id @default(cuid())
+  id        String             @id @default(cuid())
   userId    String
-  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
   origin    NotificationOrigin
   link      String?
   imageUrl  String?
   metadata  Json?
-  createdAt DateTime            @default(now())
+  createdAt DateTime           @default(now())
   readAt    DateTime?
 
   @@index([userId, createdAt])
@@ -300,16 +302,16 @@ model Notification {
 }
 
 model Report {
-  id         String   @id @default(cuid())
+  id         String         @id @default(cuid())
   reporterId String
-  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  reporter   User           @relation(fields: [reporterId], references: [id], onDelete: Cascade)
   postId     String?
-  post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post       Post?          @relation(fields: [postId], references: [id], onDelete: Cascade)
   commentId  String?
-  comment    Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  reason     ReportReason @default(OTHER)
+  comment    Comment?       @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reason     ReportReason   @default(OTHER)
   message    String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime       @default(now())
   resolvedAt DateTime?
   actions    ReportAction[]
 
@@ -318,15 +320,15 @@ model Report {
 }
 
 model ReportAction {
-  id        String            @id @default(cuid())
+  id        String           @id @default(cuid())
   reportId  String
-  report    Report            @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  report    Report           @relation(fields: [reportId], references: [id], onDelete: Cascade)
   actorId   String
-  actor     User              @relation("ReportActionActor", fields: [actorId], references: [id], onDelete: Cascade)
+  actor     User             @relation("ReportActionActor", fields: [actorId], references: [id], onDelete: Cascade)
   type      ReportActionType
   note      String?
   metadata  Json?
-  createdAt DateTime          @default(now())
+  createdAt DateTime         @default(now())
 }
 
 enum ReportActionType {

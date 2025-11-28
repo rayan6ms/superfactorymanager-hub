@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { db } from "@/lib/db";
 import { indexPost } from "@/lib/search";
-import { wilsonScore } from "@/lib/wilson-score";
+import { wilsonScore, WILSON_Z_80 } from "@/lib/wilson-score";
 import { subDays } from "date-fns";
 
 export const POST_CARD_INCLUDE = {
@@ -37,19 +37,34 @@ export async function recomputePostRating(postId: string) {
   }
 
   const total = worked + broken;
-  const rating = wilsonScore(worked, broken);
+  const rating = wilsonScore(worked, broken, WILSON_Z_80);
+
   const updated = await db.post.update({
     where: { id: postId },
-    data: { rating, ratingCount: total },
+    data: {
+      rating,
+      ratingCount: total,
+      workedCount: worked,
+      brokenCount: broken,
+    },
     include: { dependencies: true, category: true, tags: { include: { tag: true } } },
   });
+
   await indexPost(updated);
   return { updated, worked, broken, total };
 }
 
 export async function resetPostRatings(client: PrismaClientOrTransaction, postId: string) {
   await client.rating.deleteMany({ where: { postId } });
-  await client.post.update({ where: { id: postId }, data: { rating: 0, ratingCount: 0 } });
+  await client.post.update({
+    where: { id: postId },
+    data: {
+      rating: 0,
+      ratingCount: 0,
+      workedCount: 0,
+      brokenCount: 0,
+    },
+  });
 }
 
 export async function recordPostContributor(

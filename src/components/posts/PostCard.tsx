@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import clsx from "clsx";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
-import { CheckCircle, Eye, Search as SearchIcon, XCircle } from "lucide-react";
+import { Eye, Search as SearchIcon, Star, Check, X } from "lucide-react";
 import type { SerializedPost } from "@/lib/posts";
 
 const viewsFormatter = new Intl.NumberFormat(undefined, {
@@ -18,23 +17,72 @@ type Props = {
 function renderRating(
   rating: number | null | undefined,
   ratingCount: number | null | undefined,
+  workedCount?: number | null | undefined,
+  brokenCount?: number | null | undefined,
 ): ReactNode {
-  const total = Math.max(Math.round(ratingCount ?? 0), 0);
+  const rawTotalCount = Math.max(0, Math.round(ratingCount ?? 0));
+
+  const worked = Math.max(0, Math.round(workedCount ?? 0));
+  const broken = Math.max(0, Math.round(brokenCount ?? 0));
+  const hasSplitCounts = worked + broken > 0;
+
+  const total = hasSplitCounts ? worked + broken : rawTotalCount;
   if (total === 0) return "No votes yet";
-  const score = Math.max(0, Math.min(1, rating ?? 0));
-  const rate = Math.round(score * 100);
-  const majorityPositive = score >= 0.5;
-  const Icon = majorityPositive ? CheckCircle : XCircle;
+
+  let successPercent: number;
+
+  if (hasSplitCounts) {
+    successPercent = Math.round((worked / total) * 100);
+  } else {
+    const score = Math.max(0, Math.min(1, rating ?? 0));
+    successPercent = Math.round(score * 100);
+  }
+
+  if (!hasSplitCounts) {
+    return (
+      <>
+        {successPercent}% success{" "}
+        <span className="inline-flex items-center gap-1">
+          (<span>{total}</span>
+          <span className="sr-only">
+            {" "}
+            vote{total === 1 ? "" : "s"}
+          </span>
+          )
+        </span>
+      </>
+    );
+  }
 
   return (
-    <span className="inline-flex items-center gap-1">
-      <Icon
-        className={clsx("h-4 w-4", majorityPositive ? "text-emerald-300" : "text-red-300")}
-        aria-hidden
-      />
-      <span className="font-semibold text-white">{rate}% {majorityPositive ? "positive" : "negative"}</span>
-      <span className="text-white/70">({total} vote{total === 1 ? "" : "s"})</span>
-    </span>
+    <>
+      {successPercent}% success{" "}
+      <span className="inline-flex items-center gap-1">
+        (
+        <span className="inline-flex items-center gap-0.5">
+          <span className="text-emerald-400">
+            <Check className="h-3 w-3 inline-block" aria-hidden="true" />
+          </span>
+          <span>{worked}</span>
+          <span className="sr-only">
+            {" "}
+            positive vote{worked === 1 ? "" : "s"}
+          </span>
+        </span>
+        <span className="text-white/30">/</span>
+        <span className="inline-flex items-center gap-0.5">
+          <span className="text-red-400">
+            <X className="h-3 w-3 inline-block" aria-hidden="true" />
+          </span>
+          <span>{broken}</span>
+          <span className="sr-only">
+            {" "}
+            negative vote{broken === 1 ? "" : "s"}
+          </span>
+        </span>
+        )
+      </span>
+    </>
   );
 }
 
@@ -119,7 +167,13 @@ export default function PostCard({ post }: Props) {
                   <span>{viewsFormatter.format(post.views)} views</span>
                 </div>
                 <span className="inline-flex items-center gap-1 text-white/80">
-                  {renderRating(post.rating, post.ratingCount)}
+                  <Star className="h-3 w-3 text-amber-300" aria-hidden />
+                  {renderRating(
+                    post.rating,
+                    post.ratingCount,
+                    (post as any).workedCount,
+                    (post as any).brokenCount,
+                  )}
                 </span>
               </div>
             </div>

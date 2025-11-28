@@ -14,7 +14,7 @@ import {
   COMMENT_MIN_LENGTH,
   type SerializedComment,
 } from "@/lib/comment-constants";
-import { splitVotesFromScore, wilsonScore } from "@/lib/wilson-score";
+import { splitVotesFromScore, wilsonScore, WILSON_Z_80 } from "@/lib/wilson-score";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en", {
   year: "numeric",
@@ -187,6 +187,7 @@ export default function CommentsSection({
   const [replyDisplayLimit, setReplyDisplayLimit] = useState(5);
   const [threadRootId, setThreadRootId] = useState<string | null>(null);
   const [threadRootDepth, setThreadRootDepth] = useState(0);
+  const [threadMaxDepth, setThreadMaxDepth] = useState(5);
   const focusHandledRef = useRef(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -238,6 +239,33 @@ export default function CommentsSection({
     handleChange();
     media.addEventListener("change", handleChange);
     return () => media.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const smQuery = window.matchMedia("(min-width: 640px)");
+    const mdQuery = window.matchMedia("(min-width: 768px)");
+
+    const handleChange = () => {
+      if (mdQuery.matches) {
+        setThreadMaxDepth(5);
+      } else if (smQuery.matches) {
+        setThreadMaxDepth(3);
+      } else {
+        setThreadMaxDepth(2);
+      }
+    };
+
+    handleChange();
+
+    smQuery.addEventListener("change", handleChange);
+    mdQuery.addEventListener("change", handleChange);
+
+    return () => {
+      smQuery.removeEventListener("change", handleChange);
+      mdQuery.removeEventListener("change", handleChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -661,7 +689,7 @@ export default function CommentsSection({
 
           const profileHref = comment.author?.name ? `/profile/${comment.author.name}` : null;
           const { upvotes, downvotes, totalVotes } = splitVotesFromScore(comment.score, comment.voteCount);
-          const confidence = wilsonScore(upvotes, downvotes);
+          const confidence = wilsonScore(upvotes, downvotes, WILSON_Z_80);
           const isScoreHidden =
             totalVotes > 0 && downvotes > upvotes && confidence < COMMENT_HIDE_THRESHOLD;
           const isHidden = isScoreHidden && !revealedHidden[comment.id];
@@ -1090,7 +1118,7 @@ export default function CommentsSection({
                 {renderThread([threadRoot], threadRootDepth, {
                   limitReplies: true,
                   depthOffset: threadRootDepth,
-                  maxDepthOverride: 5,
+                  maxDepthOverride: threadMaxDepth,
                 })}
               </div>
             </div>

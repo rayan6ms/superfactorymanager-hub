@@ -147,7 +147,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
             }
           }}
         >
-          <div className="flex w-full max-w-7xl max-h-[calc(100dvh-3rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#111827]/90 shadow-2xl">
+          <div className="flex w-full max-w-7xl max-h-[calc(100dvh-3rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">
@@ -201,7 +201,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
               </div>
             </div>
 
-            <div className="relative flex-1 bg-[#0d1422]/85 px-6 py-4 sm:px-10 sm:py-6">
+            <div className="relative flex-1 bg-neutral-800/30 backdrop-blur-sm px-6 py-4 sm:px-10 sm:py-6">
               <div
                 className="h-full w-full overflow-auto rounded-2xl bg-white/5 dark-scrollbar"
                 onWheel={handleWheel}
@@ -243,7 +243,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
               )}
             </div>
 
-            <div className="border-t border-white/10 bg-[#0f172a]/80 px-4 py-3">
+            <div className="border-t border-white/10 bg-neutral-900/80 backdrop-blur-sm px-4 py-3">
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {imgs.map((image, index) => {
                   const preview =

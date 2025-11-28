@@ -173,7 +173,7 @@ export default function ReportButton({
             if (event.target === event.currentTarget) close();
           }}
         >
-          <div className="w-full max-w-lg space-y-5 rounded-3xl border border-white/10 bg-[#111827]/90 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto">
+          <div className="w-full max-w-lg space-y-5 rounded-3xl border border-white/10 bg-neutral-900/60 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">Report {type}</p>
