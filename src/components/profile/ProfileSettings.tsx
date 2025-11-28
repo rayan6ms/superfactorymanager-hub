@@ -25,7 +25,6 @@ type ProfileSettingsProps = {
 };
 
 type Status = "idle" | "loading" | "success" | "error";
-
 type ResetStatus = "idle" | "loading" | "sent" | "error";
 
 type FormErrors = {
@@ -112,7 +111,9 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const errorMessage = typeof data?.error === "string" ? data.error : "We couldn’t update your profile.";
+        const errorMessage =
+          typeof data?.error === "string" ? data.error : "We couldn’t update your profile.";
+
         if (
           errorMessage === "NAME_REQUIRED" ||
           errorMessage === "NAME_TOO_SHORT" ||
@@ -214,10 +215,35 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     </div>
   );
 
+  const bioControls = (
+    <div>
+      <label className="text-sm font-semibold text-white">Bio</label>
+      <textarea
+        value={bio}
+        onChange={event => {
+          const nextBio = event.target.value.slice(0, BIO_MAX_LENGTH);
+          setBio(nextBio);
+          setErrors(prev => ({ ...prev, bio: undefined, form: undefined }));
+        }}
+        placeholder="Tell the community about your play style, favorite builds, or goals."
+        rows={4}
+        className="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/40 outline-none transition focus:border-white/40"
+        aria-invalid={Boolean(errors.bio)}
+      />
+      <div className="mt-1 flex items-center justify-between text-xs text-white/60">
+        <span>
+          {bio.length} / {BIO_MAX_LENGTH} characters
+        </span>
+        <span className="italic text-white/50">Shown on your posts and profile</span>
+      </div>
+      {errors.bio && <p className="mt-1 text-sm text-error">{errors.bio}</p>}
+    </div>
+  );
+
   return (
     <Card className="space-y-6 p-6">
-      <div className="flex items-start gap-4">
-        <div className="relative h-24 w-24 overflow-hidden rounded-full border border-white/15 bg-white/5 group">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="relative h-24 w-24 self-center sm:self-auto overflow-hidden rounded-full border border-white/15 bg-white/5 group">
           {preview ? (
             <Image
               src={preview}
@@ -262,88 +288,19 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             {errors.name && <p className="mt-1 text-sm text-error">{errors.name}</p>}
           </div>
 
-          <div>
-            <label className="text-sm font-semibold text-white">Bio</label>
-            <textarea
-              value={bio}
-              onChange={event => {
-                const nextBio = event.target.value.slice(0, BIO_MAX_LENGTH);
-                setBio(nextBio);
-                setErrors(prev => ({ ...prev, bio: undefined, form: undefined }));
-              }}
-              placeholder="Tell the community about your play style, favorite builds, or goals."
-              rows={4}
-              className="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/40 outline-none transition focus:border-white/40"
-              aria-invalid={Boolean(errors.bio)}
-            />
-            <div className="mt-1 flex items-center justify-between text-xs text-white/60">
-              <span>{bio.length} / {BIO_MAX_LENGTH} characters</span>
-              <span className="italic text-white/50">Shown on your posts and profile</span>
-            </div>
-            {errors.bio && <p className="mt-1 text-sm text-error">{errors.bio}</p>}
-          </div>
-
-          <div className="hidden sm:block">
-            {avatarImageControls}
-          </div>
+          <div className="hidden sm:block">{bioControls}</div>
+          <div className="hidden sm:block">{avatarImageControls}</div>
         </div>
       </div>
 
-      <div className="sm:hidden">
+      <div className="space-y-4 sm:hidden">
+        {bioControls}
         {avatarImageControls}
-      </div>
-
-      <div className="space-y-3 hidden sm:flex-1">
-        <div>
-          <label className="text-sm font-semibold text-white">Avatar image URL</label>
-          <Input
-            value={image}
-            onChange={event => {
-              setImage(event.target.value);
-              setPreview(event.target.value);
-              setErrors(prev => ({ ...prev, image: undefined, form: undefined }));
-            }}
-            placeholder="https://example.com/avatar.png"
-            className="mt-1"
-            aria-invalid={Boolean(errors.image)}
-          />
-          {errors.image && <p className="mt-1 text-sm text-error">{errors.image}</p>}
-          <div className="mt-2 flex flex-wrap gap-2 text-sm text-white/70">
-            <label className="inline-flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="gap-2"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="h-4 w-4" aria-hidden /> Upload image
-              </Button>
-            </label>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="gap-2"
-              onClick={() => submitProfile(true)}
-              disabled={isLoading}
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden />
-              Use letter avatar
-            </Button>
-          </div>
-        </div>
       </div>
 
       {errors.form && <p className="text-sm text-error">{errors.form}</p>}
       {status === "success" && <p className="text-sm text-emerald-300">Profile updated successfully.</p>}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3 text-sm text-white/70">
           <Button
