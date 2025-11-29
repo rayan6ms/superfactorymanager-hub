@@ -647,7 +647,7 @@ export default function CommentsSection({
         {depth > 0 && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 bottom-0 w-px bg-linear-to-b from-white/20 via-white/20 to-white/20"
+            className="pointer-events-none absolute left-0 top-0 bottom-0 w-px bg-linear-to-b from-white/20 via-white/20 to-white/15"
           />
         )}
         {nodes.map(comment => {

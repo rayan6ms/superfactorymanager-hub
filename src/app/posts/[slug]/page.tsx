@@ -163,7 +163,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 <Eye className="flex h-4 w-4" aria-hidden="true" />
                 <span>{views} views</span>
               </div>
-              {verification.isAuthor && (
+              {(isAdmin || verification.isAuthor) && (
                 <Link
                   href={`/posts/${slug}/edit`}
                   className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
