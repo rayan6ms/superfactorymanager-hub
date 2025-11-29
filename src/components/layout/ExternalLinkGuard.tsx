@@ -85,7 +85,7 @@ export default function ExternalLinkGuard() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e111a]/75 px-4 py-6 backdrop-blur"
       role="dialog"
       aria-modal="true"
       onMouseDown={(event) => {
@@ -113,7 +113,7 @@ export default function ExternalLinkGuard() {
           <p className="text-sm text-white/70">
             We cannot guarantee that {pending.hostname} is safe. Continue to this site or stay on the current page.
           </p>
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/80 break-words">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/80 wrap-break-word">
             {pending.href}
           </div>
         </div>

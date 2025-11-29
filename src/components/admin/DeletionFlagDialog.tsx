@@ -85,7 +85,7 @@ export default function DeletionFlagDialog({
             if (event.target === event.currentTarget) close();
           }}
         >
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#111827]/90 p-6 shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-neutral-900/90 p-6 shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2 text-amber-200">
                 <AlertTriangle className="h-5 w-5" aria-hidden />
@@ -109,8 +109,8 @@ export default function DeletionFlagDialog({
             </div>
 
             <form className="mt-3 space-y-3" onSubmit={submit}>
-              <label className="space-y-2 text-sm text-white/80">
-                <span>Type {requireText} to proceed</span>
+              <label className="space-y-2 text-md text-white/80">
+                <span>Type <span className="text-red-400">{requireText}</span> to proceed</span>
                 <input
                   type="text"
                   value={confirmValue}

@@ -87,11 +87,11 @@ export default function PostsFilterBar({
         </div>
 
         <div className="flex flex-1 flex-wrap gap-3 lg:justify-end">
-          <label className="flex flex-col text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+          <label className="flex flex-col text-xs font-semibold uppercase tracking-[0.3em] text-white/50 w-full sm:w-44">
             Order by
             <select
               name="order"
-              className="mt-1 rounded-xl border border-white/20 bg-(--surface-2)/80 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-xl border border-white/20 bg-(--surface-2)/80 px-3 py-2 text-white"
               value={order}
               onChange={event => setOrder(event.target.value)}
             >
@@ -103,11 +103,11 @@ export default function PostsFilterBar({
             </select>
           </label>
 
-          <label className="flex flex-col text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+          <label className="flex flex-col text-xs font-semibold uppercase tracking-[0.3em] text-white/50 w-full sm:w-44">
             Minimum rating
             <select
               name="minRating"
-              className="mt-1 rounded-xl border border-white/20 bg-(--surface-2)/80 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-xl border border-white/20 bg-(--surface-2)/80 px-3 py-2 text-white"
               value={minRating}
               onChange={event => setMinRating(event.target.value)}
             >

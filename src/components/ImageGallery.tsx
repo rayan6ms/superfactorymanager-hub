@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type WheelEvent,
 } from "react";
@@ -21,6 +22,9 @@ import {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3;
+
 export type GalleryImage = {
   id: string;
   thumbSm: string;
@@ -37,24 +41,37 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [brightness, setBrightness] = useState(1);
+
+  const [baseSize, setBaseSize] = useState<{ width: number; height: number } | null>(null);
+  const [imageAreaHeight, setImageAreaHeight] = useState<number | null>(null);
+
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   const total = imgs?.length ?? 0;
   const hasImages = total > 0;
+
+  const resetViewState = useCallback(() => {
+    setZoom(1);
+    setBrightness(1);
+    setBaseSize(null);
+    setImageAreaHeight(null);
+  }, []);
 
   const openViewer = useCallback(
     (index: number) => {
       if (!hasImages) return;
       setActiveIndex(index);
-      setZoom(1);
+      resetViewState();
       setOpen(true);
     },
-    [hasImages],
+    [hasImages, resetViewState],
   );
 
   const closeViewer = useCallback(() => {
     setOpen(false);
-    setZoom(1);
-  }, []);
+    resetViewState();
+  }, [resetViewState]);
 
   const goToNext = useCallback(() => {
     if (!hasImages) return;
@@ -62,8 +79,8 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
       const normalized = ((prev % total) + total) % total;
       return (normalized + 1) % total;
     });
-    setZoom(1);
-  }, [total, hasImages]);
+    resetViewState();
+  }, [total, hasImages, resetViewState]);
 
   const goToPrev = useCallback(() => {
     if (!hasImages) return;
@@ -71,8 +88,8 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
       const normalized = ((prev % total) + total) % total;
       return (normalized - 1 + total) % total;
     });
-    setZoom(1);
-  }, [total, hasImages]);
+    resetViewState();
+  }, [total, hasImages, resetViewState]);
 
   useEffect(() => {
     if (!open || !hasImages) return;
@@ -119,103 +136,201 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
     (event: WheelEvent<HTMLDivElement>) => {
       if (!event.ctrlKey || !hasImages) return;
       event.preventDefault();
-      setZoom((prev) => clamp(prev + (event.deltaY < 0 ? 0.1 : -0.1), 1, 3));
+      setZoom((prev) =>
+        clamp(prev + (event.deltaY < 0 ? 0.1 : -0.1), MIN_ZOOM, MAX_ZOOM),
+      );
     },
     [hasImages],
   );
 
   const zoomInAction = useCallback(
-    () => setZoom((prev) => clamp(prev + 0.25, 1, 3)),
+    () => setZoom((prev) => clamp(prev + 0.25, MIN_ZOOM, MAX_ZOOM)),
     [],
   );
   const zoomOutAction = useCallback(
-    () => setZoom((prev) => clamp(prev - 0.25, 1, 3)),
+    () => setZoom((prev) => clamp(prev - 0.25, MIN_ZOOM, MAX_ZOOM)),
     [],
   );
-  const resetZoom = useCallback(() => setZoom(1), []);
+
+  const resetAll = useCallback(() => {
+    setZoom(1);
+    setBrightness(1);
+  }, []);
+
+  const handleImageLoad = useCallback(() => {
+    if (!imgRef.current || typeof window === "undefined") return;
+
+    const img = imgRef.current;
+    const naturalWidth = img.naturalWidth || img.width;
+    const naturalHeight = img.naturalHeight || img.height;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    const maxAreaWidth = viewportWidth * 0.9;
+    const maxAreaHeight = viewportHeight * 0.6;
+
+    const scaleToFit = Math.min(
+      maxAreaWidth / naturalWidth,
+      maxAreaHeight / naturalHeight,
+      1,
+    );
+
+    const displayWidth = naturalWidth * scaleToFit;
+    const displayHeight = naturalHeight * scaleToFit;
+
+    setBaseSize({ width: displayWidth, height: displayHeight });
+    setImageAreaHeight(displayHeight);
+    setZoom(1);
+  }, []);
 
   if (!hasImages) return null;
+
+  const canZoomOut = zoom > MIN_ZOOM;
+  const canZoomIn = zoom < MAX_ZOOM;
+
+  const displayWidth =
+    baseSize && zoom ? baseSize.width * zoom : undefined;
+  const displayHeight =
+    baseSize && zoom ? baseSize.height * zoom : undefined;
 
   const overlay =
     open && typeof document !== "undefined"
       ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-[#0e111a]/75 px-3 py-6 sm:px-6 sm:py-10 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e111a]/75 px-3 py-6 sm:px-6 sm:py-10 backdrop-blur-sm"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               closeViewer();
             }
           }}
         >
-          <div className="flex w-full max-w-7xl max-h-[calc(100dvh-3rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm shadow-2xl">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">
-                  Gallery
-                </p>
-                <p className="text-lg font-semibold text-white">
-                  Image {safeIndex + 1} of {total}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={zoomOutAction}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:border-white/40 hover:text-white"
-                >
-                  <ZoomOut className="h-5 w-5" aria-hidden="true" />
-                  <span className="sr-only">Zoom out</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={zoomInAction}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:border-white/40 hover:text-white"
-                >
-                  <ZoomIn className="h-5 w-5" aria-hidden="true" />
-                  <span className="sr-only">Zoom in</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={resetZoom}
-                  className="inline-flex h-10 items-center justify-center rounded-full border border-white/15 px-3 text-xs font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
-                >
-                  Reset
-                </button>
-                <button
-                  type="button"
-                  onClick={openImageInNewTab}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                  disabled={!currentImageSrc}
-                >
-                  <ExternalLink className="h-5 w-5" aria-hidden="true" />
-                  <span className="sr-only">Open image in new tab</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={closeViewer}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:border-white/40 hover:text-white"
-                >
-                  <X className="h-5 w-5" aria-hidden="true" />
-                  <span className="sr-only">Close</span>
-                </button>
+          <div className="flex w-full max-w-7xl max-h-[calc(100dvh-3rem)] flex-col overflow-auto rounded-3xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm shadow-2xl">
+            <div className="border-b border-white/10 px-5 py-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex w-fit sm:min-w-[140px] flex-1 flex-col">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">
+                    Gallery
+                  </p>
+                  <p className="text-lg font-semibold text-white">
+                    Image {safeIndex + 1} of {total}
+                  </p>
+                </div>
+
+                <div className="flex flex-none justify-end sm:flex-1 sm:justify-center">
+                  <label className="flex flex-col gap-1 text-xs font-medium text-white/60 sm:flex-row text-center sm:items-center sm:gap-3">
+                    <span className="text-[11px] mb-2 sm:mb-0 sm:text-xs">
+                      Brightness
+                    </span>
+                    <input
+                      type="range"
+                      min={0.5}
+                      max={1.5}
+                      step={0.05}
+                      value={brightness}
+                      onChange={(e) => setBrightness(parseFloat(e.target.value))}
+                      aria-label="Adjust image brightness"
+                      className="h-1 w-40 cursor-pointer appearance-none rounded-full bg-white/20 accent-white"
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-2 flex w-full justify-end gap-2 sm:mt-0 sm:w-auto sm:flex-1">
+                  <button
+                    type="button"
+                    onClick={canZoomOut ? zoomOutAction : undefined}
+                    disabled={!canZoomOut}
+                    className={clsx(
+                      "inline-flex h-10 w-10 items-center justify-center rounded-full border text-white/80 transition",
+                      "hover:border-white/40 hover:text-white",
+                      "disabled:cursor-not-allowed disabled:opacity-40 disabled:border-white/10 disabled:text-white/40",
+                      "border-white/15",
+                    )}
+                  >
+                    <ZoomOut className="h-5 w-5" aria-hidden="true" />
+                    <span className="sr-only">Zoom out</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={canZoomIn ? zoomInAction : undefined}
+                    disabled={!canZoomIn}
+                    className={clsx(
+                      "inline-flex h-10 w-10 items-center justify-center rounded-full border text-white/80 transition",
+                      "hover:border-white/40 hover:text-white",
+                      "disabled:cursor-not-allowed disabled:opacity-40 disabled:border-white/10 disabled:text-white/40",
+                      "border-white/15",
+                    )}
+                  >
+                    <ZoomIn className="h-5 w-5" aria-hidden="true" />
+                    <span className="sr-only">Zoom in</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={resetAll}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-white/15 px-3 text-xs font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
+                  >
+                    Reset
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={openImageInNewTab}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={!currentImageSrc}
+                  >
+                    <ExternalLink className="h-5 w-5" aria-hidden="true" />
+                    <span className="sr-only">Open image in new tab</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={closeViewer}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:border-white/40 hover:text-white"
+                  >
+                    <X className="h-5 w-5" aria-hidden="true" />
+                    <span className="sr-only">Close</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="relative flex-1 bg-neutral-800/30 backdrop-blur-sm px-6 py-4 sm:px-10 sm:py-6">
+            <div className="relative bg-neutral-800/30 backdrop-blur-sm px-4 py-4 sm:px-10 sm:py-6">
               <div
-                className="h-full w-full overflow-auto rounded-2xl bg-white/5 dark-scrollbar"
+                className="mx-auto w-full overflow-auto rounded-2xl bg-white/5 dark-scrollbar"
+                style={
+                  imageAreaHeight
+                    ? { height: `${imageAreaHeight}px` }
+                    : undefined
+                }
                 onWheel={handleWheel}
               >
-                <div className="flex min-h-full min-w-full items-center justify-center p-4">
-                  {currentImageSrc && (
-                    <img
-                      src={currentImageSrc}
-                      alt=""
-                      className="w-auto max-w-full object-contain"
-                      style={{ transform: `scale(${zoom})`, maxHeight: "min(70vh, 70dvh)" }}
-                    />
-                  )}
-                </div>
+                {currentImageSrc && (
+                  <img
+                    ref={imgRef}
+                    src={currentImageSrc}
+                    alt=""
+                    onLoad={handleImageLoad}
+                    className={clsx(
+                      "block object-contain mx-auto",
+                      !baseSize && "max-h-[60vh] max-w-full",
+                    )}
+                    style={
+                      baseSize
+                        ? {
+                          width: `${displayWidth}px`,
+                          height: `${displayHeight}px`,
+                          maxWidth: "none",
+                          maxHeight: "none",
+                          filter: `brightness(${brightness})`,
+                        }
+                        : {
+                          filter: `brightness(${brightness})`,
+                        }
+                    }
+                  />
+                )}
               </div>
 
               {total > 1 && (
@@ -258,7 +373,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                       key={image.id}
                       onClick={() => {
                         setActiveIndex(index);
-                        setZoom(1);
+                        resetViewState();
                       }}
                       className={clsx(
                         "flex h-16 w-24 flex-none items-center justify-center overflow-hidden rounded-xl border",
@@ -290,7 +405,8 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
     <>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         {imgs.map((img, index) => {
-          const preview = img.thumbLg || img.thumbMd || img.thumbSm || img.original;
+          const preview =
+            img.thumbLg || img.thumbMd || img.thumbSm || img.original;
           return (
             <button
               type="button"
