@@ -115,6 +115,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
 
   const views = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(post.views ?? 0);
   const uploadDate = formatUploadDate(post.uploadDate);
+  const moderationDate = post.moderationEditedAt ? formatUploadDate(post.moderationEditedAt) : null;
   const heroImage = post.images?.[0] ?? null;
   const heroSrc = heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
   const tags = post.tags?.map(t => t.tag).filter(Boolean) ?? [];
@@ -171,6 +172,13 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 </Link>
               )}
             </div>
+
+            {post.moderationEditedNote && (
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-50">
+                <span className="font-semibold">{post.moderationEditedNote}</span>
+                {moderationDate ? <span className="text-amber-100/80">Updated {moderationDate}</span> : null}
+              </div>
+            )}
 
             <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 sm:flex-row sm:items-center">
               <div className="flex items-center gap-3 min-w-0">

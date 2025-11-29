@@ -7,6 +7,7 @@ import path from "path";
 import { randomUUID } from "crypto";
 import { MAX_POST_IMAGES } from "@/lib/images";
 import { detectNsfwInBuffer } from "@/lib/nsfw";
+import { isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,8 @@ export async function POST(
     include: { author: true },
   });
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (post.author.email !== session.user.email) {
+  const isAdmin = isAdminEmail(session.user.email);
+  if (!isAdmin && post.author.email !== session.user.email) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

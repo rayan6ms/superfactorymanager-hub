@@ -10,7 +10,13 @@ export class RateLimitError extends Error {
   }
 }
 
-type RateLimitAction = "post:create" | "comment:create" | "report:create" | "commit:create";
+type RateLimitAction =
+  | "post:create"
+  | "comment:create"
+  | "report:create"
+  | "commit:create"
+  | "post:vote"
+  | "comment:vote";
 
 type Rule = {
   windowMs: number;
@@ -66,6 +72,36 @@ const rules: Record<RateLimitAction, Rule> = {
         select: { createdAt: true },
       });
       return first?.createdAt ?? null;
+    },
+  },
+  "post:vote": {
+    windowMs: hour,
+    limit: 120,
+    message: "You can only vote on 120 posts per hour.",
+    count: (userId, since) =>
+      db.rating.count({ where: { userId, ratedAt: { gte: since } } }),
+    oldest: async (userId, since) => {
+      const first = await db.rating.findFirst({
+        where: { userId, ratedAt: { gte: since } },
+        orderBy: { ratedAt: "asc" },
+        select: { ratedAt: true },
+      });
+      return first?.ratedAt ?? null;
+    },
+  },
+  "comment:vote": {
+    windowMs: hour,
+    limit: 200,
+    message: "You can only vote on 200 comments per hour.",
+    count: (userId, since) =>
+      db.commentVote.count({ where: { userId, updatedAt: { gte: since } } }),
+    oldest: async (userId, since) => {
+      const first = await db.commentVote.findFirst({
+        where: { userId, updatedAt: { gte: since } },
+        orderBy: { updatedAt: "asc" },
+        select: { updatedAt: true },
+      });
+      return first?.updatedAt ?? null;
     },
   },
   "commit:create": {

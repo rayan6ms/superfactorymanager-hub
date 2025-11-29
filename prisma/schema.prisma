@@ -36,6 +36,7 @@ model User {
   sessions                Session[]
   emailVerificationTokens EmailVerificationToken[]
   suggestions             Suggestion[]
+  moderatedPosts          Post[]                   @relation("ModeratedPosts")
 }
 
 model Category {
@@ -170,6 +171,9 @@ model Post {
   deletionFlaggedAt  DateTime?
   deletionFlaggedByAuto Boolean        @default(false)
   deletionPurgeAt    DateTime?
+  moderationEditedAt DateTime?
+  moderationEditedById String?
+  moderationEditedNote String?
   ratings            Rating[]
   views              Int               @default(0)
   uploadDate         DateTime          @default(now())
@@ -189,6 +193,7 @@ model Post {
   contributors       PostContributor[]
   comments           Comment[]
   reports            Report[]
+  moderationEditor   User?             @relation("ModeratedPosts", fields: [moderationEditedById], references: [id])
 }
 
 enum PostCommitStatus {

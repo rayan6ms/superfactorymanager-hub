@@ -3,6 +3,29 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getCommentById } from "@/lib/comments";
 import { interactionBlockReason } from "@/lib/moderation";
+import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
+
+const VOTE_THROTTLE_MS = 2000;
+
+async function enforceVoteThrottle(userId: string) {
+  const latest = await db.commentVote.findFirst({
+    where: { userId },
+    orderBy: { updatedAt: "desc" },
+    select: { updatedAt: true },
+  });
+
+  if (!latest) return null;
+  const elapsed = Date.now() - latest.updatedAt.getTime();
+  if (elapsed < VOTE_THROTTLE_MS) {
+    const retry = Math.ceil((VOTE_THROTTLE_MS - elapsed) / 1000);
+    return NextResponse.json(
+      { error: "You're voting too quickly. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": String(retry) } },
+    );
+  }
+
+  return null;
+}
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -32,6 +55,21 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (restriction) {
     return NextResponse.json({ error: restriction }, { status: 403 });
   }
+
+  try {
+    await assertRateLimit(user.id, "comment:vote");
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+      );
+    }
+    throw err;
+  }
+
+  const throttleResponse = await enforceVoteThrottle(user.id);
+  if (throttleResponse) return throttleResponse;
 
   let body: unknown;
   try {
@@ -94,6 +132,21 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (!commentExists) {
     return NextResponse.json({ error: "Comment not found" }, { status: 404 });
   }
+
+  try {
+    await assertRateLimit(user.id, "comment:vote");
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+      );
+    }
+    throw err;
+  }
+
+  const throttleResponse = await enforceVoteThrottle(user.id);
+  if (throttleResponse) return throttleResponse;
 
   const existing = await db.commentVote.findUnique({
     where: { userId_commentId: { userId: user.id, commentId: id } },

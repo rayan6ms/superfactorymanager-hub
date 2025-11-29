@@ -12,6 +12,7 @@ import { analyzeYoutubeUrl, toEmbed } from "@/lib/youtube";
 import { indexPost } from "@/lib/search";
 import { recordPostContributor, resetPostRatings } from "@/lib/posts";
 import type { z } from "zod";
+import { isAdminEmail } from "@/lib/admin";
 
 async function removeImageFiles(urls: Array<string | null | undefined>) {
   await Promise.all(
@@ -50,6 +51,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
 
   const user = await db.user.findUnique({ where: { email: session.user.email } });
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const isAdmin = isAdminEmail(session.user.email);
 
   const post = await db.post.findUnique({
     where: { slug },
@@ -62,7 +64,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     },
   });
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (post.authorId !== user.id) {
+  const isAuthor = post.authorId === user.id;
+  if (!isAuthor && !isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -122,6 +125,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
   const codeChanged = code !== post.code;
   const keepImageIds = new Set(parsed.keepImageIds ?? []);
   const imagesToRemove = post.images.filter(img => !keepImageIds.has(img.id));
+  const moderationNote = !isAuthor && isAdmin ? "Edited by moderation" : null;
+  const moderationTimestamp = moderationNote ? new Date() : null;
 
   const updated = await db.$transaction(async tx => {
     if (imagesToRemove.length) {
@@ -143,6 +148,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
         codeNote,
         youtubeUrl: yt,
         openForImprovement: parsed.openForImprovement ?? false,
+        moderationEditedAt: moderationTimestamp,
+        moderationEditedById: moderationNote ? user.id : null,
+        moderationEditedNote: moderationNote,
         dependencies: {
           create: depObjs.map(d => ({
             name: d.name,
@@ -178,8 +186,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
         data: {
           postId: post.id,
           authorId: user.id,
-          title: "Author update",
-          message: "Post updated by author",
+          title: isAuthor ? "Author update" : "Moderator update",
+          message: isAuthor ? "Post updated by author" : "Post updated by moderator",
           code,
           status: "MERGED",
           mergedAt: new Date(),

@@ -6,6 +6,7 @@ import CodeHistoryPanel from "@/components/posts/CodeHistoryPanel";
 import CodeImprovementForm from "@/components/posts/CodeImprovementForm";
 import type { CommitForHistory, ContributorSummary } from "@/components/posts/CodeHistoryPanel";
 import type { Tag as TagModel } from "@prisma/client";
+import { isAdminEmail } from "@/lib/admin";
 
 export default async function EditPostPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
@@ -16,6 +17,7 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
 
   const user = await db.user.findUnique({ where: { email: session.user.email! } });
   if (!user) redirect(`/login?from=/posts/${slug}/edit`);
+  const isAdmin = isAdminEmail(session.user.email);
 
   const post = await db.post.findUnique({
     where: { slug },
@@ -38,7 +40,7 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
   if (!post) notFound();
 
   const isAuthor = post.authorId === user.id;
-  if (!isAuthor && !post.openForImprovement) {
+  if (!isAuthor && !isAdmin && !post.openForImprovement) {
     redirect(`/posts/${slug}`);
   }
 
@@ -95,7 +97,7 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
         </p>
       </div>
 
-      {isAuthor && (
+      {(isAuthor || isAdmin) && (
         <PostComposer mode="edit" slug={slug} initialData={initialData} />
       )}
 

@@ -3,8 +3,30 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { recomputePostRating } from "@/lib/posts";
 import { interactionBlockReason } from "@/lib/moderation";
+import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
 const COOLDOWN_SEC = 10;
+const VOTE_THROTTLE_MS = 2000;
+
+async function enforceVoteThrottle(userId: string) {
+  const latest = await db.rating.findFirst({
+    where: { userId },
+    orderBy: { ratedAt: "desc" },
+    select: { ratedAt: true },
+  });
+
+  if (!latest) return null;
+  const elapsed = Date.now() - latest.ratedAt.getTime();
+  if (elapsed < VOTE_THROTTLE_MS) {
+    const retry = Math.ceil((VOTE_THROTTLE_MS - elapsed) / 1000);
+    return NextResponse.json(
+      { error: "You're voting too quickly. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": String(retry) } },
+    );
+  }
+
+  return null;
+}
 
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
@@ -28,6 +50,21 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   if (restriction) {
     return NextResponse.json({ error: restriction }, { status: 403 });
   }
+
+  try {
+    await assertRateLimit(user.id, "post:vote");
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+      );
+    }
+    throw err;
+  }
+
+  const throttleResponse = await enforceVoteThrottle(user.id);
+  if (throttleResponse) return throttleResponse;
 
   let body: unknown;
   try {
@@ -81,6 +118,21 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ slug: strin
 
   const post = await db.post.findUnique({ where: { slug } });
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  try {
+    await assertRateLimit(user.id, "post:vote");
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } },
+      );
+    }
+    throw err;
+  }
+
+  const throttleResponse = await enforceVoteThrottle(user.id);
+  if (throttleResponse) return throttleResponse;
 
   await db.rating.delete({
     where: { userId_postId: { userId: user.id, postId: post.id } },
