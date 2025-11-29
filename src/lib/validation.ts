@@ -59,6 +59,8 @@ export const postSchema = z.object({
     .max(MAX_POST_IMAGES, { message: `You can upload up to ${MAX_POST_IMAGES} images.` })
     .default([]),
 
+  keepImageIds: z.array(z.string().min(1)).optional().default([]),
+
   dependencies: z.array(dependencyUrl).optional().default([]),
 
   code: z.string().min(1),

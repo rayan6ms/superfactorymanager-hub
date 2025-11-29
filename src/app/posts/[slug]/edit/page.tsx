@@ -43,6 +43,7 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
   }
 
   const initialData = {
+    id: post.id,
     title: post.title,
     gameVersion: post.gameVersion,
     modVersion: post.modVersion,

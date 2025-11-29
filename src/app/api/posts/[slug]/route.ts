@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import fs from "fs/promises";
+import path from "path";
 import { db } from "@/lib/db";
 import { shouldCountViewAndMark } from "@/lib/views";
 import { auth } from "@/lib/auth";
@@ -10,6 +12,17 @@ import { analyzeYoutubeUrl, toEmbed } from "@/lib/youtube";
 import { indexPost } from "@/lib/search";
 import { recordPostContributor, resetPostRatings } from "@/lib/posts";
 import type { z } from "zod";
+
+async function removeImageFiles(urls: Array<string | null | undefined>) {
+  await Promise.all(
+    urls.map(async url => {
+      if (!url) return;
+      const normalized = url.startsWith("/") ? url.slice(1) : url;
+      const filePath = path.join(process.cwd(), "public", normalized);
+      await fs.unlink(filePath).catch(() => {});
+    }),
+  );
+}
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
@@ -107,8 +120,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
   if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(code)) { codeStatus = "BROKEN"; codeNote = "Invalid control characters found."; }
 
   const codeChanged = code !== post.code;
+  const keepImageIds = new Set(parsed.keepImageIds ?? []);
+  const imagesToRemove = post.images.filter(img => !keepImageIds.has(img.id));
 
   const updated = await db.$transaction(async tx => {
+    if (imagesToRemove.length) {
+      await tx.postImage.deleteMany({ where: { postId: post.id, id: { in: imagesToRemove.map(img => img.id) } } });
+    }
     await tx.postTag.deleteMany({ where: { postId: post.id } });
     await tx.dependency.deleteMany({ where: { postId: post.id } });
 
@@ -176,11 +194,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     return updatedPost;
   });
 
+  if (imagesToRemove.length) {
+    await Promise.all(
+      imagesToRemove.map(img => removeImageFiles([img.original, img.thumbSm, img.thumbMd, img.thumbLg])),
+    );
+  }
+
   try {
     await indexPost(updated as any);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn("[search] Failed to reindex post in Meilisearch:", msg);
   }
-  return NextResponse.json({ slug: updated.slug });
+  return NextResponse.json({ slug: updated.slug, id: post.id });
 }

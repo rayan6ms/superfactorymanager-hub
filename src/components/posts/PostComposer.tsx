@@ -78,6 +78,7 @@ type PostComposerProps = {
   mode?: "create" | "edit";
   slug?: string;
   initialData?: Partial<Omit<FormState, "openForImprovement">> & {
+    id?: string;
     tags?: NormalizedTag[];
     dependencies?: { url: string; name: string }[];
     openForImprovement?: boolean;
@@ -99,6 +100,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const idPrefix = useId();
   const isEditMode = mode === "edit";
   const existingImages = initialData?.existingImages ?? [];
+  const postId = initialData?.id;
 
   const [matrix, setMatrix] = useState<Matrix>({ byGame: {}, gameVersions: [] });
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -135,17 +137,45 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [youtubePreviewSource, setYoutubePreviewSource] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [persistedImages, setPersistedImages] = useState<ExistingImage[]>(existingImages);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [limitedByMax, setLimitedByMax] = useState(false);
   const [wrapLines, setWrapLines] = useState(true);
+  const totalImageSlots = persistedImages.length + mediaFiles.length;
   const submitButtonLabel = isEditMode ? "Save changes" : "Publish post";
   const submitLoadingLabel = isEditMode ? "Saving..." : "Publishing...";
   const fileSummary = useMemo(() => {
-    if (!mediaFiles.length) return `No files chosen (0/${MAX_IMAGE_COUNT})`;
-    if (mediaFiles.length === 1) return `1 of ${MAX_IMAGE_COUNT} image slots used`;
-    return `${mediaFiles.length} of ${MAX_IMAGE_COUNT} image slots used`;
-  }, [mediaFiles]);
+    if (!totalImageSlots) return `No files chosen (0/${MAX_IMAGE_COUNT})`;
+    const parts: string[] = [];
+    if (persistedImages.length) parts.push(`${persistedImages.length} existing`);
+    if (mediaFiles.length) parts.push(`${mediaFiles.length} new`);
+    return `${totalImageSlots}/${MAX_IMAGE_COUNT} image slots used${parts.length ? ` (${parts.join(", ")})` : ""}`;
+  }, [mediaFiles.length, persistedImages.length, totalImageSlots]);
+
+  const previewItems = useMemo(
+    () => [
+      ...persistedImages.map((image, index) => ({
+        key: image.id,
+        type: "existing" as const,
+        src: image.thumbMd || image.thumbLg || image.thumbSm || image.original,
+        labelIndex: index,
+      })),
+      ...previews.map((src, i) => {
+        const file = mediaFiles[i];
+        const key = file ? `${file.name}-${file.lastModified}-${file.size}` : `${src}-${i}`;
+        return {
+          key,
+          type: "new" as const,
+          src,
+          labelIndex: persistedImages.length + i,
+          fileIndex: i,
+          fileName: file?.name ?? `upload-${i + 1}`,
+        };
+      }),
+    ],
+    [mediaFiles, persistedImages, previews],
+  );
   const errorId = useCallback((key: FormErrorKey) => `${idPrefix}-${key}-error`, [idPrefix]);
   const codeWarningsId = `${idPrefix}-code-warnings`;
   const errorMarkers = useMemo(
@@ -167,9 +197,10 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     [codeFeedback.warnings],
   );
 
-  const computeImagesError = useCallback((list: File[]) => {
-    if (!list.length) return "Upload at least one image to showcase your build.";
-    if (list.length > MAX_IMAGE_COUNT) {
+  const computeImagesError = useCallback((list: File[], existing: ExistingImage[] = persistedImages) => {
+    const total = list.length + existing.length;
+    if (total === 0) return "Upload at least one image to showcase your build.";
+    if (total > MAX_IMAGE_COUNT) {
       return `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`;
     }
     for (const file of list) {
@@ -179,7 +210,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       }
     }
     return null;
-  }, []);
+  }, [persistedImages]);
 
   const validateField = useCallback((key: TextFieldKey, value: string, current: FormState): string | null => {
     const trimmed = value.trim();
@@ -283,11 +314,9 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     };
     const codeCheck = analyzeSfmlCode(form.code, { required: true });
     next.code = codeCheck.message;
-    const imageMessage = isEditMode
-      ? null
-      : limitedByMax
-        ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-        : computeImagesError(mediaFiles);
+    const imageMessage = limitedByMax
+      ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+      : computeImagesError(mediaFiles, persistedImages);
     next.images = imageMessage;
     return next;
   }, [
@@ -299,7 +328,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     mediaFiles,
     validateTags,
     tags,
-    isEditMode,
+    persistedImages,
   ]);
 
   const blockingMessages = useMemo(() => {
@@ -465,13 +494,13 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   }, [tags, validateTags]);
 
   useEffect(() => {
-    if (mediaFiles.length < MAX_IMAGE_COUNT && limitedByMax) {
+    if (totalImageSlots < MAX_IMAGE_COUNT && limitedByMax) {
       setLimitedByMax(false);
     }
 
     const message = limitedByMax
       ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-      : computeImagesError(mediaFiles);
+      : computeImagesError(mediaFiles, persistedImages);
     setErrors(prev => (prev.images === message ? prev : { ...prev, images: message }));
     if (!mediaFiles.length) {
       setPreviews(prev => (prev.length ? [] : prev));
@@ -480,10 +509,14 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     const urls = mediaFiles.map(file => URL.createObjectURL(file));
     setPreviews(urls);
     return () => urls.forEach(url => URL.revokeObjectURL(url));
-  }, [mediaFiles, computeImagesError, limitedByMax]);
+  }, [mediaFiles, computeImagesError, limitedByMax, persistedImages, totalImageSlots]);
 
   const removeMediaAt = useCallback((index: number) => {
     setMediaFiles(prev => prev.filter((_, idx) => idx !== index));
+  }, []);
+
+  const removeExistingImage = useCallback((id: string) => {
+    setPersistedImages(prev => prev.filter(image => image.id !== id));
   }, []);
 
   const moveMedia = useCallback((from: number, to: number) => {
@@ -616,7 +649,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
 
-    if (!isEditMode && mediaFiles.length) {
+    if (mediaFiles.length) {
       const fd = new FormData();
       for (const file of mediaFiles) {
         fd.append("file", file);
@@ -663,6 +696,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
         dependencies: deps.map((d) => d.url),
         tags: tags.map((tag) => tag.name),
         images: [],
+        keepImageIds: persistedImages.map(image => image.id),
         code: form.code,
         description: form.description.trim(),
         youtubeUrl: form.youtubeUrl.trim(),
@@ -687,11 +721,18 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
         return;
       }
 
-      if (!isEditMode && mediaFiles.length) {
+      const uploadTargetId = isEditMode ? postId ?? data.id : data.id;
+
+      if (mediaFiles.length && !uploadTargetId) {
+        setSubmitError("We couldn't determine which post to attach your images to.");
+        return;
+      }
+
+      if (mediaFiles.length && uploadTargetId) {
         for (const f of mediaFiles) {
           const fd = new FormData();
           fd.append("file", f);
-          const uploadRes = await fetch(`/api/uploads/${data.id}`, {
+          const uploadRes = await fetch(`/api/uploads/${uploadTargetId}`, {
             method: "POST",
             body: fd,
             credentials: "include",
@@ -711,7 +752,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       }
 
       if (isEditMode && slug) {
-        r.push(`/posts/${slug}`);
+        r.push(`/posts/${data.slug ?? slug}`);
       } else {
         r.push(`/posts/${data.slug}`);
       }
@@ -1113,145 +1154,133 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
               )}
             </div>
 
-            {isEditMode ? (
-              <div className="space-y-3">
-                <p className="text-sm text-white/70">
-                  Image management is handled separately today. Reach out to the moderators if you need to update screenshots.
-                </p>
-                {existingImages.length ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {existingImages.map((image, index) => {
-                      const previewSrc = image.thumbMd || image.thumbLg || image.thumbSm || image.original;
-                      return (
-                        <div
-                          key={image.id}
-                          className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
-                        >
-                          <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
-                            <span>#{index + 1}</span>
-                            {index === 0 && (
-                              <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
-                                thumb
-                              </span>
-                            )}
-                          </span>
-                          <img src={previewSrc} alt="" className="h-full w-full object-cover" />
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-white/15 bg-black/20 px-4 py-6 text-center text-sm text-white/60">
-                    No images have been attached to this post yet.
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <label htmlFor="images" className="text-sm font-medium text-white/75">
-                      Image gallery
-                      <span className="text-white/45"> (max {MAX_IMAGE_MB}MB each, up to {MAX_IMAGE_COUNT} images)</span>
-                    </label>
-                    <label
-                      htmlFor="images"
-                      className={clsx(
-                        "inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/10",
-                        shouldShowError("images") && "border-red-500/60 text-red-200 hover:border-red-400"
-                      )}
-                    >
-                      <Images aria-hidden="true" className="h-4 w-4" />
-                      <span>Choose files</span>
-                    </label>
-                  </div>
-                  <input
-                    id="images"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={e => {
-                      markTouched("images");
-                      const incoming = e.target.files ? Array.from(e.target.files) : [];
-                      if (incoming.length) {
-                        setMediaFiles(prev => {
-                          const merged = [...prev, ...incoming];
-                          if (merged.length > MAX_IMAGE_COUNT) {
-                            setLimitedByMax(true);
-                          }
-                          return merged.slice(0, MAX_IMAGE_COUNT);
-                        });
-                      }
-                      e.target.value = "";
-                    }}
-                    aria-invalid={shouldShowError("images") || undefined}
-                    aria-describedby={shouldShowError("images") ? errorId("images") : undefined}
-                  />
-                  <p className="text-xs text-white/60">
-                    <span className="font-semibold text-white/80">Selected:</span> {fileSummary}. The first image becomes your thumbnail.
-                  </p>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label htmlFor="images" className="text-sm font-medium text-white/75">
+                    Image gallery
+                    <span className="text-white/45"> (max {MAX_IMAGE_MB}MB each, up to {MAX_IMAGE_COUNT} images)</span>
+                  </label>
+                  <label
+                    htmlFor="images"
+                    className={clsx(
+                      "inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/10",
+                      shouldShowError("images") && "border-red-500/60 text-red-200 hover:border-red-400",
+                      totalImageSlots >= MAX_IMAGE_COUNT && "cursor-not-allowed opacity-60 hover:border-white/15 hover:bg-white/5"
+                    )}
+                  >
+                    <Images aria-hidden="true" className="h-4 w-4" />
+                    <span>Choose files</span>
+                  </label>
                 </div>
-                {shouldShowError("images") && errors.images && (
-                  <p id={errorId("images")} className="text-sm text-error">
-                    {errors.images}
-                  </p>
-                )}
-                {!!previews.length && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {previews.map((src, i) => {
-                      const file = mediaFiles[i];
-                      if (!file) return null;
-                      const key = `${file.name}-${file.lastModified}-${file.size}`;
-                      return (
-                        <div
-                          key={key}
-                          className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
-                        >
-                          <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
-                            <span>#{i + 1}</span>
-                            {i === 0 && (
-                              <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
-                                thumb
-                              </span>
-                            )}
-                          </span>
+                <input
+                  id="images"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={totalImageSlots >= MAX_IMAGE_COUNT}
+                  onChange={e => {
+                    markTouched("images");
+                    const incoming = e.target.files ? Array.from(e.target.files) : [];
+                    if (incoming.length) {
+                      const remainingSlots = Math.max(0, MAX_IMAGE_COUNT - persistedImages.length);
+                      setMediaFiles(prev => {
+                        const merged = [...prev, ...incoming];
+                        if (merged.length > remainingSlots) {
+                          setLimitedByMax(true);
+                        }
+                        return merged.slice(0, remainingSlots || 0);
+                      });
+                    }
+                    e.target.value = "";
+                  }}
+                  aria-invalid={shouldShowError("images") || undefined}
+                  aria-describedby={shouldShowError("images") ? errorId("images") : undefined}
+                />
+                <p className="text-xs text-white/60">
+                  <span className="font-semibold text-white/80">Selected:</span> {fileSummary}. The first image becomes your thumbnail.
+                </p>
+              </div>
+              {shouldShowError("images") && errors.images && (
+                <p id={errorId("images")} className="text-sm text-error">
+                  {errors.images}
+                </p>
+              )}
+              {previewItems.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-white/15 bg-black/20 px-4 py-6 text-center text-sm text-white/60">
+                  No images have been attached to this post yet.
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {previewItems.map(item => {
+                    const isNew = item.type === "new";
+                    return (
+                      <div
+                        key={item.key}
+                        className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
+                      >
+                        <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                          <span>#{item.labelIndex + 1}</span>
+                          {item.labelIndex === 0 && (
+                            <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
+                              thumb
+                            </span>
+                          )}
+                          {!isNew && (
+                            <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black text-xs">
+                              existing
+                            </span>
+                          )}
+                        </span>
+                        {isNew ? (
                           <button
                             type="button"
-                            onClick={() => removeMediaAt(i)}
+                            onClick={() => item.fileIndex !== undefined && removeMediaAt(item.fileIndex)}
                             className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
-                            aria-label={`Remove ${file.name}`}
+                            aria-label={item.fileName ? `Remove ${item.fileName}` : "Remove image"}
                           >
                             ×
                           </button>
-                          <img src={src} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => removeExistingImage(item.key)}
+                            className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
+                            aria-label="Remove existing image"
+                          >
+                            ×
+                          </button>
+                        )}
+                        <img src={item.src} alt="" className="h-full w-full object-cover" />
+                        {isNew && item.fileIndex !== undefined && (
                           <div className="absolute bottom-3 left-3 flex gap-2">
                             <button
                               type="button"
-                              onClick={() => moveMedia(i, i - 1)}
-                              disabled={i === 0}
+                              onClick={() => moveMedia(item.fileIndex, item.fileIndex - 1)}
+                              disabled={item.fileIndex === 0}
                               className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                              aria-label={`Move ${file.name} earlier`}
+                              aria-label={item.fileName ? `Move ${item.fileName} earlier` : "Move image earlier"}
                             >
                               ←
                             </button>
                             <button
                               type="button"
-                              onClick={() => moveMedia(i, i + 1)}
-                              disabled={i === mediaFiles.length - 1}
+                              onClick={() => moveMedia(item.fileIndex, item.fileIndex + 1)}
+                              disabled={item.fileIndex === mediaFiles.length - 1}
                               className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                              aria-label={`Move ${file.name} later`}
+                              aria-label={item.fileName ? `Move ${item.fileName} later` : "Move image later"}
                             >
                               →
                             </button>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </Card>
 

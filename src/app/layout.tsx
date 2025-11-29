@@ -2,12 +2,14 @@ import "./globals.css";
 import Providers from "./providers";
 import { auth } from "@/lib/auth";
 import { Space_Grotesk } from "next/font/google";
+import Script from "next/script";
 import clsx from "clsx";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ExternalLinkGuard from "@/components/layout/ExternalLinkGuard";
 import { db } from "@/lib/db";
 import { getNotificationPreview, type SerializedNotification } from "@/lib/notifications";
+import GoogleAdSlot from "@/components/ads/GoogleAdSlot";
 
 export const metadata = { title: "superfactorymanager" };
 
@@ -20,6 +22,7 @@ const sans = Space_Grotesk({
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   let notificationPreview: { notifications: SerializedNotification[]; unreadCount: number } | null = null;
+  const adsEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT);
 
   if (session?.user?.email) {
     const user = await db.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
@@ -35,11 +38,50 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Header session={session} notifications={notificationPreview} />
 
         <main className="flex-1">
-          <div className="container-max space-y-12 py-12 sm:py-16">
-            <Providers>
-              <ExternalLinkGuard />
-              {children}
-            </Providers>
+          {adsEnabled && (
+            <Script
+              id="google-adsense-script"
+              strategy="afterInteractive"
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT}`}
+              crossOrigin="anonymous"
+            />
+          )}
+          <div className="container-max py-12 sm:py-16">
+            {adsEnabled ? (
+              <div className="grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)_200px]">
+                <div className="hidden lg:flex justify-end">
+                  <GoogleAdSlot className="sticky top-24 h-[600px] w-[180px]" layoutKey="left-rail" />
+                </div>
+
+                <div className="space-y-6 lg:space-y-10">
+                  <div className="space-y-4 lg:hidden">
+                    <GoogleAdSlot className="min-h-[120px] w-full" layoutKey="mobile-top" />
+                  </div>
+
+                  <Providers>
+                    <ExternalLinkGuard />
+                    <div className="space-y-12">
+                      {children}
+                    </div>
+                  </Providers>
+
+                  <div className="space-y-4 lg:hidden">
+                    <GoogleAdSlot className="min-h-[120px] w-full" layoutKey="mobile-bottom" />
+                  </div>
+                </div>
+
+                <div className="hidden lg:flex justify-start">
+                  <GoogleAdSlot className="sticky top-24 h-[600px] w-[180px]" layoutKey="right-rail" />
+                </div>
+              </div>
+            ) : (
+              <Providers>
+                <ExternalLinkGuard />
+                <div className="space-y-12">
+                  {children}
+                </div>
+              </Providers>
+            )}
           </div>
         </main>
 

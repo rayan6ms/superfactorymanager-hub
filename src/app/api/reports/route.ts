@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
+import { AUTO_DELETE_REPORT_THRESHOLD, flagAsDeleted } from "@/lib/deletions";
 
 const reasonOptions = [
   { value: "spam", reason: ReportReason.SPAM },
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
   if (type === "post") {
     const post = await db.post.findUnique({
       where: { slug: targetId },
-      select: { id: true, title: true, slug: true, authorId: true },
+      select: { id: true, title: true, slug: true, authorId: true, isDeleted: true, deletionFlaggedByAuto: true },
     });
     if (!post) {
       return NextResponse.json({ error: "Post not found." }, { status: 404 });
@@ -107,6 +108,24 @@ export async function POST(request: Request) {
       message: selectedReason === ReportReason.OTHER ? trimmedMessage : null,
     },
   });
+
+  if (postId) {
+    const [reportCount, postStatus] = await Promise.all([
+      db.report.count({ where: { postId } }),
+      db.post.findUnique({ where: { id: postId }, select: { isDeleted: true, deletionFlaggedByAuto: true } }),
+    ]);
+
+    if (
+      reportCount >= AUTO_DELETE_REPORT_THRESHOLD &&
+      !(postStatus?.isDeleted && !postStatus?.deletionFlaggedByAuto)
+    ) {
+      try {
+        await flagAsDeleted("post", postId, { auto: true });
+      } catch (error) {
+        console.warn("[reports] Failed to auto-flag post", { postId, error });
+      }
+    }
+  }
 
   return NextResponse.json({ success: true });
 }

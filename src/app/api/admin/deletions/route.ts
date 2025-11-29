@@ -1,28 +1,15 @@
 import { NextResponse } from "next/server";
-import { makeSlug } from "@/lib/slug";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { isAdminEmail } from "@/lib/admin";
-
-async function resolveUniqueSlug(postId: string, desired: string, fallbackTitle: string) {
-  const base = makeSlug(fallbackTitle || desired || `post-${postId.slice(0, 6)}`) || `post-${postId.slice(0, 8)}`;
-  let candidate = base || desired || `post-${postId.slice(0, 8)}`;
-  let attempt = 1;
-
-  while (true) {
-    const existing = await db.post.findUnique({ where: { slug: candidate } });
-    if (!existing || existing.id === postId) {
-      return candidate;
-    }
-    candidate = `${base}-${attempt++}`;
-  }
-}
+import { flagAsDeleted, purgeExpiredDeletionsIfNeeded, restoreDeletion } from "@/lib/deletions";
 
 export async function POST(req: Request) {
   const session = await auth();
   if (!isAdminEmail(session?.user?.email)) {
     return NextResponse.json({ error: "Not authorized" }, { status: 403 });
   }
+
+  await purgeExpiredDeletionsIfNeeded();
 
   let body: unknown;
   try {
@@ -45,27 +32,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing target id" }, { status: 400 });
   }
 
-  if (type === "post") {
-    const post = await db.post.findFirst({ where: { OR: [{ id: targetId }, { slug: targetId }] } });
-    if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
+  try {
     if (action === "flag") {
-      await db.post.update({ where: { id: post.id }, data: { isDeleted: true } });
-      return NextResponse.json({ success: true, slug: post.slug, action: "flag" });
+      const result = await flagAsDeleted(type, targetId, { auto: false });
+      return NextResponse.json({ success: true, slug: result.slug, action: "flag" });
     }
 
-    const nextSlug = await resolveUniqueSlug(post.id, post.slug, post.title);
-    await db.post.update({ where: { id: post.id }, data: { isDeleted: false, slug: nextSlug } });
-    return NextResponse.json({ success: true, slug: nextSlug, action: "restore" });
+    const result = await restoreDeletion(type, targetId);
+    return NextResponse.json({ success: true, slug: result.slug, action: "restore" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unexpected error";
+    const status = message.includes("not found") ? 404 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
-
-  const comment = await db.comment.findUnique({ where: { id: targetId } });
-  if (!comment) {
-    return NextResponse.json({ error: "Comment not found" }, { status: 404 });
-  }
-
-  await db.comment.update({ where: { id: targetId }, data: { isDeleted: action === "flag" } });
-  return NextResponse.json({ success: true, action });
 }

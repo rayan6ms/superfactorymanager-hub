@@ -167,6 +167,9 @@ model Post {
   workedCount        Int               @default(0)
   brokenCount        Int               @default(0)
   isDeleted          Boolean           @default(false)
+  deletionFlaggedAt  DateTime?
+  deletionFlaggedByAuto Boolean        @default(false)
+  deletionPurgeAt    DateTime?
   ratings            Rating[]
   views              Int               @default(0)
   uploadDate         DateTime          @default(now())
@@ -242,6 +245,9 @@ model Comment {
   score     Int           @default(0)
   voteCount Int           @default(0)
   isDeleted Boolean       @default(false)
+  deletionFlaggedAt DateTime?
+  deletionFlaggedByAuto Boolean @default(false)
+  deletionPurgeAt   DateTime?
   votes     CommentVote[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
