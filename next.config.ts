@@ -1,11 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
+
+  turbopack: {},
+
   outputFileTracingIncludes: {
-    '/*': ['./node_modules/.prisma/client/**/*'],
-    '/api/*': ['./node_modules/.prisma/client/**/*'],
+    "/api/**/*": ["./node_modules/.prisma/client/**/*"],
+    "/*": ["./node_modules/.prisma/client/**/*"],
   },
 };
 
