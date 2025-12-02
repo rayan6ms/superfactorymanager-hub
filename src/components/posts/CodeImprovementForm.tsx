@@ -127,7 +127,7 @@ export default function CodeImprovementForm({ slug, baseCommitId, initialCode }:
         <p className="text-xs text-white/50">Give context so the author knows what to test. Minimum 10 characters.</p>
       </div>
 
-      {error && <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
+      {error && <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm wrap-anywhere text-red-200">{error}</div>}
       {result === "success" && (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
           Your contribution was sent! The author will be notified shortly.

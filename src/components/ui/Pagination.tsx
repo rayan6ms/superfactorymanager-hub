@@ -7,7 +7,7 @@ const baseButtonClasses =
 
 function buildButtonClasses(disabled: boolean) {
   if (disabled) {
-    return `${baseButtonClasses} cursor-not-allowed border-white/10 bg-white/5 text-white/40`;
+    return `${baseButtonClasses} cursor-not-allowed pointer-events-none border-white/10 bg-white/5 text-white/40`;
   }
   return `${baseButtonClasses} border-white/20 bg-white/5 text-white/80 hover:border-white/35 hover:text-white`;
 }
@@ -57,14 +57,17 @@ export default function Pagination({
         <Link
           href={buildHref(prevPage)}
           aria-disabled={isPrevDisabled}
+          tabIndex={isPrevDisabled ? -1 : 0}
           onClick={onPageChange && !isPrevDisabled ? handleNavigate(prevPage) : undefined}
           className={buildButtonClasses(isPrevDisabled)}
         >
           Previous
         </Link>
+
         <Link
           href={buildHref(nextPage)}
           aria-disabled={isNextDisabled}
+          tabIndex={isNextDisabled ? -1 : 0}
           onClick={onPageChange && !isNextDisabled ? handleNavigate(nextPage) : undefined}
           className={buildButtonClasses(isNextDisabled)}
         >

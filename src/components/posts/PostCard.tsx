@@ -4,6 +4,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { Eye, Search as SearchIcon, Star, Check, X } from "lucide-react";
 import type { SerializedPost } from "@/lib/posts";
+import { wilsonScore, WILSON_Z_80 } from "@/lib/wilson-score";
 
 const viewsFormatter = new Intl.NumberFormat(undefined, {
   notation: "compact",
@@ -20,23 +21,35 @@ function renderRating(
   workedCount?: number | null | undefined,
   brokenCount?: number | null | undefined,
 ): ReactNode {
-  const rawTotalCount = Math.max(0, Math.round(ratingCount ?? 0));
-
   const worked = Math.max(0, Math.round(workedCount ?? 0));
   const broken = Math.max(0, Math.round(brokenCount ?? 0));
   const hasSplitCounts = worked + broken > 0;
 
+  const rawTotalCount = Math.max(0, Math.round(ratingCount ?? 0));
   const total = hasSplitCounts ? worked + broken : rawTotalCount;
+
   if (total === 0) return "No votes yet";
 
-  let successPercent: number;
+  let score: number | null = null;
 
-  if (hasSplitCounts) {
-    successPercent = Math.round((worked / total) * 100);
-  } else {
-    const score = Math.max(0, Math.min(1, rating ?? 0));
-    successPercent = Math.round(score * 100);
+  if (typeof rating === "number" && Number.isFinite(rating)) {
+    score = rating;
   }
+
+  if ((score === null || Number.isNaN(score)) && hasSplitCounts && total > 0) {
+    score = wilsonScore(worked, broken, WILSON_Z_80);
+  }
+
+  if (score === null || Number.isNaN(score)) {
+    if (hasSplitCounts && total > 0) {
+      score = worked / total;
+    } else {
+      score = 0;
+    }
+  }
+
+  score = Math.max(0, Math.min(1, score));
+  const successPercent = Math.round(score * 100);
 
   if (!hasSplitCounts) {
     return (

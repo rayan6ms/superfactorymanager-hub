@@ -82,10 +82,19 @@ export async function PATCH(request: Request) {
     }
   }
 
-  const updated = await db.user.update({
-    where: { id: user.id },
-    data: updateData,
-    select: { id: true, name: true, image: true, email: true, bio: true },
+  const updated = await db.$transaction(async (tx) => {
+    const updatedUser = await tx.user.update({
+      where: { id: user.id },
+      data: updateData,
+      select: { id: true, name: true, image: true, email: true, bio: true },
+    });
+
+    await tx.post.updateMany({
+      where: { authorId: user.id },
+      data: { authorName: updatedUser.name ?? "" },
+    });
+
+    return updatedUser;
   });
 
   return NextResponse.json({ user: updated });

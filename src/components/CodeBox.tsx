@@ -22,7 +22,7 @@ const theme: monacoNs.editor.IStandaloneThemeData = {
     "editorIndentGuide.activeBackground": "#6b7280",
     "editorLineHighlightBackground": "#111827",
     "editorGutter.background": "#0c0e12",
-    "editor.selectionBackground": "#5b21b6"
+    "editor.selectionBackground": "#5b21b6",
   },
   rules: [
     { token: "comment", foreground: "#A8A8A8" },
@@ -45,12 +45,12 @@ const theme: monacoNs.editor.IStandaloneThemeData = {
     { token: "keyword.redstone", foreground: "#F96767" },
     { token: "invalid", foreground: "#F96767" },
 
-    { token: "keyword.special", foreground: "#F1FA8C" }
-  ]
+    { token: "keyword.special", foreground: "#F1FA8C" },
+  ],
 };
 
 type CodeBoxProps = {
-  value: string;
+  value: string;                    // initial value only
   onChange: (v: string) => void;
   onBlur?: () => void;
   isInvalid?: boolean;
@@ -106,96 +106,96 @@ function normalizeMarkers(
 
 function ensureLanguage(monaco: typeof monacoNs) {
   const existing = monaco.languages.getLanguages().some(lang => lang.id === SFML_LANGUAGE_ID);
-  if (!existing) {
-    monaco.languages.register({ id: SFML_LANGUAGE_ID });
+  if (existing) return;
 
-    monaco.languages.setLanguageConfiguration(SFML_LANGUAGE_ID, {
-      comments: { lineComment: "--" },
-      brackets: [
-        ["{", "}"],
-        ["[", "]"],
-        ["(", ")"],
-      ],
-      autoClosingPairs: [
-        { open: "{", close: "}" },
-        { open: "[", close: "]" },
-        { open: "(", close: ")" },
-        { open: '"', close: '"' },
-      ],
-    });
+  monaco.languages.register({ id: SFML_LANGUAGE_ID });
 
-    monaco.languages.setMonarchTokensProvider(SFML_LANGUAGE_ID, {
-      ignoreCase: true,
-      tokenizer: {
-        root: [
-          // comments
-          [/--.*$/, "comment"],
+  monaco.languages.setLanguageConfiguration(SFML_LANGUAGE_ID, {
+    comments: { lineComment: "--" },
+    brackets: [
+      ["{", "}"],
+      ["[", "]"],
+      ["(", ")"],
+    ],
+    autoClosingPairs: [
+      { open: "{", close: "}" },
+      { open: "[", close: "]" },
+      { open: "(", close: ")" },
+      { open: '"', close: '"' },
+    ],
+  });
 
-          // closed strings
-          [/\"([^\"\\]|\\.)*\"/, "string"],
+  monaco.languages.setMonarchTokensProvider(SFML_LANGUAGE_ID, {
+    ignoreCase: true,
+    tokenizer: {
+      root: [
+        // comments
+        [/--.*$/, "comment"],
 
-          // unclosed strings -> red
-          [/\"([^\"\\]|\\.)*$/, "invalid"],
+        // closed strings
+        [/\"([^\"\\]|\\.)*\"/, "string"],
 
-          // numbers before g -> orange
-          [/\b(\d+)(?=\s*[gG]\b)/, "number.tick"],
+        // unclosed strings -> red
+        [/\"([^\"\\]|\\.)*$/, "invalid"],
 
-          // other numbers -> teal
-          [/\b\d+\b/, "number"],
+        // numbers before g -> orange
+        [/\b(\d+)(?=\s*[gG]\b)/, "number.tick"],
 
-          // strategies
-          [/\bround robin by block\b/i, "keyword.special"],
-          [/\bround robin by label\b/i, "keyword.special"],
+        // other numbers -> teal
+        [/\b\d+\b/, "number"],
 
-          // core keywords
-          [
-            /\b(name|every|do|if|end|has|then|forget|else|true|false)\b/i,
-            "keyword.core"
-          ],
+        // strategies
+        [/\bround robin by block\b/i, "keyword.special"],
+        [/\bround robin by label\b/i, "keyword.special"],
 
-          // IO
-          [/\b(input|from|output|to)\b/i, "keyword.io"],
+        // core keywords
+        [
+          /\b(name|every|do|if|end|has|then|forget|else|true|false)\b/i,
+          "keyword.core"
+        ],
 
-          // position
-          [
-            /\b(top|bottom|left|right|front|back|west|east|north|south|side|each)\b/i,
-            "keyword.position"
-          ],
+        // IO
+        [/\b(input|from|output|to)\b/i, "keyword.io"],
 
-          // logic/timing/g
-          [
-            /\b(ticks|tick|some|retain|slots|except|second|overall|lone|one|in|empty|seconds|slot|and|not|or|global|g)\b/i,
-            "keyword.logic"
-          ],
+        // position
+        [
+          /\b(top|bottom|left|right|front|back|west|east|north|south|side|each)\b/i,
+          "keyword.position"
+        ],
 
-          // operators / helpers
-          [/\b(ge|le|eq|gt|lt|plus|with|without|tag)\b/i, "operator.logic"],
-          [/[=<>]=?|[#\+]/, "operator.logic"],
+        // logic/timing/g
+        [
+          /\b(ticks|tick|some|retain|slots|except|second|overall|lone|one|in|empty|seconds|slot|and|not|or|global|g)\b/i,
+          "keyword.logic"
+        ],
 
-          // redstone / pulse
-          [/\b(redstone|pulse)\b/i, "keyword.redstone"],
+        // operators / helpers
+        [/\b(ge|le|eq|gt|lt|plus|with|without|tag)\b/i, "operator.logic"],
+        [/[=<>]=?|[#\+]/, "operator.logic"],
 
-          // punctuation: , - : /
-          [/[,:\-\/]/, "punctuation.simple"],
+        // redstone / pulse
+        [/\b(redstone|pulse)\b/i, "keyword.redstone"],
 
-          // wildcard *
-          [/\*/, "identifier"], // same green group
+        // punctuation: , - : /
+        [/[,:\-\/]/, "punctuation.simple"],
 
-          // fallback identifiers
-          [/\w+/, "identifier"]
-        ]
-      }
-    });
+        // wildcard *
+        [/\*/, "identifier"], // same green group
 
-    monaco.editor.defineTheme(SFML_THEME_ID, theme);
-  }
+        // fallback identifiers
+        [/\w+/, "identifier"]
+      ]
+    }
+  });
+
+  monaco.editor.defineTheme(SFML_THEME_ID, theme);
 }
 
 export function CodeBox({
   value,
   onChange,
   onBlur,
-  isInvalid = false,
+  isInvalid,
   describedBy,
   errorMarkers,
   warningRanges,
@@ -203,13 +203,35 @@ export function CodeBox({
 }: CodeBoxProps) {
   const editorRef = useRef<monacoNs.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof monacoNs | null>(null);
-  const editorHeightRef = useRef(MIN_HEIGHT);
+
   const [editorHeight, setEditorHeight] = useState(MIN_HEIGHT);
+
+  const initialValueRef = useRef(value);
+
+  const handleChange = useCallback(
+    (next: string | undefined) => {
+      onChange(next ?? "");
+    },
+    [onChange],
+  );
 
   const markers = useMemo(
     () => normalizeMarkers(errorMarkers, warningRanges),
     [errorMarkers, warningRanges],
   );
+
+  const updateHeight = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const contentHeight = editor.getContentHeight();
+    const next = Math.min(
+      MAX_HEIGHT,
+      Math.max(MIN_HEIGHT, Math.ceil(contentHeight + 24)),
+    );
+
+    setEditorHeight(prev => (prev === next ? prev : next));
+  }, []);
 
   const applyMarkers = useCallback(() => {
     const monaco = monacoRef.current;
@@ -224,9 +246,7 @@ export function CodeBox({
       startColumn: 1,
       endLineNumber: marker.endLine,
       endColumn: 1,
-      message:
-        marker.message ??
-        (marker.severity === "error" ? "Error" : "Warning"),
+      message: marker.message ?? (marker.severity === "error" ? "Error" : "Warning"),
       severity:
         marker.severity === "error"
           ? monaco.MarkerSeverity.Error
@@ -235,22 +255,6 @@ export function CodeBox({
 
     monaco.editor.setModelMarkers(model, SFML_LANGUAGE_ID, markerData);
   }, [markers]);
-
-  const updateHeight = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    const contentHeight = editor.getContentHeight();
-    const next = Math.min(
-      MAX_HEIGHT,
-      Math.max(MIN_HEIGHT, Math.ceil(contentHeight + 24)),
-    );
-
-    if (next !== editorHeightRef.current) {
-      editorHeightRef.current = next;
-      setEditorHeight(next);
-    }
-  }, []);
 
   useEffect(() => {
     applyMarkers();
@@ -267,10 +271,8 @@ export function CodeBox({
       applyMarkers();
       updateHeight();
 
-      const disposables: monacoNs.IDisposable[] = [
-        editor.onDidContentSizeChange(() => updateHeight()),
-        editor.onDidBlurEditorText(() => onBlur?.()),
-      ];
+      editor.onDidContentSizeChange(updateHeight);
+      editor.onDidBlurEditorText(() => onBlur?.());
 
       editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Tab, () => {
         editor.getAction("editor.action.outdentLines")?.run();
@@ -286,12 +288,8 @@ export function CodeBox({
           editor.trigger("keyboard", "type", { text: "\t" });
         }
       });
-
-      return () => {
-        disposables.forEach(d => d.dispose());
-      };
     },
-    [applyMarkers, onBlur, updateHeight],
+    [applyMarkers, updateHeight, onBlur],
   );
 
   return (
@@ -307,15 +305,15 @@ export function CodeBox({
     >
       <div
         className="relative"
-        style={{ backgroundColor: 'rgba(0,0,0,0)', minHeight: MIN_HEIGHT }}
+        style={{ backgroundColor: "rgba(0,0,0,0)", minHeight: MIN_HEIGHT }}
       >
         <Editor
           height={editorHeight}
           defaultLanguage={SFML_LANGUAGE_ID}
           language={SFML_LANGUAGE_ID}
           theme={SFML_THEME_ID}
-          value={value}
-          onChange={next => onChange(next ?? "")}
+          defaultValue={initialValueRef.current}
+          onChange={handleChange}
           onMount={handleMount}
           options={{
             fontSize: 14,

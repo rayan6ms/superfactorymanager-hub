@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { ReportReason } from "@prisma/client";
+import { ReportReason, Prisma } from "@prisma/client";
 import { Card } from "@/components/ui";
 import Pagination from "@/components/ui/Pagination";
 import { auth } from "@/lib/auth";
@@ -12,6 +12,20 @@ import ReportActionControls from "./ReportActionControls";
 import ReopenReportButton from "./ReopenReportButton";
 
 type LoadedReport = Awaited<ReturnType<typeof loadReports>>[number];
+
+type ModerationMetadata = {
+  markResolved?: boolean;
+  flagTarget?: boolean;
+  flagAuthorPosts?: boolean;
+  flagAuthorComments?: boolean;
+  revokePostVotes?: boolean;
+  disableCreatePosts?: boolean;
+  disableCreateComments?: boolean;
+  disableVotePosts?: boolean;
+  disableVoteComments?: boolean;
+  timeoutMinutes?: number;
+  reopen?: boolean;
+};
 
 function initials(value: string | null | undefined) {
   const base = value?.trim();
@@ -42,8 +56,8 @@ function formatTarget(report: LoadedReport) {
 }
 
 function summarizeAction(action: LoadedReport["actions"][number]) {
+  const metadata = action.metadata as ModerationMetadata | null;
   const items: string[] = [];
-  const metadata = action.metadata as Record<string, unknown> | null;
   if (metadata) {
     if (metadata.flagTarget) items.push("Flagged target");
     if (metadata.flagAuthorPosts) items.push("Flagged all posts");
@@ -83,7 +97,12 @@ function formatReason(reason: ReportReason) {
   }
 }
 
-async function loadReports(where: { resolvedAt?: { equals?: Date | null; not?: null } }, skip: number, take: number, reporterCountMap: Map<string | null, number>) {
+async function loadReports(
+  where: Prisma.ReportWhereInput,
+  skip: number,
+  take: number,
+  reporterCountMap: Map<string, number>
+) {
   const reports = await db.report.findMany({
     where,
     orderBy: { createdAt: "desc" },
@@ -117,7 +136,10 @@ async function loadReports(where: { resolvedAt?: { equals?: Date | null; not?: n
 
   return reports.map(report => ({
     ...report,
-    otherReportsByReporter: Math.max(0, (reporterCountMap.get(report.reporterId ?? null) ?? 1) - 1),
+    otherReportsByReporter: Math.max(
+      0,
+      (reporterCountMap.get(report.reporterId) ?? 1) - 1,
+    ),
   }));
 }
 
@@ -139,7 +161,9 @@ export default async function AdminReportsPage({
   }
 
   const reporterCounts = await db.report.groupBy({ by: ["reporterId"], _count: { _all: true } });
-  const reporterCountMap = new Map(reporterCounts.map(item => [item.reporterId ?? null, item._count._all]));
+  const reporterCountMap = new Map<string, number>(
+    reporterCounts.map(item => [item.reporterId, item._count._all])
+  );
 
   const PAGE_SIZE = 20;
   const pageParam = resolvedSearchParams.page;
@@ -151,11 +175,17 @@ export default async function AdminReportsPage({
   const [openCount, solvedCount] = await Promise.all([openCountPromise, solvedCountPromise]);
   const totalCount = openCount + solvedCount;
 
-  const activeWhere = activeTab === "solved" ? { resolvedAt: { not: null } } : { resolvedAt: null };
+  const activeWhere: Prisma.ReportWhereInput =
+    activeTab === "solved" ? { resolvedAt: { not: null } } : { resolvedAt: null };
   const totalForTab = activeTab === "solved" ? solvedCount : openCount;
   const totalPages = getTotalPages(totalForTab, PAGE_SIZE);
   const currentPage = Math.min(requestedPage, totalPages);
-  const reports = await loadReports(activeWhere, (currentPage - 1) * PAGE_SIZE, PAGE_SIZE, reporterCountMap);
+  const reports = await loadReports(
+    activeWhere,
+    (currentPage - 1) * PAGE_SIZE,
+    PAGE_SIZE,
+    reporterCountMap
+  );
 
   const buildPageHref = (page: number) => {
     const params = new URLSearchParams();

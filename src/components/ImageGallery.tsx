@@ -170,17 +170,27 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
     const maxAreaWidth = viewportWidth * 0.9;
     const maxAreaHeight = viewportHeight * 0.6;
 
-    const scaleToFit = Math.min(
+    const isDesktop = viewportWidth >= 1024;
+
+    const maxBaseScale = isDesktop ? 2 : 1;
+
+    const rawScaleToFit = Math.min(
       maxAreaWidth / naturalWidth,
       maxAreaHeight / naturalHeight,
-      1,
     );
+
+    const scaleToFit = Math.min(rawScaleToFit, maxBaseScale);
 
     const displayWidth = naturalWidth * scaleToFit;
     const displayHeight = naturalHeight * scaleToFit;
 
+    const minDesktopHeight = viewportHeight * 0.5;
+    const areaHeight = isDesktop
+      ? Math.max(displayHeight, minDesktopHeight)
+      : displayHeight;
+
     setBaseSize({ width: displayWidth, height: displayHeight });
-    setImageAreaHeight(displayHeight);
+    setImageAreaHeight(areaHeight);
     setZoom(1);
   }, []);
 
@@ -193,6 +203,14 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
     baseSize && zoom ? baseSize.width * zoom : undefined;
   const displayHeight =
     baseSize && zoom ? baseSize.height * zoom : undefined;
+
+  const verticalOffset =
+    imageAreaHeight &&
+      displayHeight &&
+      zoom === 1 &&
+      displayHeight < imageAreaHeight
+      ? (imageAreaHeight - displayHeight) / 2
+      : 0;
 
   const overlay =
     open && typeof document !== "undefined"
@@ -324,6 +342,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                           maxWidth: "none",
                           maxHeight: "none",
                           filter: `brightness(${brightness})`,
+                          marginTop: verticalOffset ?? 0,
                         }
                         : {
                           filter: `brightness(${brightness})`,

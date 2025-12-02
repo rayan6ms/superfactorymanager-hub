@@ -5,6 +5,56 @@ const BASE64_DATA_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,/i;
 const REMOTE_URL_PATTERN = /^https?:\/\//i;
 const REMOTE_TIMEOUT_MS = 5000;
 
+const BLOCKED_HOSTNAMES = ["localhost"];
+const BLOCKED_IPV6_HOSTS = ["::1"];
+
+const BLOCKED_IPV4_PATTERNS = [
+  /^127\./,
+  /^10\./,
+  /^192\.168\./,
+  /^172\.(1[6-9]|2\d|3[0-1])\./,
+  /^0\.0\.0\.0$/,
+  /^169\.254\./,
+];
+
+const BLOCKED_IPV6_PATTERNS = [
+  /^::1$/i,
+  /^fe80:/i,
+  /^fc00:/i,
+  /^fd00:/i,
+];
+
+function isPrivateOrLocalAddress(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+
+  if (BLOCKED_HOSTNAMES.includes(lower)) return true;
+  if (BLOCKED_IPV6_HOSTS.includes(lower)) return true;
+
+  if (BLOCKED_IPV4_PATTERNS.some(rx => rx.test(lower))) return true;
+  if (BLOCKED_IPV6_PATTERNS.some(rx => rx.test(lower))) return true;
+
+  return false;
+}
+
+function isSafeRemoteUrl(url: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return false;
+  }
+
+  if (isPrivateOrLocalAddress(parsed.hostname)) {
+    return false;
+  }
+
+  return true;
+}
+
 const COLORS = [
   "#6366F1",
   "#EC4899",
@@ -93,7 +143,6 @@ async function remoteImageIsReachable(url: string): Promise<boolean> {
       return false;
     }
 
-    // consume minimal data to allow connection cleanup without downloading the full file.
     await getRes.arrayBuffer().catch(() => undefined);
     return true;
   } catch {
@@ -130,7 +179,7 @@ export async function resolveProfileImage({
     return dataUrlHasPayload(image) ? image : generateInitialAvatar({ name, seed });
   }
 
-  if (!REMOTE_URL_PATTERN.test(image)) {
+  if (!REMOTE_URL_PATTERN.test(image) || !isSafeRemoteUrl(image)) {
     return generateInitialAvatar({ name, seed });
   }
 

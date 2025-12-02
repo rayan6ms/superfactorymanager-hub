@@ -307,22 +307,22 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       modVersion: validateField("modVersion", form.modVersion, form),
       categoryKey: validateField("categoryKey", form.categoryKey, form),
       description: validateField("description", form.description, form),
-      code: null,
+      code: codeFeedback.message,
       youtubeUrl: validateField("youtubeUrl", form.youtubeUrl, form),
       images: null,
       tags: validateTags(tags),
     };
-    const codeCheck = analyzeSfmlCode(form.code, { required: true });
-    next.code = codeCheck.message;
+
     const imageMessage = limitedByMax
       ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
       : computeImagesError(mediaFiles, persistedImages);
+
     next.images = imageMessage;
     return next;
   }, [
     form,
     validateField,
-    analyzeSfmlCode,
+    codeFeedback.message,
     limitedByMax,
     computeImagesError,
     mediaFiles,
@@ -1426,7 +1426,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
       <div className="space-y-4">
         {blockingMessages.length > 0 && (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm wrap-anywhere text-red-200">
             <p className="font-semibold text-red-100">Complete the following before publishing:</p>
             <ul className="mt-1 list-disc space-y-1 pl-4 marker:text-red-200">
               {blockingMessages.map(message => (

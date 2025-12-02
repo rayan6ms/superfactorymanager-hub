@@ -7,10 +7,16 @@ import { clsx } from "clsx";
 import { Clock, GitPullRequest, History, Loader2, Minus, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui";
 
-const STATUS_COLOR: Record<string, string> = {
+const STATUS_COLOR = {
   PENDING: "text-amber-300 bg-amber-500/10 border-amber-500/40",
   MERGED: "text-emerald-200 bg-emerald-500/10 border-emerald-500/40",
   REJECTED: "text-red-200 bg-red-500/10 border-red-500/30",
+} satisfies Record<CommitForHistory["status"], string>;
+
+const DIFF_ROW_CLASS: Record<DiffRow["type"], string> = {
+  context: "text-white/80",
+  added: "bg-emerald-500/10 text-emerald-100",
+  removed: "bg-red-500/10 text-red-100",
 };
 
 export type CommitForHistory = {
@@ -72,7 +78,11 @@ export default function CodeHistoryPanel({
   const [secondaryId, setSecondaryId] = useState<string>(
     commits.find(commit => commit.id !== (currentCommitId ?? commits[0]?.id ?? ""))?.id ?? "",
   );
-  const [actionTarget, setActionTarget] = useState<string | null>(null);
+
+  type CommitAction = "merge" | "reject" | "revert";
+  type ActionTarget = { commitId: string; action: CommitAction } | null;
+
+  const [actionTarget, setActionTarget] = useState<ActionTarget>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const primaryCommit = useMemo(() => commits.find(commit => commit.id === primaryId) ?? null, [commits, primaryId]);
@@ -83,7 +93,7 @@ export default function CodeHistoryPanel({
 
   const diffRows = useMemo<DiffRow[]>(() => {
     if (!primaryCommit || !secondaryCommit) return [];
-    const changes = diffLines(secondaryCommit.code, primaryCommit.code);
+    const changes = diffLines(primaryCommit.code, secondaryCommit.code);
     let oldLine = 1;
     let newLine = 1;
 
@@ -114,7 +124,7 @@ export default function CodeHistoryPanel({
 
   const handleAction = async (commitId: string, action: "merge" | "reject" | "revert") => {
     setActionError(null);
-    setActionTarget(`${commitId}:${action}`);
+    setActionTarget({ commitId, action });
     try {
       const res = await fetch(`/api/posts/${slug}/commits/${commitId}`, {
         method: "PATCH",
@@ -135,6 +145,9 @@ export default function CodeHistoryPanel({
       setActionTarget(null);
     }
   };
+
+  const getCommitLabel = (commit: CommitForHistory) =>
+    commit.title ?? commit.message;
 
   return (
     <section className="space-y-6">
@@ -172,7 +185,7 @@ export default function CodeHistoryPanel({
               >
                 {commits.map(commit => (
                   <option key={commit.id} value={commit.id}>
-                    {commit.title ?? commit.message}
+                    {getCommitLabel(commit)}
                   </option>
                 ))}
               </select>
@@ -189,7 +202,7 @@ export default function CodeHistoryPanel({
                   .filter(commit => commit.id !== primaryId)
                   .map(commit => (
                     <option key={commit.id} value={commit.id}>
-                      {commit.title ?? commit.message}
+                      {getCommitLabel(commit)}
                     </option>
                   ))}
               </select>
@@ -203,15 +216,15 @@ export default function CodeHistoryPanel({
                   <div className="flex flex-wrap items-center justify-between gap-3 bg-white/5 px-4 py-3 text-xs text-white/70">
                     <div>
                       <p className="font-semibold text-white">
-                        Comparing {primaryCommit.title ?? primaryCommit.message} against {secondaryCommit.title ?? secondaryCommit.message}
+                        Comparing {getCommitLabel(primaryCommit)} against {getCommitLabel(secondaryCommit)}
                       </p>
-                      <p className="text-white/60">Green lines are additions in the first selection; red lines were removed from the comparison target.</p>
+                      <p className="text-white/60">Green lines are additions in the comparison target; red lines were removed from the first selection.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-1 font-semibold text-emerald-100">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 pr-2.5 py-1 font-semibold text-emerald-100">
                         <Plus className="h-3 w-3" /> Added
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 font-semibold text-red-100">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 pr-2.5 py-1 font-semibold text-red-100">
                         <Minus className="h-3 w-3" /> Removed
                       </span>
                     </div>
@@ -221,9 +234,7 @@ export default function CodeHistoryPanel({
                       key={`${row.type}-${row.oldLine ?? "-"}-${row.newLine ?? "-"}-${index}`}
                       className={clsx(
                         "grid grid-cols-[3.25rem_3.25rem_1fr] items-start gap-3 px-4 py-1.5 text-xs sm:text-sm",
-                        row.type === "added" && "bg-emerald-500/10 text-emerald-100",
-                        row.type === "removed" && "bg-red-500/10 text-red-100",
-                        row.type === "context" && "text-white/80",
+                        DIFF_ROW_CLASS[row.type]
                       )}
                     >
                       <span className="text-[11px] text-white/40 sm:text-xs">{row.oldLine ?? ""}</span>
@@ -245,12 +256,14 @@ export default function CodeHistoryPanel({
           {commits.map(commit => {
             const statusStyle = STATUS_COLOR[commit.status] ?? "border-white/10 text-white";
             const isCurrent = commit.id === currentCommitId;
-            const actionBusy = actionTarget === `${commit.id}:merge` || actionTarget === `${commit.id}:reject` || actionTarget === `${commit.id}:revert`;
+            const actionBusy = actionTarget?.commitId === commit.id;
+            const isBusyAction = (a: CommitAction) =>
+              actionTarget?.commitId === commit.id && actionTarget.action === a;
             return (
               <div key={commit.id} className="space-y-3 rounded-2xl border border-white/10 bg-black/25 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-base font-semibold text-white">{commit.title ?? commit.message}</p>
+                    <p className="text-base font-semibold text-white">{getCommitLabel(commit)}</p>
                     {commit.message && commit.title && (
                       <p className="mt-1 text-sm text-white/70">{commit.message}</p>
                     )}
@@ -275,7 +288,7 @@ export default function CodeHistoryPanel({
                       disabled={actionBusy}
                       onClick={() => handleAction(commit.id, "merge")}
                     >
-                      {actionTarget === `${commit.id}:merge` ? (
+                      {isBusyAction("merge") ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <GitPullRequest className="h-4 w-4" />
@@ -289,7 +302,7 @@ export default function CodeHistoryPanel({
                       disabled={actionBusy}
                       onClick={() => handleAction(commit.id, "reject")}
                     >
-                      {actionTarget === `${commit.id}:reject` ? (
+                      {isBusyAction("reject") ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Clock className="h-4 w-4" />
@@ -306,7 +319,7 @@ export default function CodeHistoryPanel({
                     disabled={actionBusy}
                     onClick={() => handleAction(commit.id, "revert")}
                   >
-                    {actionTarget === `${commit.id}:revert` ? (
+                    {isBusyAction("revert") ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <RotateCcw className="h-4 w-4" />

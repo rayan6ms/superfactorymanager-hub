@@ -14,7 +14,7 @@ export default function NotFoundPage() {
         <div className="flex justify-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-400"
+            className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white! shadow-lg shadow-brand-500/30 transition hover:bg-brand-400"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
             Back to home

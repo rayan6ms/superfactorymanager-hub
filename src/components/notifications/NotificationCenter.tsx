@@ -174,6 +174,7 @@ export default function NotificationCenter({
     async (notification: SerializedNotification, makeRead: boolean) => {
       updatePending(notification.id, true);
       setError(null);
+
       try {
         const res = await fetch("/api/notifications", {
           method: "PATCH",
@@ -181,27 +182,28 @@ export default function NotificationCenter({
           credentials: "include",
           body: JSON.stringify({ ids: [notification.id], read: makeRead }),
         });
+
         if (!res.ok) throw new Error("Request failed");
-        const data = (await res.json()) as { unreadCount?: number };
+
+        const data = (await res.json()) as { unreadCount: number };
+        const nextCount = data.unreadCount;
         const readAt = makeRead ? new Date().toISOString() : null;
-        setNotifications(prev =>
-          prev.map(item => (item.id === notification.id ? { ...item, readAt } : item)),
+
+        const nextNotifications = notifications.map(item =>
+          item.id === notification.id ? { ...item, readAt } : item,
         );
-        setUnreadCount(prev => {
-          const nextCount =
-            typeof data.unreadCount === "number"
-              ? data.unreadCount
-              : Math.max(0, prev + (makeRead ? -1 : 1));
-          dispatchNotificationSync({
-            unreadCount: nextCount,
-            updates: [
-              {
-                id: notification.id,
-                readAt,
-              },
-            ],
-          });
-          return nextCount;
+
+        setNotifications(nextNotifications);
+        setUnreadCount(nextCount);
+
+        const preview = nextNotifications
+          .filter(item => !item.readAt)
+          .slice(0, NOTIFICATION_PREVIEW_LIMIT);
+
+        dispatchNotificationSync({
+          unreadCount: nextCount,
+          updates: [{ id: notification.id, readAt }],
+          preview,
         });
       } catch (err) {
         console.error(err);
@@ -210,14 +212,16 @@ export default function NotificationCenter({
         updatePending(notification.id, false);
       }
     },
-    [updatePending],
+    [notifications, updatePending],
   );
 
   const markAllAsRead = useCallback(async () => {
     const ids = unreadIds;
     if (!ids.length) return;
+
     setBulkLoading(true);
     setError(null);
+
     try {
       const res = await fetch("/api/notifications", {
         method: "PATCH",
@@ -225,15 +229,29 @@ export default function NotificationCenter({
         credentials: "include",
         body: JSON.stringify({ ids, read: true }),
       });
+
       if (!res.ok) throw new Error("Failed to mark notifications as read");
-      const data = (await res.json()) as { unreadCount?: number };
+
+      const data = (await res.json()) as { unreadCount: number };
+      const nextCount = data.unreadCount;
       const timestamp = new Date().toISOString();
-      setNotifications(prev => prev.map(item => ({ ...item, readAt: item.readAt ?? timestamp })));
-      const nextCount = typeof data.unreadCount === "number" ? data.unreadCount : 0;
+
+      const nextNotifications = notifications.map(item => ({
+        ...item,
+        readAt: item.readAt ?? timestamp,
+      }));
+
+      setNotifications(nextNotifications);
       setUnreadCount(nextCount);
+
+      const preview = nextNotifications
+        .filter(item => !item.readAt)
+        .slice(0, NOTIFICATION_PREVIEW_LIMIT);
+
       dispatchNotificationSync({
         unreadCount: nextCount,
         updates: ids.map(id => ({ id, readAt: timestamp })),
+        preview,
       });
     } catch (err) {
       console.error(err);
@@ -241,7 +259,7 @@ export default function NotificationCenter({
     } finally {
       setBulkLoading(false);
     }
-  }, [unreadIds]);
+  }, [notifications, unreadIds]);
 
   const hasNotifications = notifications.length > 0;
 

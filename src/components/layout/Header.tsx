@@ -38,10 +38,24 @@ export default function Header({ session, notifications }: HeaderProps) {
           <div className="flex items-center gap-4">
             <Link
               href="/"
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-(--surface-2)/85 px-3 py-2 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-(--surface-2)"
+              className="
+                inline-flex shrink-0 items-center gap-2
+                rounded-xl border
+                border-white/20
+                bg-(--surface-2)
+                px-3 py-2 text-sm
+                decoration-brand-400
+                transition
+                hover:bg-(--surface-2)
+              "
             >
-              <span className="hidden sm:inline">superfactorymanager</span>
-              <span className="sm:hidden">SFM</span>
+              <span className="hidden sm:inline bg-linear-to-b from-red-400/80 to-brand-600 bg-clip-text text-transparent font-extrabold">
+                superfactorymanager
+              </span>
+
+              <span className="sm:hidden bg-linear-to-b from-red-400/80 to-brand-600 bg-clip-text text-transparent font-extrabold">
+                SFM
+              </span>
             </Link>
 
             <div
@@ -90,7 +104,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                   <span className="sr-only">Open menu</span>
                 </summary>
 
-                <div className="absolute right-0 top-full mt-2 min-w-2xs w-xs max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/15 bg-(--surface)/80 p-4 shadow-lg backdrop-blur-lg">
+                <div className="absolute right-0 top-full mt-2 min-w-2xs w-xs max-w-[calc(100vw-1.5rem)] rounded-2xl border border-white/15 bg-neutral-900/40 p-4 shadow-lg backdrop-blur-lg">
                   <div className="flex flex-col gap-4">
                     <div className="space-y-2 lg:hidden">
                       <p className="text-xs font-semibold uppercase tracking-wide text-white/50">

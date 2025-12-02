@@ -163,7 +163,7 @@ export default function HeaderNotifications({
   const extraCount = Math.max(0, labelCount - visibleCount);
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
+    <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-3">
       <div className="flex items-center justify-between text-xs text-white/60">
         <span className="font-semibold text-white">Notifications</span>
         <span>{labelCount > 0 ? `${labelCount} unread` : "All caught up"}</span>
@@ -186,7 +186,7 @@ export default function HeaderNotifications({
 
       <Link
         href="/notifications"
-        className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
+        className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-1 text-xs font-semibold text-white transition bg-neutral-800/50 hover:border-white/30 hover:bg-white/10"
       >
         View all notifications
       </Link>

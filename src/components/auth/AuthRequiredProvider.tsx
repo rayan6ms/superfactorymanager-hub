@@ -42,22 +42,25 @@ export default function AuthRequiredProvider({ children }: { children: React.Rea
     return { res, data };
   }, [apiFetch]);
 
-  const withAuth = useCallback(async <R,>(fn: () => Promise<R>) => {
+  const withAuth = useCallback(async <R,>(fn: () => Promise<R>): Promise<R | null> => {
     try {
       return await fn();
     } catch (error: unknown) {
       if (typeof error === "object" && error !== null) {
-        const status = "status" in error && typeof (error as { status?: unknown }).status === "number"
-          ? (error as { status: number }).status
-          : undefined;
-        const code = "code" in error && typeof (error as { code?: unknown }).code === "string"
-          ? (error as { code: string }).code
-          : undefined;
+        const maybeStatus = "status" in error ? (error as { status?: unknown }).status : undefined;
+        const maybeCode = "code" in error ? (error as { code?: unknown }).code : undefined;
+
+        const status = typeof maybeStatus === "number" ? maybeStatus : undefined;
+        const code = typeof maybeCode === "string" ? maybeCode : undefined;
+
         if (status === 401 || code === "UNAUTHORIZED") {
           openLogin();
+          return null;
         }
       }
-      return null;
+
+      console.error("withAuth caught non-auth error:", error);
+      throw error;
     }
   }, [openLogin]);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button, Input, Card } from "@/components/ui";
@@ -43,6 +43,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   const [resetStatus, setResetStatus] = useState<ResetStatus>("idle");
   const [errors, setErrors] = useState<FormErrors>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const statusResetTimeoutRef = useRef<number | null>(null);
   const router = useRouter();
 
   const isLoading = status === "loading";
@@ -93,7 +94,10 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
 
     const payload: Record<string, unknown> = { name: normalizedName };
     const trimmedBio = bio.trim();
-    payload.bio = trimmedBio ? trimmedBio : null;
+
+    if (trimmedBio) {
+      payload.bio = trimmedBio;
+    }
 
     if (regenerateAvatar) {
       payload.regenerateAvatar = true;
@@ -125,10 +129,17 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           setErrors({ name: usernameErrorMessage(code) });
         } else if (errorMessage === "BIO_TOO_LONG") {
           setErrors({ bio: `Bio must be ${BIO_MAX_LENGTH} characters or fewer.` });
-        } else if (errorMessage === "IMAGE_URL_TOO_LONG" || errorMessage === "INVALID_IMAGE_URL") {
-          setErrors({ image: "Please provide a valid image URL." });
+        } else if (errorMessage === "IMAGE_URL_TOO_LONG") {
+          setErrors({
+            image: "Image URL is too long. Try a shorter URL or upload a smaller image.",
+          });
+        } else if (errorMessage === "INVALID_IMAGE_URL") {
+          setErrors({
+            image: "Please provide a valid image URL (starting with http(s):// or an image data URL).",
+          });
         } else {
-          setErrors({ form: errorMessage });
+          console.error("Unexpected profile update error", errorMessage);
+          setErrors({ form: "We couldn’t update your profile. Please try again." });
         }
         setStatus("error");
         return;
@@ -140,7 +151,13 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       setPreview(data.user.image ?? "");
       setStatus("success");
       router.refresh();
-      setTimeout(() => setStatus("idle"), 2000);
+
+      if (statusResetTimeoutRef.current !== null) {
+        window.clearTimeout(statusResetTimeoutRef.current);
+      }
+      statusResetTimeoutRef.current = window.setTimeout(() => {
+        setStatus("idle");
+      }, 2000);
     } catch (error) {
       console.error("Failed to update profile", error);
       setErrors({ form: "We couldn’t update your profile. Please try again." });
@@ -240,6 +257,14 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     </div>
   );
 
+  useEffect(() => {
+    return () => {
+      if (statusResetTimeoutRef.current !== null) {
+        window.clearTimeout(statusResetTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <Card className="space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -283,6 +308,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
               placeholder="Your name"
               className="mt-1"
               aria-invalid={Boolean(errors.name)}
+              maxLength={USERNAME_MAX_LENGTH}
             />
             <p className="mt-1 text-xs text-white/60">{USERNAME_HELP_TEXT}</p>
             {errors.name && <p className="mt-1 text-sm text-error">{errors.name}</p>}
