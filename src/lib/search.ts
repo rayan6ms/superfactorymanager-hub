@@ -8,11 +8,7 @@ import type {
   Tag,
 } from "@prisma/client";
 
-const meiliHost = process.env.MEILI_HOST;
-if (!meiliHost) {
-  throw new Error("MEILI_HOST environment variable is not set");
-}
-
+const meiliHost = process.env.MEILI_HOST ?? "http://127.0.0.1:7700";
 const meiliApiKey = process.env.MEILI_API_KEY;
 
 const client = new MeiliSearch({
