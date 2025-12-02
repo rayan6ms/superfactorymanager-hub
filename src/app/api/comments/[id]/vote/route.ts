@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getCommentById } from "@/lib/comments";
-import { interactionBlockReason } from "@/lib/moderation";
+import { interactionBlockReason, type InteractionUser } from "@/lib/moderation";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
 const VOTE_THROTTLE_MS = 2000;
@@ -34,14 +34,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await db.user.findUnique({
+  const user = (await db.user.findUnique({
     where: { email: session.user.email },
     select: {
       id: true,
+      canCreatePosts: true,
+      canCreateComments: true,
+      canVotePosts: true,
       canVoteComments: true,
       interactionBanUntil: true,
     },
-  });
+  })) satisfies (InteractionUser & { id: string }) | null;
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

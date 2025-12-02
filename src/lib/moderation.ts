@@ -2,7 +2,7 @@ import type { User } from "@prisma/client";
 
 export type InteractionAction = "create-post" | "create-comment" | "vote-post" | "vote-comment";
 
-type InteractionUser = Pick<
+export type InteractionUser = Pick<
   User,
   "canCreatePosts" | "canCreateComments" | "canVotePosts" | "canVoteComments" | "interactionBanUntil"
 >;
