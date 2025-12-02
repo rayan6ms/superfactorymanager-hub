@@ -5,17 +5,12 @@
 import { ATN } from "antlr4ts/atn/ATN";
 import { ATNDeserializer } from "antlr4ts/atn/ATNDeserializer";
 import { FailedPredicateException } from "antlr4ts/FailedPredicateException";
-import { NotNull } from "antlr4ts/Decorators";
 import { NoViableAltException } from "antlr4ts/NoViableAltException";
-import { Override } from "antlr4ts/Decorators";
 import { Parser } from "antlr4ts/Parser";
 import { ParserRuleContext } from "antlr4ts/ParserRuleContext";
 import { ParserATNSimulator } from "antlr4ts/atn/ParserATNSimulator";
-import { ParseTreeListener } from "antlr4ts/tree/ParseTreeListener";
-import { ParseTreeVisitor } from "antlr4ts/tree/ParseTreeVisitor";
 import { RecognitionException } from "antlr4ts/RecognitionException";
 import { RuleContext } from "antlr4ts/RuleContext";
-//import { RuleVersion } from "antlr4ts/RuleVersion";
 import { TerminalNode } from "antlr4ts/tree/TerminalNode";
 import { Token } from "antlr4ts/Token";
 import { TokenStream } from "antlr4ts/TokenStream";
@@ -143,37 +138,37 @@ export class SFMLParser extends Parser {
 	public static readonly RULE_number = 37;
 	// tslint:disable:no-trailing-whitespace
 	public static readonly ruleNames: string[] = [
-		"program", "name", "trigger", "interval", "block", "statement", "forgetStatement", 
-		"inputStatement", "outputStatement", "inputResourceLimits", "outputResourceLimits", 
-		"resourceLimitList", "resourceLimit", "limit", "quantity", "retention", 
-		"resourceExclusion", "resourceId", "resourceIdList", "resourceIdDisjunction", 
-		"with", "withClause", "tagMatcher", "sidequalifier", "side", "slotqualifier", 
-		"rangeset", "range", "ifStatement", "boolexpr", "comparisonOp", "setOp", 
+		"program", "name", "trigger", "interval", "block", "statement", "forgetStatement",
+		"inputStatement", "outputStatement", "inputResourceLimits", "outputResourceLimits",
+		"resourceLimitList", "resourceLimit", "limit", "quantity", "retention",
+		"resourceExclusion", "resourceId", "resourceIdList", "resourceIdDisjunction",
+		"with", "withClause", "tagMatcher", "sidequalifier", "side", "slotqualifier",
+		"rangeset", "range", "ifStatement", "boolexpr", "comparisonOp", "setOp",
 		"labelAccess", "roundrobin", "label", "identifier", "string", "number",
 	];
 
 	private static readonly _LITERAL_NAMES: Array<string | undefined> = [
-		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
-		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
-		undefined, "'>'", undefined, "'<'", undefined, "'='", undefined, "'<='", 
-		undefined, "'>='", undefined, undefined, undefined, undefined, undefined, 
-		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
-		undefined, "'#'", undefined, undefined, undefined, undefined, undefined, 
-		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
-		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
-		undefined, undefined, undefined, undefined, undefined, "','", "':'", "'/'", 
+		undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+		undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+		undefined, "'>'", undefined, "'<'", undefined, "'='", undefined, "'<='",
+		undefined, "'>='", undefined, undefined, undefined, undefined, undefined,
+		undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+		undefined, "'#'", undefined, undefined, undefined, undefined, undefined,
+		undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+		undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+		undefined, undefined, undefined, undefined, undefined, "','", "':'", "'/'",
 		"'-'", "'('", "')'",
 	];
 	private static readonly _SYMBOLIC_NAMES: Array<string | undefined> = [
-		undefined, "IF", "THEN", "ELSE", "HAS", "OVERALL", "SOME", "ONE", "LONE", 
-		"TRUE", "FALSE", "NOT", "AND", "OR", "GT", "GT_SYMBOL", "LT", "LT_SYMBOL", 
-		"EQ", "EQ_SYMBOL", "LE", "LE_SYMBOL", "GE", "GE_SYMBOL", "FROM", "TO", 
-		"INPUT", "OUTPUT", "WHERE", "SLOTS", "RETAIN", "EACH", "EXCEPT", "FORGET", 
-		"WITHOUT", "WITH", "TAG", "HASHTAG", "ROUND", "ROBIN", "BY", "LABEL", 
-		"BLOCK", "TOP", "BOTTOM", "NORTH", "EAST", "SOUTH", "WEST", "SIDE", "TICKS", 
-		"TICK", "SECONDS", "SECOND", "GLOBAL", "PLUS", "REDSTONE", "PULSE", "DO", 
-		"END", "NAME", "EVERY", "COMMA", "COLON", "SLASH", "DASH", "LPAREN", "RPAREN", 
-		"NUMBER_WITH_G_SUFFIX", "NUMBER", "IDENTIFIER", "STRING", "LINE_COMMENT", 
+		undefined, "IF", "THEN", "ELSE", "HAS", "OVERALL", "SOME", "ONE", "LONE",
+		"TRUE", "FALSE", "NOT", "AND", "OR", "GT", "GT_SYMBOL", "LT", "LT_SYMBOL",
+		"EQ", "EQ_SYMBOL", "LE", "LE_SYMBOL", "GE", "GE_SYMBOL", "FROM", "TO",
+		"INPUT", "OUTPUT", "WHERE", "SLOTS", "RETAIN", "EACH", "EXCEPT", "FORGET",
+		"WITHOUT", "WITH", "TAG", "HASHTAG", "ROUND", "ROBIN", "BY", "LABEL",
+		"BLOCK", "TOP", "BOTTOM", "NORTH", "EAST", "SOUTH", "WEST", "SIDE", "TICKS",
+		"TICK", "SECONDS", "SECOND", "GLOBAL", "PLUS", "REDSTONE", "PULSE", "DO",
+		"END", "NAME", "EVERY", "COMMA", "COLON", "SLASH", "DASH", "LPAREN", "RPAREN",
+		"NUMBER_WITH_G_SUFFIX", "NUMBER", "IDENTIFIER", "STRING", "LINE_COMMENT",
 		"WS", "UNUSED",
 	];
 	public static readonly VOCABULARY: Vocabulary = new VocabularyImpl(SFMLParser._LITERAL_NAMES, SFMLParser._SYMBOLIC_NAMES, []);
@@ -210,32 +205,32 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 77;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (_la === SFMLParser.NAME) {
-				{
-				this.state = 76;
-				this.name();
-				}
-			}
-
-			this.state = 82;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			while (_la === SFMLParser.EVERY) {
-				{
-				{
-				this.state = 79;
-				this.trigger();
-				}
-				}
-				this.state = 84;
+				this.state = 77;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-			}
-			this.state = 85;
-			this.match(SFMLParser.EOF);
+				if (_la === SFMLParser.NAME) {
+					{
+						this.state = 76;
+						this.name();
+					}
+				}
+
+				this.state = 82;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				while (_la === SFMLParser.EVERY) {
+					{
+						{
+							this.state = 79;
+							this.trigger();
+						}
+					}
+					this.state = 84;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+				}
+				this.state = 85;
+				this.match(SFMLParser.EOF);
 			}
 		}
 		catch (re) {
@@ -259,10 +254,10 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 87;
-			this.match(SFMLParser.NAME);
-			this.state = 88;
-			this.string();
+				this.state = 87;
+				this.match(SFMLParser.NAME);
+				this.state = 88;
+				this.string();
 			}
 		}
 		catch (re) {
@@ -286,42 +281,42 @@ export class SFMLParser extends Parser {
 		try {
 			this.state = 103;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 2, this._ctx) ) {
-			case 1:
-				_localctx = new TimerTriggerContext(_localctx);
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 90;
-				this.match(SFMLParser.EVERY);
-				this.state = 91;
-				this.interval();
-				this.state = 92;
-				this.match(SFMLParser.DO);
-				this.state = 93;
-				this.block();
-				this.state = 94;
-				this.match(SFMLParser.END);
-				}
-				break;
+			switch (this.interpreter.adaptivePredict(this._input, 2, this._ctx)) {
+				case 1:
+					_localctx = new TimerTriggerContext(_localctx);
+					this.enterOuterAlt(_localctx, 1);
+					{
+						this.state = 90;
+						this.match(SFMLParser.EVERY);
+						this.state = 91;
+						this.interval();
+						this.state = 92;
+						this.match(SFMLParser.DO);
+						this.state = 93;
+						this.block();
+						this.state = 94;
+						this.match(SFMLParser.END);
+					}
+					break;
 
-			case 2:
-				_localctx = new PulseTriggerContext(_localctx);
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 96;
-				this.match(SFMLParser.EVERY);
-				this.state = 97;
-				this.match(SFMLParser.REDSTONE);
-				this.state = 98;
-				this.match(SFMLParser.PULSE);
-				this.state = 99;
-				this.match(SFMLParser.DO);
-				this.state = 100;
-				this.block();
-				this.state = 101;
-				this.match(SFMLParser.END);
-				}
-				break;
+				case 2:
+					_localctx = new PulseTriggerContext(_localctx);
+					this.enterOuterAlt(_localctx, 2);
+					{
+						this.state = 96;
+						this.match(SFMLParser.EVERY);
+						this.state = 97;
+						this.match(SFMLParser.REDSTONE);
+						this.state = 98;
+						this.match(SFMLParser.PULSE);
+						this.state = 99;
+						this.match(SFMLParser.DO);
+						this.state = 100;
+						this.block();
+						this.state = 101;
+						this.match(SFMLParser.END);
+					}
+					break;
 			}
 		}
 		catch (re) {
@@ -347,96 +342,96 @@ export class SFMLParser extends Parser {
 			this.state = 122;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case SFMLParser.TICKS:
-			case SFMLParser.TICK:
-			case SFMLParser.SECONDS:
-			case SFMLParser.SECOND:
-			case SFMLParser.GLOBAL:
-			case SFMLParser.PLUS:
-			case SFMLParser.NUMBER:
-				_localctx = new IntervalSpaceContext(_localctx);
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 106;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.NUMBER) {
+				case SFMLParser.TICKS:
+				case SFMLParser.TICK:
+				case SFMLParser.SECONDS:
+				case SFMLParser.SECOND:
+				case SFMLParser.GLOBAL:
+				case SFMLParser.PLUS:
+				case SFMLParser.NUMBER:
+					_localctx = new IntervalSpaceContext(_localctx);
+					this.enterOuterAlt(_localctx, 1);
 					{
-					this.state = 105;
-					this.match(SFMLParser.NUMBER);
-					}
-				}
+						this.state = 106;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.NUMBER) {
+							{
+								this.state = 105;
+								this.match(SFMLParser.NUMBER);
+							}
+						}
 
-				this.state = 109;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.GLOBAL) {
+						this.state = 109;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.GLOBAL) {
+							{
+								this.state = 108;
+								this.match(SFMLParser.GLOBAL);
+							}
+						}
+
+						this.state = 113;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.PLUS) {
+							{
+								this.state = 111;
+								this.match(SFMLParser.PLUS);
+								this.state = 112;
+								this.match(SFMLParser.NUMBER);
+							}
+						}
+
+						this.state = 115;
+						_la = this._input.LA(1);
+						if (!(((((_la - 50)) & ~0x1F) === 0 && ((1 << (_la - 50)) & ((1 << (SFMLParser.TICKS - 50)) | (1 << (SFMLParser.TICK - 50)) | (1 << (SFMLParser.SECONDS - 50)) | (1 << (SFMLParser.SECOND - 50)))) !== 0))) {
+							this._errHandler.recoverInline(this);
+						} else {
+							if (this._input.LA(1) === Token.EOF) {
+								this.matchedEOF = true;
+							}
+
+							this._errHandler.reportMatch(this);
+							this.consume();
+						}
+					}
+					break;
+				case SFMLParser.NUMBER_WITH_G_SUFFIX:
+					_localctx = new IntervalNoSpaceContext(_localctx);
+					this.enterOuterAlt(_localctx, 2);
 					{
-					this.state = 108;
-					this.match(SFMLParser.GLOBAL);
-					}
-				}
+						this.state = 116;
+						this.match(SFMLParser.NUMBER_WITH_G_SUFFIX);
+						this.state = 119;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.PLUS) {
+							{
+								this.state = 117;
+								this.match(SFMLParser.PLUS);
+								this.state = 118;
+								this.match(SFMLParser.NUMBER);
+							}
+						}
 
-				this.state = 113;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.PLUS) {
-					{
-					this.state = 111;
-					this.match(SFMLParser.PLUS);
-					this.state = 112;
-					this.match(SFMLParser.NUMBER);
-					}
-				}
+						this.state = 121;
+						_la = this._input.LA(1);
+						if (!(((((_la - 50)) & ~0x1F) === 0 && ((1 << (_la - 50)) & ((1 << (SFMLParser.TICKS - 50)) | (1 << (SFMLParser.TICK - 50)) | (1 << (SFMLParser.SECONDS - 50)) | (1 << (SFMLParser.SECOND - 50)))) !== 0))) {
+							this._errHandler.recoverInline(this);
+						} else {
+							if (this._input.LA(1) === Token.EOF) {
+								this.matchedEOF = true;
+							}
 
-				this.state = 115;
-				_la = this._input.LA(1);
-				if (!(((((_la - 50)) & ~0x1F) === 0 && ((1 << (_la - 50)) & ((1 << (SFMLParser.TICKS - 50)) | (1 << (SFMLParser.TICK - 50)) | (1 << (SFMLParser.SECONDS - 50)) | (1 << (SFMLParser.SECOND - 50)))) !== 0))) {
-				this._errHandler.recoverInline(this);
-				} else {
-					if (this._input.LA(1) === Token.EOF) {
-						this.matchedEOF = true;
+							this._errHandler.reportMatch(this);
+							this.consume();
+						}
 					}
-
-					this._errHandler.reportMatch(this);
-					this.consume();
-				}
-				}
-				break;
-			case SFMLParser.NUMBER_WITH_G_SUFFIX:
-				_localctx = new IntervalNoSpaceContext(_localctx);
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 116;
-				this.match(SFMLParser.NUMBER_WITH_G_SUFFIX);
-				this.state = 119;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.PLUS) {
-					{
-					this.state = 117;
-					this.match(SFMLParser.PLUS);
-					this.state = 118;
-					this.match(SFMLParser.NUMBER);
-					}
-				}
-
-				this.state = 121;
-				_la = this._input.LA(1);
-				if (!(((((_la - 50)) & ~0x1F) === 0 && ((1 << (_la - 50)) & ((1 << (SFMLParser.TICKS - 50)) | (1 << (SFMLParser.TICK - 50)) | (1 << (SFMLParser.SECONDS - 50)) | (1 << (SFMLParser.SECOND - 50)))) !== 0))) {
-				this._errHandler.recoverInline(this);
-				} else {
-					if (this._input.LA(1) === Token.EOF) {
-						this.matchedEOF = true;
-					}
-
-					this._errHandler.reportMatch(this);
-					this.consume();
-				}
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+					break;
+				default:
+					throw new NoViableAltException(this);
 			}
 		}
 		catch (re) {
@@ -461,20 +456,20 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 127;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << SFMLParser.IF) | (1 << SFMLParser.FROM) | (1 << SFMLParser.TO) | (1 << SFMLParser.INPUT) | (1 << SFMLParser.OUTPUT))) !== 0) || _la === SFMLParser.FORGET) {
-				{
-				{
-				this.state = 124;
-				this.statement();
-				}
-				}
-				this.state = 129;
+				this.state = 127;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-			}
+				while ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << SFMLParser.IF) | (1 << SFMLParser.FROM) | (1 << SFMLParser.TO) | (1 << SFMLParser.INPUT) | (1 << SFMLParser.OUTPUT))) !== 0) || _la === SFMLParser.FORGET) {
+					{
+						{
+							this.state = 124;
+							this.statement();
+						}
+					}
+					this.state = 129;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+				}
 			}
 		}
 		catch (re) {
@@ -499,38 +494,38 @@ export class SFMLParser extends Parser {
 			this.state = 134;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case SFMLParser.FROM:
-			case SFMLParser.INPUT:
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 130;
-				this.inputStatement();
-				}
-				break;
-			case SFMLParser.TO:
-			case SFMLParser.OUTPUT:
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 131;
-				this.outputStatement();
-				}
-				break;
-			case SFMLParser.IF:
-				this.enterOuterAlt(_localctx, 3);
-				{
-				this.state = 132;
-				this.ifStatement();
-				}
-				break;
-			case SFMLParser.FORGET:
-				this.enterOuterAlt(_localctx, 4);
-				{
-				this.state = 133;
-				this.forgetStatement();
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+				case SFMLParser.FROM:
+				case SFMLParser.INPUT:
+					this.enterOuterAlt(_localctx, 1);
+					{
+						this.state = 130;
+						this.inputStatement();
+					}
+					break;
+				case SFMLParser.TO:
+				case SFMLParser.OUTPUT:
+					this.enterOuterAlt(_localctx, 2);
+					{
+						this.state = 131;
+						this.outputStatement();
+					}
+					break;
+				case SFMLParser.IF:
+					this.enterOuterAlt(_localctx, 3);
+					{
+						this.state = 132;
+						this.ifStatement();
+					}
+					break;
+				case SFMLParser.FORGET:
+					this.enterOuterAlt(_localctx, 4);
+					{
+						this.state = 133;
+						this.forgetStatement();
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 			}
 		}
 		catch (re) {
@@ -556,45 +551,45 @@ export class SFMLParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 136;
-			this.match(SFMLParser.FORGET);
-			this.state = 138;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (((((_la - 52)) & ~0x1F) === 0 && ((1 << (_la - 52)) & ((1 << (SFMLParser.SECONDS - 52)) | (1 << (SFMLParser.SECOND - 52)) | (1 << (SFMLParser.GLOBAL - 52)) | (1 << (SFMLParser.REDSTONE - 52)) | (1 << (SFMLParser.IDENTIFIER - 52)) | (1 << (SFMLParser.STRING - 52)))) !== 0)) {
-				{
-				this.state = 137;
-				this.label();
+				this.state = 136;
+				this.match(SFMLParser.FORGET);
+				this.state = 138;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (((((_la - 52)) & ~0x1F) === 0 && ((1 << (_la - 52)) & ((1 << (SFMLParser.SECONDS - 52)) | (1 << (SFMLParser.SECOND - 52)) | (1 << (SFMLParser.GLOBAL - 52)) | (1 << (SFMLParser.REDSTONE - 52)) | (1 << (SFMLParser.IDENTIFIER - 52)) | (1 << (SFMLParser.STRING - 52)))) !== 0)) {
+					{
+						this.state = 137;
+						this.label();
+					}
 				}
-			}
 
-			this.state = 144;
-			this._errHandler.sync(this);
-			_alt = this.interpreter.adaptivePredict(this._input, 11, this._ctx);
-			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-				if (_alt === 1) {
-					{
-					{
-					this.state = 140;
-					this.match(SFMLParser.COMMA);
-					this.state = 141;
-					this.label();
-					}
-					}
-				}
-				this.state = 146;
+				this.state = 144;
 				this._errHandler.sync(this);
 				_alt = this.interpreter.adaptivePredict(this._input, 11, this._ctx);
-			}
-			this.state = 148;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (_la === SFMLParser.COMMA) {
-				{
-				this.state = 147;
-				this.match(SFMLParser.COMMA);
+				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+					if (_alt === 1) {
+						{
+							{
+								this.state = 140;
+								this.match(SFMLParser.COMMA);
+								this.state = 141;
+								this.label();
+							}
+						}
+					}
+					this.state = 146;
+					this._errHandler.sync(this);
+					_alt = this.interpreter.adaptivePredict(this._input, 11, this._ctx);
 				}
-			}
+				this.state = 148;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la === SFMLParser.COMMA) {
+					{
+						this.state = 147;
+						this.match(SFMLParser.COMMA);
+					}
+				}
 
 			}
 		}
@@ -621,90 +616,90 @@ export class SFMLParser extends Parser {
 			this.state = 174;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case SFMLParser.INPUT:
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 150;
-				this.match(SFMLParser.INPUT);
-				this.state = 152;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (((((_la - 30)) & ~0x1F) === 0 && ((1 << (_la - 30)) & ((1 << (SFMLParser.RETAIN - 30)) | (1 << (SFMLParser.WITHOUT - 30)) | (1 << (SFMLParser.WITH - 30)) | (1 << (SFMLParser.SECONDS - 30)) | (1 << (SFMLParser.SECOND - 30)) | (1 << (SFMLParser.GLOBAL - 30)) | (1 << (SFMLParser.REDSTONE - 30)))) !== 0) || ((((_la - 69)) & ~0x1F) === 0 && ((1 << (_la - 69)) & ((1 << (SFMLParser.NUMBER - 69)) | (1 << (SFMLParser.IDENTIFIER - 69)) | (1 << (SFMLParser.STRING - 69)))) !== 0)) {
+				case SFMLParser.INPUT:
+					this.enterOuterAlt(_localctx, 1);
 					{
-					this.state = 151;
-					this.inputResourceLimits();
-					}
-				}
+						this.state = 150;
+						this.match(SFMLParser.INPUT);
+						this.state = 152;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (((((_la - 30)) & ~0x1F) === 0 && ((1 << (_la - 30)) & ((1 << (SFMLParser.RETAIN - 30)) | (1 << (SFMLParser.WITHOUT - 30)) | (1 << (SFMLParser.WITH - 30)) | (1 << (SFMLParser.SECONDS - 30)) | (1 << (SFMLParser.SECOND - 30)) | (1 << (SFMLParser.GLOBAL - 30)) | (1 << (SFMLParser.REDSTONE - 30)))) !== 0) || ((((_la - 69)) & ~0x1F) === 0 && ((1 << (_la - 69)) & ((1 << (SFMLParser.NUMBER - 69)) | (1 << (SFMLParser.IDENTIFIER - 69)) | (1 << (SFMLParser.STRING - 69)))) !== 0)) {
+							{
+								this.state = 151;
+								this.inputResourceLimits();
+							}
+						}
 
-				this.state = 155;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.EXCEPT) {
+						this.state = 155;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.EXCEPT) {
+							{
+								this.state = 154;
+								this.resourceExclusion();
+							}
+						}
+
+						this.state = 157;
+						this.match(SFMLParser.FROM);
+						this.state = 159;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.EACH) {
+							{
+								this.state = 158;
+								this.match(SFMLParser.EACH);
+							}
+						}
+
+						this.state = 161;
+						this.labelAccess();
+					}
+					break;
+				case SFMLParser.FROM:
+					this.enterOuterAlt(_localctx, 2);
 					{
-					this.state = 154;
-					this.resourceExclusion();
-					}
-				}
+						this.state = 162;
+						this.match(SFMLParser.FROM);
+						this.state = 164;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.EACH) {
+							{
+								this.state = 163;
+								this.match(SFMLParser.EACH);
+							}
+						}
 
-				this.state = 157;
-				this.match(SFMLParser.FROM);
-				this.state = 159;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.EACH) {
-					{
-					this.state = 158;
-					this.match(SFMLParser.EACH);
-					}
-				}
+						this.state = 166;
+						this.labelAccess();
+						this.state = 167;
+						this.match(SFMLParser.INPUT);
+						this.state = 169;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (((((_la - 30)) & ~0x1F) === 0 && ((1 << (_la - 30)) & ((1 << (SFMLParser.RETAIN - 30)) | (1 << (SFMLParser.WITHOUT - 30)) | (1 << (SFMLParser.WITH - 30)) | (1 << (SFMLParser.SECONDS - 30)) | (1 << (SFMLParser.SECOND - 30)) | (1 << (SFMLParser.GLOBAL - 30)) | (1 << (SFMLParser.REDSTONE - 30)))) !== 0) || ((((_la - 69)) & ~0x1F) === 0 && ((1 << (_la - 69)) & ((1 << (SFMLParser.NUMBER - 69)) | (1 << (SFMLParser.IDENTIFIER - 69)) | (1 << (SFMLParser.STRING - 69)))) !== 0)) {
+							{
+								this.state = 168;
+								this.inputResourceLimits();
+							}
+						}
 
-				this.state = 161;
-				this.labelAccess();
-				}
-				break;
-			case SFMLParser.FROM:
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 162;
-				this.match(SFMLParser.FROM);
-				this.state = 164;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.EACH) {
-					{
-					this.state = 163;
-					this.match(SFMLParser.EACH);
-					}
-				}
+						this.state = 172;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.EXCEPT) {
+							{
+								this.state = 171;
+								this.resourceExclusion();
+							}
+						}
 
-				this.state = 166;
-				this.labelAccess();
-				this.state = 167;
-				this.match(SFMLParser.INPUT);
-				this.state = 169;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (((((_la - 30)) & ~0x1F) === 0 && ((1 << (_la - 30)) & ((1 << (SFMLParser.RETAIN - 30)) | (1 << (SFMLParser.WITHOUT - 30)) | (1 << (SFMLParser.WITH - 30)) | (1 << (SFMLParser.SECONDS - 30)) | (1 << (SFMLParser.SECOND - 30)) | (1 << (SFMLParser.GLOBAL - 30)) | (1 << (SFMLParser.REDSTONE - 30)))) !== 0) || ((((_la - 69)) & ~0x1F) === 0 && ((1 << (_la - 69)) & ((1 << (SFMLParser.NUMBER - 69)) | (1 << (SFMLParser.IDENTIFIER - 69)) | (1 << (SFMLParser.STRING - 69)))) !== 0)) {
-					{
-					this.state = 168;
-					this.inputResourceLimits();
 					}
-				}
-
-				this.state = 172;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.EXCEPT) {
-					{
-					this.state = 171;
-					this.resourceExclusion();
-					}
-				}
-
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+					break;
+				default:
+					throw new NoViableAltException(this);
 			}
 		}
 		catch (re) {
@@ -730,90 +725,90 @@ export class SFMLParser extends Parser {
 			this.state = 200;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case SFMLParser.OUTPUT:
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 176;
-				this.match(SFMLParser.OUTPUT);
-				this.state = 178;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (((((_la - 30)) & ~0x1F) === 0 && ((1 << (_la - 30)) & ((1 << (SFMLParser.RETAIN - 30)) | (1 << (SFMLParser.WITHOUT - 30)) | (1 << (SFMLParser.WITH - 30)) | (1 << (SFMLParser.SECONDS - 30)) | (1 << (SFMLParser.SECOND - 30)) | (1 << (SFMLParser.GLOBAL - 30)) | (1 << (SFMLParser.REDSTONE - 30)))) !== 0) || ((((_la - 69)) & ~0x1F) === 0 && ((1 << (_la - 69)) & ((1 << (SFMLParser.NUMBER - 69)) | (1 << (SFMLParser.IDENTIFIER - 69)) | (1 << (SFMLParser.STRING - 69)))) !== 0)) {
+				case SFMLParser.OUTPUT:
+					this.enterOuterAlt(_localctx, 1);
 					{
-					this.state = 177;
-					this.outputResourceLimits();
-					}
-				}
+						this.state = 176;
+						this.match(SFMLParser.OUTPUT);
+						this.state = 178;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (((((_la - 30)) & ~0x1F) === 0 && ((1 << (_la - 30)) & ((1 << (SFMLParser.RETAIN - 30)) | (1 << (SFMLParser.WITHOUT - 30)) | (1 << (SFMLParser.WITH - 30)) | (1 << (SFMLParser.SECONDS - 30)) | (1 << (SFMLParser.SECOND - 30)) | (1 << (SFMLParser.GLOBAL - 30)) | (1 << (SFMLParser.REDSTONE - 30)))) !== 0) || ((((_la - 69)) & ~0x1F) === 0 && ((1 << (_la - 69)) & ((1 << (SFMLParser.NUMBER - 69)) | (1 << (SFMLParser.IDENTIFIER - 69)) | (1 << (SFMLParser.STRING - 69)))) !== 0)) {
+							{
+								this.state = 177;
+								this.outputResourceLimits();
+							}
+						}
 
-				this.state = 181;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.EXCEPT) {
+						this.state = 181;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.EXCEPT) {
+							{
+								this.state = 180;
+								this.resourceExclusion();
+							}
+						}
+
+						this.state = 183;
+						this.match(SFMLParser.TO);
+						this.state = 185;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.EACH) {
+							{
+								this.state = 184;
+								this.match(SFMLParser.EACH);
+							}
+						}
+
+						this.state = 187;
+						this.labelAccess();
+					}
+					break;
+				case SFMLParser.TO:
+					this.enterOuterAlt(_localctx, 2);
 					{
-					this.state = 180;
-					this.resourceExclusion();
-					}
-				}
+						this.state = 188;
+						this.match(SFMLParser.TO);
+						this.state = 190;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.EACH) {
+							{
+								this.state = 189;
+								this.match(SFMLParser.EACH);
+							}
+						}
 
-				this.state = 183;
-				this.match(SFMLParser.TO);
-				this.state = 185;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.EACH) {
-					{
-					this.state = 184;
-					this.match(SFMLParser.EACH);
-					}
-				}
+						this.state = 192;
+						this.labelAccess();
+						this.state = 193;
+						this.match(SFMLParser.OUTPUT);
+						this.state = 195;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (((((_la - 30)) & ~0x1F) === 0 && ((1 << (_la - 30)) & ((1 << (SFMLParser.RETAIN - 30)) | (1 << (SFMLParser.WITHOUT - 30)) | (1 << (SFMLParser.WITH - 30)) | (1 << (SFMLParser.SECONDS - 30)) | (1 << (SFMLParser.SECOND - 30)) | (1 << (SFMLParser.GLOBAL - 30)) | (1 << (SFMLParser.REDSTONE - 30)))) !== 0) || ((((_la - 69)) & ~0x1F) === 0 && ((1 << (_la - 69)) & ((1 << (SFMLParser.NUMBER - 69)) | (1 << (SFMLParser.IDENTIFIER - 69)) | (1 << (SFMLParser.STRING - 69)))) !== 0)) {
+							{
+								this.state = 194;
+								this.outputResourceLimits();
+							}
+						}
 
-				this.state = 187;
-				this.labelAccess();
-				}
-				break;
-			case SFMLParser.TO:
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 188;
-				this.match(SFMLParser.TO);
-				this.state = 190;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.EACH) {
-					{
-					this.state = 189;
-					this.match(SFMLParser.EACH);
-					}
-				}
+						this.state = 198;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.EXCEPT) {
+							{
+								this.state = 197;
+								this.resourceExclusion();
+							}
+						}
 
-				this.state = 192;
-				this.labelAccess();
-				this.state = 193;
-				this.match(SFMLParser.OUTPUT);
-				this.state = 195;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (((((_la - 30)) & ~0x1F) === 0 && ((1 << (_la - 30)) & ((1 << (SFMLParser.RETAIN - 30)) | (1 << (SFMLParser.WITHOUT - 30)) | (1 << (SFMLParser.WITH - 30)) | (1 << (SFMLParser.SECONDS - 30)) | (1 << (SFMLParser.SECOND - 30)) | (1 << (SFMLParser.GLOBAL - 30)) | (1 << (SFMLParser.REDSTONE - 30)))) !== 0) || ((((_la - 69)) & ~0x1F) === 0 && ((1 << (_la - 69)) & ((1 << (SFMLParser.NUMBER - 69)) | (1 << (SFMLParser.IDENTIFIER - 69)) | (1 << (SFMLParser.STRING - 69)))) !== 0)) {
-					{
-					this.state = 194;
-					this.outputResourceLimits();
 					}
-				}
-
-				this.state = 198;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.EXCEPT) {
-					{
-					this.state = 197;
-					this.resourceExclusion();
-					}
-				}
-
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+					break;
+				default:
+					throw new NoViableAltException(this);
 			}
 		}
 		catch (re) {
@@ -837,8 +832,8 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 202;
-			this.resourceLimitList();
+				this.state = 202;
+				this.resourceLimitList();
 			}
 		}
 		catch (re) {
@@ -862,8 +857,8 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 204;
-			this.resourceLimitList();
+				this.state = 204;
+				this.resourceLimitList();
 			}
 		}
 		catch (re) {
@@ -889,35 +884,35 @@ export class SFMLParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 206;
-			this.resourceLimit();
-			this.state = 211;
-			this._errHandler.sync(this);
-			_alt = this.interpreter.adaptivePredict(this._input, 27, this._ctx);
-			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-				if (_alt === 1) {
-					{
-					{
-					this.state = 207;
-					this.match(SFMLParser.COMMA);
-					this.state = 208;
-					this.resourceLimit();
-					}
-					}
-				}
-				this.state = 213;
+				this.state = 206;
+				this.resourceLimit();
+				this.state = 211;
 				this._errHandler.sync(this);
 				_alt = this.interpreter.adaptivePredict(this._input, 27, this._ctx);
-			}
-			this.state = 215;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (_la === SFMLParser.COMMA) {
-				{
-				this.state = 214;
-				this.match(SFMLParser.COMMA);
+				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+					if (_alt === 1) {
+						{
+							{
+								this.state = 207;
+								this.match(SFMLParser.COMMA);
+								this.state = 208;
+								this.resourceLimit();
+							}
+						}
+					}
+					this.state = 213;
+					this._errHandler.sync(this);
+					_alt = this.interpreter.adaptivePredict(this._input, 27, this._ctx);
 				}
-			}
+				this.state = 215;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la === SFMLParser.COMMA) {
+					{
+						this.state = 214;
+						this.match(SFMLParser.COMMA);
+					}
+				}
 
 			}
 		}
@@ -943,60 +938,60 @@ export class SFMLParser extends Parser {
 		try {
 			this.state = 229;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 32, this._ctx) ) {
-			case 1:
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 218;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.RETAIN || _la === SFMLParser.NUMBER) {
+			switch (this.interpreter.adaptivePredict(this._input, 32, this._ctx)) {
+				case 1:
+					this.enterOuterAlt(_localctx, 1);
 					{
-					this.state = 217;
-					this.limit();
-					}
-				}
+						this.state = 218;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.RETAIN || _la === SFMLParser.NUMBER) {
+							{
+								this.state = 217;
+								this.limit();
+							}
+						}
 
-				this.state = 220;
-				this.resourceIdDisjunction();
-				this.state = 222;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.WITHOUT || _la === SFMLParser.WITH) {
+						this.state = 220;
+						this.resourceIdDisjunction();
+						this.state = 222;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.WITHOUT || _la === SFMLParser.WITH) {
+							{
+								this.state = 221;
+								this.with();
+							}
+						}
+
+					}
+					break;
+
+				case 2:
+					this.enterOuterAlt(_localctx, 2);
 					{
-					this.state = 221;
-					this.with();
+						this.state = 224;
+						this.limit();
+						this.state = 226;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						if (_la === SFMLParser.WITHOUT || _la === SFMLParser.WITH) {
+							{
+								this.state = 225;
+								this.with();
+							}
+						}
+
 					}
-				}
+					break;
 
-				}
-				break;
-
-			case 2:
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 224;
-				this.limit();
-				this.state = 226;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if (_la === SFMLParser.WITHOUT || _la === SFMLParser.WITH) {
+				case 3:
+					this.enterOuterAlt(_localctx, 3);
 					{
-					this.state = 225;
-					this.with();
+						this.state = 228;
+						this.with();
 					}
-				}
-
-				}
-				break;
-
-			case 3:
-				this.enterOuterAlt(_localctx, 3);
-				{
-				this.state = 228;
-				this.with();
-				}
-				break;
+					break;
 			}
 		}
 		catch (re) {
@@ -1020,35 +1015,35 @@ export class SFMLParser extends Parser {
 		try {
 			this.state = 236;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 33, this._ctx) ) {
-			case 1:
-				_localctx = new QuantityRetentionLimitContext(_localctx);
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 231;
-				this.quantity();
-				this.state = 232;
-				this.retention();
-				}
-				break;
+			switch (this.interpreter.adaptivePredict(this._input, 33, this._ctx)) {
+				case 1:
+					_localctx = new QuantityRetentionLimitContext(_localctx);
+					this.enterOuterAlt(_localctx, 1);
+					{
+						this.state = 231;
+						this.quantity();
+						this.state = 232;
+						this.retention();
+					}
+					break;
 
-			case 2:
-				_localctx = new RetentionLimitContext(_localctx);
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 234;
-				this.retention();
-				}
-				break;
+				case 2:
+					_localctx = new RetentionLimitContext(_localctx);
+					this.enterOuterAlt(_localctx, 2);
+					{
+						this.state = 234;
+						this.retention();
+					}
+					break;
 
-			case 3:
-				_localctx = new QuantityLimitContext(_localctx);
-				this.enterOuterAlt(_localctx, 3);
-				{
-				this.state = 235;
-				this.quantity();
-				}
-				break;
+				case 3:
+					_localctx = new QuantityLimitContext(_localctx);
+					this.enterOuterAlt(_localctx, 3);
+					{
+						this.state = 235;
+						this.quantity();
+					}
+					break;
 			}
 		}
 		catch (re) {
@@ -1073,17 +1068,17 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 238;
-			this.number();
-			this.state = 240;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (_la === SFMLParser.EACH) {
-				{
-				this.state = 239;
-				this.match(SFMLParser.EACH);
+				this.state = 238;
+				this.number();
+				this.state = 240;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la === SFMLParser.EACH) {
+					{
+						this.state = 239;
+						this.match(SFMLParser.EACH);
+					}
 				}
-			}
 
 			}
 		}
@@ -1109,19 +1104,19 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 242;
-			this.match(SFMLParser.RETAIN);
-			this.state = 243;
-			this.number();
-			this.state = 245;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (_la === SFMLParser.EACH) {
-				{
-				this.state = 244;
-				this.match(SFMLParser.EACH);
+				this.state = 242;
+				this.match(SFMLParser.RETAIN);
+				this.state = 243;
+				this.number();
+				this.state = 245;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la === SFMLParser.EACH) {
+					{
+						this.state = 244;
+						this.match(SFMLParser.EACH);
+					}
 				}
-			}
 
 			}
 		}
@@ -1146,10 +1141,10 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 247;
-			this.match(SFMLParser.EXCEPT);
-			this.state = 248;
-			this.resourceIdList();
+				this.state = 247;
+				this.match(SFMLParser.EXCEPT);
+				this.state = 248;
+				this.resourceIdList();
 			}
 		}
 		catch (re) {
@@ -1174,90 +1169,90 @@ export class SFMLParser extends Parser {
 			this.state = 270;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case SFMLParser.SECONDS:
-			case SFMLParser.SECOND:
-			case SFMLParser.GLOBAL:
-			case SFMLParser.REDSTONE:
-			case SFMLParser.IDENTIFIER:
-				_localctx = new ResourceContext(_localctx);
-				this.enterOuterAlt(_localctx, 1);
-				{
-				{
-				this.state = 250;
-				this.identifier();
-				}
-				this.state = 267;
-				this._errHandler.sync(this);
-				switch ( this.interpreter.adaptivePredict(this._input, 41, this._ctx) ) {
-				case 1:
+				case SFMLParser.SECONDS:
+				case SFMLParser.SECOND:
+				case SFMLParser.GLOBAL:
+				case SFMLParser.REDSTONE:
+				case SFMLParser.IDENTIFIER:
+					_localctx = new ResourceContext(_localctx);
+					this.enterOuterAlt(_localctx, 1);
 					{
-					this.state = 251;
-					this.match(SFMLParser.COLON);
-					this.state = 253;
-					this._errHandler.sync(this);
-					switch ( this.interpreter.adaptivePredict(this._input, 36, this._ctx) ) {
-					case 1:
 						{
-						this.state = 252;
-						this.identifier();
-						}
-						break;
-					}
-					this.state = 265;
-					this._errHandler.sync(this);
-					switch ( this.interpreter.adaptivePredict(this._input, 40, this._ctx) ) {
-					case 1:
-						{
-						this.state = 255;
-						this.match(SFMLParser.COLON);
-						this.state = 257;
-						this._errHandler.sync(this);
-						switch ( this.interpreter.adaptivePredict(this._input, 37, this._ctx) ) {
-						case 1:
-							{
-							this.state = 256;
+							this.state = 250;
 							this.identifier();
-							}
-							break;
 						}
-						this.state = 263;
+						this.state = 267;
 						this._errHandler.sync(this);
-						switch ( this.interpreter.adaptivePredict(this._input, 39, this._ctx) ) {
-						case 1:
-							{
-							this.state = 259;
-							this.match(SFMLParser.COLON);
-							this.state = 261;
-							this._errHandler.sync(this);
-							switch ( this.interpreter.adaptivePredict(this._input, 38, this._ctx) ) {
+						switch (this.interpreter.adaptivePredict(this._input, 41, this._ctx)) {
 							case 1:
 								{
-								this.state = 260;
-								this.identifier();
+									this.state = 251;
+									this.match(SFMLParser.COLON);
+									this.state = 253;
+									this._errHandler.sync(this);
+									switch (this.interpreter.adaptivePredict(this._input, 36, this._ctx)) {
+										case 1:
+											{
+												this.state = 252;
+												this.identifier();
+											}
+											break;
+									}
+									this.state = 265;
+									this._errHandler.sync(this);
+									switch (this.interpreter.adaptivePredict(this._input, 40, this._ctx)) {
+										case 1:
+											{
+												this.state = 255;
+												this.match(SFMLParser.COLON);
+												this.state = 257;
+												this._errHandler.sync(this);
+												switch (this.interpreter.adaptivePredict(this._input, 37, this._ctx)) {
+													case 1:
+														{
+															this.state = 256;
+															this.identifier();
+														}
+														break;
+												}
+												this.state = 263;
+												this._errHandler.sync(this);
+												switch (this.interpreter.adaptivePredict(this._input, 39, this._ctx)) {
+													case 1:
+														{
+															this.state = 259;
+															this.match(SFMLParser.COLON);
+															this.state = 261;
+															this._errHandler.sync(this);
+															switch (this.interpreter.adaptivePredict(this._input, 38, this._ctx)) {
+																case 1:
+																	{
+																		this.state = 260;
+																		this.identifier();
+																	}
+																	break;
+															}
+														}
+														break;
+												}
+											}
+											break;
+									}
 								}
 								break;
-							}
-							}
-							break;
 						}
-						}
-						break;
-					}
 					}
 					break;
-				}
-				}
-				break;
-			case SFMLParser.STRING:
-				_localctx = new StringResourceContext(_localctx);
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 269;
-				this.string();
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+				case SFMLParser.STRING:
+					_localctx = new StringResourceContext(_localctx);
+					this.enterOuterAlt(_localctx, 2);
+					{
+						this.state = 269;
+						this.string();
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 			}
 		}
 		catch (re) {
@@ -1282,36 +1277,36 @@ export class SFMLParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 272;
-			this.resourceId();
-			this.state = 277;
-			this._errHandler.sync(this);
-			_alt = this.interpreter.adaptivePredict(this._input, 43, this._ctx);
-			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-				if (_alt === 1) {
-					{
-					{
-					this.state = 273;
-					this.match(SFMLParser.COMMA);
-					this.state = 274;
-					this.resourceId();
-					}
-					}
-				}
-				this.state = 279;
+				this.state = 272;
+				this.resourceId();
+				this.state = 277;
 				this._errHandler.sync(this);
 				_alt = this.interpreter.adaptivePredict(this._input, 43, this._ctx);
-			}
-			this.state = 281;
-			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 44, this._ctx) ) {
-			case 1:
-				{
-				this.state = 280;
-				this.match(SFMLParser.COMMA);
+				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+					if (_alt === 1) {
+						{
+							{
+								this.state = 273;
+								this.match(SFMLParser.COMMA);
+								this.state = 274;
+								this.resourceId();
+							}
+						}
+					}
+					this.state = 279;
+					this._errHandler.sync(this);
+					_alt = this.interpreter.adaptivePredict(this._input, 43, this._ctx);
 				}
-				break;
-			}
+				this.state = 281;
+				this._errHandler.sync(this);
+				switch (this.interpreter.adaptivePredict(this._input, 44, this._ctx)) {
+					case 1:
+						{
+							this.state = 280;
+							this.match(SFMLParser.COMMA);
+						}
+						break;
+				}
 			}
 		}
 		catch (re) {
@@ -1336,36 +1331,36 @@ export class SFMLParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 283;
-			this.resourceId();
-			this.state = 288;
-			this._errHandler.sync(this);
-			_alt = this.interpreter.adaptivePredict(this._input, 45, this._ctx);
-			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-				if (_alt === 1) {
-					{
-					{
-					this.state = 284;
-					this.match(SFMLParser.OR);
-					this.state = 285;
-					this.resourceId();
-					}
-					}
-				}
-				this.state = 290;
+				this.state = 283;
+				this.resourceId();
+				this.state = 288;
 				this._errHandler.sync(this);
 				_alt = this.interpreter.adaptivePredict(this._input, 45, this._ctx);
-			}
-			this.state = 292;
-			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 46, this._ctx) ) {
-			case 1:
-				{
-				this.state = 291;
-				this.match(SFMLParser.OR);
+				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+					if (_alt === 1) {
+						{
+							{
+								this.state = 284;
+								this.match(SFMLParser.OR);
+								this.state = 285;
+								this.resourceId();
+							}
+						}
+					}
+					this.state = 290;
+					this._errHandler.sync(this);
+					_alt = this.interpreter.adaptivePredict(this._input, 45, this._ctx);
 				}
-				break;
-			}
+				this.state = 292;
+				this._errHandler.sync(this);
+				switch (this.interpreter.adaptivePredict(this._input, 46, this._ctx)) {
+					case 1:
+						{
+							this.state = 291;
+							this.match(SFMLParser.OR);
+						}
+						break;
+				}
 			}
 		}
 		catch (re) {
@@ -1390,26 +1385,26 @@ export class SFMLParser extends Parser {
 			this.state = 298;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case SFMLParser.WITH:
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 294;
-				this.match(SFMLParser.WITH);
-				this.state = 295;
-				this.withClause(0);
-				}
-				break;
-			case SFMLParser.WITHOUT:
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 296;
-				this.match(SFMLParser.WITHOUT);
-				this.state = 297;
-				this.withClause(0);
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+				case SFMLParser.WITH:
+					this.enterOuterAlt(_localctx, 1);
+					{
+						this.state = 294;
+						this.match(SFMLParser.WITH);
+						this.state = 295;
+						this.withClause(0);
+					}
+					break;
+				case SFMLParser.WITHOUT:
+					this.enterOuterAlt(_localctx, 2);
+					{
+						this.state = 296;
+						this.match(SFMLParser.WITHOUT);
+						this.state = 297;
+						this.withClause(0);
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 			}
 		}
 		catch (re) {
@@ -1446,125 +1441,125 @@ export class SFMLParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 315;
-			this._errHandler.sync(this);
-			switch (this._input.LA(1)) {
-			case SFMLParser.LPAREN:
-				{
-				_localctx = new WithParenContext(_localctx);
-				this._ctx = _localctx;
-				_prevctx = _localctx;
-
-				this.state = 301;
-				this.match(SFMLParser.LPAREN);
-				this.state = 302;
-				this.withClause(0);
-				this.state = 303;
-				this.match(SFMLParser.RPAREN);
-				}
-				break;
-			case SFMLParser.NOT:
-				{
-				_localctx = new WithNegationContext(_localctx);
-				this._ctx = _localctx;
-				_prevctx = _localctx;
-				this.state = 305;
-				this.match(SFMLParser.NOT);
-				this.state = 306;
-				this.withClause(4);
-				}
-				break;
-			case SFMLParser.TAG:
-			case SFMLParser.HASHTAG:
-				{
-				_localctx = new WithTagContext(_localctx);
-				this._ctx = _localctx;
-				_prevctx = _localctx;
-				this.state = 312;
+				this.state = 315;
 				this._errHandler.sync(this);
 				switch (this._input.LA(1)) {
-				case SFMLParser.TAG:
-					{
-					this.state = 307;
-					this.match(SFMLParser.TAG);
-					this.state = 309;
-					this._errHandler.sync(this);
-					_la = this._input.LA(1);
-					if (_la === SFMLParser.HASHTAG) {
+					case SFMLParser.LPAREN:
 						{
-						this.state = 308;
-						this.match(SFMLParser.HASHTAG);
-						}
-					}
+							_localctx = new WithParenContext(_localctx);
+							this._ctx = _localctx;
+							_prevctx = _localctx;
 
-					}
-					break;
-				case SFMLParser.HASHTAG:
-					{
-					this.state = 311;
-					this.match(SFMLParser.HASHTAG);
-					}
-					break;
-				default:
-					throw new NoViableAltException(this);
-				}
-				this.state = 314;
-				this.tagMatcher();
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
-			}
-			this._ctx._stop = this._input.tryLT(-1);
-			this.state = 325;
-			this._errHandler.sync(this);
-			_alt = this.interpreter.adaptivePredict(this._input, 52, this._ctx);
-			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-				if (_alt === 1) {
-					if (this._parseListeners != null) {
-						this.triggerExitRuleEvent();
-					}
-					_prevctx = _localctx;
-					{
-					this.state = 323;
-					this._errHandler.sync(this);
-					switch ( this.interpreter.adaptivePredict(this._input, 51, this._ctx) ) {
-					case 1:
-						{
-						_localctx = new WithConjunctionContext(new WithClauseContext(_parentctx, _parentState));
-						this.pushNewRecursionContext(_localctx, _startState, SFMLParser.RULE_withClause);
-						this.state = 317;
-						if (!(this.precpred(this._ctx, 3))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 3)");
-						}
-						this.state = 318;
-						this.match(SFMLParser.AND);
-						this.state = 319;
-						this.withClause(4);
+							this.state = 301;
+							this.match(SFMLParser.LPAREN);
+							this.state = 302;
+							this.withClause(0);
+							this.state = 303;
+							this.match(SFMLParser.RPAREN);
 						}
 						break;
-
-					case 2:
+					case SFMLParser.NOT:
 						{
-						_localctx = new WithDisjunctionContext(new WithClauseContext(_parentctx, _parentState));
-						this.pushNewRecursionContext(_localctx, _startState, SFMLParser.RULE_withClause);
-						this.state = 320;
-						if (!(this.precpred(this._ctx, 2))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 2)");
-						}
-						this.state = 321;
-						this.match(SFMLParser.OR);
-						this.state = 322;
-						this.withClause(3);
+							_localctx = new WithNegationContext(_localctx);
+							this._ctx = _localctx;
+							_prevctx = _localctx;
+							this.state = 305;
+							this.match(SFMLParser.NOT);
+							this.state = 306;
+							this.withClause(4);
 						}
 						break;
-					}
-					}
+					case SFMLParser.TAG:
+					case SFMLParser.HASHTAG:
+						{
+							_localctx = new WithTagContext(_localctx);
+							this._ctx = _localctx;
+							_prevctx = _localctx;
+							this.state = 312;
+							this._errHandler.sync(this);
+							switch (this._input.LA(1)) {
+								case SFMLParser.TAG:
+									{
+										this.state = 307;
+										this.match(SFMLParser.TAG);
+										this.state = 309;
+										this._errHandler.sync(this);
+										_la = this._input.LA(1);
+										if (_la === SFMLParser.HASHTAG) {
+											{
+												this.state = 308;
+												this.match(SFMLParser.HASHTAG);
+											}
+										}
+
+									}
+									break;
+								case SFMLParser.HASHTAG:
+									{
+										this.state = 311;
+										this.match(SFMLParser.HASHTAG);
+									}
+									break;
+								default:
+									throw new NoViableAltException(this);
+							}
+							this.state = 314;
+							this.tagMatcher();
+						}
+						break;
+					default:
+						throw new NoViableAltException(this);
 				}
-				this.state = 327;
+				this._ctx._stop = this._input.tryLT(-1);
+				this.state = 325;
 				this._errHandler.sync(this);
 				_alt = this.interpreter.adaptivePredict(this._input, 52, this._ctx);
-			}
+				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+					if (_alt === 1) {
+						if (this._parseListeners != null) {
+							this.triggerExitRuleEvent();
+						}
+						_prevctx = _localctx;
+						{
+							this.state = 323;
+							this._errHandler.sync(this);
+							switch (this.interpreter.adaptivePredict(this._input, 51, this._ctx)) {
+								case 1:
+									{
+										_localctx = new WithConjunctionContext(new WithClauseContext(_parentctx, _parentState));
+										this.pushNewRecursionContext(_localctx, _startState, SFMLParser.RULE_withClause);
+										this.state = 317;
+										if (!(this.precpred(this._ctx, 3))) {
+											throw this.createFailedPredicateException("this.precpred(this._ctx, 3)");
+										}
+										this.state = 318;
+										this.match(SFMLParser.AND);
+										this.state = 319;
+										this.withClause(4);
+									}
+									break;
+
+								case 2:
+									{
+										_localctx = new WithDisjunctionContext(new WithClauseContext(_parentctx, _parentState));
+										this.pushNewRecursionContext(_localctx, _startState, SFMLParser.RULE_withClause);
+										this.state = 320;
+										if (!(this.precpred(this._ctx, 2))) {
+											throw this.createFailedPredicateException("this.precpred(this._ctx, 2)");
+										}
+										this.state = 321;
+										this.match(SFMLParser.OR);
+										this.state = 322;
+										this.withClause(3);
+									}
+									break;
+							}
+						}
+					}
+					this.state = 327;
+					this._errHandler.sync(this);
+					_alt = this.interpreter.adaptivePredict(this._input, 52, this._ctx);
+				}
 			}
 		}
 		catch (re) {
@@ -1589,62 +1584,62 @@ export class SFMLParser extends Parser {
 			let _alt: number;
 			this.state = 346;
 			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 55, this._ctx) ) {
-			case 1:
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 328;
-				this.identifier();
-				this.state = 329;
-				this.match(SFMLParser.COLON);
-				this.state = 330;
-				this.identifier();
-				this.state = 335;
-				this._errHandler.sync(this);
-				_alt = this.interpreter.adaptivePredict(this._input, 53, this._ctx);
-				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-					if (_alt === 1) {
-						{
-						{
-						this.state = 331;
-						this.match(SFMLParser.SLASH);
-						this.state = 332;
+			switch (this.interpreter.adaptivePredict(this._input, 55, this._ctx)) {
+				case 1:
+					this.enterOuterAlt(_localctx, 1);
+					{
+						this.state = 328;
 						this.identifier();
-						}
+						this.state = 329;
+						this.match(SFMLParser.COLON);
+						this.state = 330;
+						this.identifier();
+						this.state = 335;
+						this._errHandler.sync(this);
+						_alt = this.interpreter.adaptivePredict(this._input, 53, this._ctx);
+						while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+							if (_alt === 1) {
+								{
+									{
+										this.state = 331;
+										this.match(SFMLParser.SLASH);
+										this.state = 332;
+										this.identifier();
+									}
+								}
+							}
+							this.state = 337;
+							this._errHandler.sync(this);
+							_alt = this.interpreter.adaptivePredict(this._input, 53, this._ctx);
 						}
 					}
-					this.state = 337;
-					this._errHandler.sync(this);
-					_alt = this.interpreter.adaptivePredict(this._input, 53, this._ctx);
-				}
-				}
-				break;
+					break;
 
-			case 2:
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 338;
-				this.identifier();
-				this.state = 343;
-				this._errHandler.sync(this);
-				_alt = this.interpreter.adaptivePredict(this._input, 54, this._ctx);
-				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-					if (_alt === 1) {
-						{
-						{
-						this.state = 339;
-						this.match(SFMLParser.SLASH);
-						this.state = 340;
+				case 2:
+					this.enterOuterAlt(_localctx, 2);
+					{
+						this.state = 338;
 						this.identifier();
-						}
+						this.state = 343;
+						this._errHandler.sync(this);
+						_alt = this.interpreter.adaptivePredict(this._input, 54, this._ctx);
+						while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+							if (_alt === 1) {
+								{
+									{
+										this.state = 339;
+										this.match(SFMLParser.SLASH);
+										this.state = 340;
+										this.identifier();
+									}
+								}
+							}
+							this.state = 345;
+							this._errHandler.sync(this);
+							_alt = this.interpreter.adaptivePredict(this._input, 54, this._ctx);
 						}
 					}
-					this.state = 345;
-					this._errHandler.sync(this);
-					_alt = this.interpreter.adaptivePredict(this._input, 54, this._ctx);
-				}
-				}
-				break;
+					break;
 			}
 		}
 		catch (re) {
@@ -1670,49 +1665,49 @@ export class SFMLParser extends Parser {
 			this.state = 360;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case SFMLParser.EACH:
-				_localctx = new EachSideContext(_localctx);
-				this.enterOuterAlt(_localctx, 1);
-				{
-				this.state = 348;
-				this.match(SFMLParser.EACH);
-				this.state = 349;
-				this.match(SFMLParser.SIDE);
-				}
-				break;
-			case SFMLParser.TOP:
-			case SFMLParser.BOTTOM:
-			case SFMLParser.NORTH:
-			case SFMLParser.EAST:
-			case SFMLParser.SOUTH:
-			case SFMLParser.WEST:
-				_localctx = new ListedSidesContext(_localctx);
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 350;
-				this.side();
-				this.state = 355;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				while (_la === SFMLParser.COMMA) {
+				case SFMLParser.EACH:
+					_localctx = new EachSideContext(_localctx);
+					this.enterOuterAlt(_localctx, 1);
 					{
+						this.state = 348;
+						this.match(SFMLParser.EACH);
+						this.state = 349;
+						this.match(SFMLParser.SIDE);
+					}
+					break;
+				case SFMLParser.TOP:
+				case SFMLParser.BOTTOM:
+				case SFMLParser.NORTH:
+				case SFMLParser.EAST:
+				case SFMLParser.SOUTH:
+				case SFMLParser.WEST:
+					_localctx = new ListedSidesContext(_localctx);
+					this.enterOuterAlt(_localctx, 2);
 					{
-					this.state = 351;
-					this.match(SFMLParser.COMMA);
-					this.state = 352;
-					this.side();
+						this.state = 350;
+						this.side();
+						this.state = 355;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+						while (_la === SFMLParser.COMMA) {
+							{
+								{
+									this.state = 351;
+									this.match(SFMLParser.COMMA);
+									this.state = 352;
+									this.side();
+								}
+							}
+							this.state = 357;
+							this._errHandler.sync(this);
+							_la = this._input.LA(1);
+						}
+						this.state = 358;
+						this.match(SFMLParser.SIDE);
 					}
-					}
-					this.state = 357;
-					this._errHandler.sync(this);
-					_la = this._input.LA(1);
-				}
-				this.state = 358;
-				this.match(SFMLParser.SIDE);
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+					break;
+				default:
+					throw new NoViableAltException(this);
 			}
 		}
 		catch (re) {
@@ -1737,18 +1732,18 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 362;
-			_la = this._input.LA(1);
-			if (!(((((_la - 43)) & ~0x1F) === 0 && ((1 << (_la - 43)) & ((1 << (SFMLParser.TOP - 43)) | (1 << (SFMLParser.BOTTOM - 43)) | (1 << (SFMLParser.NORTH - 43)) | (1 << (SFMLParser.EAST - 43)) | (1 << (SFMLParser.SOUTH - 43)) | (1 << (SFMLParser.WEST - 43)))) !== 0))) {
-			this._errHandler.recoverInline(this);
-			} else {
-				if (this._input.LA(1) === Token.EOF) {
-					this.matchedEOF = true;
-				}
+				this.state = 362;
+				_la = this._input.LA(1);
+				if (!(((((_la - 43)) & ~0x1F) === 0 && ((1 << (_la - 43)) & ((1 << (SFMLParser.TOP - 43)) | (1 << (SFMLParser.BOTTOM - 43)) | (1 << (SFMLParser.NORTH - 43)) | (1 << (SFMLParser.EAST - 43)) | (1 << (SFMLParser.SOUTH - 43)) | (1 << (SFMLParser.WEST - 43)))) !== 0))) {
+					this._errHandler.recoverInline(this);
+				} else {
+					if (this._input.LA(1) === Token.EOF) {
+						this.matchedEOF = true;
+					}
 
-				this._errHandler.reportMatch(this);
-				this.consume();
-			}
+					this._errHandler.reportMatch(this);
+					this.consume();
+				}
 			}
 		}
 		catch (re) {
@@ -1772,10 +1767,10 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 364;
-			this.match(SFMLParser.SLOTS);
-			this.state = 365;
-			this.rangeset();
+				this.state = 364;
+				this.match(SFMLParser.SLOTS);
+				this.state = 365;
+				this.rangeset();
 			}
 		}
 		catch (re) {
@@ -1800,24 +1795,24 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 367;
-			this.range();
-			this.state = 372;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			while (_la === SFMLParser.COMMA) {
-				{
-				{
-				this.state = 368;
-				this.match(SFMLParser.COMMA);
-				this.state = 369;
+				this.state = 367;
 				this.range();
-				}
-				}
-				this.state = 374;
+				this.state = 372;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-			}
+				while (_la === SFMLParser.COMMA) {
+					{
+						{
+							this.state = 368;
+							this.match(SFMLParser.COMMA);
+							this.state = 369;
+							this.range();
+						}
+					}
+					this.state = 374;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+				}
 			}
 		}
 		catch (re) {
@@ -1842,19 +1837,19 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 375;
-			this.number();
-			this.state = 378;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (_la === SFMLParser.DASH) {
-				{
-				this.state = 376;
-				this.match(SFMLParser.DASH);
-				this.state = 377;
+				this.state = 375;
 				this.number();
+				this.state = 378;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la === SFMLParser.DASH) {
+					{
+						this.state = 376;
+						this.match(SFMLParser.DASH);
+						this.state = 377;
+						this.number();
+					}
 				}
-			}
 
 			}
 		}
@@ -1881,52 +1876,52 @@ export class SFMLParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 380;
-			this.match(SFMLParser.IF);
-			this.state = 381;
-			this.boolexpr(0);
-			this.state = 382;
-			this.match(SFMLParser.THEN);
-			this.state = 383;
-			this.block();
-			this.state = 392;
-			this._errHandler.sync(this);
-			_alt = this.interpreter.adaptivePredict(this._input, 60, this._ctx);
-			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-				if (_alt === 1) {
-					{
-					{
-					this.state = 384;
-					this.match(SFMLParser.ELSE);
-					this.state = 385;
-					this.match(SFMLParser.IF);
-					this.state = 386;
-					this.boolexpr(0);
-					this.state = 387;
-					this.match(SFMLParser.THEN);
-					this.state = 388;
-					this.block();
-					}
-					}
-				}
-				this.state = 394;
+				this.state = 380;
+				this.match(SFMLParser.IF);
+				this.state = 381;
+				this.boolexpr(0);
+				this.state = 382;
+				this.match(SFMLParser.THEN);
+				this.state = 383;
+				this.block();
+				this.state = 392;
 				this._errHandler.sync(this);
 				_alt = this.interpreter.adaptivePredict(this._input, 60, this._ctx);
-			}
-			this.state = 397;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (_la === SFMLParser.ELSE) {
-				{
-				this.state = 395;
-				this.match(SFMLParser.ELSE);
-				this.state = 396;
-				this.block();
+				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+					if (_alt === 1) {
+						{
+							{
+								this.state = 384;
+								this.match(SFMLParser.ELSE);
+								this.state = 385;
+								this.match(SFMLParser.IF);
+								this.state = 386;
+								this.boolexpr(0);
+								this.state = 387;
+								this.match(SFMLParser.THEN);
+								this.state = 388;
+								this.block();
+							}
+						}
+					}
+					this.state = 394;
+					this._errHandler.sync(this);
+					_alt = this.interpreter.adaptivePredict(this._input, 60, this._ctx);
 				}
-			}
+				this.state = 397;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la === SFMLParser.ELSE) {
+					{
+						this.state = 395;
+						this.match(SFMLParser.ELSE);
+						this.state = 396;
+						this.block();
+					}
+				}
 
-			this.state = 399;
-			this.match(SFMLParser.END);
+				this.state = 399;
+				this.match(SFMLParser.END);
 			}
 		}
 		catch (re) {
@@ -1963,186 +1958,186 @@ export class SFMLParser extends Parser {
 			let _alt: number;
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 433;
-			this._errHandler.sync(this);
-			switch ( this.interpreter.adaptivePredict(this._input, 67, this._ctx) ) {
-			case 1:
-				{
-				_localctx = new BooleanTrueContext(_localctx);
-				this._ctx = _localctx;
-				_prevctx = _localctx;
-
-				this.state = 402;
-				this.match(SFMLParser.TRUE);
-				}
-				break;
-
-			case 2:
-				{
-				_localctx = new BooleanFalseContext(_localctx);
-				this._ctx = _localctx;
-				_prevctx = _localctx;
-				this.state = 403;
-				this.match(SFMLParser.FALSE);
-				}
-				break;
-
-			case 3:
-				{
-				_localctx = new BooleanParenContext(_localctx);
-				this._ctx = _localctx;
-				_prevctx = _localctx;
-				this.state = 404;
-				this.match(SFMLParser.LPAREN);
-				this.state = 405;
-				this.boolexpr(0);
-				this.state = 406;
-				this.match(SFMLParser.RPAREN);
-				}
-				break;
-
-			case 4:
-				{
-				_localctx = new BooleanNegationContext(_localctx);
-				this._ctx = _localctx;
-				_prevctx = _localctx;
-				this.state = 408;
-				this.match(SFMLParser.NOT);
-				this.state = 409;
-				this.boolexpr(5);
-				}
-				break;
-
-			case 5:
-				{
-				_localctx = new BooleanHasContext(_localctx);
-				this._ctx = _localctx;
-				_prevctx = _localctx;
-				this.state = 411;
+				this.state = 433;
 				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-				if ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << SFMLParser.OVERALL) | (1 << SFMLParser.SOME) | (1 << SFMLParser.ONE) | (1 << SFMLParser.LONE) | (1 << SFMLParser.EACH))) !== 0) || _la === SFMLParser.EVERY) {
-					{
-					this.state = 410;
-					this.setOp();
-					}
-				}
-
-				this.state = 413;
-				this.labelAccess();
-				this.state = 414;
-				this.match(SFMLParser.HAS);
-				this.state = 415;
-				this.comparisonOp();
-				this.state = 416;
-				this.number();
-				this.state = 418;
-				this._errHandler.sync(this);
-				switch ( this.interpreter.adaptivePredict(this._input, 63, this._ctx) ) {
-				case 1:
-					{
-					this.state = 417;
-					this.resourceIdDisjunction();
-					}
-					break;
-				}
-				this.state = 421;
-				this._errHandler.sync(this);
-				switch ( this.interpreter.adaptivePredict(this._input, 64, this._ctx) ) {
-				case 1:
-					{
-					this.state = 420;
-					this.with();
-					}
-					break;
-				}
-				this.state = 425;
-				this._errHandler.sync(this);
-				switch ( this.interpreter.adaptivePredict(this._input, 65, this._ctx) ) {
-				case 1:
-					{
-					this.state = 423;
-					this.match(SFMLParser.EXCEPT);
-					this.state = 424;
-					this.resourceIdList();
-					}
-					break;
-				}
-				}
-				break;
-
-			case 6:
-				{
-				_localctx = new BooleanRedstoneContext(_localctx);
-				this._ctx = _localctx;
-				_prevctx = _localctx;
-				this.state = 427;
-				this.match(SFMLParser.REDSTONE);
-				this.state = 431;
-				this._errHandler.sync(this);
-				switch ( this.interpreter.adaptivePredict(this._input, 66, this._ctx) ) {
-				case 1:
-					{
-					this.state = 428;
-					this.comparisonOp();
-					this.state = 429;
-					this.number();
-					}
-					break;
-				}
-				}
-				break;
-			}
-			this._ctx._stop = this._input.tryLT(-1);
-			this.state = 443;
-			this._errHandler.sync(this);
-			_alt = this.interpreter.adaptivePredict(this._input, 69, this._ctx);
-			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
-				if (_alt === 1) {
-					if (this._parseListeners != null) {
-						this.triggerExitRuleEvent();
-					}
-					_prevctx = _localctx;
-					{
-					this.state = 441;
-					this._errHandler.sync(this);
-					switch ( this.interpreter.adaptivePredict(this._input, 68, this._ctx) ) {
+				switch (this.interpreter.adaptivePredict(this._input, 67, this._ctx)) {
 					case 1:
 						{
-						_localctx = new BooleanConjunctionContext(new BoolexprContext(_parentctx, _parentState));
-						this.pushNewRecursionContext(_localctx, _startState, SFMLParser.RULE_boolexpr);
-						this.state = 435;
-						if (!(this.precpred(this._ctx, 4))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 4)");
-						}
-						this.state = 436;
-						this.match(SFMLParser.AND);
-						this.state = 437;
-						this.boolexpr(5);
+							_localctx = new BooleanTrueContext(_localctx);
+							this._ctx = _localctx;
+							_prevctx = _localctx;
+
+							this.state = 402;
+							this.match(SFMLParser.TRUE);
 						}
 						break;
 
 					case 2:
 						{
-						_localctx = new BooleanDisjunctionContext(new BoolexprContext(_parentctx, _parentState));
-						this.pushNewRecursionContext(_localctx, _startState, SFMLParser.RULE_boolexpr);
-						this.state = 438;
-						if (!(this.precpred(this._ctx, 3))) {
-							throw this.createFailedPredicateException("this.precpred(this._ctx, 3)");
-						}
-						this.state = 439;
-						this.match(SFMLParser.OR);
-						this.state = 440;
-						this.boolexpr(4);
+							_localctx = new BooleanFalseContext(_localctx);
+							this._ctx = _localctx;
+							_prevctx = _localctx;
+							this.state = 403;
+							this.match(SFMLParser.FALSE);
 						}
 						break;
-					}
-					}
+
+					case 3:
+						{
+							_localctx = new BooleanParenContext(_localctx);
+							this._ctx = _localctx;
+							_prevctx = _localctx;
+							this.state = 404;
+							this.match(SFMLParser.LPAREN);
+							this.state = 405;
+							this.boolexpr(0);
+							this.state = 406;
+							this.match(SFMLParser.RPAREN);
+						}
+						break;
+
+					case 4:
+						{
+							_localctx = new BooleanNegationContext(_localctx);
+							this._ctx = _localctx;
+							_prevctx = _localctx;
+							this.state = 408;
+							this.match(SFMLParser.NOT);
+							this.state = 409;
+							this.boolexpr(5);
+						}
+						break;
+
+					case 5:
+						{
+							_localctx = new BooleanHasContext(_localctx);
+							this._ctx = _localctx;
+							_prevctx = _localctx;
+							this.state = 411;
+							this._errHandler.sync(this);
+							_la = this._input.LA(1);
+							if ((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << SFMLParser.OVERALL) | (1 << SFMLParser.SOME) | (1 << SFMLParser.ONE) | (1 << SFMLParser.LONE) | (1 << SFMLParser.EACH))) !== 0) || _la === SFMLParser.EVERY) {
+								{
+									this.state = 410;
+									this.setOp();
+								}
+							}
+
+							this.state = 413;
+							this.labelAccess();
+							this.state = 414;
+							this.match(SFMLParser.HAS);
+							this.state = 415;
+							this.comparisonOp();
+							this.state = 416;
+							this.number();
+							this.state = 418;
+							this._errHandler.sync(this);
+							switch (this.interpreter.adaptivePredict(this._input, 63, this._ctx)) {
+								case 1:
+									{
+										this.state = 417;
+										this.resourceIdDisjunction();
+									}
+									break;
+							}
+							this.state = 421;
+							this._errHandler.sync(this);
+							switch (this.interpreter.adaptivePredict(this._input, 64, this._ctx)) {
+								case 1:
+									{
+										this.state = 420;
+										this.with();
+									}
+									break;
+							}
+							this.state = 425;
+							this._errHandler.sync(this);
+							switch (this.interpreter.adaptivePredict(this._input, 65, this._ctx)) {
+								case 1:
+									{
+										this.state = 423;
+										this.match(SFMLParser.EXCEPT);
+										this.state = 424;
+										this.resourceIdList();
+									}
+									break;
+							}
+						}
+						break;
+
+					case 6:
+						{
+							_localctx = new BooleanRedstoneContext(_localctx);
+							this._ctx = _localctx;
+							_prevctx = _localctx;
+							this.state = 427;
+							this.match(SFMLParser.REDSTONE);
+							this.state = 431;
+							this._errHandler.sync(this);
+							switch (this.interpreter.adaptivePredict(this._input, 66, this._ctx)) {
+								case 1:
+									{
+										this.state = 428;
+										this.comparisonOp();
+										this.state = 429;
+										this.number();
+									}
+									break;
+							}
+						}
+						break;
 				}
-				this.state = 445;
+				this._ctx._stop = this._input.tryLT(-1);
+				this.state = 443;
 				this._errHandler.sync(this);
 				_alt = this.interpreter.adaptivePredict(this._input, 69, this._ctx);
-			}
+				while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
+					if (_alt === 1) {
+						if (this._parseListeners != null) {
+							this.triggerExitRuleEvent();
+						}
+						_prevctx = _localctx;
+						{
+							this.state = 441;
+							this._errHandler.sync(this);
+							switch (this.interpreter.adaptivePredict(this._input, 68, this._ctx)) {
+								case 1:
+									{
+										_localctx = new BooleanConjunctionContext(new BoolexprContext(_parentctx, _parentState));
+										this.pushNewRecursionContext(_localctx, _startState, SFMLParser.RULE_boolexpr);
+										this.state = 435;
+										if (!(this.precpred(this._ctx, 4))) {
+											throw this.createFailedPredicateException("this.precpred(this._ctx, 4)");
+										}
+										this.state = 436;
+										this.match(SFMLParser.AND);
+										this.state = 437;
+										this.boolexpr(5);
+									}
+									break;
+
+								case 2:
+									{
+										_localctx = new BooleanDisjunctionContext(new BoolexprContext(_parentctx, _parentState));
+										this.pushNewRecursionContext(_localctx, _startState, SFMLParser.RULE_boolexpr);
+										this.state = 438;
+										if (!(this.precpred(this._ctx, 3))) {
+											throw this.createFailedPredicateException("this.precpred(this._ctx, 3)");
+										}
+										this.state = 439;
+										this.match(SFMLParser.OR);
+										this.state = 440;
+										this.boolexpr(4);
+									}
+									break;
+							}
+						}
+					}
+					this.state = 445;
+					this._errHandler.sync(this);
+					_alt = this.interpreter.adaptivePredict(this._input, 69, this._ctx);
+				}
 			}
 		}
 		catch (re) {
@@ -2167,18 +2162,18 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 446;
-			_la = this._input.LA(1);
-			if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << SFMLParser.GT) | (1 << SFMLParser.GT_SYMBOL) | (1 << SFMLParser.LT) | (1 << SFMLParser.LT_SYMBOL) | (1 << SFMLParser.EQ) | (1 << SFMLParser.EQ_SYMBOL) | (1 << SFMLParser.LE) | (1 << SFMLParser.LE_SYMBOL) | (1 << SFMLParser.GE) | (1 << SFMLParser.GE_SYMBOL))) !== 0))) {
-			this._errHandler.recoverInline(this);
-			} else {
-				if (this._input.LA(1) === Token.EOF) {
-					this.matchedEOF = true;
-				}
+				this.state = 446;
+				_la = this._input.LA(1);
+				if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << SFMLParser.GT) | (1 << SFMLParser.GT_SYMBOL) | (1 << SFMLParser.LT) | (1 << SFMLParser.LT_SYMBOL) | (1 << SFMLParser.EQ) | (1 << SFMLParser.EQ_SYMBOL) | (1 << SFMLParser.LE) | (1 << SFMLParser.LE_SYMBOL) | (1 << SFMLParser.GE) | (1 << SFMLParser.GE_SYMBOL))) !== 0))) {
+					this._errHandler.recoverInline(this);
+				} else {
+					if (this._input.LA(1) === Token.EOF) {
+						this.matchedEOF = true;
+					}
 
-				this._errHandler.reportMatch(this);
-				this.consume();
-			}
+					this._errHandler.reportMatch(this);
+					this.consume();
+				}
 			}
 		}
 		catch (re) {
@@ -2203,18 +2198,18 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 448;
-			_la = this._input.LA(1);
-			if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << SFMLParser.OVERALL) | (1 << SFMLParser.SOME) | (1 << SFMLParser.ONE) | (1 << SFMLParser.LONE) | (1 << SFMLParser.EACH))) !== 0) || _la === SFMLParser.EVERY)) {
-			this._errHandler.recoverInline(this);
-			} else {
-				if (this._input.LA(1) === Token.EOF) {
-					this.matchedEOF = true;
-				}
+				this.state = 448;
+				_la = this._input.LA(1);
+				if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << SFMLParser.OVERALL) | (1 << SFMLParser.SOME) | (1 << SFMLParser.ONE) | (1 << SFMLParser.LONE) | (1 << SFMLParser.EACH))) !== 0) || _la === SFMLParser.EVERY)) {
+					this._errHandler.recoverInline(this);
+				} else {
+					if (this._input.LA(1) === Token.EOF) {
+						this.matchedEOF = true;
+					}
 
-				this._errHandler.reportMatch(this);
-				this.consume();
-			}
+					this._errHandler.reportMatch(this);
+					this.consume();
+				}
 			}
 		}
 		catch (re) {
@@ -2239,53 +2234,53 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 450;
-			this.label();
-			this.state = 455;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			while (_la === SFMLParser.COMMA) {
-				{
-				{
-				this.state = 451;
-				this.match(SFMLParser.COMMA);
-				this.state = 452;
+				this.state = 450;
 				this.label();
-				}
-				}
-				this.state = 457;
+				this.state = 455;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-			}
-			this.state = 459;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (_la === SFMLParser.ROUND) {
-				{
-				this.state = 458;
-				this.roundrobin();
+				while (_la === SFMLParser.COMMA) {
+					{
+						{
+							this.state = 451;
+							this.match(SFMLParser.COMMA);
+							this.state = 452;
+							this.label();
+						}
+					}
+					this.state = 457;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
 				}
-			}
+				this.state = 459;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la === SFMLParser.ROUND) {
+					{
+						this.state = 458;
+						this.roundrobin();
+					}
+				}
 
-			this.state = 462;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (((((_la - 31)) & ~0x1F) === 0 && ((1 << (_la - 31)) & ((1 << (SFMLParser.EACH - 31)) | (1 << (SFMLParser.TOP - 31)) | (1 << (SFMLParser.BOTTOM - 31)) | (1 << (SFMLParser.NORTH - 31)) | (1 << (SFMLParser.EAST - 31)) | (1 << (SFMLParser.SOUTH - 31)) | (1 << (SFMLParser.WEST - 31)))) !== 0)) {
-				{
-				this.state = 461;
-				this.sidequalifier();
+				this.state = 462;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (((((_la - 31)) & ~0x1F) === 0 && ((1 << (_la - 31)) & ((1 << (SFMLParser.EACH - 31)) | (1 << (SFMLParser.TOP - 31)) | (1 << (SFMLParser.BOTTOM - 31)) | (1 << (SFMLParser.NORTH - 31)) | (1 << (SFMLParser.EAST - 31)) | (1 << (SFMLParser.SOUTH - 31)) | (1 << (SFMLParser.WEST - 31)))) !== 0)) {
+					{
+						this.state = 461;
+						this.sidequalifier();
+					}
 				}
-			}
 
-			this.state = 465;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			if (_la === SFMLParser.SLOTS) {
-				{
-				this.state = 464;
-				this.slotqualifier();
+				this.state = 465;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la === SFMLParser.SLOTS) {
+					{
+						this.state = 464;
+						this.slotqualifier();
+					}
 				}
-			}
 
 			}
 		}
@@ -2311,24 +2306,24 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 467;
-			this.match(SFMLParser.ROUND);
-			this.state = 468;
-			this.match(SFMLParser.ROBIN);
-			this.state = 469;
-			this.match(SFMLParser.BY);
-			this.state = 470;
-			_la = this._input.LA(1);
-			if (!(_la === SFMLParser.LABEL || _la === SFMLParser.BLOCK)) {
-			this._errHandler.recoverInline(this);
-			} else {
-				if (this._input.LA(1) === Token.EOF) {
-					this.matchedEOF = true;
-				}
+				this.state = 467;
+				this.match(SFMLParser.ROUND);
+				this.state = 468;
+				this.match(SFMLParser.ROBIN);
+				this.state = 469;
+				this.match(SFMLParser.BY);
+				this.state = 470;
+				_la = this._input.LA(1);
+				if (!(_la === SFMLParser.LABEL || _la === SFMLParser.BLOCK)) {
+					this._errHandler.recoverInline(this);
+				} else {
+					if (this._input.LA(1) === Token.EOF) {
+						this.matchedEOF = true;
+					}
 
-				this._errHandler.reportMatch(this);
-				this.consume();
-			}
+					this._errHandler.reportMatch(this);
+					this.consume();
+				}
 			}
 		}
 		catch (re) {
@@ -2353,30 +2348,30 @@ export class SFMLParser extends Parser {
 			this.state = 474;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case SFMLParser.SECONDS:
-			case SFMLParser.SECOND:
-			case SFMLParser.GLOBAL:
-			case SFMLParser.REDSTONE:
-			case SFMLParser.IDENTIFIER:
-				_localctx = new RawLabelContext(_localctx);
-				this.enterOuterAlt(_localctx, 1);
-				{
-				{
-				this.state = 472;
-				this.identifier();
-				}
-				}
-				break;
-			case SFMLParser.STRING:
-				_localctx = new StringLabelContext(_localctx);
-				this.enterOuterAlt(_localctx, 2);
-				{
-				this.state = 473;
-				this.string();
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+				case SFMLParser.SECONDS:
+				case SFMLParser.SECOND:
+				case SFMLParser.GLOBAL:
+				case SFMLParser.REDSTONE:
+				case SFMLParser.IDENTIFIER:
+					_localctx = new RawLabelContext(_localctx);
+					this.enterOuterAlt(_localctx, 1);
+					{
+						{
+							this.state = 472;
+							this.identifier();
+						}
+					}
+					break;
+				case SFMLParser.STRING:
+					_localctx = new StringLabelContext(_localctx);
+					this.enterOuterAlt(_localctx, 2);
+					{
+						this.state = 473;
+						this.string();
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 			}
 		}
 		catch (re) {
@@ -2401,18 +2396,18 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 476;
-			_la = this._input.LA(1);
-			if (!(((((_la - 52)) & ~0x1F) === 0 && ((1 << (_la - 52)) & ((1 << (SFMLParser.SECONDS - 52)) | (1 << (SFMLParser.SECOND - 52)) | (1 << (SFMLParser.GLOBAL - 52)) | (1 << (SFMLParser.REDSTONE - 52)) | (1 << (SFMLParser.IDENTIFIER - 52)))) !== 0))) {
-			this._errHandler.recoverInline(this);
-			} else {
-				if (this._input.LA(1) === Token.EOF) {
-					this.matchedEOF = true;
-				}
+				this.state = 476;
+				_la = this._input.LA(1);
+				if (!(((((_la - 52)) & ~0x1F) === 0 && ((1 << (_la - 52)) & ((1 << (SFMLParser.SECONDS - 52)) | (1 << (SFMLParser.SECOND - 52)) | (1 << (SFMLParser.GLOBAL - 52)) | (1 << (SFMLParser.REDSTONE - 52)) | (1 << (SFMLParser.IDENTIFIER - 52)))) !== 0))) {
+					this._errHandler.recoverInline(this);
+				} else {
+					if (this._input.LA(1) === Token.EOF) {
+						this.matchedEOF = true;
+					}
 
-				this._errHandler.reportMatch(this);
-				this.consume();
-			}
+					this._errHandler.reportMatch(this);
+					this.consume();
+				}
 			}
 		}
 		catch (re) {
@@ -2436,8 +2431,8 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 478;
-			this.match(SFMLParser.STRING);
+				this.state = 478;
+				this.match(SFMLParser.STRING);
 			}
 		}
 		catch (re) {
@@ -2461,8 +2456,8 @@ export class SFMLParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 480;
-			this.match(SFMLParser.NUMBER);
+				this.state = 480;
+				this.match(SFMLParser.NUMBER);
 			}
 		}
 		catch (re) {
@@ -2482,31 +2477,31 @@ export class SFMLParser extends Parser {
 
 	public sempred(_localctx: RuleContext, ruleIndex: number, predIndex: number): boolean {
 		switch (ruleIndex) {
-		case 21:
-			return this.withClause_sempred(_localctx as WithClauseContext, predIndex);
+			case 21:
+				return this.withClause_sempred(_localctx as WithClauseContext, predIndex);
 
-		case 29:
-			return this.boolexpr_sempred(_localctx as BoolexprContext, predIndex);
+			case 29:
+				return this.boolexpr_sempred(_localctx as BoolexprContext, predIndex);
 		}
 		return true;
 	}
 	private withClause_sempred(_localctx: WithClauseContext, predIndex: number): boolean {
 		switch (predIndex) {
-		case 0:
-			return this.precpred(this._ctx, 3);
+			case 0:
+				return this.precpred(this._ctx, 3);
 
-		case 1:
-			return this.precpred(this._ctx, 2);
+			case 1:
+				return this.precpred(this._ctx, 2);
 		}
 		return true;
 	}
 	private boolexpr_sempred(_localctx: BoolexprContext, predIndex: number): boolean {
 		switch (predIndex) {
-		case 2:
-			return this.precpred(this._ctx, 4);
+			case 2:
+				return this.precpred(this._ctx, 4);
 
-		case 3:
-			return this.precpred(this._ctx, 3);
+			case 3:
+				return this.precpred(this._ctx, 3);
 		}
 		return true;
 	}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { NotificationOrigin } from "@prisma/client";
+import { NotificationOrigin, Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { commentSchema } from "@/lib/validation";
@@ -18,7 +18,10 @@ async function getCommentDepth(commentId: string): Promise<number | null> {
   let currentId: string | null = commentId;
 
   while (currentId) {
-    const comment = await db.comment.findUnique({ where: { id: currentId }, select: { parentId: true } });
+    const comment: { parentId: string | null } | null = await db.comment.findUnique({
+      where: { id: currentId },
+      select: { parentId: true },
+    });
     if (!comment) return null;
     if (!comment.parentId) break;
     depth += 1;
@@ -98,7 +101,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
         id: true,
         name: true,
         image: true,
+        canCreatePosts: true,
         canCreateComments: true,
+        canVotePosts: true,
+        canVoteComments: true,
         interactionBanUntil: true,
       },
     }),
@@ -129,7 +135,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     throw err;
   }
 
-  let parentComment: { id: string; authorId: string; postId: string } | null = null;
+  let parentComment: { id: string; authorId: string; postId: string; isDeleted: boolean } | null = null;
   if (parentId) {
     parentComment = await db.comment.findUnique({
       where: { id: parentId },
@@ -192,7 +198,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     title: string;
     message: string;
     link: string;
-    metadata: Record<string, unknown>;
+    metadata: Prisma.InputJsonValue;
   }[] = [];
 
   if (post.authorId !== user.id) {
@@ -206,7 +212,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
         postId: post.id,
         commentId: comment.id,
         parentId,
-      },
+      } satisfies Prisma.InputJsonValue,
     });
   }
 
@@ -221,7 +227,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
         postId: post.id,
         commentId: comment.id,
         parentId,
-      },
+      } satisfies Prisma.InputJsonValue,
     });
   }
 

@@ -1,6 +1,7 @@
 import { CharStreams, CommonTokenStream } from "antlr4ts";
 import { ANTLRErrorListener, RecognitionException, Recognizer } from "antlr4ts";
 import type { Token } from "antlr4ts/Token";
+import { ATNSimulator } from "antlr4ts/atn/ATNSimulator";
 import { SFMLLexer } from "@/generated/SFMLLexer";
 import { SFMLParser } from "@/generated/SFMLParser";
 
@@ -15,7 +16,7 @@ export type SyntaxErrorItem = {
 class CollectingErrorListener implements ANTLRErrorListener<Token | undefined> {
   public errors: SyntaxErrorItem[] = [];
   syntaxError<T>(
-    _recognizer: Recognizer<T, unknown>,
+    _recognizer: Recognizer<T, ATNSimulator>,
     _offendingSymbol: T,
     lineStart: number,
     columnStart: number,
