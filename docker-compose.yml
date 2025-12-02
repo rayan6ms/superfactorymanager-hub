@@ -1,3 +1,0 @@
-# Meilisearch now runs via the Node.js package instead of a Docker container.
-version: "3.8"
-services: {}
