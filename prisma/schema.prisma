@@ -4,8 +4,9 @@ datasource db {
 }
 
 generator client {
-  provider   = "prisma-client-js"
-  engineType = "library"
+  provider      = "prisma-client-js"
+  engineType    = "library"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 model User {
@@ -153,47 +154,47 @@ model ChangelogEntry {
 }
 
 model Post {
-  id                 String            @id @default(cuid())
-  slug               String            @unique
-  title              String
-  modVersion         String
-  gameVersion        String
-  categoryId         String
-  category           Category          @relation(fields: [categoryId], references: [id])
-  authorId           String
-  author             User              @relation(fields: [authorId], references: [id])
-  authorName         String
-  rating             Float             @default(0)
-  ratingCount        Int               @default(0)
-  workedCount        Int               @default(0)
-  brokenCount        Int               @default(0)
-  isDeleted          Boolean           @default(false)
-  deletionFlaggedAt  DateTime?
-  deletionFlaggedByAuto Boolean        @default(false)
-  deletionPurgeAt    DateTime?
-  moderationEditedAt DateTime?
-  moderationEditedById String?
-  moderationEditedNote String?
-  ratings            Rating[]
-  views              Int               @default(0)
-  uploadDate         DateTime          @default(now())
-  updatedAt          DateTime          @default(now()) @updatedAt
-  code               String
-  codeStatus         CodeStatus        @default(UNVERIFIED)
-  codeNote           String?
-  description        String
-  youtubeUrl         String?
-  images             PostImage[]
-  dependencies       Dependency[]
-  tags               PostTag[]
-  openForImprovement Boolean           @default(false)
-  currentCommitId    String?           @unique
-  currentCommit      PostCommit?       @relation("PostCurrentCommit", fields: [currentCommitId], references: [id])
-  commits            PostCommit[]
-  contributors       PostContributor[]
-  comments           Comment[]
-  reports            Report[]
-  moderationEditor   User?             @relation("ModeratedPosts", fields: [moderationEditedById], references: [id])
+  id                    String            @id @default(cuid())
+  slug                  String            @unique
+  title                 String
+  modVersion            String
+  gameVersion           String
+  categoryId            String
+  category              Category          @relation(fields: [categoryId], references: [id])
+  authorId              String
+  author                User              @relation(fields: [authorId], references: [id])
+  authorName            String
+  rating                Float             @default(0)
+  ratingCount           Int               @default(0)
+  workedCount           Int               @default(0)
+  brokenCount           Int               @default(0)
+  isDeleted             Boolean           @default(false)
+  deletionFlaggedAt     DateTime?
+  deletionFlaggedByAuto Boolean           @default(false)
+  deletionPurgeAt       DateTime?
+  moderationEditedAt    DateTime?
+  moderationEditedById  String?
+  moderationEditedNote  String?
+  ratings               Rating[]
+  views                 Int               @default(0)
+  uploadDate            DateTime          @default(now())
+  updatedAt             DateTime          @default(now()) @updatedAt
+  code                  String
+  codeStatus            CodeStatus        @default(UNVERIFIED)
+  codeNote              String?
+  description           String
+  youtubeUrl            String?
+  images                PostImage[]
+  dependencies          Dependency[]
+  tags                  PostTag[]
+  openForImprovement    Boolean           @default(false)
+  currentCommitId       String?           @unique
+  currentCommit         PostCommit?       @relation("PostCurrentCommit", fields: [currentCommitId], references: [id])
+  commits               PostCommit[]
+  contributors          PostContributor[]
+  comments              Comment[]
+  reports               Report[]
+  moderationEditor      User?             @relation("ModeratedPosts", fields: [moderationEditedById], references: [id])
 }
 
 enum PostCommitStatus {
@@ -238,24 +239,24 @@ model PostContributor {
 }
 
 model Comment {
-  id        String        @id @default(cuid())
-  postId    String
-  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  content   String
-  parentId  String?
-  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[]     @relation("CommentReplies")
-  score     Int           @default(0)
-  voteCount Int           @default(0)
-  isDeleted Boolean       @default(false)
-  deletionFlaggedAt DateTime?
-  deletionFlaggedByAuto Boolean @default(false)
-  deletionPurgeAt   DateTime?
-  votes     CommentVote[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  postId                String
+  post                  Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId              String
+  author                User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content               String
+  parentId              String?
+  parent                Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies               Comment[]     @relation("CommentReplies")
+  score                 Int           @default(0)
+  voteCount             Int           @default(0)
+  isDeleted             Boolean       @default(false)
+  deletionFlaggedAt     DateTime?
+  deletionFlaggedByAuto Boolean       @default(false)
+  deletionPurgeAt       DateTime?
+  votes                 CommentVote[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   reports Report[]
 
