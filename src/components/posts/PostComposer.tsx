@@ -662,12 +662,9 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
           credentials: "include",
         });
 
-        let payload: any = null;
-        try {
-          payload = await checkRes.json();
-        } catch {
-          payload = null;
-        }
+        const payload = (await checkRes
+          .json()
+          .catch(() => null)) as { error?: string } | null;
 
         if (!checkRes.ok) {
           setSubmitError(

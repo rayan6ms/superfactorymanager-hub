@@ -28,7 +28,7 @@ export async function GET(req: Request) {
       author: data.author_name ?? "YouTube",
       thumbnail: data.thumbnail_url ?? null,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to reach YouTube." }, { status: 502 });
   }
 }

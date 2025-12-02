@@ -1,5 +1,6 @@
 import { CharStreams, CommonTokenStream } from "antlr4ts";
 import { ANTLRErrorListener, RecognitionException, Recognizer } from "antlr4ts";
+import type { Token } from "antlr4ts/Token";
 import { SFMLLexer } from "@/generated/SFMLLexer";
 import { SFMLParser } from "@/generated/SFMLParser";
 
@@ -11,17 +12,17 @@ export type SyntaxErrorItem = {
   message: string;
 };
 
-class CollectingErrorListener implements ANTLRErrorListener<any> {
+class CollectingErrorListener implements ANTLRErrorListener<Token | undefined> {
   public errors: SyntaxErrorItem[] = [];
   syntaxError<T>(
-    _recognizer: Recognizer<T, any>,
+    _recognizer: Recognizer<T, unknown>,
     _offendingSymbol: T,
     lineStart: number,
     columnStart: number,
     msg: string,
     e: RecognitionException | undefined
   ) {
-    const offendingToken: any = (e as any)?.getOffendingToken?.();
+    const offendingToken = e?.getOffendingToken?.();
     const fallbackLength = Math.max(1, msg?.length ? Math.min(msg.length, 4) : 1);
     const lineEnd = offendingToken?.line ?? lineStart;
     const columnEnd = offendingToken

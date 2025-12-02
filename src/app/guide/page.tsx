@@ -144,7 +144,7 @@ export default function GuidePage() {
   const [examplesState, setExamplesState] = useState<
     Record<ExampleKey, ExampleState>
   >(() => {
-    const initial: Record<ExampleKey, ExampleState> = {} as any;
+    const initial: Record<ExampleKey, ExampleState> = {} as Record<ExampleKey, ExampleState>;
     EXAMPLES.forEach(ex => {
       initial[ex.key] = {
         code: "",

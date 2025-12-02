@@ -97,8 +97,8 @@ export default function PostCard({ post }: Props) {
   const imageSrc =
     image?.thumbLg || image?.thumbMd || image?.thumbSm || image?.original || null;
 
-  const authorName = (post as any).author?.name ?? (post as any).authorName ?? "Unknown creator";
-  const authorImage = (post as any).author?.image ?? null;
+  const authorName = post.author?.name ?? post.authorName ?? "Unknown creator";
+  const authorImage = post.author?.image ?? null;
 
   return (
     <li>
@@ -171,8 +171,8 @@ export default function PostCard({ post }: Props) {
                   {renderRating(
                     post.rating,
                     post.ratingCount,
-                    (post as any).workedCount,
-                    (post as any).brokenCount,
+                    post.workedCount,
+                    post.brokenCount,
                   )}
                 </span>
               </div>

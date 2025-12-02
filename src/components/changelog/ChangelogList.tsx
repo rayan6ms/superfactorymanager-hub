@@ -52,7 +52,7 @@ export default function ChangelogList({ entries }: { entries: ChangelogEntry[] }
     if (Object.prototype.hasOwnProperty.call(bodies, key)) {
       return bodies[key];
     }
-    return stripCodeFences((entry as any).body);
+    return stripCodeFences(entry.body);
   };
 
   const handleBodyChange = (entryId: string | number, next: string) => {

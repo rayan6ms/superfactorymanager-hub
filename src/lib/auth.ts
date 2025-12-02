@@ -1,5 +1,6 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth, { type NextAuthConfig } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
@@ -237,7 +238,7 @@ export const authOptions: NextAuthConfig = {
       return session;
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user }): Promise<JWT> {
       if (user) {
         if (user.name) {
           token.name = user.name;
@@ -247,9 +248,11 @@ export const authOptions: NextAuthConfig = {
         }
       }
 
-      delete (token as any).picture;
-
-      return token;
+      const tokenWithPicture = token as JWT & { picture?: string | null };
+      if ("picture" in tokenWithPicture) {
+        delete tokenWithPicture.picture;
+      }
+      return tokenWithPicture;
     },
   },
   events: {

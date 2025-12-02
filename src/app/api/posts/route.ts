@@ -66,7 +66,7 @@ export async function GET(req: Request) {
       });
 
       if (res.hits?.length) {
-        const ids = res.hits.map((h: any) => h.id);
+        const ids = res.hits.map((h: { id: string }) => h.id);
         const items = await db.post.findMany({
           where: { ...baseWhere, id: { in: ids } },
           include: {
@@ -319,7 +319,7 @@ export async function POST(req: Request) {
     const hydrated = { ...created, currentCommitId: initialCommit.id };
 
     try {
-      await indexPost(hydrated as any);
+      await indexPost(hydrated);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn("[search] Failed to index post in Meilisearch:", msg);

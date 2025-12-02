@@ -13,7 +13,7 @@ type Pair = {
   source: "curseforge" | "modrinth";
 };
 
-function log(...a: any[]) {
+function log(...a: unknown[]) {
   if (process.env.DEBUG_SFM === "1") console.info("[SFM]", ...a);
 }
 
@@ -74,7 +74,7 @@ function parseDateMaybe(s: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function parseCurseForgeListPage(html: string, slug: string) {
+function parseCurseForgeListPage(html: string) {
   const rows: {
     fileId: string | null;
     fileUrl: string | null;
@@ -99,7 +99,7 @@ function parseCurseForgeListPage(html: string, slug: string) {
     }
 
     let uploadedAtText = "";
-    let up = inner.match(/<div[^>]*>\s*<span[^>]*>\s*<span[^>]*>([\s\S]*?)<\/span>/i);
+    const up = inner.match(/<div[^>]*>\s*<span[^>]*>\s*<span[^>]*>([\s\S]*?)<\/span>/i);
     if (up?.[1]) uploadedAtText = up[1].replace(/<[^>]+>/g, " ").trim();
 
     const badgeText = inner.replace(/<[^>]+>/g, " ");
@@ -156,7 +156,7 @@ async function fetchFromCurseForgeIncremental(): Promise<{ added: number; pairs:
     if (looksLikeCloudflare(html)) { log("CF blocked by Cloudflare"); blocked = true; break; }
 
     log("CF fetched page", page, "chars", html.length);
-    const parsed = parseCurseForgeListPage(html, slug);
+    const parsed = parseCurseForgeListPage(html);
     if (!parsed.length) {
       log("CF no rows — stopping at page", page);
       break;
@@ -259,7 +259,7 @@ export async function refreshSfm(opts: { source: "cf" | "mr" | "both"; ignoreCoo
       if (cf.blocked) log("CF blocked; consider using Modrinth fallback now.");
       if ((cf.blocked || cf.added === 0) && (opts.source === "both")) {
         const before = await db.sfmVersion.count();
-        const mr = await fetchFromModrinthFallback();
+        await fetchFromModrinthFallback();
         const after = await db.sfmVersion.count();
         insertedMr = Math.max(0, after - before);
         log(`MR fallback inserted ${insertedMr} unique pairs`);

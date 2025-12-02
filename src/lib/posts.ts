@@ -289,7 +289,7 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
         ].join(" AND ") || undefined,
       });
       if (res.hits?.length) {
-        const ids = res.hits.map((hit: any) => hit.id);
+        const ids = res.hits.map((hit: { id: string }) => hit.id);
         const posts = await db.post.findMany({ where: { id: { in: ids }, ...baseWhere }, include: POST_CARD_INCLUDE });
         const map = new Map(posts.map(post => [post.id, post]));
         const ordered = ids

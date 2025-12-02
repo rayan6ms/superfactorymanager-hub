@@ -1,3 +1,4 @@
+/* eslint-disable */
 // Generated from ./syntaxes/SFML.g4 by ANTLR 4.9.0-SNAPSHOT
 
 
@@ -4927,3 +4928,5 @@ export class NumberContext extends ParserRuleContext {
 }
 
 
+/* eslint-disable */
+// This file is generated. Do not edit manually.

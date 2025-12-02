@@ -209,7 +209,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
   }
 
   try {
-    await indexPost(updated as any);
+    await indexPost(updated);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn("[search] Failed to reindex post in Meilisearch:", msg);

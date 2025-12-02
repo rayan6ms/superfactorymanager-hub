@@ -1,5 +1,8 @@
 import { CharStreams, CommonTokenStream } from "antlr4ts";
+import type { ParserRuleContext } from "antlr4ts";
+import type { ErrorNode } from "antlr4ts/tree/ErrorNode";
 import { ParseTreeWalker } from "antlr4ts/tree/ParseTreeWalker";
+import type { TerminalNode } from "antlr4ts/tree/TerminalNode";
 import { SFMLLexer } from "@/generated/SFMLLexer";
 import { SFMLParser, BlockContext, ForgetStatementContext, IfStatementContext, InputStatementContext, OutputStatementContext } from "@/generated/SFMLParser";
 import { SFMLListener } from "@/generated/SFMLListener";
@@ -50,19 +53,21 @@ class InputOutputChecker implements SFMLListener {
   }
 
   enterForgetStatement(_ctx: ForgetStatementContext) {
+    void _ctx;
     this.verify();
     this.inputs = [];
     this.outputs = [];
   }
 
   exitBlock(_ctx: BlockContext) {
+    void _ctx;
     if (this.onIfElseStatement) { this.onIfElseStatement = false; return; }
     this.verify();
     this.inputs = [];
     this.outputs = [];
   }
 
-  enterIfStatement(_ctx: IfStatementContext) { this.onIfElseStatement = true; }
+  enterIfStatement(_ctx: IfStatementContext) { void _ctx; this.onIfElseStatement = true; }
 
   finalCheck() {
     this.verify();
@@ -70,10 +75,10 @@ class InputOutputChecker implements SFMLListener {
     this.outputs = [];
   }
 
-  enterEveryRule?(_: any): void { }
-  exitEveryRule?(_: any): void { }
-  visitTerminal?(_: any): void { }
-  visitErrorNode?(_: any): void { }
+  enterEveryRule?(_ctx: ParserRuleContext): void { void _ctx; }
+  exitEveryRule?(_ctx: ParserRuleContext): void { void _ctx; }
+  visitTerminal?(_node: TerminalNode): void { void _node; }
+  visitErrorNode?(_node: ErrorNode): void { void _node; }
 }
 
 export function collectWarnings(code: string): WarningItem[] {
@@ -86,7 +91,7 @@ export function collectWarnings(code: string): WarningItem[] {
   const checker = new InputOutputChecker();
   const walker = new ParseTreeWalker();
   walker.walk(checker as SFMLListener, tree);
-  (checker as any).finalCheck();
+  checker.finalCheck();
 
   return checker.warnings;
 }
