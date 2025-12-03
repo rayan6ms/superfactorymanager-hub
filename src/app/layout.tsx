@@ -25,7 +25,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const adsEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT);
 
   if (session?.user?.email) {
-    const user = await db.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
+    const user = await db.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
     if (user) {
       const preview = await getNotificationPreview(user.id);
       notificationPreview = preview;
@@ -37,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="app-shell">
         <Header session={session} notifications={notificationPreview} />
 
-        <main className="flex-1">
+        <main className="relative flex-1">
           {adsEnabled && (
             <Script
               id="google-adsense-script"
@@ -46,42 +49,57 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               crossOrigin="anonymous"
             />
           )}
-          <div className="container-max py-12 sm:py-16">
-            {adsEnabled ? (
-              <div className="grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)_200px]">
-                <div className="hidden lg:flex justify-end">
-                  <GoogleAdSlot className="sticky top-24 h-[600px] w-[180px]" slot="6232979234" layoutKey="left-rail" />
-                </div>
 
-                <div className="space-y-6 lg:space-y-10">
-                  <div className="space-y-4 lg:hidden">
-                    <GoogleAdSlot className="min-h-[120px] w-full" slot="3606815892" layoutKey="mobile-top" />
-                  </div>
-
-                  <Providers>
-                    <ExternalLinkGuard />
-                    <div className="space-y-12">
-                      {children}
-                    </div>
-                  </Providers>
-
-                  <div className="space-y-4 lg:hidden">
-                    <GoogleAdSlot className="min-h-[120px] w-full" slot="7536669655" layoutKey="mobile-bottom" />
-                  </div>
-                </div>
-
-                <div className="hidden lg:flex justify-start">
-                  <GoogleAdSlot className="sticky top-24 h-[600px] w-[180px]" slot="5105947433" layoutKey="right-rail" />
-                </div>
+          {adsEnabled && (
+            <>
+              <div className="hidden xl:block fixed left-4 top-24 z-20">
+                <GoogleAdSlot
+                  className="h-[600px] w-[180px]"
+                  slot="6232979234"
+                  layoutKey="left-rail"
+                />
               </div>
-            ) : (
-              <Providers>
-                <ExternalLinkGuard />
+
+              <div className="hidden xl:block fixed right-4 top-24 z-20">
+                <GoogleAdSlot
+                  className="h-[600px] w-[180px]"
+                  slot="5105947433"
+                  layoutKey="right-rail"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="container-max py-12 sm:py-16">
+            <Providers>
+              <ExternalLinkGuard />
+
+              <div className="space-y-6 lg:space-y-10">
+                {adsEnabled && (
+                  <div className="space-y-4 lg:hidden">
+                    <GoogleAdSlot
+                      className="min-h-[120px] w-full"
+                      slot="3606815892"
+                      layoutKey="mobile-top"
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-12">
                   {children}
                 </div>
-              </Providers>
-            )}
+
+                {adsEnabled && (
+                  <div className="space-y-4 lg:hidden">
+                    <GoogleAdSlot
+                      className="min-h-[120px] w-full"
+                      slot="7536669655"
+                      layoutKey="mobile-bottom"
+                    />
+                  </div>
+                )}
+              </div>
+            </Providers>
           </div>
         </main>
 
