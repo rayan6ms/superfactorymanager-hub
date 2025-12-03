@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { getBaseUrl } from "@/lib/urls";
 
 export function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "https://superfactorymanager.com";
+  const baseUrl = getBaseUrl();
   const body = `User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`;
 
   return new NextResponse(body, {

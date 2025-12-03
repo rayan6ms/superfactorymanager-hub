@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import ViewBeacon from "@/components/ViewBeacon";
@@ -12,6 +13,7 @@ import ReportButton from "@/components/ReportButton";
 import { isAdminEmail } from "@/lib/admin";
 import AdminFlagPostButton from "@/components/posts/AdminFlagPostButton";
 import { Eye } from 'lucide-react';
+import { getBaseUrl } from "@/lib/urls";
 
 type VoteValue = "up" | "down" | null;
 
@@ -21,6 +23,8 @@ type VerificationSummary = {
   my: VoteValue;
   isAuthor: boolean;
 };
+
+const baseUrl = getBaseUrl();
 
 function buildVerificationSummary(
   votes: { value: number; _count: { value: number } }[],
@@ -52,6 +56,52 @@ function getInitial(name: string | null | undefined) {
   const base = name?.trim();
   if (!base) return "?";
   return base.charAt(0).toUpperCase();
+}
+
+function buildDescriptionCopy(body: string) {
+  const compact = body.replace(/\s+/g, " ").trim();
+  return compact.slice(0, 155) || undefined;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await db.post.findUnique({
+    where: { slug },
+    include: { images: true, author: true },
+  });
+
+  if (!post || post.isDeleted) {
+    return {
+      title: "Post not found | superfactorymanager",
+      description: "The requested SuperFactoryManager build could not be found.",
+    };
+  }
+
+  const description =
+    buildDescriptionCopy(post.description) ?? `Explore ${post.title} for SuperFactoryManager.`;
+  const heroImage = post.images?.[0] ?? null;
+  const heroSrc = heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
+  const canonical = `${baseUrl}/posts/${post.slug}`;
+
+  return {
+    title: `${post.title} | superfactorymanager`,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: post.title,
+      description,
+      url: canonical,
+      siteName: "superfactorymanager",
+      type: "article",
+      images: heroSrc ? [{ url: heroSrc, alt: post.title }] : undefined,
+    },
+    twitter: {
+      card: heroSrc ? "summary_large_image" : "summary",
+      title: post.title,
+      description,
+      images: heroSrc ? [heroSrc] : undefined,
+    },
+  };
 }
 
 export default async function PostPage(props: { params: Promise<{ slug: string }> }) {
