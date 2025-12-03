@@ -10,6 +10,7 @@ import ExternalLinkGuard from "@/components/layout/ExternalLinkGuard";
 import { db } from "@/lib/db";
 import { getNotificationPreview, type SerializedNotification } from "@/lib/notifications";
 import GoogleAdSlot from "@/components/ads/GoogleAdSlot";
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata = { title: "superfactorymanager" };
 
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={clsx(sans.variable)}>
       <body className="app-shell">
+        <Analytics />
         <Header session={session} notifications={notificationPreview} />
 
         <main className="relative flex-1">
