@@ -50,7 +50,7 @@ const theme: monacoNs.editor.IStandaloneThemeData = {
 };
 
 type CodeBoxProps = {
-  value: string;                    // initial value only
+  value: string;
   onChange: (v: string) => void;
   onBlur?: () => void;
   isInvalid?: boolean;
