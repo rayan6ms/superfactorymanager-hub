@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import clsx from "clsx";
 
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT;
 
 type Props = {
-  slot?: string;
+  slot: string;
   className?: string;
   layoutKey?: string;
 };
@@ -18,26 +18,76 @@ declare global {
 }
 
 export default function GoogleAdSlot({ slot, className, layoutKey }: Props) {
+  const adRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     if (!clientId) return;
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (error) {
-      console.warn("[ads] Failed to push ad", error);
+    const wrapper = adRef.current;
+    if (!wrapper) return;
+
+    const ins = wrapper.querySelector("ins.adsbygoogle") as HTMLElement | null;
+    if (!ins) return;
+
+    let pushed = false;
+
+    const tryPush = () => {
+      if (pushed) return;
+
+      const hasRect = ins.getClientRects().length > 0;
+      if (!hasRect || !ins.offsetWidth || !ins.offsetHeight) {
+        return;
+      }
+
+      if (ins.getAttribute("data-adsbygoogle-status") === "done") {
+        pushed = true;
+        return;
+      }
+
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        pushed = true;
+      } catch (err: any) {
+        const msg = typeof err?.message === "string" ? err.message : "";
+
+        if (msg.includes("No slot size for availableWidth=0")) {
+          return;
+        }
+
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[ads] Failed to push ad", err);
+        }
+      }
+    };
+
+    const id = window.setTimeout(tryPush, 0);
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => {
+        tryPush();
+      });
+      ro.observe(ins);
     }
-  }, []);
+
+    return () => {
+      window.clearTimeout(id);
+      ro?.disconnect();
+    };
+  }, [slot]);
 
   if (!clientId) return null;
 
   return (
-    <ins
-      className={clsx("adsbygoogle block overflow-hidden", className)}
-      style={{ display: "block" }}
-      data-ad-client={clientId}
-      data-ad-slot={slot ?? "auto"}
-      data-ad-format="auto"
-      data-full-width-responsive="true"
-      data-ad-layout-key={layoutKey}
-    />
+    <div ref={adRef}>
+      <ins
+        className={clsx("adsbygoogle block overflow-hidden", className)}
+        style={{ display: "block" }}
+        data-ad-client={clientId}
+        data-ad-slot={slot}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+        data-ad-layout-key={layoutKey}
+      />
+    </div>
   );
 }

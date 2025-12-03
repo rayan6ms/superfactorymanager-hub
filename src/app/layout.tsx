@@ -50,12 +50,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {adsEnabled ? (
               <div className="grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)_200px]">
                 <div className="hidden lg:flex justify-end">
-                  <GoogleAdSlot className="sticky top-24 h-[600px] w-[180px]" layoutKey="left-rail" />
+                  <GoogleAdSlot className="sticky top-24 h-[600px] w-[180px]" slot="6232979234" layoutKey="left-rail" />
                 </div>
 
                 <div className="space-y-6 lg:space-y-10">
                   <div className="space-y-4 lg:hidden">
-                    <GoogleAdSlot className="min-h-[120px] w-full" layoutKey="mobile-top" />
+                    <GoogleAdSlot className="min-h-[120px] w-full" slot="3606815892" layoutKey="mobile-top" />
                   </div>
 
                   <Providers>
@@ -66,12 +66,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </Providers>
 
                   <div className="space-y-4 lg:hidden">
-                    <GoogleAdSlot className="min-h-[120px] w-full" layoutKey="mobile-bottom" />
+                    <GoogleAdSlot className="min-h-[120px] w-full" slot="7536669655" layoutKey="mobile-bottom" />
                   </div>
                 </div>
 
                 <div className="hidden lg:flex justify-start">
-                  <GoogleAdSlot className="sticky top-24 h-[600px] w-[180px]" layoutKey="right-rail" />
+                  <GoogleAdSlot className="sticky top-24 h-[600px] w-[180px]" slot="5105947433" layoutKey="right-rail" />
                 </div>
               </div>
             ) : (
