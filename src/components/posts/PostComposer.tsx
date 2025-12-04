@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useId } from "react"
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import Link from "next/link";
-import { Images, Loader2, Tag as TagIcon, UploadCloud, BookOpen } from "lucide-react";
+import { Images, Loader2, Tag as TagIcon, UploadCloud, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { CodeBox } from "@/components/CodeBox";
 import { Card, Button, Input } from "@/components/ui";
 import { MAX_POST_IMAGES } from "@/lib/images";
@@ -18,6 +18,7 @@ const MAX_IMAGE_COUNT = MAX_POST_IMAGES;
 const MAX_TITLE_LENGTH = 120;
 const MIN_DESCRIPTION_LENGTH = 50;
 const CODE_ANALYZE_DEBOUNCE = 350;
+const IMAGES_PER_PAGE = 4;
 
 type Matrix = { byGame: Record<string, string[]>; gameVersions: string[] };
 type CategoryOption = { key: string; name: string };
@@ -142,6 +143,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [previews, setPreviews] = useState<string[]>([]);
   const [limitedByMax, setLimitedByMax] = useState(false);
   const [wrapLines, setWrapLines] = useState(true);
+  const [imagePage, setImagePage] = useState(0)
   const totalImageSlots = persistedImages.length + mediaFiles.length;
   const submitButtonLabel = isEditMode ? "Save changes" : "Publish post";
   const submitLoadingLabel = isEditMode ? "Saving..." : "Publishing...";
@@ -176,6 +178,14 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     ],
     [mediaFiles, persistedImages, previews],
   );
+
+  const totalPages = previewItems.length > 0 ? Math.ceil(previewItems.length / IMAGES_PER_PAGE) : 0;
+
+  const currentPage = totalPages ? Math.min(imagePage, totalPages - 1) : 0;
+  const startIndex = currentPage * IMAGES_PER_PAGE;
+  const endIndex = Math.min(startIndex + IMAGES_PER_PAGE, previewItems.length);
+  const currentPageItems = previewItems.slice(startIndex, endIndex);
+
   const errorId = useCallback((key: FormErrorKey) => `${idPrefix}-${key}-error`, [idPrefix]);
   const codeWarningsId = `${idPrefix}-code-warnings`;
   const errorMarkers = useMemo(
@@ -487,6 +497,15 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       previousGameVersionRef.current = form.gameVersion;
     }
   }, [form.gameVersion, change]);
+
+  useEffect(() => {
+    if (!previewItems.length) {
+      setImagePage(0);
+      return;
+    }
+    const maxPage = Math.max(0, Math.ceil(previewItems.length / IMAGES_PER_PAGE) - 1);
+    setImagePage(prev => (prev > maxPage ? maxPage : prev));
+  }, [previewItems.length]);
 
   useEffect(() => {
     const message = validateTags(tags);
@@ -1209,72 +1228,133 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                   No images have been attached to this post yet.
                 </div>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {previewItems.map(item => {
-                    const isNew = item.type === "new";
-                    return (
-                      <div
-                        key={item.key}
-                        className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
-                      >
-                        <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
-                          <span>#{item.labelIndex + 1}</span>
-                          {item.labelIndex === 0 && (
-                            <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
-                              thumb
-                            </span>
-                          )}
-                          {!isNew && (
-                            <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black text-xs">
-                              existing
-                            </span>
-                          )}
-                        </span>
-                        {isNew ? (
-                          <button
-                            type="button"
-                            onClick={() => item.fileIndex !== undefined && removeMediaAt(item.fileIndex)}
-                            className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
-                            aria-label={item.fileName ? `Remove ${item.fileName}` : "Remove image"}
-                          >
-                            ×
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => removeExistingImage(item.key)}
-                            className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
-                            aria-label="Remove existing image"
-                          >
-                            ×
-                          </button>
-                        )}
-                        <img src={item.src} alt="" className="h-full w-full object-cover" />
-                        {isNew && item.fileIndex !== undefined && (
-                          <div className="absolute bottom-3 left-3 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => moveMedia(item.fileIndex, item.fileIndex - 1)}
-                              disabled={item.fileIndex === 0}
-                              className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                              aria-label={item.fileName ? `Move ${item.fileName} earlier` : "Move image earlier"}
-                            >
-                              ←
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveMedia(item.fileIndex, item.fileIndex + 1)}
-                              disabled={item.fileIndex === mediaFiles.length - 1}
-                              className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                              aria-label={item.fileName ? `Move ${item.fileName} later` : "Move image later"}
-                            >
-                              →
-                            </button>
-                          </div>
-                        )}
+                <div className="space-y-3">
+                  {previewItems.length > IMAGES_PER_PAGE && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-white/70">
+                      <div>
+                        Showing{" "}
+                        <span className="font-semibold text-white">
+                          {startIndex + 1}–{endIndex}
+                        </span>{" "}
+                        of{" "}
+                        <span className="font-semibold text-white">
+                          {previewItems.length}
+                        </span>{" "}
+                        images
                       </div>
-                    );
-                  })}
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setImagePage(p => Math.max(0, p - 1))}
+                          disabled={currentPage === 0}
+                          className={clsx(
+                            "inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/40",
+                            currentPage === 0 && "opacity-60"
+                          )}
+                          aria-label="Previous images"
+                        >
+                          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <span className="text-white/75">
+                          Page{" "}
+                          <span className="font-semibold text-white">
+                            {currentPage + 1}
+                          </span>{" "}
+                          / {totalPages}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setImagePage(p =>
+                              Math.min(totalPages - 1, p + 1),
+                            )
+                          }
+                          disabled={currentPage >= totalPages - 1}
+                          className={clsx(
+                            "inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/40",
+                            currentPage >= totalPages - 1 && "opacity-60"
+                          )}
+                          aria-label="Next images"
+                        >
+                          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {currentPageItems.map(item => {
+                      const isNew = item.type === "new";
+                      return (
+                        <div
+                          key={item.key}
+                          className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
+                        >
+                          <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                            <span>#{item.labelIndex + 1}</span>
+                            {item.labelIndex === 0 && (
+                              <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
+                                thumb
+                              </span>
+                            )}
+                            {!isNew && (
+                              <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black text-xs">
+                                existing
+                              </span>
+                            )}
+                          </span>
+
+                          {isNew ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                item.fileIndex !== undefined &&
+                                removeMediaAt(item.fileIndex)
+                              }
+                              className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
+                              aria-label={item.fileName ? `Remove ${item.fileName}` : "Remove image"}
+                            >
+                              ×
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => removeExistingImage(item.key)}
+                              className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
+                              aria-label="Remove existing image"
+                            >
+                              ×
+                            </button>
+                          )}
+
+                          <img src={item.src} alt="" className="h-full w-full object-cover" />
+
+                          {isNew && item.fileIndex !== undefined && (
+                            <div className="absolute bottom-3 left-3 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => moveMedia(item.fileIndex, item.fileIndex - 1)}
+                                disabled={item.fileIndex === 0}
+                                className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
+                                aria-label={item.fileName ? `Move ${item.fileName} earlier` : "Move image earlier"}
+                              >
+                                ←
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveMedia(item.fileIndex, item.fileIndex + 1)}
+                                disabled={item.fileIndex === mediaFiles.length - 1}
+                                className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
+                                aria-label={item.fileName ? `Move ${item.fileName} later` : "Move image later"}
+                              >
+                                →
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>

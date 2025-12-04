@@ -1,4 +1,4 @@
-export const MAX_POST_IMAGES = 4;
+export const MAX_POST_IMAGES = 6;
 
 type InImage =
   | string
