@@ -6,7 +6,7 @@ import { TAG_MIN_COUNT, postSchema, searchQuerySchema } from "@/lib/validation";
 import { makeSlug } from "@/lib/slug";
 import { indexPost } from "@/lib/search";
 import { analyzeYoutubeUrl, toEmbed } from "@/lib/youtube";
-import { normalizeImages } from "@/lib/images";
+import { MAX_POST_IMAGES, normalizeImages } from "@/lib/images";
 import { parseDependency, type ParsedDep } from "@/lib/deps";
 import { getSfmMatrix } from "@/lib/sfm";
 import { normalizeTags } from "@/lib/tags";
@@ -207,6 +207,32 @@ export async function POST(req: Request) {
     const normalizedImages = normalizeImages(parsed.images);
     const derivedAuthorName = user.name?.trim() || (user.email?.split("@")[0] ?? "user");
 
+    if (normalizedImages.length > MAX_POST_IMAGES) {
+      return NextResponse.json(
+        { error: `You can upload up to ${MAX_POST_IMAGES} images.` },
+        { status: 400 },
+      );
+    }
+
+    if (!normalizedImages.length) {
+      return NextResponse.json(
+        { error: "Upload at least one image to showcase your build." },
+        { status: 400 },
+      );
+    }
+
+    const flagged = await detectNsfwInImages(normalizedImages.map(img => img.original));
+    if (flagged) {
+      return NextResponse.json(
+        {
+          error: `One of your images looks unsafe to share (${flagged.label} ${Math.round(
+            flagged.probability * 100,
+          )}% confidence). Please choose a different image.`,
+        },
+        { status: 400 },
+      );
+    }
+
     const category = await db.category.findUnique({ where: { key: parsed.categoryKey } });
     if (!category) {
       return NextResponse.json({ error: "INVALID_CATEGORY" }, { status: 400 });
@@ -245,78 +271,80 @@ export async function POST(req: Request) {
       codeNote = "Invalid control characters found.";
     }
 
-    const created = await db.post.create({
-      data: {
-        slug,
-        title: parsed.title,
-        gameVersion: parsed.gameVersion,
-        modVersion: parsed.modVersion,
-        categoryId: category.id,
-        authorId: user.id,
-        authorName: derivedAuthorName,
-        rating: 0,
-        code,
-        codeStatus,
-        codeNote,
-        description: parsed.description,
-        youtubeUrl: yt,
-        openForImprovement: parsed.openForImprovement ?? false,
-        images: {
-          create: normalizedImages.map(i => ({
-            original: i.original,
-            thumbSm: i.thumbSm,
-            thumbMd: i.thumbMd,
-            thumbLg: i.thumbLg,
-          })),
-        },
-        dependencies: {
-          create: depObjs.map(d => ({
-            name: d.name,
-            slug: d.slug,
-            source: d.source,
-            url: d.url,
-          })),
-        },
-        tags: {
-          create: normalizedTags.map(tag => ({
-            tag: {
-              connectOrCreate: {
-                where: { slug: tag.slug },
-                create: { slug: tag.slug, name: tag.name },
+    const hydrated = await db.$transaction(async tx => {
+      const created = await tx.post.create({
+        data: {
+          slug,
+          title: parsed.title,
+          gameVersion: parsed.gameVersion,
+          modVersion: parsed.modVersion,
+          categoryId: category.id,
+          authorId: user.id,
+          authorName: derivedAuthorName,
+          rating: 0,
+          code,
+          codeStatus,
+          codeNote,
+          description: parsed.description,
+          youtubeUrl: yt,
+          openForImprovement: parsed.openForImprovement ?? false,
+          images: {
+            create: normalizedImages.map(i => ({
+              original: i.original,
+              thumbSm: i.thumbSm,
+              thumbMd: i.thumbMd,
+              thumbLg: i.thumbLg,
+            })),
+          },
+          dependencies: {
+            create: depObjs.map(d => ({
+              name: d.name,
+              slug: d.slug,
+              source: d.source,
+              url: d.url,
+            })),
+          },
+          tags: {
+            create: normalizedTags.map(tag => ({
+              tag: {
+                connectOrCreate: {
+                  where: { slug: tag.slug },
+                  create: { slug: tag.slug, name: tag.name },
+                },
               },
-            },
-          })),
+            })),
+          },
         },
-      },
-      include: {
-        category: true,
-        images: true,
-        dependencies: true,
-        author: { select: { id: true, name: true } },
-        tags: { include: { tag: true } },
-      },
+        include: {
+          category: true,
+          images: true,
+          dependencies: true,
+          author: { select: { id: true, name: true } },
+          tags: { include: { tag: true } },
+        },
+      });
+
+      const initialCommit = await tx.postCommit.create({
+        data: {
+          postId: created.id,
+          authorId: user.id,
+          title: "Initial publication",
+          message: "Initial publication",
+          code,
+          status: "MERGED",
+          mergedAt: new Date(),
+        },
+      });
+
+      await tx.post.update({
+        where: { id: created.id },
+        data: { currentCommitId: initialCommit.id },
+      });
+
+      await recordPostContributor(tx, created.id, user.id);
+
+      return { ...created, currentCommitId: initialCommit.id };
     });
-
-    const initialCommit = await db.postCommit.create({
-      data: {
-        postId: created.id,
-        authorId: user.id,
-        title: "Initial publication",
-        message: "Initial publication",
-        code,
-        status: "MERGED",
-        mergedAt: new Date(),
-      },
-    });
-
-    await db.post.update({
-      where: { id: created.id },
-      data: { currentCommitId: initialCommit.id },
-    });
-
-    await recordPostContributor(db, created.id, user.id);
-
-    const hydrated = { ...created, currentCommitId: initialCommit.id };
 
     try {
       await indexPost(hydrated);

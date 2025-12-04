@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { db } from "@/lib/db";
 import { shouldCountViewAndMark } from "@/lib/views";
 import { auth } from "@/lib/auth";
+import { MAX_POST_IMAGES, normalizeImages } from "@/lib/images";
 import { postSchema, TAG_MIN_COUNT } from "@/lib/validation";
 import { getSfmMatrix } from "@/lib/sfm";
 import { normalizeTags } from "@/lib/tags";
@@ -13,16 +12,11 @@ import { indexPost } from "@/lib/search";
 import { recordPostContributor, resetPostRatings } from "@/lib/posts";
 import type { z } from "zod";
 import { isAdminEmail } from "@/lib/admin";
+import { deleteBlobs } from "@/lib/blob";
+import { detectNsfwInImages } from "@/lib/nsfw";
 
 async function removeImageFiles(urls: Array<string | null | undefined>) {
-  await Promise.all(
-    urls.map(async url => {
-      if (!url) return;
-      const normalized = url.startsWith("/") ? url.slice(1) : url;
-      const filePath = path.join(process.cwd(), "public", normalized);
-      await fs.unlink(filePath).catch(() => {});
-    }),
-  );
+  await deleteBlobs(urls);
 }
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
@@ -123,7 +117,37 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
   if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(code)) { codeStatus = "BROKEN"; codeNote = "Invalid control characters found."; }
 
   const codeChanged = code !== post.code;
-  const keepImageIds = new Set(parsed.keepImageIds ?? []);
+  const normalizedImages = normalizeImages(parsed.images);
+  const existingImageIds = new Set(post.images.map(img => img.id));
+  const keepImageIds = new Set((parsed.keepImageIds ?? []).filter(id => existingImageIds.has(id)));
+  const totalImages = normalizedImages.length + keepImageIds.size;
+
+  if (totalImages === 0) {
+    return NextResponse.json(
+      { error: "Upload at least one image to showcase your build." },
+      { status: 400 },
+    );
+  }
+
+  if (totalImages > MAX_POST_IMAGES) {
+    return NextResponse.json(
+      { error: `You can upload up to ${MAX_POST_IMAGES} images.` },
+      { status: 400 },
+    );
+  }
+
+  const flagged = await detectNsfwInImages(normalizedImages.map(img => img.original));
+  if (flagged) {
+    return NextResponse.json(
+      {
+        error: `One of your images looks unsafe to share (${flagged.label} ${Math.round(
+          flagged.probability * 100,
+        )}% confidence). Please choose a different image.`,
+      },
+      { status: 400 },
+    );
+  }
+
   const imagesToRemove = post.images.filter(img => !keepImageIds.has(img.id));
   const moderationNote = !isAuthor && isAdmin ? "Edited by moderation" : null;
   const moderationTimestamp = moderationNote ? new Date() : null;
@@ -157,6 +181,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
             slug: d.slug,
             source: d.source,
             url: d.url,
+          })),
+        },
+        images: {
+          create: normalizedImages.map(image => ({
+            original: image.original,
+            thumbSm: image.thumbSm,
+            thumbMd: image.thumbMd,
+            thumbLg: image.thumbLg,
           })),
         },
         tags: {

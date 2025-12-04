@@ -17,6 +17,7 @@
     "@prisma/extension-accelerate": "^2.0.2",
     "@tensorflow/tfjs": "^4.22.0",
     "@vercel/analytics": "^1.6.1",
+    "@vercel/blob": "^2.0.0",
     "antlr4ts": "^0.5.0-alpha.4",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",

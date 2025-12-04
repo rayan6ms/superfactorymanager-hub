@@ -1,8 +1,7 @@
-import fs from "fs/promises";
-import path from "path";
 import { addDays, isBefore } from "date-fns";
 import { db } from "./db";
 import { makeSlug } from "./slug";
+import { deleteBlobs } from "./blob";
 
 export const MANUAL_DELETION_DAYS = 15;
 export const AUTO_DELETE_REPORT_THRESHOLD = 5;
@@ -109,9 +108,17 @@ export async function restoreDeletion(type: "post" | "comment", targetId: string
   return { id: comment.id };
 }
 
-async function removePostUploads(postId: string) {
-  const dir = path.join(process.cwd(), "public", "uploads", postId);
-  await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+type ImageUrls = { original: string | null; thumbSm: string | null; thumbMd: string | null; thumbLg: string | null };
+
+async function removePostUploads(postId: string, knownImages?: ImageUrls[]) {
+  const images =
+    knownImages ??
+    (await db.postImage.findMany({
+      where: { postId },
+      select: { original: true, thumbSm: true, thumbMd: true, thumbLg: true },
+    }));
+  const urls = images.flatMap(img => [img.original, img.thumbSm, img.thumbMd, img.thumbLg]);
+  await deleteBlobs(urls);
 }
 
 export async function purgeExpiredDeletions(now = new Date()) {
@@ -136,6 +143,25 @@ export async function purgeExpiredDeletions(now = new Date()) {
 
   const deletedPostIds = expiredPosts.map(p => p.id);
   const deletedCommentIds = expiredComments.map(c => c.id);
+  const imagesByPost: Record<string, ImageUrls[] | undefined> = {};
+
+  if (deletedPostIds.length) {
+    const images = await db.postImage.findMany({
+      where: { postId: { in: deletedPostIds } },
+      select: { postId: true, original: true, thumbSm: true, thumbMd: true, thumbLg: true },
+    });
+
+    for (const image of images) {
+      const list = imagesByPost[image.postId] ?? [];
+      list.push({
+        original: image.original,
+        thumbSm: image.thumbSm,
+        thumbMd: image.thumbMd,
+        thumbLg: image.thumbLg,
+      });
+      imagesByPost[image.postId] = list;
+    }
+  }
 
   if (deletedPostIds.length || deletedCommentIds.length) {
     await db.$transaction(async tx => {
@@ -146,7 +172,7 @@ export async function purgeExpiredDeletions(now = new Date()) {
         await tx.post.deleteMany({ where: { id: { in: deletedPostIds } } });
       }
     });
-    await Promise.all(deletedPostIds.map(removePostUploads));
+    await Promise.all(deletedPostIds.map(id => removePostUploads(id, imagesByPost[id])));
   }
 
   return { deletedPosts: deletedPostIds.length, deletedComments: deletedCommentIds.length };

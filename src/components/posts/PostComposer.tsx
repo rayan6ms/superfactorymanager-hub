@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useId } from "react"
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import Link from "next/link";
+import Image from "next/image";
 import { Images, Loader2, Tag as TagIcon, UploadCloud, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { CodeBox } from "@/components/CodeBox";
 import { Card, Button, Input } from "@/components/ui";
@@ -28,6 +29,13 @@ type Matrix = { byGame: Record<string, string[]>; gameVersions: string[] };
 type CategoryOption = { key: string; name: string };
 type ExistingImage = {
   id: string;
+  original: string;
+  thumbSm?: string | null;
+  thumbMd?: string | null;
+  thumbLg?: string | null;
+};
+
+type UploadedImage = {
   original: string;
   thumbSm?: string | null;
   thumbMd?: string | null;
@@ -197,6 +205,8 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [persistedImages, setPersistedImages] = useState<ExistingImage[]>(existingImages);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [nsfwCheckStatus, setNsfwCheckStatus] = useState<"idle" | "running" | "error">("idle");
+  const [nsfwMessage, setNsfwMessage] = useState<string | null>(null);
   const [limitedByMax, setLimitedByMax] = useState(false);
   const [wrapLines, setWrapLines] = useState(true);
   const [imagePage, setImagePage] = useState(0)
@@ -399,13 +409,19 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     persistedImages,
   ]);
 
+  const nsfwBlockingMessage = useMemo(() => {
+    if (nsfwCheckStatus === "running") return "Scanning your images for safety...";
+    return nsfwMessage;
+  }, [nsfwCheckStatus, nsfwMessage]);
+
   const blockingMessages = useMemo(() => {
     const unique = new Set<string>();
     Object.values(formEvaluations).forEach(message => {
       if (message) unique.add(message);
     });
+    if (nsfwBlockingMessage) unique.add(nsfwBlockingMessage);
     return Array.from(unique);
-  }, [formEvaluations]);
+  }, [formEvaluations, nsfwBlockingMessage]);
 
   const publishDisabled = loading || blockingMessages.length > 0;
 
@@ -588,6 +604,64 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     return () => urls.forEach(url => URL.revokeObjectURL(url));
   }, [mediaFiles, computeImagesError, limitedByMax, persistedImages, totalImageSlots]);
 
+  useEffect(() => {
+    if (!mediaFiles.length) {
+      setNsfwCheckStatus("idle");
+      setNsfwMessage(null);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    setNsfwCheckStatus("running");
+    setNsfwMessage(null);
+
+    const analyze = async () => {
+      const fd = new FormData();
+      mediaFiles.forEach(file => fd.append("file", file));
+
+      try {
+        const res = await fetch("/api/nsfw-check", {
+          method: "POST",
+          body: fd,
+          credentials: "include",
+          signal: controller.signal,
+        });
+        const payload = await res.json().catch(() => null);
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setNsfwCheckStatus("error");
+          setNsfwMessage(
+            payload?.error ?? "We couldn't analyze your images for safety. Please try again.",
+          );
+          return;
+        }
+
+        setNsfwCheckStatus("idle");
+        setNsfwMessage(null);
+      } catch (error) {
+        if (cancelled) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        const message =
+          error instanceof Error
+            ? error.message
+            : "We couldn't analyze your images for safety. Please try again.";
+        setNsfwCheckStatus("error");
+        setNsfwMessage(message);
+      }
+    };
+
+    void analyze();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [mediaFiles]);
+
   const removeMediaAt = useCallback((index: number) => {
     setMediaFiles(prev => prev.filter((_, idx) => idx !== index));
   }, []);
@@ -754,11 +828,9 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     const codeAnalysis = analyzeSfmlCode(form.code, { required: true });
     setCodeFeedback(codeAnalysis);
 
-    const imageMessage = isEditMode
-      ? null
-      : limitedByMax
-        ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-        : computeImagesError(mediaFiles);
+    const imageMessage = limitedByMax
+      ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
+      : computeImagesError(mediaFiles, persistedImages);
     const tagMessage = validateTags(tags);
 
     const nextErrors: Record<FormErrorKey, string | null> = {
@@ -775,43 +847,54 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
-
-    if (mediaFiles.length) {
-      const fd = new FormData();
-      for (const file of mediaFiles) {
-        fd.append("file", file);
-      }
-
-      try {
-        const checkRes = await fetch("/api/nsfw-check", {
-          method: "POST",
-          body: fd,
-          credentials: "include",
-        });
-
-        const payload = (await checkRes
-          .json()
-          .catch(() => null)) as { error?: string } | null;
-
-        if (!checkRes.ok) {
-          setSubmitError(
-            payload?.error ??
-            "One of your images looks unsafe to share. Please choose a different image.",
-          );
-          return;
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "We couldn't analyze your images for safety. Please try again.";
-        setSubmitError(message);
-        return;
-      }
+    if (nsfwCheckStatus === "running") {
+      setSubmitError("Please wait while we finish scanning your images for safety.");
+      return;
+    }
+    if (nsfwMessage) {
+      setSubmitError(nsfwMessage);
+      return;
     }
 
     try {
       setLoading(true);
+      let uploadedImages: UploadedImage[] = [];
+
+      if (mediaFiles.length) {
+        const fd = new FormData();
+        for (const file of mediaFiles) {
+          fd.append("file", file);
+        }
+
+        const uploadRes = await fetch("/api/uploads", {
+          method: "POST",
+          body: fd,
+          credentials: "include",
+        });
+        const uploadPayload = await uploadRes.json().catch(() => null);
+
+        if (!uploadRes.ok) {
+          const uploadMessage =
+            (uploadPayload && typeof uploadPayload === "object" && "error" in uploadPayload
+              ? (uploadPayload as { error?: string }).error
+              : null) ?? "Failed to upload images.";
+          setSubmitError(uploadMessage);
+          return;
+        }
+
+        if (!Array.isArray(uploadPayload)) {
+          setSubmitError("Unexpected upload response.");
+          return;
+        }
+
+        uploadedImages = (uploadPayload as UploadedImage[]).map(img => ({
+          original: img?.original,
+          thumbSm: img?.thumbSm ?? undefined,
+          thumbMd: img?.thumbMd ?? undefined,
+          thumbLg: img?.thumbLg ?? undefined,
+        }));
+      }
+
       const body = {
         title: form.title.trim(),
         gameVersion: form.gameVersion,
@@ -819,7 +902,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
         categoryKey: form.categoryKey.trim(),
         dependencies: deps.map((d) => d.url),
         tags: tags.map((tag) => tag.name),
-        images: [],
+        images: uploadedImages,
         keepImageIds: persistedImages.map(image => image.id),
         code: form.code,
         description: form.description.trim(),
@@ -843,34 +926,6 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
             : "We couldn't publish your post. Check the details and try again."),
         );
         return;
-      }
-
-      const uploadTargetId = isEditMode ? postId ?? data.id : data.id;
-
-      if (mediaFiles.length && !uploadTargetId) {
-        setSubmitError("We couldn't determine which post to attach your images to.");
-        return;
-      }
-
-      if (mediaFiles.length && uploadTargetId) {
-        for (const f of mediaFiles) {
-          const fd = new FormData();
-          fd.append("file", f);
-          const uploadRes = await fetch(`/api/uploads/${uploadTargetId}`, {
-            method: "POST",
-            body: fd,
-            credentials: "include",
-          });
-          if (!uploadRes.ok) {
-            let uploadMessage = "Failed to upload one of the images.";
-            try {
-              const uploadData = await uploadRes.json();
-              if (uploadData?.error) uploadMessage = uploadData.error;
-            } catch { }
-            setSubmitError(uploadMessage);
-            return;
-          }
-        }
       }
 
       if (typeof window !== "undefined") {
@@ -1257,9 +1312,11 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
               {youtubePreview && (
                 <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-sm text-white/85">
                   {youtubePreview.thumbnail ? (
-                    <img
+                    <Image
                       src={youtubePreview.thumbnail}
                       alt="YouTube thumbnail"
+                      width={96}
+                      height={64}
                       className="h-16 w-24 rounded-lg object-cover"
                     />
                   ) : (
@@ -1334,6 +1391,12 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                 <p id={errorId("images")} className="text-sm text-error">
                   {errors.images}
                 </p>
+              )}
+              {nsfwCheckStatus === "running" && (
+                <p className="text-xs text-white/60">Scanning your images for safety…</p>
+              )}
+              {nsfwCheckStatus === "error" && nsfwMessage && (
+                <p className="text-sm text-amber-300">{nsfwMessage}</p>
               )}
               {previewItems.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-white/15 bg-black/20 px-4 py-6 text-center text-sm text-white/60">
@@ -1439,7 +1502,13 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                             </button>
                           )}
 
-                          <img src={item.src} alt="" className="h-full w-full object-cover" />
+                          <Image
+                            src={item.src}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            sizes="(min-width: 1280px) 33vw, (min-width: 1024px) 50vw, 100vw"
+                          />
 
                           {isNew && item.fileIndex !== undefined && (
                             <div className="absolute bottom-3 left-3 flex gap-2">
