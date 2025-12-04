@@ -20,6 +20,10 @@ const MIN_DESCRIPTION_LENGTH = 50;
 const CODE_ANALYZE_DEBOUNCE = 350;
 const IMAGES_PER_PAGE = 4;
 
+const DRAFT_STORAGE_PREFIX = "sfm-post-composer";
+const DRAFT_VERSION = 1;
+const DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+
 type Matrix = { byGame: Record<string, string[]>; gameVersions: string[] };
 type CategoryOption = { key: string; name: string };
 type ExistingImage = {
@@ -87,6 +91,53 @@ type PostComposerProps = {
   };
 };
 
+type DraftPayload = {
+  v: number;
+  savedAt: number;
+  form: FormState;
+  tags: NormalizedTag[];
+  deps: { url: string; name: string }[];
+};
+
+function getDraftStorageKey(mode: "create" | "edit", slug?: string, postId?: string | undefined) {
+  if (mode === "edit") {
+    const idPart = postId ?? slug ?? "unknown";
+    return `${DRAFT_STORAGE_PREFIX}:edit:${idPart}`;
+  }
+  return `${DRAFT_STORAGE_PREFIX}:create:new`;
+}
+
+function cleanupOldDrafts() {
+  if (typeof window === "undefined") return;
+  const now = Date.now();
+
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (!key || !key.startsWith(DRAFT_STORAGE_PREFIX)) continue;
+
+      const raw = window.localStorage.getItem(key);
+      if (!raw) {
+        window.localStorage.removeItem(key);
+        continue;
+      }
+
+      let parsed: DraftPayload | null = null;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        window.localStorage.removeItem(key);
+        continue;
+      }
+
+      if (!parsed || typeof parsed.savedAt !== "number") continue;
+      if (now - parsed.savedAt > DRAFT_TTL_MS) {
+        window.localStorage.removeItem(key);
+      }
+    }
+  } catch { }
+}
+
 function SectionTitle({ title, description }: { title: string; description?: string }) {
   return (
     <div className="space-y-1">
@@ -102,6 +153,11 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const isEditMode = mode === "edit";
   const existingImages = initialData?.existingImages ?? [];
   const postId = initialData?.id;
+
+  const draftKey = useMemo(
+    () => getDraftStorageKey(mode, slug, postId),
+    [mode, slug, postId]
+  );
 
   const [matrix, setMatrix] = useState<Matrix>({ byGame: {}, gameVersions: [] });
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -144,6 +200,8 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [limitedByMax, setLimitedByMax] = useState(false);
   const [wrapLines, setWrapLines] = useState(true);
   const [imagePage, setImagePage] = useState(0)
+  const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
+  const saveDraftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const totalImageSlots = persistedImages.length + mediaFiles.length;
   const submitButtonLabel = isEditMode ? "Save changes" : "Publish post";
   const submitLoadingLabel = isEditMode ? "Saving..." : "Publishing...";
@@ -549,6 +607,56 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    cleanupOldDrafts();
+
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as DraftPayload;
+        if (parsed.v === DRAFT_VERSION) {
+          setForm(prev => ({ ...prev, ...parsed.form }));
+          setTags(parsed.tags ?? []);
+          setDeps(parsed.deps ?? []);
+        }
+      }
+    } catch {
+    } finally {
+      setHasLoadedDraft(true);
+    }
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!hasLoadedDraft) return;
+
+    if (saveDraftTimeoutRef.current) {
+      clearTimeout(saveDraftTimeoutRef.current);
+    }
+
+    saveDraftTimeoutRef.current = setTimeout(() => {
+      const payload: DraftPayload = {
+        v: DRAFT_VERSION,
+        savedAt: Date.now(),
+        form,
+        tags,
+        deps,
+      };
+
+      try {
+        window.localStorage.setItem(draftKey, JSON.stringify(payload));
+      } catch { }
+    }, 500);
+
+    return () => {
+      if (saveDraftTimeoutRef.current) {
+        clearTimeout(saveDraftTimeoutRef.current);
+      }
+    };
+  }, [form, tags, deps, draftKey, hasLoadedDraft]);
+
+  useEffect(() => {
     const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
       setCodeFeedback(analyzeSfmlCode(form.code, { required: true }));
     }, CODE_ANALYZE_DEBOUNCE);
@@ -758,13 +866,17 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
             try {
               const uploadData = await uploadRes.json();
               if (uploadData?.error) uploadMessage = uploadData.error;
-            } catch {
-              // ignore parse error
-            }
+            } catch { }
             setSubmitError(uploadMessage);
             return;
           }
         }
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.removeItem(draftKey);
+        } catch { }
       }
 
       if (isEditMode && slug) {
@@ -1422,6 +1534,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
           </div>
 
           <CodeBox
+            key={hasLoadedDraft ? `${draftKey}-ready` : `${draftKey}-loading`}
             value={form.code}
             onChange={v => change("code", v)}
             onBlur={() => markTouched("code")}
