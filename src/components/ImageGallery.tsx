@@ -18,6 +18,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import Image from "next/image";
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -431,13 +432,15 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
               type="button"
               key={img.id}
               onClick={() => openViewer(index)}
-              className="group relative block overflow-hidden rounded-2xl border border-white/10 bg-white/5"
+              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5"
             >
-              <img
+              <Image
                 src={preview}
                 alt=""
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                width={800}
+                height={600}
+                className="w-full h-auto max-h-60 object-cover transition duration-300 group-hover:scale-[1.02]"
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
               />
               <span className="pointer-events-none absolute left-2 top-2 inline-flex h-7 min-w-8 items-center justify-center rounded-full bg-[#0e111a]/80 px-2 text-xs font-semibold text-white">
                 #{index + 1}
@@ -447,7 +450,6 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
           );
         })}
       </div>
-
       {overlay}
     </>
   );

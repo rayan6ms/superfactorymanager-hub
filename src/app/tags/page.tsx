@@ -58,7 +58,7 @@ export default async function TagsPage({ searchParams }: Props) {
                   OR: [
                     { slug },
                     { slug: { contains: slug } },
-                    { name: { contains: slug } }, // ✅ fixed
+                    { name: { contains: slug } },
                   ],
                 },
               },

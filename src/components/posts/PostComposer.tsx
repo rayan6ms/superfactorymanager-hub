@@ -1,29 +1,54 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useId } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useId } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import Link from "next/link";
 import Image from "next/image";
-import { Images, Loader2, Tag as TagIcon, UploadCloud, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { CodeBox } from "@/components/CodeBox";
 import { Card, Button, Input } from "@/components/ui";
+import ImageGallery, { type GalleryImage } from "@/components/ImageGallery";
 import { MAX_POST_IMAGES } from "@/lib/images";
-import { MAX_TAG_LENGTH, TAG_MAX_COUNT, TAG_MIN_COUNT, tagSchema } from "@/lib/validation";
+import {
+  MAX_TAG_LENGTH,
+  TAG_MAX_COUNT,
+  TAG_MIN_COUNT,
+  tagSchema,
+  POST_DESCRIPTION_MIN_LENGTH,
+  POST_DESCRIPTION_MAX_LENGTH,
+} from "@/lib/validation";
 import { analyzeYoutubeUrl } from "@/lib/youtube";
 import { analyzeSfmlCode, type CodeFeedback } from "@/lib/sfml/analysis";
 import { normalizeTag, type NormalizedTag } from "@/lib/tags";
+import {
+  Images,
+  Loader2,
+  Tag as TagIcon,
+  UploadCloud,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Bold,
+  Italic,
+  Strikethrough,
+  Code,
+  List,
+  ListOrdered,
+} from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const MAX_IMAGE_MB = 5;
 const MAX_IMAGE_COUNT = MAX_POST_IMAGES;
 const MAX_TITLE_LENGTH = 120;
-const MIN_DESCRIPTION_LENGTH = 50;
 const CODE_ANALYZE_DEBOUNCE = 350;
 const IMAGES_PER_PAGE = 4;
 
 const DRAFT_STORAGE_PREFIX = "sfm-post-composer";
 const DRAFT_VERSION = 1;
 const DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+
+type MarkdownFormat = "bold" | "italic" | "strike" | "code" | "ul" | "ol";
 
 type Matrix = { byGame: Record<string, string[]>; gameVersions: string[] };
 type CategoryOption = { key: string; name: string };
@@ -155,6 +180,10 @@ function SectionTitle({ title, description }: { title: string; description?: str
   );
 }
 
+function nsfwFileKey(file: File) {
+  return `${file.name}-${file.size}-${file.lastModified}`;
+}
+
 export default function PostComposer({ mode = "create", slug, initialData }: PostComposerProps) {
   const r = useRouter();
   const idPrefix = useId();
@@ -211,7 +240,10 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [wrapLines, setWrapLines] = useState(true);
   const [imagePage, setImagePage] = useState(0)
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const [descriptionMaxHeight, setDescriptionMaxHeight] = useState<number | null>(null);
   const saveDraftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nsfwCheckedRef = useRef<Record<string, true>>({});
   const totalImageSlots = persistedImages.length + mediaFiles.length;
   const submitButtonLabel = isEditMode ? "Save changes" : "Publish post";
   const submitLoadingLabel = isEditMode ? "Saving..." : "Publishing...";
@@ -222,6 +254,42 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     if (mediaFiles.length) parts.push(`${mediaFiles.length} new`);
     return `${totalImageSlots}/${MAX_IMAGE_COUNT} image slots used${parts.length ? ` (${parts.join(", ")})` : ""}`;
   }, [mediaFiles.length, persistedImages.length, totalImageSlots]);
+
+  useLayoutEffect(() => {
+    const textarea = descriptionRef.current;
+    if (!textarea) return;
+
+    const updateMaxHeight = () => {
+      const parent = textarea.parentElement;
+      if (!parent) return;
+      const parentHeight = parent.clientHeight;
+      if (!parentHeight) return;
+
+      const maxHeight = parentHeight * 0.65;
+      setDescriptionMaxHeight(maxHeight);
+    };
+
+    updateMaxHeight();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const parent = textarea.parentElement;
+      if (!parent) return;
+      const observer = new ResizeObserver(() => updateMaxHeight());
+      observer.observe(parent);
+      return () => observer.disconnect();
+    }
+  }, []);
+
+  useEffect(() => {
+    const textarea = descriptionRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    const scrollHeight = textarea.scrollHeight;
+    const maxHeight = descriptionMaxHeight ?? scrollHeight;
+
+    textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+  }, [form.description, descriptionMaxHeight]);
 
   const previewItems = useMemo(
     () => [
@@ -245,6 +313,18 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       }),
     ],
     [mediaFiles, persistedImages, previews],
+  );
+
+  const galleryImages: GalleryImage[] = useMemo(
+    () =>
+      previewItems.map(item => ({
+        id: item.key,
+        original: item.src,
+        thumbSm: item.src,
+        thumbMd: item.src,
+        thumbLg: item.src,
+      })),
+    [previewItems],
   );
 
   const totalPages = previewItems.length > 0 ? Math.ceil(previewItems.length / IMAGES_PER_PAGE) : 0;
@@ -324,8 +404,11 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       }
       case "description": {
         if (!trimmed) return "Description is required.";
-        if (trimmed.length < MIN_DESCRIPTION_LENGTH) {
-          return `Description must be at least ${MIN_DESCRIPTION_LENGTH} characters (currently ${trimmed.length}).`;
+        if (trimmed.length < POST_DESCRIPTION_MIN_LENGTH) {
+          return `Description must be at least ${POST_DESCRIPTION_MIN_LENGTH} characters (currently ${trimmed.length}).`;
+        }
+        if (trimmed.length > POST_DESCRIPTION_MAX_LENGTH) {
+          return `Description must be at most ${POST_DESCRIPTION_MAX_LENGTH} characters (currently ${trimmed.length}).`;
         }
         return null;
       }
@@ -611,6 +694,17 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       return;
     }
 
+    const filesToScan = mediaFiles.filter((file) => {
+      const key = nsfwFileKey(file);
+      return !nsfwCheckedRef.current[key];
+    });
+
+    if (!filesToScan.length) {
+      setNsfwCheckStatus("idle");
+      setNsfwMessage(null);
+      return;
+    }
+
     let cancelled = false;
     const controller = new AbortController();
 
@@ -619,7 +713,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
     const analyze = async () => {
       const fd = new FormData();
-      mediaFiles.forEach(file => fd.append("file", file));
+      filesToScan.forEach((file) => fd.append("file", file));
 
       try {
         const res = await fetch("/api/nsfw-check", {
@@ -635,16 +729,22 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
         if (!res.ok) {
           setNsfwCheckStatus("error");
           setNsfwMessage(
-            payload?.error ?? "We couldn't analyze your images for safety. Please try again.",
+            payload?.error ??
+            "We couldn't analyze your images for safety. Please try again.",
           );
           return;
         }
+
+        filesToScan.forEach((file) => {
+          nsfwCheckedRef.current[nsfwFileKey(file)] = true;
+        });
 
         setNsfwCheckStatus("idle");
         setNsfwMessage(null);
       } catch (error) {
         if (cancelled) return;
         if (error instanceof DOMException && error.name === "AbortError") return;
+
         const message =
           error instanceof Error
             ? error.message
@@ -679,6 +779,71 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       return next;
     });
   }, []);
+
+  const applyMarkdown = useCallback(
+    (format: MarkdownFormat) => {
+      const textarea = descriptionRef.current;
+      if (!textarea) return;
+
+      const { selectionStart, selectionEnd, value } = textarea;
+      const selected = value.slice(selectionStart, selectionEnd);
+      const isList = format === "ul" || format === "ol";
+      const defaultText = isList ? "List item" : "text";
+      const text = selected || defaultText;
+
+      let replacement = text;
+
+      switch (format) {
+        case "bold":
+          replacement = `**${text}**`;
+          break;
+        case "italic":
+          replacement = `*${text}*`;
+          break;
+        case "strike":
+          replacement = `~~${text}~~`;
+          break;
+        case "code":
+          replacement = text.includes("\n")
+            ? `\`\`\`\n${text}\n\`\`\``
+            : `\`${text}\``;
+          break;
+        case "ul":
+          replacement = text
+            .split("\n")
+            .map(line =>
+              line
+                ? `- ${line.replace(/^\s*[-*]\s*/, "")}`
+                : "- "
+            )
+            .join("\n");
+          break;
+        case "ol":
+          replacement = text
+            .split("\n")
+            .map((line, index) =>
+              `${index + 1}. ${line.replace(/^\s*\d+\.\s*/, "") || "List item"}`
+            )
+            .join("\n");
+          break;
+      }
+
+      const before = value.slice(0, selectionStart);
+      const after = value.slice(selectionEnd);
+      const nextValue = `${before}${replacement}${after}`;
+
+      change("description", nextValue);
+
+      const cursorStart = before.length;
+      const cursorEnd = cursorStart + replacement.length;
+
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(cursorStart, cursorEnd);
+      });
+    },
+    [change],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1183,42 +1348,6 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
         <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
           <SectionTitle
-            title="Description"
-            description="Tell readers what to expect and how to get started."
-          />
-
-          <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium text-white/75">
-              Overview
-            </label>
-            <textarea
-              id="description"
-              className={clsx(
-                "min-h-32 w-full rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:ring-2",
-                shouldShowError("description")
-                  ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
-                  : "focus:border-brand-400 focus:ring-brand-400"
-              )}
-              placeholder="Describe the goal, features, and any setup instructions"
-              value={form.description}
-              onChange={e => change("description", e.target.value)}
-              onBlur={() => markTouched("description")}
-              aria-invalid={shouldShowError("description") || undefined}
-              aria-describedby={shouldShowError("description") ? errorId("description") : undefined}
-            />
-            <p className="text-xs text-white/45">
-              {form.description.trim().length}/{MIN_DESCRIPTION_LENGTH} characters minimum
-            </p>
-            {shouldShowError("description") && errors.description && (
-              <p id={errorId("description")} className="text-sm text-error">
-                {errors.description}
-              </p>
-            )}
-          </div>
-        </Card>
-
-        <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
-          <SectionTitle
             title="Dependencies"
             description="Link any CurseForge or Modrinth projects your blueprint relies on."
           />
@@ -1270,6 +1399,132 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                     </button>
                   </a>
                 ))}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
+          <SectionTitle
+            title="Description"
+            description="Tell readers what to expect and how to get started."
+          />
+
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor="description" className="text-sm font-medium text-white/75">
+                Overview
+              </label>
+
+              {/* Markdown toolbar */}
+              <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 p-1 text-xs font-semibold text-white/70">
+                <button
+                  type="button"
+                  onClick={() => applyMarkdown("bold")}
+                  className="rounded-full px-2 py-1 hover:bg-white/10"
+                  aria-label="Bold"
+                >
+                  <Bold className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyMarkdown("italic")}
+                  className="rounded-full px-2 py-1 hover:bg-white/10"
+                  aria-label="Italic"
+                >
+                  <Italic className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyMarkdown("strike")}
+                  className="rounded-full px-2 py-1 hover:bg-white/10"
+                  aria-label="Strikethrough"
+                >
+                  <Strikethrough className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyMarkdown("code")}
+                  className="rounded-full px-2 py-1 hover:bg-white/10"
+                  aria-label="Code"
+                >
+                  <Code className="h-3.5 w-3.5" />
+                </button>
+
+                <span className="mx-1 h-4 w-px bg-white/15" aria-hidden="true" />
+
+                <button
+                  type="button"
+                  onClick={() => applyMarkdown("ul")}
+                  className="rounded-full px-2 py-1 hover:bg-white/10"
+                  aria-label="Bullet list"
+                >
+                  <List className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyMarkdown("ol")}
+                  className="rounded-full px-2 py-1 hover:bg-white/10"
+                  aria-label="Numbered list"
+                >
+                  <ListOrdered className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <textarea
+              id="description"
+              ref={descriptionRef}
+              className={clsx(
+                "min-h-32 w-full resize-none overflow-y-auto rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:ring-2",
+                shouldShowError("description")
+                  ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
+                  : "focus:border-brand-400 focus:ring-brand-400"
+              )}
+              style={descriptionMaxHeight ? { maxHeight: descriptionMaxHeight } : undefined}
+              placeholder="Describe the goal, features, and any setup instructions"
+              value={form.description}
+              onChange={e => change("description", e.target.value)}
+              onBlur={() => markTouched("description")}
+              aria-invalid={shouldShowError("description") || undefined}
+              aria-describedby={shouldShowError("description") ? errorId("description") : undefined}
+            />
+
+            {(() => {
+              const length = form.description.trim().length;
+              const tooLong = length > POST_DESCRIPTION_MAX_LENGTH;
+
+              return (
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <p className={clsx(tooLong ? "text-red-300" : "text-white/45")}>
+                    {length}/{POST_DESCRIPTION_MAX_LENGTH} characters{" "}
+                    <span className="text-white/50">
+                      (minimum {POST_DESCRIPTION_MIN_LENGTH})
+                    </span>
+                  </p>
+                  <p className="text-white/45">
+                    Supports basic Markdown: **bold**, *italic*, ~~strike~~, `code`, lists, and more.
+                  </p>
+                </div>
+              );
+            })()}
+
+            {shouldShowError("description") && errors.description && (
+              <p id={errorId("description")} className="text-sm text-error">
+                {errors.description}
+              </p>
+            )}
+
+            {form.description.trim().length > 0 && (
+              <div className="mt-3 space-y-2 rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
+                  Preview
+                </p>
+                <div className="prose prose-invert prose-sm max-w-none prose-headings:text-white prose-strong:text-white prose-em:text-white/90 prose-p:text-white/85 prose-li:text-white/80">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {form.description}
+                  </ReactMarkdown>
+                </div>
               </div>
             )}
           </div>
@@ -1465,7 +1720,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                           key={item.key}
                           className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
                         >
-                          <span className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                          <span className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
                             <span>#{item.labelIndex + 1}</span>
                             {item.labelIndex === 0 && (
                               <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
@@ -1486,7 +1741,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                                 item.fileIndex !== undefined &&
                                 removeMediaAt(item.fileIndex)
                               }
-                              className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
+                              className="absolute right-3 top-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
                               aria-label={item.fileName ? `Remove ${item.fileName}` : "Remove image"}
                             >
                               ×
@@ -1495,7 +1750,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                             <button
                               type="button"
                               onClick={() => removeExistingImage(item.key)}
-                              className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
+                              className="absolute right-3 top-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
                               aria-label="Remove existing image"
                             >
                               ×
@@ -1506,12 +1761,12 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                             src={item.src}
                             alt=""
                             fill
-                            className="object-cover"
+                            className="z-0 object-cover"
                             sizes="(min-width: 1280px) 33vw, (min-width: 1024px) 50vw, 100vw"
                           />
 
                           {isNew && item.fileIndex !== undefined && (
-                            <div className="absolute bottom-3 left-3 flex gap-2">
+                            <div className="absolute bottom-3 left-3 z-10 flex gap-2">
                               <button
                                 type="button"
                                 onClick={() => moveMedia(item.fileIndex, item.fileIndex - 1)}
@@ -1536,6 +1791,14 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                       );
                     })}
                   </div>
+                  {galleryImages.length > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-white/10">
+                      <p className="text-xs font-medium text-white/70">
+                        Gallery preview (what readers will see)
+                      </p>
+                      <ImageGallery imgs={galleryImages} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

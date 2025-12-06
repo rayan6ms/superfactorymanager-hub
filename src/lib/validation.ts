@@ -5,6 +5,8 @@ import { COMMENT_MAX_LENGTH, COMMENT_MIN_LENGTH } from "./comment-constants";
 export const TAG_MIN_COUNT = 2;
 export const TAG_MAX_COUNT = 6;
 export const MAX_TAG_LENGTH = 32;
+export const POST_DESCRIPTION_MIN_LENGTH = 50;
+export const POST_DESCRIPTION_MAX_LENGTH = 2000;
 
 export const tagSchema = z
   .string()
@@ -64,7 +66,15 @@ export const postSchema = z.object({
   dependencies: z.array(dependencyUrl).optional().default([]),
 
   code: z.string().min(1),
-  description: z.string().min(1),
+  description: z
+    .string()
+    .trim()
+    .min(POST_DESCRIPTION_MIN_LENGTH, {
+      message: `Description must be at least ${POST_DESCRIPTION_MIN_LENGTH} characters long.`,
+    })
+    .max(POST_DESCRIPTION_MAX_LENGTH, {
+      message: `Description must be at most ${POST_DESCRIPTION_MAX_LENGTH} characters long.`,
+    }),
   youtubeUrl: z.url().optional().or(z.literal("").optional()),
   openForImprovement: z.boolean().optional().default(false),
 });

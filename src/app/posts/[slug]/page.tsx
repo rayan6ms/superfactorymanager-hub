@@ -14,6 +14,8 @@ import { isAdminEmail } from "@/lib/admin";
 import AdminFlagPostButton from "@/components/posts/AdminFlagPostButton";
 import { Eye } from 'lucide-react';
 import { getBaseUrl } from "@/lib/urls";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type VoteValue = "up" | "down" | null;
 
@@ -260,7 +262,11 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
             </div>
           </div>
 
-          <p className="whitespace-pre-wrap text-base text-white/85">{post.description}</p>
+          <div className="prose prose-invert max-w-none prose-headings:text-white prose-p:text-white/85 prose-li:text-white/80 prose-strong:text-white prose-em:text-white/90">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {post.description}
+            </ReactMarkdown>
+          </div>
 
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
