@@ -1,5 +1,5 @@
 import * as nsfwjs from "nsfwjs";
-import * as tf from "@tensorflow/tfjs-node";
+import * as tf from "@tensorflow/tfjs";
 import sharp from "sharp";
 
 const FLAGGED_CLASSES = new Set(["Porn", "Hentai", "Sexy"]);
