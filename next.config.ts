@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
 
   turbopack: {},
 
+  serverExternalPackages: [
+    '@tensorflow/tfjs-node',
+  ],
+
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com" },
