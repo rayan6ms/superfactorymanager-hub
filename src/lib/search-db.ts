@@ -37,7 +37,7 @@ function buildConditions(filters?: PostSearchFilters) {
     );
   }
 
-  return Prisma.join(conditions, Prisma.sql` AND `);
+  return Prisma.join(conditions, " AND ");
 }
 
 async function runRankedSearch(

@@ -26,7 +26,7 @@ const Input = forwardRef<HTMLInputElement, Props>(
         <input
           ref={ref}
           className={clsx(
-            "w-full h-12 rounded-2xl border border-white/10 bg-[var(--surface-2)]/80 px-4 text-[0.95rem] font-medium text-white",
+            "w-full h-12 rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 text-[0.95rem] font-medium text-white",
             "placeholder:text-white/40 transition focus:border-brand-400/80 focus:ring-2 focus:ring-brand-400 focus:ring-offset-0",
             "hover:border-white/20",
             padClass,

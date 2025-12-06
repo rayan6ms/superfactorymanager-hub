@@ -15,17 +15,6 @@ function formatDate(date: Date | null) {
   }
 }
 
-/**
- * Remove a single pair of leading/trailing ``` fences from a code string.
- * Supports things like:
- * ```ts
- * ...code...
- * ```
- * or
- * ```
- * ...code...
- * ```
- */
 function stripCodeFences(body?: string | null): string {
   if (!body) return "";
 
