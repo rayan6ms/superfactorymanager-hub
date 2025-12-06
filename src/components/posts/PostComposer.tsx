@@ -1865,22 +1865,24 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
             </div>
           </div>
 
-          <CodeBox
-            key={hasLoadedDraft ? `${draftKey}-ready` : `${draftKey}-loading`}
-            value={form.code}
-            onChange={v => change("code", v)}
-            onBlur={() => markTouched("code")}
-            isInvalid={shouldShowError("code")}
-            errorMarkers={errorMarkers}
-            warningRanges={warningRanges}
-            wrapLines={wrapLines}
-            describedBy={[
-              shouldShowError("code") ? errorId("code") : null,
-              codeFeedback.status === "ok" && codeFeedback.warnings.length ? codeWarningsId : null,
-            ]
-              .filter(Boolean)
-              .join(" ") || undefined}
-          />
+          {hasLoadedDraft && (
+            <CodeBox
+              key={hasLoadedDraft ? `${draftKey}-ready` : `${draftKey}-loading`}
+              value={form.code}
+              onChange={v => change("code", v)}
+              onBlur={() => markTouched("code")}
+              isInvalid={shouldShowError("code")}
+              errorMarkers={errorMarkers}
+              warningRanges={warningRanges}
+              wrapLines={wrapLines}
+              describedBy={[
+                shouldShowError("code") ? errorId("code") : null,
+                codeFeedback.status === "ok" && codeFeedback.warnings.length ? codeWarningsId : null,
+              ]
+                .filter(Boolean)
+                .join(" ") || undefined}
+            />
+          )}
           {shouldShowError("code") && errors.code && (
             <div id={errorId("code")} className="space-y-1 text-sm text-error">
               <p>{errors.code}</p>
