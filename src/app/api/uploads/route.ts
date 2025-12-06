@@ -34,19 +34,34 @@ export async function POST(req: Request) {
   }
 
   try {
-    const uploads = await Promise.all(
-      files.map(async file => {
+    const scanned = await Promise.all(
+      files.map(async (file, index) => {
         const buffer = Buffer.from(await file.arrayBuffer());
 
         const nsfw = await detectNsfwInBuffer(buffer, 0.5);
-        if (nsfw) {
-          throw new Error(
-            `"${file.name}" looks unsafe to share (${nsfw.label} ${Math.round(
-              nsfw.probability * 100,
-            )}% confidence). Choose a different image.`,
-          );
-        }
 
+        return { file, buffer, nsfw, index };
+      }),
+    );
+
+    const flagged = scanned.filter(scan => scan.nsfw);
+    if (flagged.length) {
+      return NextResponse.json(
+        {
+          error: "Some images look unsafe to share. Replace the flagged images and try again.",
+          nsfw: flagged.map(item => ({
+            imageNumber: item.index + 1,
+            fileName: item.file.name,
+            label: item.nsfw?.label ?? "unknown",
+            probability: item.nsfw?.probability ?? 0,
+          })),
+        },
+        { status: 400 },
+      );
+    }
+
+    const uploads = await Promise.all(
+      scanned.map(async ({ buffer }) => {
         const base = sharp(buffer).jpeg({ quality: 90 });
         const original = await base.toBuffer();
         const originalUrl = await uploadImageVariant("uploads/original", original, "image/jpeg");

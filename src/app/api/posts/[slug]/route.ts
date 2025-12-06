@@ -12,7 +12,6 @@ import { recordPostContributor, resetPostRatings } from "@/lib/posts";
 import type { z } from "zod";
 import { isAdminEmail } from "@/lib/admin";
 import { deleteBlobs } from "@/lib/blob";
-import { detectNsfwInImages } from "@/lib/nsfw";
 
 async function removeImageFiles(urls: Array<string | null | undefined>) {
   await deleteBlobs(urls);
@@ -131,18 +130,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
   if (totalImages > MAX_POST_IMAGES) {
     return NextResponse.json(
       { error: `You can upload up to ${MAX_POST_IMAGES} images.` },
-      { status: 400 },
-    );
-  }
-
-  const flagged = await detectNsfwInImages(normalizedImages.map(img => img.original));
-  if (flagged) {
-    return NextResponse.json(
-      {
-        error: `One of your images looks unsafe to share (${flagged.label} ${Math.round(
-          flagged.probability * 100,
-        )}% confidence). Please choose a different image.`,
-      },
       { status: 400 },
     );
   }

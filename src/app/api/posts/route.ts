@@ -13,7 +13,6 @@ import { recordPostContributor } from "@/lib/posts";
 import { interactionBlockReason } from "@/lib/moderation";
 import { ZodError } from "zod";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
-import { detectNsfwInImages } from "@/lib/nsfw";
 import { searchPostsHybrid } from "@/lib/search-db";
 
 type PostWithRelations = Prisma.PostGetPayload<{
@@ -174,18 +173,6 @@ export async function POST(req: Request) {
     if (!normalizedImages.length) {
       return NextResponse.json(
         { error: "Upload at least one image to showcase your build." },
-        { status: 400 },
-      );
-    }
-
-    const flagged = await detectNsfwInImages(normalizedImages.map(img => img.original));
-    if (flagged) {
-      return NextResponse.json(
-        {
-          error: `One of your images looks unsafe to share (${flagged.label} ${Math.round(
-            flagged.probability * 100,
-          )}% confidence). Please choose a different image.`,
-        },
         { status: 400 },
       );
     }
