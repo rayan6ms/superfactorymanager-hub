@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { indexPost } from "@/lib/search";
 import { recordPostContributor, resetPostRatings } from "@/lib/posts";
 import { createNotification } from "@/lib/notifications";
 import { NotificationOrigin } from "@prisma/client";
@@ -64,13 +63,6 @@ export async function PATCH(
       await recordPostContributor(tx, post.id, commit.authorId);
     });
 
-    await indexPost(
-      await db.post.findUniqueOrThrow({
-        where: { id: post.id },
-        include: { category: true, dependencies: true, tags: { include: { tag: true } } },
-      }),
-    );
-
     if (commit.authorId !== post.authorId) {
       await createNotification({
         userId: commit.authorId,
@@ -130,13 +122,6 @@ export async function PATCH(
     await resetPostRatings(tx, post.id);
     await recordPostContributor(tx, post.id, user.id);
   });
-
-  await indexPost(
-    await db.post.findUniqueOrThrow({
-      where: { id: post.id },
-      include: { category: true, dependencies: true, tags: { include: { tag: true } } },
-    }),
-  );
 
   return NextResponse.json({ status: "reverted" });
 }

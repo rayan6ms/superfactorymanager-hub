@@ -8,7 +8,6 @@ import { getSfmMatrix } from "@/lib/sfm";
 import { normalizeTags } from "@/lib/tags";
 import { parseDependency } from "@/lib/deps";
 import { analyzeYoutubeUrl, toEmbed } from "@/lib/youtube";
-import { indexPost } from "@/lib/search";
 import { recordPostContributor, resetPostRatings } from "@/lib/posts";
 import type { z } from "zod";
 import { isAdminEmail } from "@/lib/admin";
@@ -240,11 +239,5 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     );
   }
 
-  try {
-    await indexPost(updated);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn("[search] Failed to reindex post in Meilisearch:", msg);
-  }
   return NextResponse.json({ slug: updated.slug, id: post.id });
 }

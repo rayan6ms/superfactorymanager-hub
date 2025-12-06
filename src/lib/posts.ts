@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { db } from "@/lib/db";
-import { indexPost } from "@/lib/search";
+import { searchPostsHybrid } from "@/lib/search-db";
 import { wilsonScore, WILSON_Z_80 } from "@/lib/wilson-score";
 import { subDays } from "date-fns";
 
@@ -50,7 +50,6 @@ export async function recomputePostRating(postId: string) {
     include: { dependencies: true, category: true, tags: { include: { tag: true } } },
   });
 
-  await indexPost(updated);
   return { updated, worked, broken, total };
 }
 
@@ -270,56 +269,43 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
   const currentPage = Math.max(1, Math.floor(page));
   const skip = (currentPage - 1) * pageSize;
 
+  if (q && q.trim().length) {
+    const { results, total } = await searchPostsHybrid({
+      q: q.trim(),
+      limit: pageSize,
+      offset: skip,
+      filters: {
+        minRating,
+        categoryKey,
+        gameVersion,
+        sfmVersion,
+      },
+    });
+
+    const ids = results.map(result => result.id);
+    const posts = ids.length
+      ? await db.post.findMany({
+        where: { id: { in: ids } },
+        include: POST_CARD_INCLUDE,
+      })
+      : [];
+
+    const map = new Map(posts.map(post => [post.id, post]));
+    const ordered = ids
+      .map(id => map.get(id))
+      .filter((post): post is PostWithRelations => Boolean(post))
+      .map(serializePost);
+
+    return { posts: ordered, total };
+  }
+
   const baseWhere: Prisma.PostWhereInput = { isDeleted: false };
   if (minRating && minRating > 0) baseWhere.rating = { gte: minRating };
   if (categoryKey) baseWhere.category = { key: categoryKey };
   if (gameVersion) baseWhere.gameVersion = gameVersion;
   if (sfmVersion) baseWhere.modVersion = sfmVersion;
 
-  if (q && q.trim().length && order === "best") {
-    try {
-      const { postsIndex } = await import("@/lib/search");
-      const res = await postsIndex().search(q, {
-        limit: pageSize,
-        offset: skip,
-        filter: [
-          ...(categoryKey ? [`categoryKey = "${categoryKey}"`] : []),
-          ...(gameVersion ? [`gameVersion = "${gameVersion}"`] : []),
-          ...(sfmVersion ? [`modVersion = "${sfmVersion}"`] : []),
-        ].join(" AND ") || undefined,
-      });
-      if (res.hits?.length) {
-        const ids = res.hits.map((hit: { id: string }) => hit.id);
-        const posts = await db.post.findMany({ where: { id: { in: ids }, ...baseWhere }, include: POST_CARD_INCLUDE });
-        const map = new Map(posts.map(post => [post.id, post]));
-        const ordered = ids
-          .map((id: string) => map.get(id))
-          .filter((post): post is PostWithRelations => Boolean(post))
-          .map(serializePost);
-        const total = res.estimatedTotalHits ?? ordered.length;
-        return { posts: ordered, total };
-      }
-    } catch {
-      // fall through to Prisma search
-    }
-  }
-
   const where: Prisma.PostWhereInput = { ...baseWhere };
-  if (q && q.trim().length) {
-    const or: Prisma.PostWhereInput[] = [
-      { title: { contains: q } },
-      { description: { contains: q } },
-      { code: { contains: q } },
-      { authorName: { contains: q } },
-      { slug: { contains: q } },
-      { modVersion: { contains: q } },
-      { category: { is: { name: { contains: q } } } },
-      { category: { is: { key: { contains: q } } } },
-      { tags: { some: { tag: { name: { contains: q } } } } },
-      { dependencies: { some: { name: { contains: q } } } },
-    ];
-    where.OR = or;
-  }
 
   const orderBy: Prisma.PostOrderByWithRelationInput[] = [];
   switch (order) {

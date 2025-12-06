@@ -4,9 +4,16 @@ import PostsFilterBar from "@/components/posts/PostsFilterBar";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
 import { db } from "@/lib/db";
-import { searchPostsWithFilters, type PostsFilterOptions } from "@/lib/posts";
+import {
+  POST_CARD_INCLUDE,
+  searchPostsWithFilters,
+  serializePost,
+  type PostWithRelations,
+  type PostsFilterOptions,
+} from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import { getSfmMatrix } from "@/lib/sfm";
+import { searchPostsHybrid } from "@/lib/search-db";
 
 const ORDER_VALUES: PostsFilterOptions["order"][] = [
   "best",
@@ -51,39 +58,64 @@ export default async function PostsPage({ searchParams }: Props) {
   const minRatingNumber = Number(minRatingParam) || undefined;
   const requestedPage = parsePageParam(pageParam, 1);
   const PAGE_SIZE = 30;
+  const trimmedQuery = q.trim();
+  const hasQuery = Boolean(trimmedQuery);
 
-  const [categories, sfmMatrix, initialResult] = await Promise.all([
+  const [categories, sfmMatrix] = await Promise.all([
     db.category.findMany({
       orderBy: { name: "asc" },
       select: { id: true, key: true, name: true },
     }),
     getSfmMatrix(false),
+  ]);
+
+  const fetchSearchPage = async (pageNumber: number) => {
+    const { results, total } = await searchPostsHybrid({
+      q: trimmedQuery,
+      limit: PAGE_SIZE,
+      offset: (pageNumber - 1) * PAGE_SIZE,
+      filters: {
+        minRating: minRatingNumber,
+        categoryKey: category || undefined,
+        gameVersion: gameVersion || undefined,
+        sfmVersion: sfmVersion || undefined,
+      },
+    });
+
+    const ids = results.map(result => result.id);
+    const posts = ids.length
+      ? await db.post.findMany({ where: { id: { in: ids } }, include: POST_CARD_INCLUDE })
+      : [];
+    const map = new Map(posts.map(post => [post.id, post]));
+    const ordered = ids
+      .map(id => map.get(id))
+      .filter((post): post is PostWithRelations => Boolean(post))
+      .map(serializePost);
+
+    return { posts: ordered, total };
+  };
+
+  const fetchFilteredPage = (pageNumber: number) =>
     searchPostsWithFilters({
-      q: q || undefined,
+      q: hasQuery ? trimmedQuery : undefined,
       order,
       minRating: minRatingNumber,
       categoryKey: category || undefined,
       gameVersion: gameVersion || undefined,
       sfmVersion: sfmVersion || undefined,
       limit: PAGE_SIZE,
-      page: requestedPage,
-    }),
-  ]);
+      page: pageNumber,
+    });
+
+  const initialResult = hasQuery ? await fetchSearchPage(requestedPage) : await fetchFilteredPage(requestedPage);
 
   const totalPages = getTotalPages(initialResult.total, PAGE_SIZE);
   const activePage = Math.min(requestedPage, totalPages);
   const needsRefetch = activePage !== requestedPage;
   const finalResult = needsRefetch
-    ? await searchPostsWithFilters({
-      q: q || undefined,
-      order,
-      minRating: minRatingNumber,
-      categoryKey: category || undefined,
-      gameVersion: gameVersion || undefined,
-      sfmVersion: sfmVersion || undefined,
-      limit: PAGE_SIZE,
-      page: activePage,
-    })
+    ? hasQuery
+      ? await fetchSearchPage(activePage)
+      : await fetchFilteredPage(activePage)
     : initialResult;
 
   const posts = finalResult.posts;

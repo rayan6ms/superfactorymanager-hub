@@ -4,7 +4,6 @@ import { auth } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
 import { TAG_MIN_COUNT, postSchema, searchQuerySchema } from "@/lib/validation";
 import { makeSlug } from "@/lib/slug";
-import { indexPost } from "@/lib/search";
 import { analyzeYoutubeUrl, toEmbed } from "@/lib/youtube";
 import { MAX_POST_IMAGES, normalizeImages } from "@/lib/images";
 import { parseDependency, type ParsedDep } from "@/lib/deps";
@@ -15,6 +14,7 @@ import { interactionBlockReason } from "@/lib/moderation";
 import { ZodError } from "zod";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 import { detectNsfwInImages } from "@/lib/nsfw";
+import { searchPostsHybrid } from "@/lib/search-db";
 
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
@@ -53,77 +53,34 @@ export async function GET(req: Request) {
   if (category) baseWhere.category = { key: category };
   if (version) baseWhere.modVersion = version;
   if (q && q.trim().length) {
-    try {
-      const { postsIndex } = await import("@/lib/search");
-      const res = await postsIndex().search(q, {
-        filter: [
-          ...(category ? [`categoryKey = "${category}"`] : []),
-          ...(version ? [`modVersion = "${version}"`] : []),
-        ].join(" AND ") || undefined,
-        limit: perPage,
-        offset: (page - 1) * perPage,
-        sort: ["uploadDate:desc"],
-      });
-
-      if (res.hits?.length) {
-        const ids = res.hits.map((h: { id: string }) => h.id);
-        const items = await db.post.findMany({
-          where: { ...baseWhere, id: { in: ids } },
-          include: {
-            category: true,
-            images: true,
-            dependencies: true,
-            author: { select: { id: true, name: true } },
-            tags: { include: { tag: true } },
-          },
-        });
-        const map = new Map(items.map(i => [i.id, i]));
-        const ordered = ids
-          .map((id: string) => map.get(id))
-          .filter((post): post is PostWithRelations => Boolean(post))
-          .map(serializePost);
-        return NextResponse.json({
-          items: ordered,
-          total: res.estimatedTotalHits ?? ordered.length,
-          page, perPage,
-        });
-      }
-    } catch {
-      // fallback to prisma
-    }
-
-    const or = [
-      { title: { contains: q } },
-      { description: { contains: q } },
-      { code: { contains: q } },
-      { authorName: { contains: q } },
-      { slug: { contains: q } },
-      { modVersion: { contains: q } },
-      { category: { is: { name: { contains: q } } } },
-      { category: { is: { key: { contains: q } } } },
-      { tags: { some: { tag: { name: { contains: q } } } } },
-      { dependencies: { some: { name: { contains: q } } } },
-    ];
-
-    const items = await db.post.findMany({
-      where: { ...baseWhere, OR: or },
-      orderBy: { uploadDate: "desc" },
-      include: {
-        category: true,
-        images: true,
-        dependencies: true,
-        author: { select: { id: true, name: true } },
-        tags: { include: { tag: true } },
-      },
-      skip: (page - 1) * perPage,
-      take: perPage,
+    const { results, total } = await searchPostsHybrid({
+      q: q.trim(),
+      limit: perPage,
+      offset: (page - 1) * perPage,
+      filters: { categoryKey: category, sfmVersion: version },
     });
 
-    const total = await db.post.count({
-      where: { ...baseWhere, OR: or },
-    });
+    const ids = results.map(result => result.id);
+    const items = ids.length
+      ? await db.post.findMany({
+        where: { id: { in: ids } },
+        include: {
+          category: true,
+          images: true,
+          dependencies: true,
+          author: { select: { id: true, name: true } },
+          tags: { include: { tag: true } },
+        },
+      })
+      : [];
 
-    return NextResponse.json({ items: items.map(serializePost), total, page, perPage });
+    const map = new Map(items.map(i => [i.id, i]));
+    const ordered = ids
+      .map((id: string) => map.get(id))
+      .filter((post): post is PostWithRelations => Boolean(post))
+      .map(serializePost);
+
+    return NextResponse.json({ items: ordered, total, page, perPage });
   }
 
   const [items, total] = await Promise.all([
@@ -345,13 +302,6 @@ export async function POST(req: Request) {
 
       return { ...created, currentCommitId: initialCommit.id };
     });
-
-    try {
-      await indexPost(hydrated);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn("[search] Failed to index post in Meilisearch:", msg);
-    }
 
     return NextResponse.json(serializePost(hydrated), { status: 201 });
   } catch (e) {

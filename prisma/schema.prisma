@@ -195,6 +195,9 @@ model Post {
   comments              Comment[]
   reports               Report[]
   moderationEditor      User?             @relation("ModeratedPosts", fields: [moderationEditedById], references: [id])
+  searchVector          Unsupported("tsvector")?
+
+  @@index([searchVector], type: Gin)
 }
 
 enum PostCommitStatus {
