@@ -1,10 +1,18 @@
 import * as nsfwjs from "nsfwjs";
 import * as tf from "@tensorflow/tfjs";
+import crypto from "crypto";
 import sharp from "sharp";
 
 const FLAGGED_CLASSES = new Set(["Porn", "Hentai", "Sexy"]);
 
 let modelPromise: Promise<nsfwjs.NSFWJS> | null = null;
+const nsfwCache = new Map<string, { label: string; probability: number } | null>();
+
+function hashBuffer(buffer: Buffer) {
+  const hash = crypto.createHash("sha256");
+  hash.update(buffer);
+  return hash.digest("hex");
+}
 
 async function loadModel() {
   if (!modelPromise) {
@@ -83,6 +91,23 @@ export async function detectNsfwInBuffer(
   }
 
   return null;
+}
+
+export async function detectNsfwInBufferCached(
+  buffer: Buffer,
+  threshold = 0.5,
+): Promise<{ label: string; probability: number } | null> {
+  const hash = hashBuffer(buffer);
+
+  if (nsfwCache.has(hash)) {
+    console.log("[nsfw] Cache hit", { hash });
+    return nsfwCache.get(hash) ?? null;
+  }
+
+  console.log("[nsfw] Cache miss", { hash });
+  const result = await detectNsfwInBuffer(buffer, threshold);
+  nsfwCache.set(hash, result);
+  return result;
 }
 
 export async function detectNsfwInImages(

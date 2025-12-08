@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { detectNsfwInBuffer } from "@/lib/nsfw";
+import { detectNsfwInBufferCached } from "@/lib/nsfw";
 
 export const runtime = "nodejs";
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   for (const file of files) {
     try {
       const bytes = Buffer.from(await file.arrayBuffer());
-      const nsfw = await detectNsfwInBuffer(bytes, 0.5);
+      const nsfw = await detectNsfwInBufferCached(bytes, 0.5);
 
       if (nsfw) {
         return NextResponse.json(

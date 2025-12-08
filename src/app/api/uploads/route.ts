@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { auth } from "@/lib/auth";
 import { MAX_POST_IMAGES } from "@/lib/images";
-import { detectNsfwInBuffer } from "@/lib/nsfw";
+import { detectNsfwInBufferCached } from "@/lib/nsfw";
 import { uploadImageVariant } from "@/lib/blob";
 
 export const runtime = "nodejs";
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       files.map(async (file, index) => {
         const buffer = Buffer.from(await file.arrayBuffer());
 
-        const nsfw = await detectNsfwInBuffer(buffer, 0.5);
+        const nsfw = await detectNsfwInBufferCached(buffer, 0.5);
 
         return { file, buffer, nsfw, index };
       }),
