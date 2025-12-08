@@ -1,4 +1,4 @@
-export function getBaseUrl(defaultBase = "https://superfactorymanager.vercel.app") {
+export function getBaseUrl(defaultBase = "https://sfmhub.vercel.app") {
   const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
   if (envUrl) return envUrl.replace(/\/$/, "");
 

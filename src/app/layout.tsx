@@ -19,12 +19,12 @@ const appUrl = getBaseUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "superfactorymanager",
-    template: "%s | superfactorymanager",
+    default: "sfmhub",
+    template: "%s | sfmhub",
   },
   description:
     "Community hub for SuperFactoryManager players to share builds, troubleshoot setups, and stay current with mod updates.",
-  applicationName: "superfactorymanager",
+  applicationName: "sfmhub",
   keywords: [
     "SuperFactoryManager",
     "Minecraft",
@@ -37,20 +37,20 @@ export const metadata: Metadata = {
     "community",
   ],
   openGraph: {
-    title: "superfactorymanager",
+    title: "sfmhub",
     description:
       "Discover curated SuperFactoryManager builds, guides, and troubleshooting tips from the community.",
     url: appUrl,
-    siteName: "superfactorymanager",
+    siteName: "sfmhub",
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "superfactorymanager",
+    title: "sfmhub",
     description:
       "Discover curated SuperFactoryManager builds, guides, and troubleshooting tips from the community.",
-    creator: "@superfactorymanager",
+    creator: "@sfmhub",
   },
   alternates: {
     canonical: "/",

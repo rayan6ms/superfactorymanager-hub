@@ -9,7 +9,7 @@ import { redirect } from "next/navigation";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 export const metadata = {
-  title: "Notifications | superfactorymanager",
+  title: "Notifications | sfmhub",
 };
 
 type NotificationData = {

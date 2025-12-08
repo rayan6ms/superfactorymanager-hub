@@ -74,7 +74,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   if (!post || post.isDeleted) {
     return {
-      title: "Post not found | superfactorymanager",
+      title: "Post not found | sfmhub",
       description: "The requested SuperFactoryManager build could not be found.",
     };
   }
@@ -86,14 +86,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const canonical = `${baseUrl}/posts/${post.slug}`;
 
   return {
-    title: `${post.title} | superfactorymanager`,
+    title: `${post.title} | sfmhub`,
     description,
     alternates: { canonical },
     openGraph: {
       title: post.title,
       description,
       url: canonical,
-      siteName: "superfactorymanager",
+      siteName: "sfmhub",
       type: "article",
       images: heroSrc ? [{ url: heroSrc, alt: post.title }] : undefined,
     },

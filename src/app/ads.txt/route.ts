@@ -10,7 +10,7 @@ function getPublisherId() {
 
 export function GET() {
   const publisherId = getPublisherId();
-  const lines = ["# ads.txt for SuperFactoryManager"];
+  const lines = ["# ads.txt for SFMHub"];
 
   if (publisherId) {
     lines.push(`google.com, ${publisherId}, DIRECT, f08c47fec0942fa0`);

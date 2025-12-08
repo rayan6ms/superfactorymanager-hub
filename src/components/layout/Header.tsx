@@ -50,7 +50,7 @@ export default function Header({ session, notifications }: HeaderProps) {
               "
             >
               <span className="hidden sm:inline bg-linear-to-b from-red-400/80 to-brand-600 bg-clip-text text-transparent font-extrabold">
-                superfactorymanager
+                sfmhub
               </span>
 
               <span className="sm:hidden bg-linear-to-b from-red-400/80 to-brand-600 bg-clip-text text-transparent font-extrabold">

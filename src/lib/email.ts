@@ -66,18 +66,18 @@ export async function sendPasswordResetEmail({
   await transporter.sendMail({
     to,
     from,
-    subject: "Reset your SuperFactoryManager password",
-    text: `Hi ${displayName},\n\nWe received a request to reset your SuperFactoryManager password.\n\nIf you made this request, you can set a new password using the link below:\n${resetLink}\n\nIf you didn't request a password reset, you can ignore this email.\n\nThis link will expire in one hour.\n\nThanks,\nSuperFactoryManager Team`,
+    subject: "Reset your SFMHub password",
+    text: `Hi ${displayName},\n\nWe received a request to reset your SFMHub password.\n\nIf you made this request, you can set a new password using the link below:\n${resetLink}\n\nIf you didn't request a password reset, you can ignore this email.\n\nThis link will expire in one hour.\n\nThanks,\nSFMHub Team`,
     html: `<!DOCTYPE html><html><body style="font-family: sans-serif; color: #0f172a;">` +
       `<p>Hi ${displayName},</p>` +
-      `<p>We received a request to reset your SuperFactoryManager password.</p>` +
+      `<p>We received a request to reset your SFMHub password.</p>` +
       `<p>If you made this request, click the button below to choose a new password.</p>` +
       `<p style="margin: 24px 0;">` +
       `<a href="${resetLink}" style="display: inline-block; background: #6366f1; color: #fff; padding: 12px 20px; border-radius: 9999px; text-decoration: none;">Reset password</a>` +
       `</p>` +
       `<p>If you didn't request a password reset, you can safely ignore this email.</p>` +
       `<p style="margin-top: 24px;">This link will expire in one hour.</p>` +
-      `<p style="margin-top: 24px;">Thanks,<br/>SuperFactoryManager Team</p>` +
+      `<p style="margin-top: 24px;">Thanks,<br/>SFMHub Team</p>` +
       `</body></html>`,
   });
 }
@@ -105,19 +105,19 @@ export async function sendEmailVerificationEmail({
   await transporter.sendMail({
     to,
     from,
-    subject: "Verify your SuperFactoryManager email",
-    text: `Hi ${displayName},\n\nThanks for signing up for SuperFactoryManager!\n\nPlease confirm that this email address belongs to you by clicking the link below:\n${verifyLink}\n\nIf you did not create an account, you can safely ignore this message.\n\nThis link will expire in one hour.\n\nThanks,\nSuperFactoryManager Team`,
+    subject: "Verify your SFMHub email",
+    text: `Hi ${displayName},\n\nThanks for signing up for SFMHub!\n\nPlease confirm that this email address belongs to you by clicking the link below:\n${verifyLink}\n\nIf you did not create an account, you can safely ignore this message.\n\nThis link will expire in one hour.\n\nThanks,\nSFMHub Team`,
     html:
       "<!DOCTYPE html><html><body style=\"font-family: sans-serif; color: #0f172a;\">" +
       `<p>Hi ${displayName},</p>` +
-      `<p>Thanks for signing up for SuperFactoryManager!</p>` +
+      `<p>Thanks for signing up for SFMHub!</p>` +
       `<p>Please confirm that this email address belongs to you by clicking the button below.</p>` +
       `<p style=\"margin: 24px 0;\">` +
       `<a href=\"${verifyLink}\" style=\"display: inline-block; background: #22c55e; color: #fff; padding: 12px 20px; border-radius: 9999px; text-decoration: none;\">Verify email</a>` +
       `</p>` +
       `<p>If you didn’t create this account, you can safely ignore this message.</p>` +
       `<p style=\"margin-top: 24px;\">This link will expire in one hour.</p>` +
-      `<p style=\"margin-top: 24px;\">Thanks,<br/>SuperFactoryManager Team</p>` +
+      `<p style=\"margin-top: 24px;\">Thanks,<br/>SFMHub Team</p>` +
       `</body></html>`,
   });
 }
