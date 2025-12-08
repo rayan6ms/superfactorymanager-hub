@@ -368,7 +368,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             size="sm"
             className={clsx(
               "gap-2 transition",
-              true && "animate-pulse ring-2 ring-brand-300 ring-offset-2 ring-offset-[#0f0b14]",
+              highlightReset && "animate-pulse ring-2 ring-brand-300 ring-offset-2 ring-offset-[#0f0b14]",
             )}
             onClick={handleResetPassword}
             disabled={resetLoading}
