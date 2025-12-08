@@ -27,6 +27,23 @@ type NotificationPreviewListProps = {
   onMarkRead?: (id: string) => void | Promise<void>;
 };
 
+function withNotificationSource(href: string | null): string | null {
+  if (!href) return href;
+
+  if (
+    href.includes("from=notifications") ||
+    href.includes("source=notifications") ||
+    href.includes("fromNotifications")
+  ) {
+    return href;
+  }
+
+  const [pathAndQuery, hash] = href.split("#");
+  const separator = pathAndQuery.includes("?") ? "&" : "?";
+  const next = `${pathAndQuery}${separator}from=notifications`;
+  return hash ? `${next}#${hash}` : next;
+}
+
 export default function NotificationPreviewList({
   notifications,
   emptyLabel = "You’re all caught up!",
@@ -122,6 +139,7 @@ export default function NotificationPreviewList({
         const override = localUnread[item.id];
         const unread = typeof override === "boolean" ? override : unreadFromProps;
         const pending = pendingIds.has(item.id);
+        const href = withNotificationSource(item.link);
 
         return (
           <li
@@ -186,9 +204,9 @@ export default function NotificationPreviewList({
 
             <div className="mt-0.5 space-y-1">
               {item.message && <p className="text-white/70">{item.message}</p>}
-              {item.link ? (
+              {href ? (
                 <Link
-                  href={item.link}
+                  href={href}
                   className="flex justify-end font-semibold text-white hover:underline"
                 >
                   {item.title}

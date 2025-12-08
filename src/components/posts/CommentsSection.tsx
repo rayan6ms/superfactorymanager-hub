@@ -493,6 +493,18 @@ export default function CommentsSection({
     setReplyText("");
   }, []);
 
+  const INITIAL_VISIBLE_REPLIES = 2;
+
+  const AUTO_EXPANDED_DEPTH = 2;
+
+  const getInitialVisibleReplies = (depth: number, totalReplies: number): number => {
+    if (totalReplies <= 0) return 0;
+    if (depth < AUTO_EXPANDED_DEPTH) {
+      return Math.min(INITIAL_VISIBLE_REPLIES, totalReplies);
+    }
+    return 0;
+  };
+
   const getVisibleReplies = useCallback(
     (commentId: string, depth: number, totalReplies: number, baseline?: number) => {
       if (totalReplies <= 0) return 0;
@@ -648,18 +660,6 @@ export default function CommentsSection({
       }
     };
   }, []);
-
-  const INITIAL_VISIBLE_REPLIES = 2;
-
-  const AUTO_EXPANDED_DEPTH = 2;
-
-  const getInitialVisibleReplies = (depth: number, totalReplies: number): number => {
-    if (totalReplies <= 0) return 0;
-    if (depth < AUTO_EXPANDED_DEPTH) {
-      return Math.min(INITIAL_VISIBLE_REPLIES, totalReplies);
-    }
-    return 0;
-  };
 
   const renderThread = (
     nodes: SerializedComment[],
@@ -817,9 +817,9 @@ export default function CommentsSection({
                 className={clsx(
                   "rounded-2xl border border-white/10 bg-white/5 p-4",
                   isHighlighted &&
-                    (pulseHighlights
-                      ? "ring-4 ring-brand-400/80 animate-pulse"
-                      : "ring-2 ring-brand-400"),
+                  (pulseHighlights
+                    ? "ring-4 ring-brand-400/80 animate-pulse"
+                    : "ring-2 ring-brand-400"),
                 )}
               >
                 <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-2 sm:items-start">

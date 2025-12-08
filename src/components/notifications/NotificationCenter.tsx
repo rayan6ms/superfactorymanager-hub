@@ -41,6 +41,23 @@ type ApiResponse = {
   nextCursor?: string | null;
 };
 
+function withNotificationSource(href: string | null): string | null {
+  if (!href) return href;
+
+  if (
+    href.includes("from=notifications") ||
+    href.includes("source=notifications") ||
+    href.includes("fromNotifications")
+  ) {
+    return href;
+  }
+
+  const [pathAndQuery, hash] = href.split("#");
+  const separator = pathAndQuery.includes("?") ? "&" : "?";
+  const next = `${pathAndQuery}${separator}from=notifications`;
+  return hash ? `${next}#${hash}` : next;
+}
+
 export default function NotificationCenter({
   initialNotifications,
   initialUnreadCount,
@@ -327,6 +344,7 @@ export default function NotificationCenter({
               const created = formatNotificationTimestamp(item.createdAt);
               const unread = !item.readAt;
               const pending = pendingIds.has(item.id);
+              const href = withNotificationSource(item.link);
               return (
                 <li
                   key={item.id}
@@ -363,9 +381,9 @@ export default function NotificationCenter({
                         )}
                       </div>
                       <div className="space-y-1">
-                        {item.link ? (
+                        {href ? (
                           <Link
-                            href={item.link}
+                            href={href}
                             className="block font-semibold text-white hover:underline"
                           >
                             {item.title}
@@ -393,9 +411,9 @@ export default function NotificationCenter({
                         )}
                         {unread ? "Mark read" : "Mark unread"}
                       </button>
-                      {item.link && (
+                      {href && (
                         <Link
-                          href={item.link}
+                          href={href}
                           className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1 font-semibold text-white transition hover:border-white/30 hover:bg-white/10"
                         >
                           View
