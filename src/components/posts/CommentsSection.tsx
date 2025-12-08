@@ -190,6 +190,9 @@ export default function CommentsSection({
   const [threadMaxDepth, setThreadMaxDepth] = useState(5);
   const focusHandledRef = useRef(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const cameFromNotificationsRef = useRef(false);
+  const [pulseHighlights, setPulseHighlights] = useState(false);
+  const pulseTimeoutRef = useRef<number | null>(null);
 
   const canPost = Boolean(currentUser);
   const loginRedirect = `/login?from=/posts/${postSlug}`;
@@ -239,6 +242,26 @@ export default function CommentsSection({
     handleChange();
     media.addEventListener("change", handleChange);
     return () => media.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const fromNotifications =
+      params.get("from") === "notifications" ||
+      params.get("source") === "notifications" ||
+      params.has("fromNotifications") ||
+      document.referrer.includes("/notifications");
+    cameFromNotificationsRef.current = fromNotifications;
+  }, []);
+
+  const startPulseHighlight = useCallback(() => {
+    if (!cameFromNotificationsRef.current) return;
+    setPulseHighlights(true);
+    if (pulseTimeoutRef.current !== null) {
+      window.clearTimeout(pulseTimeoutRef.current);
+    }
+    pulseTimeoutRef.current = window.setTimeout(() => setPulseHighlights(false), 6000);
   }, []);
 
   useEffect(() => {
@@ -564,9 +587,10 @@ export default function CommentsSection({
 
   useEffect(() => {
     if (!highlightedComment) return;
+    startPulseHighlight();
     const timer = setTimeout(() => setHighlightedComment(null), 4000);
     return () => clearTimeout(timer);
-  }, [highlightedComment]);
+  }, [highlightedComment, startPulseHighlight]);
 
   useEffect(() => {
     function applyHash() {
@@ -616,6 +640,14 @@ export default function CommentsSection({
     if (!replyTargetId) return;
     replyTextareaRef.current?.focus();
   }, [replyTargetId]);
+
+  useEffect(() => {
+    return () => {
+      if (pulseTimeoutRef.current !== null) {
+        window.clearTimeout(pulseTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const INITIAL_VISIBLE_REPLIES = 2;
 
@@ -784,7 +816,10 @@ export default function CommentsSection({
               <article
                 className={clsx(
                   "rounded-2xl border border-white/10 bg-white/5 p-4",
-                  isHighlighted && "ring-2 ring-brand-400",
+                  isHighlighted &&
+                    (pulseHighlights
+                      ? "ring-4 ring-brand-400/80 animate-pulse"
+                      : "ring-2 ring-brand-400"),
                 )}
               >
                 <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-2 sm:items-start">

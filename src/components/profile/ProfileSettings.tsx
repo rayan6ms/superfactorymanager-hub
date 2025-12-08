@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button, Input, Card } from "@/components/ui";
@@ -44,10 +45,38 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const statusResetTimeoutRef = useRef<number | null>(null);
+  const resetBlinkTimeoutRef = useRef<number | null>(null);
   const router = useRouter();
+
+  const [highlightReset, setHighlightReset] = useState(false);
 
   const isLoading = status === "loading";
   const resetLoading = resetStatus === "loading";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const fromNotifications =
+      params.get("from") === "notifications" ||
+      params.get("source") === "notifications" ||
+      params.has("fromNotifications") ||
+      document.referrer.includes("/notifications");
+
+    if (fromNotifications) {
+      setHighlightReset(true);
+      if (resetBlinkTimeoutRef.current) {
+        window.clearTimeout(resetBlinkTimeoutRef.current);
+      }
+      resetBlinkTimeoutRef.current = window.setTimeout(() => setHighlightReset(false), 8000);
+    }
+
+    return () => {
+      if (resetBlinkTimeoutRef.current) {
+        window.clearTimeout(resetBlinkTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -166,6 +195,10 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   }
 
   async function handleResetPassword() {
+    if (resetBlinkTimeoutRef.current) {
+      window.clearTimeout(resetBlinkTimeoutRef.current);
+    }
+    setHighlightReset(false);
     setResetStatus("loading");
     try {
       const res = await fetch("/api/auth/password/request", {
@@ -333,7 +366,10 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             type="button"
             variant="outline"
             size="sm"
-            className="gap-2"
+            className={clsx(
+              "gap-2 transition",
+              highlightReset && "animate-pulse ring-2 ring-amber-300 ring-offset-2 ring-offset-[#0f0b14]",
+            )}
             onClick={handleResetPassword}
             disabled={resetLoading}
           >

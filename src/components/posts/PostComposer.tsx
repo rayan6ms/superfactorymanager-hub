@@ -23,6 +23,7 @@ import { normalizeTag, type NormalizedTag } from "@/lib/tags";
 import {
   Images,
   Loader2,
+  RefreshCw,
   Tag as TagIcon,
   UploadCloud,
   BookOpen,
@@ -196,25 +197,35 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     [mode, slug, postId]
   );
 
+  const initialFormState = useMemo(
+    () => ({
+      title: initialData?.title ?? "",
+      gameVersion: initialData?.gameVersion ?? "",
+      modVersion: initialData?.modVersion ?? "",
+      categoryKey: initialData?.categoryKey ?? "",
+      description: initialData?.description ?? "",
+      code: initialData?.code ?? "",
+      youtubeUrl: initialData?.youtubeUrl ?? "",
+      openForImprovement: initialData?.openForImprovement ?? false,
+    }),
+    [initialData?.categoryKey, initialData?.code, initialData?.description, initialData?.gameVersion, initialData?.modVersion, initialData?.openForImprovement, initialData?.title, initialData?.youtubeUrl],
+  );
+  const initialTags = useMemo(() => initialData?.tags ?? [], [initialData?.tags]);
+  const initialDependencies = useMemo(
+    () => initialData?.dependencies ?? [],
+    [initialData?.dependencies],
+  );
+
   const [matrix, setMatrix] = useState<Matrix>({ byGame: {}, gameVersions: [] });
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>({
-    title: initialData?.title ?? "",
-    gameVersion: initialData?.gameVersion ?? "",
-    modVersion: initialData?.modVersion ?? "",
-    categoryKey: initialData?.categoryKey ?? "",
-    description: initialData?.description ?? "",
-    code: initialData?.code ?? "",
-    youtubeUrl: initialData?.youtubeUrl ?? "",
-    openForImprovement: initialData?.openForImprovement ?? false,
-  });
-  const [tags, setTags] = useState<NormalizedTag[]>(initialData?.tags ?? []);
+  const [form, setForm] = useState<FormState>(initialFormState);
+  const [tags, setTags] = useState<NormalizedTag[]>(initialTags);
   const [tagInput, setTagInput] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
   const [depsInput, setDepsInput] = useState("");
-  const [deps, setDeps] = useState<{ url: string; name: string }[]>(initialData?.dependencies ?? []);
+  const [deps, setDeps] = useState<{ url: string; name: string }[]>(initialDependencies);
   const [depError, setDepError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<FormErrorKey, string | null>>({ ...INITIAL_ERRORS });
   const [touched, setTouched] = useState<Record<FormErrorKey, boolean>>({ ...INITIAL_TOUCHED });
@@ -240,9 +251,11 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [wrapLines, setWrapLines] = useState(true);
   const [imagePage, setImagePage] = useState(0)
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
+  const [draftCleared, setDraftCleared] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const [descriptionMaxHeight, setDescriptionMaxHeight] = useState<number | null>(null);
   const saveDraftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nsfwCheckedRef = useRef<Record<string, true>>({});
   const totalImageSlots = persistedImages.length + mediaFiles.length;
   const submitButtonLabel = isEditMode ? "Save changes" : "Publish post";
@@ -290,6 +303,14 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
     textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
   }, [form.description, descriptionMaxHeight]);
+
+  useEffect(() => {
+    return () => {
+      if (draftClearTimeoutRef.current) {
+        clearTimeout(draftClearTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const previewItems = useMemo(
     () => [
@@ -354,6 +375,31 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       })),
     [codeFeedback.warnings],
   );
+
+  const resetDraftToInitial = useCallback(() => {
+    setForm(initialFormState);
+    setTags(initialTags);
+    setDeps(initialDependencies);
+    setPersistedImages(existingImages);
+    setMediaFiles([]);
+    setPreviews([]);
+    setErrors({ ...INITIAL_ERRORS });
+    setTouched({ ...INITIAL_TOUCHED });
+    setSubmitError(null);
+    setDraftCleared(true);
+    setImagePage(0);
+
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(draftKey);
+      } catch { }
+    }
+
+    if (draftClearTimeoutRef.current) {
+      clearTimeout(draftClearTimeoutRef.current);
+    }
+    draftClearTimeoutRef.current = setTimeout(() => setDraftCleared(false), 4000);
+  }, [draftKey, existingImages, initialDependencies, initialFormState, initialTags]);
 
   const computeImagesError = useCallback((list: File[], existing: ExistingImage[] = persistedImages) => {
     const total = list.length + existing.length;
@@ -1952,6 +1998,35 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       </div>
 
       <div className="space-y-4">
+        {isEditMode && (
+          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-white">Reload published content</p>
+                <p className="text-white/60">
+                  Clear the saved draft so reloading this page restores the current published version of the post.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={resetDraftToInitial}
+                disabled={loading}
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden />
+                Discard saved draft
+              </Button>
+            </div>
+            {draftCleared && (
+              <p className="text-xs text-emerald-300">
+                Saved changes cleared. Reload to see the latest published content.
+              </p>
+            )}
+          </div>
+        )}
+
         {blockingMessages.length > 0 && (
           <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm wrap-anywhere text-red-200">
             <p className="font-semibold text-red-100">Complete the following before publishing:</p>
