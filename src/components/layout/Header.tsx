@@ -49,12 +49,8 @@ export default function Header({ session, notifications }: HeaderProps) {
                 hover:bg-(--surface-2)
               "
             >
-              <span className="hidden sm:inline bg-linear-to-b from-red-400/80 to-brand-600 bg-clip-text text-transparent font-extrabold">
-                sfmhub
-              </span>
-
-              <span className="sm:hidden bg-linear-to-b from-red-400/80 to-brand-600 bg-clip-text text-transparent font-extrabold">
-                SFM
+              <span className="bg-linear-to-b from-red-400/80 to-brand-600 bg-clip-text text-transparent font-extrabold">
+                SFMHub
               </span>
             </Link>
 

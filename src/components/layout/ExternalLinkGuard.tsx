@@ -109,7 +109,7 @@ export default function ExternalLinkGuard() {
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-white">You are leaving sfmhub</h2>
+          <h2 className="text-xl font-semibold text-white">You are leaving SFMHub</h2>
           <p className="text-sm text-white/70">
             We cannot guarantee that {pending.hostname} is safe. Continue to this site or stay on the current page.
           </p>
