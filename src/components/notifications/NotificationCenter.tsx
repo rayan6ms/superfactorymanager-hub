@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { CheckCheck, Loader2, RefreshCw } from "lucide-react";
 import clsx from "clsx";
 import Pagination from "@/components/ui/Pagination";
@@ -11,7 +12,7 @@ import {
   NOTIFICATION_SYNC_EVENT,
   formatNotificationTimestamp,
   type SerializedNotification,
-} from "@/lib/notifications";
+} from "@/lib/notifications-shared";
 import {
   dispatchNotificationSync,
   type NotificationSyncDetail,
@@ -354,8 +355,15 @@ export default function NotificationCenter({
                 >
                   <div className="flex flex-wrap items-start gap-3">
                     {item.imageUrl ? (
-                      <div className="relative h-14 w-14 flex-none overflow-hidden rounded-lg border border-white/10">
-                        <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <div className="relative h-14 w-14 flex-none overflow-hidden rounded-lg border border-white/10 bg-black/30">
+                        <Image
+                          src={item.imageUrl}
+                          alt=""
+                          fill
+                          sizes="56px"
+                          className="object-cover"
+                          unoptimized
+                        />
                       </div>
                     ) : (
                       <div className="flex h-14 w-14 flex-none items-center justify-center rounded-lg border border-white/10 bg-black/40 text-xs uppercase tracking-wide text-white/40">

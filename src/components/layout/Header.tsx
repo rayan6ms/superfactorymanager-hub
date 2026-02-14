@@ -3,6 +3,7 @@ import Button from "@/components/ui/Button";
 import Search from "@/components/ui/Search";
 import {
   BookOpen,
+  Code2,
   History,
   LogIn,
   LogOut,
@@ -13,7 +14,7 @@ import {
 } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import type { Session } from "next-auth";
-import type { SerializedNotification } from "@/lib/notifications";
+import type { SerializedNotification } from "@/lib/notifications-shared";
 import UserMenuAutoCloser from "@/components/layout/UserMenuAutoCloser";
 import HeaderNotifications from "@/components/layout/HeaderNotifications";
 import NotificationBadge from "@/components/layout/NotificationBadge";
@@ -49,7 +50,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                 hover:bg-(--surface-2)
               "
             >
-              <span className="bg-linear-to-b from-red-400/80 to-brand-600 bg-clip-text text-transparent font-extrabold">
+              <span className="bg-linear-to-b from-red-400 to-brand-500 bg-clip-text text-transparent font-extrabold">
                 SFMHub
               </span>
             </Link>
@@ -170,6 +171,16 @@ export default function Header({ session, notifications }: HeaderProps) {
                         </Link>
                       )}
                     </div>
+
+                    <Link href="/code-editor" className="inline-flex">
+                      <Button
+                        size="md"
+                        variant="outline"
+                        className="w-full justify-center"
+                      >
+                        <Code2 /> Code editor
+                      </Button>
+                    </Link>
 
                     {user ? (
                       <form

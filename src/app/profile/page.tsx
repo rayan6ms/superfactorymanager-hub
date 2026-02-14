@@ -41,6 +41,10 @@ export default async function ProfilePage({ searchParams }: Props) {
       email: true,
       image: true,
       bio: true,
+      emailNotificationsEnabled: true,
+      emailNotifyPost: true,
+      emailNotifySystem: true,
+      emailNotifyReport: true,
     },
   });
 
@@ -80,7 +84,18 @@ export default async function ProfilePage({ searchParams }: Props) {
         <p className="text-sm text-white/60">Manage your account details and see your recent posts.</p>
       </div>
 
-      <ProfileSettings initialUser={{ name: user.name, email: user.email, image: user.image, bio: user.bio }} />
+      <ProfileSettings
+        initialUser={{
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          bio: user.bio,
+          emailNotificationsEnabled: user.emailNotificationsEnabled,
+          emailNotifyPost: user.emailNotifyPost,
+          emailNotifySystem: user.emailNotifySystem,
+          emailNotifyReport: user.emailNotifyReport,
+        }}
+      />
 
       <Card className="space-y-4 p-6">
         <div className="flex items-center justify-between gap-3">

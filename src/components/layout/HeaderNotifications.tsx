@@ -8,7 +8,7 @@ import {
   NOTIFICATION_PREVIEW_LIMIT,
   NOTIFICATION_SYNC_EVENT,
   type SerializedNotification,
-} from "@/lib/notifications";
+} from "@/lib/notifications-shared";
 import {
   dispatchNotificationSync,
   type NotificationSyncDetail,

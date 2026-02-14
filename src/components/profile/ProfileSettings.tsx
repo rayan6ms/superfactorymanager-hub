@@ -22,6 +22,10 @@ type ProfileSettingsProps = {
     email: string;
     image: string | null;
     bio: string | null;
+    emailNotificationsEnabled: boolean;
+    emailNotifyPost: boolean;
+    emailNotifySystem: boolean;
+    emailNotifyReport: boolean;
   };
 };
 
@@ -40,6 +44,12 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   const [image, setImage] = useState(initialUser.image ?? "");
   const [preview, setPreview] = useState(initialUser.image ?? "");
   const [bio, setBio] = useState(initialUser.bio ?? "");
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(
+    initialUser.emailNotificationsEnabled,
+  );
+  const [emailNotifyPost, setEmailNotifyPost] = useState(initialUser.emailNotifyPost);
+  const [emailNotifySystem, setEmailNotifySystem] = useState(initialUser.emailNotifySystem);
+  const [emailNotifyReport, setEmailNotifyReport] = useState(initialUser.emailNotifyReport);
   const [status, setStatus] = useState<Status>("idle");
   const [resetStatus, setResetStatus] = useState<ResetStatus>("idle");
   const [errors, setErrors] = useState<FormErrors>({});
@@ -127,6 +137,10 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     if (trimmedBio) {
       payload.bio = trimmedBio;
     }
+    payload.emailNotificationsEnabled = emailNotificationsEnabled;
+    payload.emailNotifyPost = emailNotifyPost;
+    payload.emailNotifySystem = emailNotifySystem;
+    payload.emailNotifyReport = emailNotifyReport;
 
     if (regenerateAvatar) {
       payload.regenerateAvatar = true;
@@ -174,10 +188,23 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
         return;
       }
 
-      const data = (await res.json()) as { user: { name: string | null; image: string | null } };
+      const data = (await res.json()) as {
+        user: {
+          name: string | null;
+          image: string | null;
+          emailNotificationsEnabled: boolean;
+          emailNotifyPost: boolean;
+          emailNotifySystem: boolean;
+          emailNotifyReport: boolean;
+        };
+      };
       setName(data.user.name ?? "");
       setImage(data.user.image ?? "");
       setPreview(data.user.image ?? "");
+      setEmailNotificationsEnabled(data.user.emailNotificationsEnabled);
+      setEmailNotifyPost(data.user.emailNotifyPost);
+      setEmailNotifySystem(data.user.emailNotifySystem);
+      setEmailNotifyReport(data.user.emailNotifyReport);
       setStatus("success");
       router.refresh();
 
@@ -290,6 +317,65 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     </div>
   );
 
+  const emailNotificationControls = (
+    <div className="space-y-4 rounded-xl border border-white/15 bg-white/5 p-4">
+      <div>
+        <h3 className="text-sm font-semibold text-white">Email notifications</h3>
+        <p className="mt-1 text-xs text-white/60">
+          Choose which unread notifications should also be delivered to your verified email.
+        </p>
+      </div>
+
+      <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+        <span className="text-sm font-medium text-white">Receive notifications via email?</span>
+        <input
+          type="checkbox"
+          checked={emailNotificationsEnabled}
+          onChange={event => setEmailNotificationsEnabled(event.target.checked)}
+          className="h-4 w-4 rounded border-white/30 bg-transparent text-brand-500 focus:ring-brand-400/60"
+        />
+      </label>
+
+      <div
+        className={clsx(
+          "space-y-2 rounded-lg border border-white/10 bg-black/20 p-3",
+          !emailNotificationsEnabled && "opacity-60",
+        )}
+      >
+        <label className="flex items-center justify-between gap-3">
+          <span className="text-sm text-white/85">Post activity</span>
+          <input
+            type="checkbox"
+            checked={emailNotifyPost}
+            onChange={event => setEmailNotifyPost(event.target.checked)}
+            disabled={!emailNotificationsEnabled}
+            className="h-4 w-4 rounded border-white/30 bg-transparent text-brand-500 focus:ring-brand-400/60 disabled:cursor-not-allowed"
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3">
+          <span className="text-sm text-white/85">System updates</span>
+          <input
+            type="checkbox"
+            checked={emailNotifySystem}
+            onChange={event => setEmailNotifySystem(event.target.checked)}
+            disabled={!emailNotificationsEnabled}
+            className="h-4 w-4 rounded border-white/30 bg-transparent text-brand-500 focus:ring-brand-400/60 disabled:cursor-not-allowed"
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3">
+          <span className="text-sm text-white/85">Report updates</span>
+          <input
+            type="checkbox"
+            checked={emailNotifyReport}
+            onChange={event => setEmailNotifyReport(event.target.checked)}
+            disabled={!emailNotificationsEnabled}
+            className="h-4 w-4 rounded border-white/30 bg-transparent text-brand-500 focus:ring-brand-400/60 disabled:cursor-not-allowed"
+          />
+        </label>
+      </div>
+    </div>
+  );
+
   useEffect(() => {
     return () => {
       if (statusResetTimeoutRef.current !== null) {
@@ -356,6 +442,8 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
         {bioControls}
         {avatarImageControls}
       </div>
+
+      {emailNotificationControls}
 
       {errors.form && <p className="text-sm text-error">{errors.form}</p>}
       {status === "success" && <p className="text-sm text-emerald-300">Profile updated successfully.</p>}

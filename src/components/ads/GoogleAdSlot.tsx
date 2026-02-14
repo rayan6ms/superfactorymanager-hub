@@ -46,8 +46,13 @@ export default function GoogleAdSlot({ slot, className, layoutKey }: Props) {
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
         pushed = true;
-      } catch (err: any) {
-        const msg = typeof err?.message === "string" ? err.message : "";
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : typeof err === "object" && err !== null && "message" in err && typeof (err as { message: unknown }).message === "string"
+              ? (err as { message: string }).message
+              : "";
 
         if (msg.includes("No slot size for availableWidth=0")) {
           return;

@@ -17,6 +17,10 @@ model User {
   bio                     String?
   passwordHash            String?
   emailVerified           DateTime?
+  emailNotificationsEnabled Boolean                @default(true)
+  emailNotifyPost         Boolean                  @default(true)
+  emailNotifySystem       Boolean                  @default(true)
+  emailNotifyReport       Boolean                  @default(false)
   createdAt               DateTime                 @default(now())
   canCreatePosts          Boolean                  @default(true)
   canCreateComments       Boolean                  @default(true)
@@ -311,9 +315,11 @@ model Notification {
   metadata  Json?
   createdAt DateTime           @default(now())
   readAt    DateTime?
+  emailedAt DateTime?
 
   @@index([userId, createdAt])
   @@index([userId, readAt])
+  @@index([userId, emailedAt])
 }
 
 model Report {

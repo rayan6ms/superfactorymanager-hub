@@ -1,3 +1,16 @@
 {
-  "prisma.pinToPrisma6": true
+  "prisma.pinToPrisma6": true,
+  "cSpell.words": [
+    "curseforge",
+    "downvotes",
+    "modrinth",
+    "Modrinth",
+    "nsfw",
+    "redstone",
+    "sfml",
+    "Sfml",
+    "SFML",
+    "upvotes",
+    "wilson"
+  ]
 }

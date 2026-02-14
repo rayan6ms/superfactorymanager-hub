@@ -35,7 +35,7 @@ export default function SearchBar({
       </div>
       <button
         type="submit"
-        className="inline-flex h-10 flex-none items-center justify-center gap-2 rounded-r-lg -ml-px border border-white/20 bg-brand-700 px-3 text-sm font-semibold text-white leading-none transition hover:border-white/30 hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&_svg]:block [&_svg]:h-3.5 [&_svg]:w-3.5"
+        className="inline-flex h-10 flex-none items-center justify-center gap-2 rounded-r-lg -ml-px border border-white/20 bg-brand-600 px-3 text-sm font-semibold text-white leading-none transition hover:border-white/30 hover:bg-brand-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&_svg]:block [&_svg]:h-3.5 [&_svg]:w-3.5"
       >
         <Search />
         <span className="hidden xl:inline">Search</span>

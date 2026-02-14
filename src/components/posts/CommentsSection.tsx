@@ -365,7 +365,7 @@ export default function CommentsSection({
         setVoting(prev => ({ ...prev, [comment.id]: false }));
       }
     },
-    [canPost, loginRedirect, sortComments, sortOrder, updateCommentTree, voting],
+    [canPost, loginRedirect, sortComments, sortOrder, voting],
   );
 
   const handleSubmit = useCallback(
@@ -465,7 +465,6 @@ export default function CommentsSection({
       isReplyValid,
       postSlug,
       replyText,
-      replyDisplayLimit,
     ],
   );
 

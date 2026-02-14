@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { NotificationOrigin } from "@prisma/client";
 
 let transporterPromise: Promise<nodemailer.Transporter> | null = null;
 
@@ -41,6 +42,41 @@ function getAppBaseUrl() {
   }
 
   return "http://localhost:3000";
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function resolveNotificationLink(link: string) {
+  if (/^https?:\/\//i.test(link)) {
+    return link;
+  }
+  const baseUrl = getAppBaseUrl();
+  const normalizedLink = link.startsWith("/") ? link : `/${link}`;
+  return `${baseUrl}${normalizedLink}`;
+}
+
+function notificationSubject(origin: NotificationOrigin, title: string) {
+  const trimmedTitle = title.trim();
+  if (trimmedTitle) {
+    return `${trimmedTitle} · SFMHub`;
+  }
+
+  switch (origin) {
+    case NotificationOrigin.POST:
+      return "New post notification · SFMHub";
+    case NotificationOrigin.REPORT:
+      return "Report update · SFMHub";
+    case NotificationOrigin.SYSTEM:
+    default:
+      return "System notification · SFMHub";
+  }
 }
 
 export async function sendPasswordResetEmail({
@@ -119,5 +155,66 @@ export async function sendEmailVerificationEmail({
       `<p style=\"margin-top: 24px;\">This link will expire in one hour.</p>` +
       `<p style=\"margin-top: 24px;\">Thanks,<br/>SFMHub Team</p>` +
       `</body></html>`,
+  });
+}
+
+export async function sendNotificationEmail({
+  to,
+  name,
+  notification,
+}: {
+  to: string;
+  name?: string | null;
+  notification: {
+    title: string;
+    message: string;
+    origin: NotificationOrigin;
+    link?: string | null;
+  };
+}) {
+  const from = process.env.EMAIL_FROM;
+  if (!from) {
+    throw new Error("EMAIL_FROM_NOT_CONFIGURED");
+  }
+
+  const transporter = await getTransporter();
+  const displayName = name?.trim() ? name.trim() : "there";
+  const subject = notificationSubject(notification.origin, notification.title);
+  const safeTitle = escapeHtml(notification.title);
+  const safeMessage = escapeHtml(notification.message);
+  const ctaLink = notification.link ? resolveNotificationLink(notification.link) : null;
+
+  const textParts = [
+    `Hi ${displayName},`,
+    "",
+    notification.title,
+    notification.message,
+    "",
+    ctaLink ? `Open notification: ${ctaLink}` : null,
+    "You can change email notification preferences in your profile.",
+    "",
+    "Thanks,",
+    "SFMHub Team",
+  ].filter((part): part is string => Boolean(part));
+
+  const htmlParts = [
+    "<!DOCTYPE html><html><body style=\"font-family: sans-serif; color: #0f172a;\">",
+    `<p>Hi ${escapeHtml(displayName)},</p>`,
+    `<h2 style=\"margin: 0 0 8px;\">${safeTitle}</h2>`,
+    `<p style=\"margin: 0 0 16px;\">${safeMessage}</p>`,
+    ctaLink
+      ? `<p style=\"margin: 24px 0;\"><a href=\"${escapeHtml(ctaLink)}\" style=\"display: inline-block; background: #6366f1; color: #fff; padding: 12px 20px; border-radius: 9999px; text-decoration: none;\">View notification</a></p>`
+      : "",
+    "<p>You can change email notification preferences in your profile.</p>",
+    "<p style=\"margin-top: 24px;\">Thanks,<br/>SFMHub Team</p>",
+    "</body></html>",
+  ];
+
+  await transporter.sendMail({
+    to,
+    from,
+    subject,
+    text: textParts.join("\n"),
+    html: htmlParts.join(""),
   });
 }

@@ -2,9 +2,10 @@
 
 import { useCallback, useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import clsx from "clsx";
 import { CheckCheck, Loader2 } from "lucide-react";
-import { formatNotificationTimestamp, type SerializedNotification } from "@/lib/notifications";
+import { formatNotificationTimestamp, type SerializedNotification } from "@/lib/notifications-shared";
 
 const ORIGIN_LABEL: Record<SerializedNotification["origin"], string> = {
   SYSTEM: "System",
@@ -151,8 +152,14 @@ export default function NotificationPreviewList({
             <div className={clsx("flex gap-3", dense ? "items-start" : "items-center")}>
               {item.imageUrl ? (
                 <div className="relative h-12 w-12 flex-none overflow-hidden rounded-lg border border-white/10">
-                  <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
-                  <span className="sr-only">Notification thumbnail</span>
+                  <Image
+                    src={item.imageUrl}
+                    alt="Notification thumbnail"
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                    unoptimized
+                  />
                 </div>
               ) : (
                 <div className="flex h-14 w-14 flex-none items-center justify-center rounded-lg border border-white/10 bg-black/40 text-xs uppercase tracking-wide text-white/40">

@@ -1,6 +1,10 @@
 "use client";
 
-import { NOTIFICATION_SYNC_EVENT, NOTIFICATION_UNREAD_EVENT, type SerializedNotification } from "./notifications";
+import {
+  NOTIFICATION_SYNC_EVENT,
+  NOTIFICATION_UNREAD_EVENT,
+  type SerializedNotification,
+} from "./notifications-shared";
 
 export type NotificationSyncDetail = {
   unreadCount?: number;

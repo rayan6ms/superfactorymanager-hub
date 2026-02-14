@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import ViewBeacon from "@/components/ViewBeacon";
@@ -189,7 +190,14 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
       <Card className="overflow-hidden p-0">
         {heroSrc && (
           <div className="relative h-64 w-full rounded-t-lg rounded-b-xs overflow-hidden border-b border-white/10 bg-black/40">
-            <img src={heroSrc} alt={post.title} className="h-full w-full object-cover" />
+            <Image
+              src={heroSrc}
+              alt={post.title}
+              fill
+              sizes="100vw"
+              className="object-cover"
+            />
+
           </div>
         )}
         <div className="space-y-6 px-6 py-6">

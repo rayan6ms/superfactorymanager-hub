@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { NOTIFICATION_UNREAD_EVENT } from "@/lib/notifications";
+import { NOTIFICATION_UNREAD_EVENT } from "@/lib/notifications-shared";
 
 type NotificationBadgeProps = {
   initialCount: number;

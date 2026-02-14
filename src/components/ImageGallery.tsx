@@ -4,7 +4,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type WheelEvent,
 } from "react";
@@ -46,8 +45,6 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
 
   const [baseSize, setBaseSize] = useState<{ width: number; height: number } | null>(null);
   const [imageAreaHeight, setImageAreaHeight] = useState<number | null>(null);
-
-  const imgRef = useRef<HTMLImageElement | null>(null);
 
   const total = imgs?.length ?? 0;
   const hasImages = total > 0;
@@ -158,10 +155,9 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
     setBrightness(1);
   }, []);
 
-  const handleImageLoad = useCallback(() => {
-    if (!imgRef.current || typeof window === "undefined") return;
+  const handleImageLoad = useCallback((img: HTMLImageElement) => {
+    if (!img || typeof window === "undefined") return;
 
-    const img = imgRef.current;
     const naturalWidth = img.naturalWidth || img.width;
     const naturalHeight = img.naturalHeight || img.height;
 
@@ -172,28 +168,22 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
     const maxAreaHeight = viewportHeight * 0.6;
 
     const isDesktop = viewportWidth >= 1024;
-
     const maxBaseScale = isDesktop ? 2 : 1;
 
-    const rawScaleToFit = Math.min(
-      maxAreaWidth / naturalWidth,
-      maxAreaHeight / naturalHeight,
-    );
-
+    const rawScaleToFit = Math.min(maxAreaWidth / naturalWidth, maxAreaHeight / naturalHeight);
     const scaleToFit = Math.min(rawScaleToFit, maxBaseScale);
 
     const displayWidth = naturalWidth * scaleToFit;
     const displayHeight = naturalHeight * scaleToFit;
 
     const minDesktopHeight = viewportHeight * 0.5;
-    const areaHeight = isDesktop
-      ? Math.max(displayHeight, minDesktopHeight)
-      : displayHeight;
+    const areaHeight = isDesktop ? Math.max(displayHeight, minDesktopHeight) : displayHeight;
 
     setBaseSize({ width: displayWidth, height: displayHeight });
     setImageAreaHeight(areaHeight);
     setZoom(1);
   }, []);
+
 
   if (!hasImages) return null;
 
@@ -326,15 +316,14 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                 onWheel={handleWheel}
               >
                 {currentImageSrc && (
-                  <img
-                    ref={imgRef}
+                  <Image
                     src={currentImageSrc}
                     alt=""
-                    onLoad={handleImageLoad}
-                    className={clsx(
-                      "block object-contain mx-auto",
-                      !baseSize && "max-h-[60vh] max-w-full",
-                    )}
+                    width={2400}
+                    height={1600}
+                    priority
+                    onLoadingComplete={(img) => handleImageLoad(img)}
+                    className={clsx("block object-contain mx-auto", !baseSize && "max-h-[60vh] max-w-full")}
                     style={
                       baseSize
                         ? {
@@ -402,11 +391,15 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
                           : "border-white/15 opacity-70 hover:opacity-100",
                       )}
                     >
-                      <img
-                        src={preview}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
+                      <span className="relative h-full w-full">
+                        <Image
+                          src={preview}
+                          alt=""
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                        />
+                      </span>
                       <span className="sr-only">
                         Thumbnail {index + 1}
                       </span>

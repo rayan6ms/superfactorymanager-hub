@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { Eye, Search as SearchIcon, Star, Check, X } from "lucide-react";
@@ -120,12 +121,15 @@ export default function PostCard({ post }: Props) {
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="w-full sm:w-40 flex flex-col justify-between gap-3">
               {imageSrc ? (
-                <img
-                  src={imageSrc}
-                  alt=""
-                  loading="lazy"
-                  className="h-[120px] w-full rounded-xl border border-white/10 object-cover"
-                />
+                <div className="relative h-[120px] w-full overflow-hidden rounded-xl border border-white/10">
+                  <Image
+                    src={imageSrc}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 100vw, 160px"
+                    className="object-cover"
+                  />
+                </div>
               ) : (
                 <div className="grid h-[120px] w-full place-items-center rounded-xl border border-white/10 bg-white/5 text-white/40">
                   <SearchIcon className="h-5 w-5" />

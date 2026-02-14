@@ -206,7 +206,7 @@ export function CodeBox({
 
   const [editorHeight, setEditorHeight] = useState(MIN_HEIGHT);
 
-  const initialValueRef = useRef(value);
+  const [initialValue] = useState(() => value);
 
   const handleChange = useCallback(
     (next: string | undefined) => {
@@ -312,7 +312,7 @@ export function CodeBox({
           defaultLanguage={SFML_LANGUAGE_ID}
           language={SFML_LANGUAGE_ID}
           theme={SFML_THEME_ID}
-          defaultValue={initialValueRef.current}
+          defaultValue={initialValue}
           onChange={handleChange}
           onMount={handleMount}
           options={{

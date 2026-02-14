@@ -49,6 +49,8 @@ const DRAFT_STORAGE_PREFIX = "sfm-post-composer";
 const DRAFT_VERSION = 1;
 const DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 
+const EMPTY_EXISTING_IMAGES: ExistingImage[] = [];
+
 type MarkdownFormat = "bold" | "italic" | "strike" | "code" | "ul" | "ol";
 
 type Matrix = { byGame: Record<string, string[]>; gameVersions: string[] };
@@ -189,7 +191,10 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const r = useRouter();
   const idPrefix = useId();
   const isEditMode = mode === "edit";
-  const existingImages = initialData?.existingImages ?? [];
+  const existingImages = useMemo(
+    () => initialData?.existingImages ?? EMPTY_EXISTING_IMAGES,
+    [initialData?.existingImages],
+  );
   const postId = initialData?.id;
 
   const draftKey = useMemo(

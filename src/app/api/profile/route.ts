@@ -26,6 +26,10 @@ const schema = z.object({
     .max(300, "BIO_TOO_LONG")
     .optional()
     .or(z.literal("").transform(() => undefined)),
+  emailNotificationsEnabled: z.boolean().optional(),
+  emailNotifyPost: z.boolean().optional(),
+  emailNotifySystem: z.boolean().optional(),
+  emailNotifyReport: z.boolean().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -47,7 +51,16 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: issue?.message ?? "INVALID_PAYLOAD" }, { status: 400 });
   }
 
-  const { name, image, regenerateAvatar, bio } = parsed.data;
+  const {
+    name,
+    image,
+    regenerateAvatar,
+    bio,
+    emailNotificationsEnabled,
+    emailNotifyPost,
+    emailNotifySystem,
+    emailNotifyReport,
+  } = parsed.data;
   const usernameValidation = validateUsernameInput(name);
   if (!usernameValidation.ok) {
     return NextResponse.json({ error: usernameValidation.code }, { status: 400 });
@@ -58,10 +71,31 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "NAME_TAKEN" }, { status: 409 });
   }
 
-  const updateData: { name: string; image?: string | null; bio?: string | null } = { name: normalizedName };
+  const updateData: {
+    name: string;
+    image?: string | null;
+    bio?: string | null;
+    emailNotificationsEnabled?: boolean;
+    emailNotifyPost?: boolean;
+    emailNotifySystem?: boolean;
+    emailNotifyReport?: boolean;
+  } = { name: normalizedName };
 
   if (typeof bio !== "undefined") {
     updateData.bio = bio || null;
+  }
+
+  if (typeof emailNotificationsEnabled === "boolean") {
+    updateData.emailNotificationsEnabled = emailNotificationsEnabled;
+  }
+  if (typeof emailNotifyPost === "boolean") {
+    updateData.emailNotifyPost = emailNotifyPost;
+  }
+  if (typeof emailNotifySystem === "boolean") {
+    updateData.emailNotifySystem = emailNotifySystem;
+  }
+  if (typeof emailNotifyReport === "boolean") {
+    updateData.emailNotifyReport = emailNotifyReport;
   }
 
   if (regenerateAvatar) {
@@ -86,7 +120,17 @@ export async function PATCH(request: Request) {
     const updatedUser = await tx.user.update({
       where: { id: user.id },
       data: updateData,
-      select: { id: true, name: true, image: true, email: true, bio: true },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        email: true,
+        bio: true,
+        emailNotificationsEnabled: true,
+        emailNotifyPost: true,
+        emailNotifySystem: true,
+        emailNotifyReport: true,
+      },
     });
 
     await tx.post.updateMany({

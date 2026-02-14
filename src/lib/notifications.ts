@@ -1,21 +1,11 @@
 import { db } from "./db";
 import { NotificationOrigin, type Notification, Prisma } from "@prisma/client";
-
-export const NOTIFICATION_PREVIEW_LIMIT = 5;
-export const NOTIFICATION_PAGE_SIZE = 10;
-export const NOTIFICATION_UNREAD_EVENT = "sfm:notifications:unread-count";
-export const NOTIFICATION_SYNC_EVENT = "sfm:notifications:sync";
-
-export type SerializedNotification = {
-  id: string;
-  title: string;
-  message: string;
-  origin: NotificationOrigin;
-  link: string | null;
-  imageUrl: string | null;
-  createdAt: string;
-  readAt: string | null;
-};
+import {
+  NOTIFICATION_PAGE_SIZE,
+  NOTIFICATION_PREVIEW_LIMIT,
+  type SerializedNotification,
+} from "./notifications-shared";
+export * from "./notifications-shared";
 
 export type NotificationQueryResult = {
   notifications: SerializedNotification[];
@@ -120,7 +110,7 @@ export async function createNotification(options: {
   const prismaMetadata: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue | undefined =
     metadata === null ? Prisma.JsonNull : metadata;
 
-  return db.notification.create({
+  const notification = await db.notification.create({
     data: {
       userId,
       title,
@@ -132,18 +122,98 @@ export async function createNotification(options: {
       readAt: markUnread ? null : new Date(),
     },
   });
+
+  await maybeSendNotificationEmail(notification).catch(error => {
+    console.warn("Failed to process notification email delivery", error);
+  });
+
+  return notification;
 }
 
-export function formatNotificationTimestamp(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+type EmailMetadataFlags = {
+  disabled: boolean;
+  force: boolean;
+};
 
-  return new Intl.DateTimeFormat("en", {
-    timeZone: "UTC",
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+function readEmailMetadataFlags(metadata: Prisma.JsonValue | null): EmailMetadataFlags {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return { disabled: false, force: false };
+  }
+
+  const emailNode = (metadata as Record<string, unknown>).email;
+  if (!emailNode || typeof emailNode !== "object" || Array.isArray(emailNode)) {
+    return { disabled: false, force: false };
+  }
+
+  const emailConfig = emailNode as Record<string, unknown>;
+  return {
+    disabled: emailConfig.disabled === true,
+    force: emailConfig.force === true,
+  };
+}
+
+function isOriginEmailEnabled(
+  origin: NotificationOrigin,
+  prefs: {
+    emailNotifyPost: boolean;
+    emailNotifySystem: boolean;
+    emailNotifyReport: boolean;
+  },
+) {
+  switch (origin) {
+    case NotificationOrigin.POST:
+      return prefs.emailNotifyPost;
+    case NotificationOrigin.REPORT:
+      return prefs.emailNotifyReport;
+    case NotificationOrigin.SYSTEM:
+    default:
+      return prefs.emailNotifySystem;
+  }
+}
+
+async function maybeSendNotificationEmail(notification: Notification) {
+  if (notification.readAt) return;
+  if (notification.emailedAt) return;
+
+  const metadataFlags = readEmailMetadataFlags(notification.metadata as Prisma.JsonValue | null);
+  if (metadataFlags.disabled) return;
+
+  const user = await db.user.findUnique({
+    where: { id: notification.userId },
+    select: {
+      email: true,
+      name: true,
+      emailVerified: true,
+      emailNotificationsEnabled: true,
+      emailNotifyPost: true,
+      emailNotifySystem: true,
+      emailNotifyReport: true,
+    },
+  });
+
+  if (!user?.emailVerified) return;
+  if (!user.emailNotificationsEnabled) return;
+  if (!metadataFlags.force && !isOriginEmailEnabled(notification.origin, user)) return;
+
+  try {
+    const { sendNotificationEmail } = await import("./email");
+    await sendNotificationEmail({
+      to: user.email,
+      name: user.name,
+      notification: {
+        title: notification.title,
+        message: notification.message,
+        origin: notification.origin,
+        link: notification.link,
+      },
+    });
+  } catch (error) {
+    console.warn("Failed to send notification email", error);
+    return;
+  }
+
+  await db.notification.updateMany({
+    where: { id: notification.id, emailedAt: null },
+    data: { emailedAt: new Date() },
+  });
 }

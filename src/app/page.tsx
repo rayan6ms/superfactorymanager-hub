@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import PostCard from "@/components/posts/PostCard";
+import HomeQuickLinks from "@/components/home/HomeQuickLinks";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
@@ -62,6 +63,8 @@ export default async function Home({ searchParams }: Props) {
 
   return (
     <div className="space-y-12">
+      <HomeQuickLinks />
+
       <section className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
