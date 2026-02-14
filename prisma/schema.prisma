@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("PRISMA_DATABASE_URL")
+  directUrl = env("POSTGRES_URL")
 }
 
 generator client {
@@ -10,38 +11,38 @@ generator client {
 }
 
 model User {
-  id                      String                   @id @default(cuid())
-  email                   String                   @unique
-  name                    String?                  @unique
-  image                   String?
-  bio                     String?
-  passwordHash            String?
-  emailVerified           DateTime?
-  emailNotificationsEnabled Boolean                @default(true)
-  emailNotifyPost         Boolean                  @default(true)
-  emailNotifySystem       Boolean                  @default(true)
-  emailNotifyReport       Boolean                  @default(false)
-  createdAt               DateTime                 @default(now())
-  canCreatePosts          Boolean                  @default(true)
-  canCreateComments       Boolean                  @default(true)
-  canVotePosts            Boolean                  @default(true)
-  canVoteComments         Boolean                  @default(true)
-  interactionBanUntil     DateTime?
-  posts                   Post[]
-  ratings                 Rating[]
-  postCommits             PostCommit[]
-  postContributions       PostContributor[]
-  comments                Comment[]
-  commentVotes            CommentVote[]
-  reports                 Report[]
-  passwordResetTokens     PasswordResetToken[]
-  notifications           Notification[]
-  reportActions           ReportAction[]           @relation("ReportActionActor")
-  accounts                Account[]
-  sessions                Session[]
-  emailVerificationTokens EmailVerificationToken[]
-  suggestions             Suggestion[]
-  moderatedPosts          Post[]                   @relation("ModeratedPosts")
+  id                        String                   @id @default(cuid())
+  email                     String                   @unique
+  name                      String?                  @unique
+  image                     String?
+  bio                       String?
+  passwordHash              String?
+  emailVerified             DateTime?
+  emailNotificationsEnabled Boolean                  @default(true)
+  emailNotifyPost           Boolean                  @default(true)
+  emailNotifySystem         Boolean                  @default(true)
+  emailNotifyReport         Boolean                  @default(false)
+  createdAt                 DateTime                 @default(now())
+  canCreatePosts            Boolean                  @default(true)
+  canCreateComments         Boolean                  @default(true)
+  canVotePosts              Boolean                  @default(true)
+  canVoteComments           Boolean                  @default(true)
+  interactionBanUntil       DateTime?
+  posts                     Post[]
+  ratings                   Rating[]
+  postCommits               PostCommit[]
+  postContributions         PostContributor[]
+  comments                  Comment[]
+  commentVotes              CommentVote[]
+  reports                   Report[]
+  passwordResetTokens       PasswordResetToken[]
+  notifications             Notification[]
+  reportActions             ReportAction[]           @relation("ReportActionActor")
+  accounts                  Account[]
+  sessions                  Session[]
+  emailVerificationTokens   EmailVerificationToken[]
+  suggestions               Suggestion[]
+  moderatedPosts            Post[]                   @relation("ModeratedPosts")
 }
 
 model Category {
@@ -158,47 +159,47 @@ model ChangelogEntry {
 }
 
 model Post {
-  id                    String            @id @default(cuid())
-  slug                  String            @unique
+  id                    String                   @id @default(cuid())
+  slug                  String                   @unique
   title                 String
   modVersion            String
   gameVersion           String
   categoryId            String
-  category              Category          @relation(fields: [categoryId], references: [id])
+  category              Category                 @relation(fields: [categoryId], references: [id])
   authorId              String
-  author                User              @relation(fields: [authorId], references: [id])
+  author                User                     @relation(fields: [authorId], references: [id])
   authorName            String
-  rating                Float             @default(0)
-  ratingCount           Int               @default(0)
-  workedCount           Int               @default(0)
-  brokenCount           Int               @default(0)
-  isDeleted             Boolean           @default(false)
+  rating                Float                    @default(0)
+  ratingCount           Int                      @default(0)
+  workedCount           Int                      @default(0)
+  brokenCount           Int                      @default(0)
+  isDeleted             Boolean                  @default(false)
   deletionFlaggedAt     DateTime?
-  deletionFlaggedByAuto Boolean           @default(false)
+  deletionFlaggedByAuto Boolean                  @default(false)
   deletionPurgeAt       DateTime?
   moderationEditedAt    DateTime?
   moderationEditedById  String?
   moderationEditedNote  String?
   ratings               Rating[]
-  views                 Int               @default(0)
-  uploadDate            DateTime          @default(now())
-  updatedAt             DateTime          @default(now()) @updatedAt
+  views                 Int                      @default(0)
+  uploadDate            DateTime                 @default(now())
+  updatedAt             DateTime                 @default(now()) @updatedAt
   code                  String
-  codeStatus            CodeStatus        @default(UNVERIFIED)
+  codeStatus            CodeStatus               @default(UNVERIFIED)
   codeNote              String?
   description           String
   youtubeUrl            String?
   images                PostImage[]
   dependencies          Dependency[]
   tags                  PostTag[]
-  openForImprovement    Boolean           @default(false)
-  currentCommitId       String?           @unique
-  currentCommit         PostCommit?       @relation("PostCurrentCommit", fields: [currentCommitId], references: [id])
+  openForImprovement    Boolean                  @default(false)
+  currentCommitId       String?                  @unique
+  currentCommit         PostCommit?              @relation("PostCurrentCommit", fields: [currentCommitId], references: [id])
   commits               PostCommit[]
   contributors          PostContributor[]
   comments              Comment[]
   reports               Report[]
-  moderationEditor      User?             @relation("ModeratedPosts", fields: [moderationEditedById], references: [id])
+  moderationEditor      User?                    @relation("ModeratedPosts", fields: [moderationEditedById], references: [id])
   searchVector          Unsupported("tsvector")?
 
   @@index([searchVector], type: Gin)
