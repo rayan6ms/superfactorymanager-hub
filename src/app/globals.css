@@ -15,7 +15,7 @@
   --color-brand-800: #3d0707;
   --color-brand-900: #2a0404;
 
-  --color-base-950: #070318;
+  --color-base-950: #0f0b21;
   --color-base-900: #0a0a0a;
   --color-base-800: #2a2727;
   --color-base-700: #4a4949;
@@ -32,15 +32,15 @@
 
 :root {
   --bg: var(--color-base-950);
-  --surface: rgba(10, 10, 10, 0.48);
-  --surface-2: rgba(42, 39, 39, 0.76);
+  --surface: rgba(10, 10, 10, 0.40);
+  --surface-2: rgba(42, 39, 39, 0.8);
   --muted: var(--color-base-700);
   --text: 240 9% 98%;
   --text-muted: 240 6% 62%;
   --accent: var(--color-brand-700);
   --accent-2: var(--color-brand-400);
-  --glow-1: rgba(141, 46, 46, 0.25);
-  --glow-2: rgba(7, 3, 24, 0.85);
+  --glow-1: rgba(141, 46, 46, 0.28);
+  --glow-2: rgba(7, 3, 24, 0.10);
   --codebox-highlight-bg: #120a0a;
 }
 
@@ -58,7 +58,7 @@ body {
   background-image:
     radial-gradient(circle at 20% 20%, var(--glow-1), transparent 45%),
     radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.05), transparent 55%),
-    linear-gradient(160deg, rgba(2, 0, 14, 0.9), var(--glow-2));
+    linear-gradient(160deg, rgba(2, 0, 14, 0.6), var(--glow-2));
   background-attachment: fixed;
 }
 

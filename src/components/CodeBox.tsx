@@ -14,14 +14,14 @@ const theme: monacoNs.editor.IStandaloneThemeData = {
   base: "vs-dark",
   inherit: true,
   colors: {
-    "editor.background": "#0c0e12",
+    "editor.background": "#13131A",
     "editorLineNumber.foreground": "#9ca3af",
     "editorLineNumber.activeForeground": "#c084fc",
     "editorCursor.foreground": "#a78bfa",
     "editorIndentGuide.background": "#374151",
     "editorIndentGuide.activeBackground": "#6b7280",
     "editorLineHighlightBackground": "#111827",
-    "editorGutter.background": "#0c0e12",
+    "editorGutter.background": "#13131A",
     "editor.selectionBackground": "#5b21b6",
   },
   rules: [
@@ -318,7 +318,7 @@ export function CodeBox({
           options={{
             fontSize: 14,
             fontFamily:
-              '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+              '"Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
             minimap: { enabled: false },
             wordWrap: wrapLines ? "on" : "off",
             wrappingIndent: "same",

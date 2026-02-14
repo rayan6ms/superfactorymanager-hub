@@ -151,6 +151,16 @@ export default function Header({ session, notifications }: HeaderProps) {
                         </div>
                       </div>
 
+                      <Link href="/code-editor" className="inline-flex">
+                        <Button
+                          size="md"
+                          variant="outline"
+                          className="w-full justify-center"
+                        >
+                          <Code2 /> Code editor
+                        </Button>
+                      </Link>
+
                       {user && (
                         <Link href="/posts/new" className="inline-flex">
                           <Button size="md" className="w-full justify-center gap-2">
@@ -171,16 +181,6 @@ export default function Header({ session, notifications }: HeaderProps) {
                         </Link>
                       )}
                     </div>
-
-                    <Link href="/code-editor" className="inline-flex">
-                      <Button
-                        size="md"
-                        variant="outline"
-                        className="w-full justify-center"
-                      >
-                        <Code2 /> Code editor
-                      </Button>
-                    </Link>
 
                     {user ? (
                       <form
