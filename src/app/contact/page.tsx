@@ -54,7 +54,7 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="flex flex-col items-center gap-8 px-4 pb-16 pt-12">
+    <main className="flex flex-col items-center gap-8 px-2">
       <div className="w-full max-w-4xl space-y-2 text-center">
         <p className="text-xs uppercase tracking-[0.3em] text-white/50">Support</p>
         <h1 className="text-3xl font-semibold text-white">Contact the team</h1>

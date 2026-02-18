@@ -20,6 +20,7 @@ import {
 import { analyzeYoutubeUrl } from "@/lib/youtube";
 import { analyzeSfmlCode, type CodeFeedback } from "@/lib/sfml/analysis";
 import { normalizeTag, type NormalizedTag } from "@/lib/tags";
+import { normalizePostDescription } from "@/lib/post-description";
 import { POST_COMPOSER_PREFILL_CODE_KEY } from "@/lib/builds/links";
 import {
   Images,
@@ -455,12 +456,13 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
         return null;
       }
       case "description": {
-        if (!trimmed) return "Description is required.";
-        if (trimmed.length < POST_DESCRIPTION_MIN_LENGTH) {
-          return `Description must be at least ${POST_DESCRIPTION_MIN_LENGTH} characters (currently ${trimmed.length}).`;
+        const normalized = normalizePostDescription(value);
+        if (!normalized) return "Description is required.";
+        if (normalized.length < POST_DESCRIPTION_MIN_LENGTH) {
+          return `Description must be at least ${POST_DESCRIPTION_MIN_LENGTH} characters (currently ${normalized.length}).`;
         }
-        if (trimmed.length > POST_DESCRIPTION_MAX_LENGTH) {
-          return `Description must be at most ${POST_DESCRIPTION_MAX_LENGTH} characters (currently ${trimmed.length}).`;
+        if (normalized.length > POST_DESCRIPTION_MAX_LENGTH) {
+          return `Description must be at most ${POST_DESCRIPTION_MAX_LENGTH} characters (currently ${normalized.length}).`;
         }
         return null;
       }
@@ -559,6 +561,10 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   }, [formEvaluations, nsfwBlockingMessage]);
 
   const publishDisabled = loading || blockingMessages.length > 0;
+  const normalizedDescription = useMemo(
+    () => normalizePostDescription(form.description),
+    [form.description],
+  );
 
   const markTouched = useCallback((key: FormErrorKey) => {
     setTouched(prev => (prev[key] ? prev : { ...prev, [key]: true }));
@@ -1134,7 +1140,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
         images: uploadedImages,
         keepImageIds: persistedImages.map(image => image.id),
         code: form.code,
-        description: form.description.trim(),
+        description: normalizedDescription,
         youtubeUrl: form.youtubeUrl.trim(),
         openForImprovement: form.openForImprovement,
       };
@@ -1555,7 +1561,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
             />
 
             {(() => {
-              const length = form.description.trim().length;
+              const length = normalizedDescription.length;
               const tooLong = length > POST_DESCRIPTION_MAX_LENGTH;
 
               return (
@@ -1579,14 +1585,14 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
               </p>
             )}
 
-            {form.description.trim().length > 0 && (
+            {normalizedDescription.length > 0 && (
               <div className="mt-3 space-y-2 rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
                   Preview
                 </p>
-                <div className="prose prose-invert prose-sm max-w-none prose-headings:text-white prose-strong:text-white prose-em:text-white/90 prose-p:text-white/85 prose-li:text-white/80">
+                <div className="prose prose-invert prose-sm max-w-none whitespace-pre-line prose-headings:text-white prose-strong:text-white prose-em:text-white/90 prose-p:text-white/85 prose-li:text-white/80">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {form.description}
+                    {normalizedDescription}
                   </ReactMarkdown>
                 </div>
               </div>

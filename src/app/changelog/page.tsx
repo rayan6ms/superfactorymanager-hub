@@ -31,7 +31,7 @@ export default async function ChangelogPage({ searchParams }: Props) {
   };
 
   return (
-    <main className="space-y-6 px-4 pb-16 pt-12">
+    <main className="space-y-6 px-2">
       <div className="space-y-2 text-center">
         <p className="text-xs uppercase tracking-[0.3em] text-white/50">Releases</p>
         <h1 className="text-3xl font-semibold text-white">Changelog</h1>

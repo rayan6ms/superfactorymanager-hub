@@ -17,6 +17,7 @@ import { Eye } from 'lucide-react';
 import { getBaseUrl } from "@/lib/urls";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { normalizePostDescription } from "@/lib/post-description";
 
 type VoteValue = "up" | "down" | null;
 
@@ -80,8 +81,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
   }
 
+  const normalizedDescription = normalizePostDescription(post.description);
   const description =
-    buildDescriptionCopy(post.description) ?? `Explore ${post.title} for SuperFactoryManager.`;
+    buildDescriptionCopy(normalizedDescription) ?? `Explore ${post.title} for SuperFactoryManager.`;
   const heroImage = post.images?.[0] ?? null;
   const heroSrc = heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
   const canonical = `${baseUrl}/posts/${post.slug}`;
@@ -182,6 +184,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   const improvementHref = me ? `/posts/${post.slug}/edit` : `/login?from=/posts/${post.slug}/edit`;
   const improvementCta = me ? "Suggest an improvement" : "Log in to collaborate";
   const reportLoginHref = `/login?from=/posts/${post.slug}`;
+  const postDescription = normalizePostDescription(post.description);
 
   return (
     <div className="space-y-8">
@@ -270,9 +273,9 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
             </div>
           </div>
 
-          <div className="prose prose-invert max-w-none prose-headings:text-white prose-p:text-white/85 prose-li:text-white/80 prose-strong:text-white prose-em:text-white/90">
+          <div className="prose prose-invert max-w-none whitespace-pre-line prose-headings:text-white prose-p:text-white/85 prose-li:text-white/80 prose-strong:text-white prose-em:text-white/90">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {post.description}
+              {postDescription}
             </ReactMarkdown>
           </div>
 

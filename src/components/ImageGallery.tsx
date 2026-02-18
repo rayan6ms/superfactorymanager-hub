@@ -217,7 +217,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
           <div className="flex w-full max-w-7xl max-h-[calc(100dvh-3rem)] flex-col overflow-auto rounded-3xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm shadow-2xl">
             <div className="border-b border-white/10 px-5 py-4">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex w-fit sm:min-w-[140px] flex-1 flex-col">
+                <div className="flex w-fit sm:min-w-35 flex-1 flex-col">
                   <p className="text-xs uppercase tracking-[0.3em] text-white/50">
                     Gallery
                   </p>
@@ -425,7 +425,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
               type="button"
               key={img.id}
               onClick={() => openViewer(index)}
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5"
+              className="group relative overflow-hidden min-h-28 rounded-2xl border border-white/10 bg-white/5"
             >
               <Image
                 src={preview}

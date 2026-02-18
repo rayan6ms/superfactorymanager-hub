@@ -81,7 +81,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <Card className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
         {user.image ? (
           <span

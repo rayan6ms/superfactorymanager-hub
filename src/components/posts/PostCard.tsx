@@ -6,6 +6,9 @@ import Badge from "@/components/ui/Badge";
 import { Eye, Search as SearchIcon, Star, Check, X } from "lucide-react";
 import type { SerializedPost } from "@/lib/posts";
 import { wilsonScore, WILSON_Z_80 } from "@/lib/wilson-score";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { normalizePostDescription } from "@/lib/post-description";
 
 const viewsFormatter = new Intl.NumberFormat(undefined, {
   notation: "compact",
@@ -113,6 +116,7 @@ export default function PostCard({ post }: Props) {
 
   const authorName = post.author?.name ?? post.authorName ?? "Unknown creator";
   const authorImage = post.author?.image ?? null;
+  const description = normalizePostDescription(post.description);
 
   return (
     <li>
@@ -164,7 +168,11 @@ export default function PostCard({ post }: Props) {
                 <h3 className="text-lg font-semibold text-white">{post.title}</h3>
                 <Badge>{post.category?.name}</Badge>
               </div>
-              <p className="text-sm text-white/70 line-clamp-2">{post.description}</p>
+              <div className="prose prose-invert prose-sm max-w-none line-clamp-2 whitespace-pre-line prose-p:my-0 prose-strong:text-white prose-em:text-white/90 prose-li:text-white/80 text-white/70">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {description}
+                </ReactMarkdown>
+              </div>
               {post.tags?.length ? (
                 <div className="flex flex-wrap gap-1 text-xs text-white/50">
                   {post.tags.slice(0, 4).map(tag => (
