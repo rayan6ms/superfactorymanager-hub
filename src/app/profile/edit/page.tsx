@@ -55,6 +55,7 @@ export default async function ProfilePage({ searchParams }: Props) {
   const totalPosts = await db.post.count({ where: { authorId: user.id } });
   const totalPages = getTotalPages(totalPosts, PAGE_SIZE);
   const currentPage = Math.min(requestedPage, totalPages);
+  const publicProfileHref = user.name ? `/profile/${encodeURIComponent(user.name)}` : null;
   const posts = await db.post.findMany({
     where: { authorId: user.id },
     orderBy: { uploadDate: "desc" },
@@ -82,6 +83,14 @@ export default async function ProfilePage({ searchParams }: Props) {
       <div>
         <h1 className="text-3xl font-semibold text-white">Edit profile</h1>
         <p className="text-sm text-white/60">Manage your account details and see your recent posts.</p>
+        {publicProfileHref ? (
+          <p className="mt-2 text-sm text-white/70">
+            See how others see your profile:{" "}
+            <Link href={publicProfileHref} className="font-medium text-brand-300 underline-offset-4 transition hover:underline">
+              View public profile
+            </Link>
+          </p>
+        ) : null}
       </div>
 
       <ProfileSettings
