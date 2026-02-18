@@ -43,6 +43,7 @@ model User {
   emailVerificationTokens   EmailVerificationToken[]
   suggestions               Suggestion[]
   moderatedPosts            Post[]                   @relation("ModeratedPosts")
+  builds                    Build[]
 }
 
 model Category {
@@ -117,6 +118,11 @@ enum CodeStatus {
   BROKEN
 }
 
+enum BuildVisibility {
+  PUBLIC
+  PRIVATE
+}
+
 model Dependency {
   id     String @id @default(cuid())
   name   String
@@ -156,6 +162,39 @@ model ChangelogEntry {
   isLatest    Boolean   @default(false)
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
+}
+
+model Build {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nameOriginal      String
+  nameLower         String
+  slug              String
+  visibility        BuildVisibility @default(PUBLIC)
+  currentCode       String
+  forkedFromBuildId String?
+  forkedFromBuild   Build?          @relation("BuildForks", fields: [forkedFromBuildId], references: [id], onDelete: SetNull)
+  forks             Build[]         @relation("BuildForks")
+  commits           BuildCommit[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([userId, nameLower])
+  @@unique([userId, slug])
+  @@index([userId, createdAt])
+  @@index([slug])
+}
+
+model BuildCommit {
+  id        String   @id @default(cuid())
+  buildId   String
+  build     Build    @relation(fields: [buildId], references: [id], onDelete: Cascade)
+  code      String
+  message   String?
+  createdAt DateTime @default(now())
+
+  @@index([buildId, createdAt])
 }
 
 model Post {

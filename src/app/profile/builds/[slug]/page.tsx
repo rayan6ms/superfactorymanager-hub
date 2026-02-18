@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { buildPublicBuildPath } from "@/lib/builds/links";
 import { db } from "@/lib/db";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 type Props = {
+  params: Promise<{ slug: string }>;
   searchParams?: SearchParams;
 };
 
@@ -20,10 +22,12 @@ function buildQueryString(params: Record<string, string | string[] | undefined> 
   return query.toString();
 }
 
-export default async function ProfileRedirectPage({ searchParams }: Props) {
-  const resolved = searchParams ? await searchParams : undefined;
+export default async function CurrentUserBuildRedirectPage({ params, searchParams }: Props) {
+  const [{ slug }, resolved] = await Promise.all([params, searchParams ? searchParams : Promise.resolve(undefined)]);
   const query = buildQueryString(resolved);
-  const requestedPath = query ? `/profile?${query}` : "/profile";
+  const requestedPath = query
+    ? `/profile/builds/${encodeURIComponent(slug)}?${query}`
+    : `/profile/builds/${encodeURIComponent(slug)}`;
 
   const session = await auth();
   if (!session?.user?.email) {
@@ -39,6 +43,6 @@ export default async function ProfileRedirectPage({ searchParams }: Props) {
     redirect("/");
   }
 
-  const destinationBase = `/profile/${encodeURIComponent(user.name)}`;
-  redirect(query ? `${destinationBase}?${query}` : destinationBase);
+  const destination = buildPublicBuildPath(user.name, slug);
+  redirect(query ? `${destination}?${query}` : destination);
 }

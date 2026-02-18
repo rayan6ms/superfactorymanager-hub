@@ -17,6 +17,7 @@ export type PostSearchFilters = {
   categoryKey?: string;
   gameVersion?: string;
   sfmVersion?: string;
+  authorId?: string;
 };
 
 function buildConditions(filters?: PostSearchFilters) {
@@ -35,6 +36,9 @@ function buildConditions(filters?: PostSearchFilters) {
     conditions.push(
       Prisma.sql`EXISTS (SELECT 1 FROM "Category" c WHERE c."id" = p."categoryId" AND c."key" = ${filters.categoryKey})`,
     );
+  }
+  if (filters?.authorId) {
+    conditions.push(Prisma.sql`p."authorId" = ${filters.authorId}`);
   }
 
   return Prisma.join(conditions, " AND ");

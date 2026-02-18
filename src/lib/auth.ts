@@ -95,7 +95,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
   );
 }
 
-async function ensurePasswordReminderNotification(userId: string) {
+async function ensurePasswordReminderNotification(userId: string, profilePath = "/profile") {
   try {
     const existing = await db.notification.findFirst({
       where: {
@@ -114,7 +114,7 @@ async function ensurePasswordReminderNotification(userId: string) {
       userId,
       title: "Secure your account",
       message: "Add a password so you can log in without your social account. Visit your profile to request a reset email.",
-      link: "/profile",
+      link: profilePath,
       metadata: { kind: "password-reminder" },
     });
   } catch (error) {
@@ -193,7 +193,9 @@ export const authOptions: NextAuthConfig = {
         }
 
         if (!existing.passwordHash) {
-          await ensurePasswordReminderNotification(existing.id);
+          const notificationUsername = updateData.name ?? existing.name;
+          const profilePath = notificationUsername ? `/profile/${encodeURIComponent(notificationUsername)}` : "/profile";
+          await ensurePasswordReminderNotification(existing.id, profilePath);
         }
       } catch (err) {
         console.warn("OAuth signIn callback user update failed:", err);
@@ -292,7 +294,7 @@ export const authOptions: NextAuthConfig = {
         });
 
         if (!existing.passwordHash) {
-          await ensurePasswordReminderNotification(existing.id);
+          await ensurePasswordReminderNotification(existing.id, `/profile/${encodeURIComponent(uniqueName)}`);
         }
       } catch (error) {
         console.warn("createUser event handling failed:", error);

@@ -1,8 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui";
 import Pagination from "@/components/ui/Pagination";
 import PostCard from "@/components/posts/PostCard";
+import BuildCard from "@/components/builds/BuildCard";
 import { db } from "@/lib/db";
+import { fetchProfileBuildList } from "@/lib/builds/profile-list";
 import { POST_CARD_INCLUDE, serializePost, type SerializedPost } from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
@@ -43,6 +46,17 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   if (!user) {
     notFound();
   }
+  if (!user.name) {
+    notFound();
+  }
+
+  const buildsResult = await fetchProfileBuildList(`/api/profile/${encodeURIComponent(user.name)}/builds`, {
+    page: 1,
+    pageSize: 5,
+    includeAuthCookie: true,
+  });
+  const recentBuilds = buildsResult.data?.items ?? [];
+  const hasBuildsError = !buildsResult.data;
 
   const totalPosts = await db.post.count({ where: { authorId: user.id, isDeleted: false } });
   const totalPages = getTotalPages(totalPosts, PAGE_SIZE);
@@ -92,7 +106,47 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
       <Card className="space-y-4 p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Shared builds</h2>
-          <span className="text-xs uppercase tracking-[0.3em] text-white/40">{serializedPosts.length} posts</span>
+          <Link
+            href={`/profile/${encodeURIComponent(user.name)}/builds`}
+            className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+          >
+            View all
+          </Link>
+        </div>
+        {hasBuildsError ? (
+          <p className="text-sm text-white/60">Unable to load builds right now.</p>
+        ) : recentBuilds.length ? (
+          <ul className="grid gap-4 md:grid-cols-2">
+            {recentBuilds.map((build) => (
+              <li key={`${build.username}:${build.slug}`}>
+                <BuildCard
+                  username={build.username}
+                  slug={build.slug}
+                  name={build.nameOriginal}
+                  visibility={build.visibility}
+                  createdAt={build.createdAt}
+                  updatedAt={build.updatedAt}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-white/60">No builds published yet.</p>
+        )}
+      </Card>
+
+      <Card className="space-y-4 p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">Shared posts</h2>
+          <div className="flex items-center gap-4">
+            <span className="text-xs uppercase tracking-[0.3em] text-white/40">{serializedPosts.length} posts</span>
+            <Link
+              href={`/profile/${encodeURIComponent(user.name)}/posts`}
+              className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+            >
+              View all
+            </Link>
+          </div>
         </div>
         {serializedPosts.length ? (
           <ul className="grid gap-5 md:grid-cols-2">

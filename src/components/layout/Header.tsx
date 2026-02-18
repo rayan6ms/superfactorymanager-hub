@@ -18,6 +18,7 @@ import type { SerializedNotification } from "@/lib/notifications-shared";
 import UserMenuAutoCloser from "@/components/layout/UserMenuAutoCloser";
 import HeaderNotifications from "@/components/layout/HeaderNotifications";
 import NotificationBadge from "@/components/layout/NotificationBadge";
+import Image from 'next/image';
 
 type HeaderProps = {
   session: Session | null;
@@ -28,9 +29,11 @@ export default function Header({ session, notifications }: HeaderProps) {
   const notificationItems = notifications?.notifications ?? [];
   const unreadCount = notifications?.unreadCount ?? 0;
   const user = session?.user ?? null;
+  const username = user?.name?.trim() || null;
   const avatarUrl = user?.image ?? null;
   const initial = (user?.name ?? user?.email ?? "?").trim().charAt(0).toUpperCase() || "?";
   const displayName = (user?.name ?? user?.email ?? "").trim();
+  const profileHref = username ? `/profile/${encodeURIComponent(username)}` : "/profile";
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/15">
@@ -50,6 +53,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                 hover:bg-(--surface-2)
               "
             >
+              <Image className="bg-white/30 px-0.5 rounded-full" src="/favicon.ico" alt="logo" width={20} height={20} />
               <span className="bg-linear-to-b from-red-400 to-brand-500 bg-clip-text text-transparent font-extrabold">
                 SFMHub
               </span>
@@ -69,7 +73,7 @@ export default function Header({ session, notifications }: HeaderProps) {
             <div className="ml-auto flex items-center gap-2">
               {user && displayName && (
                 <Link
-                  href="/profile"
+                  href={profileHref}
                   className="hidden text-md font-medium text-white/80! hover:text-white lg:inline-flex"
                 >
                   {displayName}
@@ -170,7 +174,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                       )}
 
                       {user && (
-                        <Link href="/profile" className="inline-flex">
+                        <Link href={profileHref} className="inline-flex">
                           <Button
                             size="md"
                             variant="outline"

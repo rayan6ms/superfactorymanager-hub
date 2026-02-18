@@ -249,6 +249,7 @@ export type PostsFilterOptions = {
   categoryKey?: string;
   gameVersion?: string;
   sfmVersion?: string;
+  authorId?: string;
   limit?: number;
   page?: number;
 };
@@ -261,6 +262,7 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
     categoryKey,
     gameVersion,
     sfmVersion,
+    authorId,
     limit = 24,
     page = 1,
   } = opts;
@@ -279,6 +281,7 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
         categoryKey,
         gameVersion,
         sfmVersion,
+        authorId,
       },
     });
 
@@ -304,6 +307,7 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
   if (categoryKey) baseWhere.category = { key: categoryKey };
   if (gameVersion) baseWhere.gameVersion = gameVersion;
   if (sfmVersion) baseWhere.modVersion = sfmVersion;
+  if (authorId) baseWhere.authorId = authorId;
 
   const where: Prisma.PostWhereInput = { ...baseWhere };
 

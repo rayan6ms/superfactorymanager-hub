@@ -24,6 +24,8 @@ type Props = {
   categories: { key: string; name: string }[];
   gameVersions: string[];
   sfmByGame: Record<string, string[]>;
+  action?: string;
+  hiddenParams?: Record<string, string>;
   initialQuery?: string;
   initialOrder?: string;
   initialMinRating?: string;
@@ -36,6 +38,8 @@ export default function PostsFilterBar({
   categories,
   gameVersions,
   sfmByGame,
+  action = "/posts",
+  hiddenParams,
   initialQuery = "",
   initialOrder = "most-views",
   initialMinRating = "",
@@ -69,7 +73,10 @@ export default function PostsFilterBar({
   };
 
   return (
-    <form method="get" action="/posts" className="space-y-4 rounded-2xl border border-white/10 bg-(--surface)/80 p-5 shadow-soft">
+    <form method="get" action={action} className="space-y-4 rounded-2xl border border-white/10 bg-(--surface)/80 p-5 shadow-soft">
+      {hiddenParams
+        ? Object.entries(hiddenParams).map(([key, value]) => <input key={key} type="hidden" name={key} value={value} />)
+        : null}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
         <div className="flex-1">
           <label htmlFor="posts-search" className="text-xs font-semibold uppercase tracking-[0.3em] text-white/50">

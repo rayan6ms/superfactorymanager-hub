@@ -337,6 +337,19 @@ export function CodeBox({
           }}
         />
       </div>
+      <div className="flex justify-center text-center">
+        <span>
+          SFML syntax based on{" "}
+          <a
+            href="https://github.com/TeamDman/SuperFactoryManager"
+            target="_blank"
+            rel="noreferrer"
+            className="underline hover:text-brand-300"
+          >
+            TeamDman/SuperFactoryManager
+          </a>
+        </span>
+      </div>
     </div>
   );
 }

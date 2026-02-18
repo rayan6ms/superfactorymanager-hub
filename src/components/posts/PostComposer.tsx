@@ -20,6 +20,7 @@ import {
 import { analyzeYoutubeUrl } from "@/lib/youtube";
 import { analyzeSfmlCode, type CodeFeedback } from "@/lib/sfml/analysis";
 import { normalizeTag, type NormalizedTag } from "@/lib/tags";
+import { POST_COMPOSER_PREFILL_CODE_KEY } from "@/lib/builds/links";
 import {
   Images,
   Loader2,
@@ -916,6 +917,18 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       setHasLoadedDraft(true);
     }
   }, [draftKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (mode !== "create") return;
+
+    try {
+      const prefillCode = window.sessionStorage.getItem(POST_COMPOSER_PREFILL_CODE_KEY);
+      if (!prefillCode) return;
+      setForm(prev => ({ ...prev, code: prefillCode }));
+      window.sessionStorage.removeItem(POST_COMPOSER_PREFILL_CODE_KEY);
+    } catch { }
+  }, [mode]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

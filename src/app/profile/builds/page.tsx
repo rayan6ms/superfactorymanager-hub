@@ -20,10 +20,10 @@ function buildQueryString(params: Record<string, string | string[] | undefined> 
   return query.toString();
 }
 
-export default async function ProfileRedirectPage({ searchParams }: Props) {
+export default async function ProfileBuildsRedirectPage({ searchParams }: Props) {
   const resolved = searchParams ? await searchParams : undefined;
   const query = buildQueryString(resolved);
-  const requestedPath = query ? `/profile?${query}` : "/profile";
+  const requestedPath = query ? `/profile/builds?${query}` : "/profile/builds";
 
   const session = await auth();
   if (!session?.user?.email) {
@@ -39,6 +39,6 @@ export default async function ProfileRedirectPage({ searchParams }: Props) {
     redirect("/");
   }
 
-  const destinationBase = `/profile/${encodeURIComponent(user.name)}`;
+  const destinationBase = `/profile/${encodeURIComponent(user.name)}/builds`;
   redirect(query ? `${destinationBase}?${query}` : destinationBase);
 }

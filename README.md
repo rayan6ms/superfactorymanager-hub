@@ -1,36 +1,145 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SFMHub
 
-## Getting Started
+SFMHub is a community website for sharing, browsing, and discussing **Super Factory Manager (SFM)** programs (SFML code). It includes:
 
-First, run the development server:
+- A code editor experience for SFML (syntax highlighting + diagnostics / error highlighting)
+- Posts with versions/tags/dependencies and rich descriptions
+- Comments with voting and moderation tools
+- User accounts (Credentials + optional Google/GitHub OAuth)
+- Builds (public/private) with commit history
+- Notifications (in-app + optional email)
+
+Built with Next.js (App Router), Prisma/PostgreSQL, and NextAuth.
+
+---
+
+## Tech stack
+
+- **Next.js** app router
+- **Prisma** + **PostgreSQL**
+- **NextAuth** (Credentials + optional Google/GitHub)
+- **Vercel Blob** for image storage (optional)
+- Email via **SMTP** (Nodemailer) for verification, password reset, and notifications
+- Optional NSFW image detection via `nsfwjs` + `@tensorflow/tfjs` (server-side)
+
+---
+
+## Local development
+
+### 1) Install dependencies
+
+```bash
+npm install
+```
+
+### 2) Configure environment variables
+
+Create `.env` with at least:
+
+```bash
+# Database
+PRISMA_DATABASE_URL="postgresql://..."
+POSTGRES_URL="postgresql://..."          # used as directUrl in schema.prisma
+
+# Auth
+AUTH_SECRET="a-long-random-secret"
+ADMIN_EMAILS="you@example.com,other@example.com"
+
+# App URL (used for absolute links in email)
+APP_URL="http://localhost:3000"
+# or NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Optional OAuth
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+GITHUB_CLIENT_ID=""
+GITHUB_CLIENT_SECRET=""
+
+# Optional email (verification / reset / notifications)
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_SECURE="false"
+EMAIL_FROM="SFMHub <no-reply@yourdomain.tld>"
+
+# Optional Vercel Blob (image uploads)
+BLOB_READ_WRITE_TOKEN=""
+
+# Optional debug
+DEBUG_SFM="0"
+```
+
+### 3) Run migrations
+
+```bash
+npx prisma migrate dev
+```
+
+### 4) Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project structure (high level)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/app/*` — routes, pages, API endpoints
+- `src/components/*` — UI components (posts, editor, notifications, etc.)
+- `src/lib/*` — server utilities (auth, db, posts, comments, notifications, sfm version fetchers, etc.)
+- `src/generated/*` — generated SFML parser/lexer files used for editor diagnostics
+- `prisma/schema.prisma` — database schema
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Third-party licenses / attribution
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### SuperFactoryManager (TeamDman) — MPL-2.0
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project includes **generated SFML language tooling** derived from the upstream SuperFactoryManager project:
 
-## Deploy on Vercel
+- Source: TeamDman/SuperFactoryManager (Minecraft mod + SFML language tooling)
+- License: **Mozilla Public License 2.0 (MPL-2.0)**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The following paths in this repo are covered by MPL-2.0 (and remain under MPL-2.0):
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/generated/**` (ANTLR-generated lexer/parser/visitor/listener artifacts for SFML)
+- `src/lib/syntax/sfml.tmLanguage.json` (SFML TextMate grammar, if derived from upstream)
+
+If we modify any MPL-covered files above, the modified versions are also provided in source form in this repository under MPL-2.0, as required by the license.
+
+See:
+
+- `LICENSES/MPL-2.0.txt`
+- `src/generated/NOTICE.md`
+
+Upstream repository:
+
+- [https://github.com/TeamDman/SuperFactoryManager](https://github.com/TeamDman/SuperFactoryManager)
+
+> Note: The main SFMHub project is still licensed under the GPL-3.0 license.
+
+---
+
+## Security notes
+
+- Remote profile images are validated to avoid private/local network fetches.
+- Rate limits are enforced for posting, commenting, voting, and reporting.
+- Optional NSFW scanning can be enabled for uploaded content.
+
+---
+
+## Contributing
+
+Issues and PRs are welcome. Please keep licensing boundaries in mind:
+
+- Do not copy MPL-covered code into non-MPL files unless you intend those files to become MPL-licensed.
+- If you change files under `src/generated/**`, keep the MPL headers/notices intact and update `src/generated/NOTICE.md` if needed.
+
+---
+
+## License
+
+GPLv3 (see [LICENSE](LICENSE))
