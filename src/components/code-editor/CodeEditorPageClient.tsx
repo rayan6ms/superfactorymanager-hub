@@ -89,7 +89,7 @@ export default function CodeEditorPageClient() {
             complete examples.
           </p>
           <Link href="/guide" target="_blank" rel="noreferrer" className="inline-flex sm:shrink-0">
-            <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
+            <Button size="sm" variant="transparent" className="w-full justify-center gap-2">
               <BookOpen className="h-4 w-4" aria-hidden="true" />
               Open guide
             </Button>

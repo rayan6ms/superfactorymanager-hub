@@ -12,6 +12,7 @@ const button = cva(
         solid: "bg-brand-600 text-white hover:bg-brand-500",
         outline: "border border-base-700/70 text-white/85 hover:bg-white/5 hover:text-white",
         ghost: "text-white/70 hover:text-white hover:bg-white/5",
+        transparent: "text-white/70 hover:text-white bg-white/10 hover:bg-white/20",
       },
       size: {
         sm: "h-8 px-4 text-sm [&_svg]:h-3.5 [&_svg]:w-3.5",
