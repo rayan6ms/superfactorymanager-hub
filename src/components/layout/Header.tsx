@@ -34,6 +34,7 @@ export default function Header({ session, notifications }: HeaderProps) {
   const initial = (user?.name ?? user?.email ?? "?").trim().charAt(0).toUpperCase() || "?";
   const displayName = (user?.name ?? user?.email ?? "").trim();
   const profileHref = username ? `/profile/${encodeURIComponent(username)}` : "/profile";
+  const editProfileHref = "/profile/edit";
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/15">
@@ -174,7 +175,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                       )}
 
                       {user && (
-                        <Link href={profileHref} className="inline-flex">
+                        <Link href={editProfileHref} className="inline-flex">
                           <Button
                             size="md"
                             variant="outline"
