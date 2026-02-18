@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { Card } from "@/components/ui";
-import Pagination from "@/components/ui/Pagination";
 import PostCard from "@/components/posts/PostCard";
 import BuildCard from "@/components/builds/BuildCard";
 import { db } from "@/lib/db";
 import { fetchProfileBuildList } from "@/lib/builds/profile-list";
 import { POST_CARD_INCLUDE, serializePost, type SerializedPost } from "@/lib/posts";
-import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -22,14 +21,9 @@ function getInitial(name: string | null | undefined) {
   return base.charAt(0).toUpperCase();
 }
 
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-export default async function PublicProfilePage(props: { params: Promise<{ username: string }>; searchParams?: SearchParams }) {
+export default async function PublicProfilePage(props: { params: Promise<{ username: string }> }) {
   const { username } = await props.params;
-  const resolvedSearch = props.searchParams ? await props.searchParams : undefined;
-  const pageParam = resolvedSearch?.page;
-  const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
-  const PAGE_SIZE = 12;
+  const PREVIEW_LIMIT = 4;
   const normalized = username.toLowerCase();
 
   const user = await db.user.findUnique({
@@ -50,35 +44,28 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
     notFound();
   }
 
+  const session = await auth();
+  const isOwnerView = session?.user?.id === user.id;
+
   const buildsResult = await fetchProfileBuildList(`/api/profile/${encodeURIComponent(user.name)}/builds`, {
     page: 1,
-    pageSize: 5,
+    pageSize: PREVIEW_LIMIT,
     includeAuthCookie: true,
   });
   const recentBuilds = buildsResult.data?.items ?? [];
   const hasBuildsError = !buildsResult.data;
 
   const totalPosts = await db.post.count({ where: { authorId: user.id, isDeleted: false } });
-  const totalPages = getTotalPages(totalPosts, PAGE_SIZE);
-  const currentPage = Math.min(requestedPage, totalPages);
   const posts = await db.post.findMany({
     where: { authorId: user.id, isDeleted: false },
     orderBy: { uploadDate: "desc" },
     include: POST_CARD_INCLUDE,
-    skip: (currentPage - 1) * PAGE_SIZE,
-    take: PAGE_SIZE,
+    take: PREVIEW_LIMIT,
   });
 
   const serializedPosts: SerializedPost[] = posts.map(serializePost);
   const joined = formatDate(user.createdAt);
   const bio = user.bio?.trim();
-
-  const buildPageHref = (page: number) => {
-    const params = new URLSearchParams();
-    if (page > 1) params.set("page", String(page));
-    const suffix = params.toString();
-    return suffix ? `/profile/${username}?${suffix}` : `/profile/${username}`;
-  };
 
   return (
     <div className="space-y-5">
@@ -137,9 +124,9 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
       <Card className="space-y-4 p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Shared posts</h2>
+          <h2 className="text-lg font-semibold text-white">{isOwnerView ? "Your posts" : "Shared posts"}</h2>
           <div className="flex items-center gap-4">
-            <span className="text-xs uppercase tracking-[0.3em] text-white/40">{serializedPosts.length} posts</span>
+            <span className="text-xs uppercase tracking-[0.3em] text-white/40">{totalPosts} posts</span>
             <Link
               href={`/profile/${encodeURIComponent(user.name)}/posts`}
               className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
@@ -157,14 +144,6 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         ) : (
           <p className="text-sm text-white/60">No posts published yet.</p>
         )}
-
-        <Pagination
-          currentPage={currentPage}
-          pageSize={PAGE_SIZE}
-          total={totalPosts}
-          buildHref={buildPageHref}
-          className="pt-2"
-        />
       </Card>
     </div>
   );
