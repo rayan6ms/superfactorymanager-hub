@@ -8,6 +8,7 @@ import { z } from "zod";
 import { BookOpen, Check, Loader2, PlusSquare, Save, Share2, X } from "lucide-react";
 import { useAuthRequired } from "@/components/auth/AuthRequiredProvider";
 import { CodeBox } from "@/components/CodeBox";
+import CopyCodeButton from "@/components/CopyCodeButton";
 import { Badge, Button, Card, Input } from "@/components/ui";
 import {
   BUILD_CODE_MIN_NON_WHITESPACE,
@@ -530,29 +531,32 @@ export default function CodeEditorPageClient({
               ? "Long lines wrap into the next row so you never lose sight of your cursor."
               : "Long lines stay on one row. Scroll horizontally to view everything."}
           </p>
-          <div className="inline-flex rounded-full border border-white/15 bg-white/5 p-1 text-xs font-semibold">
-            <button
-              type="button"
-              aria-pressed={wrapLines}
-              onClick={() => setWrapLines(true)}
-              className={clsx(
-                "rounded-full px-3 py-1.5 transition",
-                wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
-              )}
-            >
-              Wrap lines
-            </button>
-            <button
-              type="button"
-              aria-pressed={!wrapLines}
-              onClick={() => setWrapLines(false)}
-              className={clsx(
-                "rounded-full px-3 py-1.5 transition",
-                !wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
-              )}
-            >
-              Horizontal scroll
-            </button>
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+            <div className="inline-flex rounded-full border border-white/15 bg-white/5 p-1 text-xs font-semibold">
+              <button
+                type="button"
+                aria-pressed={wrapLines}
+                onClick={() => setWrapLines(true)}
+                className={clsx(
+                  "rounded-full px-3 py-1.5 transition",
+                  wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                )}
+              >
+                Wrap lines
+              </button>
+              <button
+                type="button"
+                aria-pressed={!wrapLines}
+                onClick={() => setWrapLines(false)}
+                className={clsx(
+                  "rounded-full px-3 py-1.5 transition",
+                  !wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                )}
+              >
+                Horizontal scroll
+              </button>
+            </div>
+            <CopyCodeButton value={code} />
           </div>
         </div>
 
@@ -734,37 +738,39 @@ export default function CodeEditorPageClient({
         </div>
       )}
 
-      {shareFallbackLink && (
-        <Card className="space-y-3 border border-amber-400/35 bg-amber-500/10 p-4">
-          <p className="text-sm text-amber-100">
-            Clipboard permission is unavailable. Copy this canonical build link manually.
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input readOnly value={shareFallbackLink} className="font-mono text-xs" />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={async () => {
-                if (!lastSavedBuild) return;
-                try {
-                  await copyBuildLink(lastSavedBuild);
-                  setToastMessage("Build link copied!");
-                  setShareFallbackLink(null);
-                } catch {
-                  setToastMessage("Clipboard access is still blocked.");
-                }
-              }}
-              className="sm:shrink-0"
-            >
-              Copy
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 rounded-xl border border-white/20 bg-black/85 px-4 py-2 text-sm text-white shadow-soft">
-          {toastMessage}
+      {(shareFallbackLink || toastMessage) && (
+        <div className="fixed left-1/2 top-4 z-50 w-30 -translate-x-1/2 space-y-2">
+          {toastMessage && (
+            <div className="rounded-md border border-brand-300/75 bg-brand-500 px-4 py-2 text-center text-sm font-medium text-white/90 shadow-soft">
+              {toastMessage}
+            </div>
+          )}
+          {shareFallbackLink && (
+            <Card className="space-y-3 rounded-md border border-amber-300/60 bg-amber-700 p-4 text-amber-50 shadow-soft">
+              <p className="text-sm text-amber-50">
+                Clipboard permission is unavailable. Copy this canonical build link manually.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input readOnly value={shareFallbackLink} className="border-amber-200/50 bg-amber-950/50 font-mono text-xs text-amber-50" />
+                <Button
+                  type="button"
+                  className="border-amber-200/40 bg-amber-500 text-white hover:bg-amber-400 sm:shrink-0"
+                  onClick={async () => {
+                    if (!lastSavedBuild) return;
+                    try {
+                      await copyBuildLink(lastSavedBuild);
+                      setToastMessage("Build link copied!");
+                      setShareFallbackLink(null);
+                    } catch {
+                      setToastMessage("Clipboard access is still blocked.");
+                    }
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+            </Card>
+          )}
         </div>
       )}
     </div>

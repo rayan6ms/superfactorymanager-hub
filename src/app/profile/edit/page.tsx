@@ -25,7 +25,7 @@ export default async function ProfilePage({ searchParams }: Props) {
   const params = searchParams ? await searchParams : undefined;
   const pageParam = params?.page;
   const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
-  const PAGE_SIZE = 8;
+  const PAGE_SIZE = 5;
 
   const session = await auth();
 

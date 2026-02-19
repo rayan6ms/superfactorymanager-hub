@@ -38,21 +38,20 @@ export default function PostRedirectToast() {
   if (!message && !shareLink) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 w-[min(92vw,36rem)] space-y-2">
+    <div className="fixed left-1/2 top-4 z-50 w-[min(92vw,36rem)] -translate-x-1/2 space-y-2">
       {message && (
-        <div className="rounded-xl border border-white/20 bg-black/85 px-4 py-2 text-sm text-white shadow-soft">
+        <div className="rounded-md border border-brand-300/75 bg-brand-500 px-4 py-2 text-center text-sm font-medium text-white/90 shadow-soft">
           {message}
         </div>
       )}
       {shareLink && (
-        <div className="space-y-3 rounded-xl border border-amber-400/35 bg-black/90 p-3 text-sm text-amber-100 shadow-soft">
+        <div className="space-y-3 rounded-md border border-amber-300/60 bg-amber-700 p-3 text-sm text-amber-50 shadow-soft">
           <p>Clipboard permission is unavailable. Copy this canonical build link manually.</p>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Input readOnly value={shareLink} className="font-mono text-xs" />
+            <Input readOnly value={shareLink} className="border-amber-200/50 bg-amber-950/50 font-mono text-xs text-amber-50" />
             <Button
               type="button"
-              variant="outline"
-              className="sm:shrink-0"
+              className="border-amber-200/40 bg-amber-500 text-white hover:bg-amber-400 sm:shrink-0"
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(shareLink);
