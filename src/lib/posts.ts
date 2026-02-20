@@ -4,14 +4,42 @@ import { searchPostsHybrid } from "@/lib/search-db";
 import { wilsonScore, WILSON_Z_80 } from "@/lib/wilson-score";
 import { subDays } from "date-fns";
 
-export const POST_CARD_INCLUDE = {
-  category: true,
-  images: true,
-  tags: { include: { tag: true } },
+export const POST_CARD_SELECT = {
+  id: true,
+  slug: true,
+  title: true,
+  description: true,
+  modVersion: true,
+  views: true,
+  rating: true,
+  ratingCount: true,
+  workedCount: true,
+  brokenCount: true,
+  authorName: true,
+  category: { select: { name: true } },
+  images: {
+    select: {
+      original: true,
+      thumbSm: true,
+      thumbMd: true,
+      thumbLg: true,
+    },
+  },
+  tags: {
+    select: {
+      tag: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    },
+  },
   author: { select: { id: true, name: true, image: true } },
-} satisfies Prisma.PostInclude;
+} satisfies Prisma.PostSelect;
 
-export type PostWithRelations = Prisma.PostGetPayload<{ include: typeof POST_CARD_INCLUDE }>;
+export type PostWithRelations = Prisma.PostGetPayload<{ select: typeof POST_CARD_SELECT }>;
 
 export type SerializedPost = Omit<PostWithRelations, "tags"> & {
   tags: { id: string; name: string; slug: string }[];
@@ -101,7 +129,7 @@ export async function getRecentPosts(limit = 6) {
   const posts = await db.post.findMany({
     where: { isDeleted: false },
     orderBy: { uploadDate: "desc" },
-    include: POST_CARD_INCLUDE,
+    select: POST_CARD_SELECT,
     take: limit,
   });
   return posts.map(serializePost);
@@ -123,7 +151,7 @@ export async function getTrendingPosts(limit = 6) {
   const posts = ids.length
     ? await db.post.findMany({
       where: { id: { in: ids }, isDeleted: false },
-      include: POST_CARD_INCLUDE,
+      select: POST_CARD_SELECT,
     })
     : [];
 
@@ -143,7 +171,7 @@ export async function getTrendingPosts(limit = 6) {
       { rating: "desc" },
       { views: "desc" },
     ],
-    include: POST_CARD_INCLUDE,
+    select: POST_CARD_SELECT,
     take: limit * 2,
   });
 
@@ -225,7 +253,7 @@ export async function getRecommendedPosts(opts: {
   const posts = await db.post.findMany({
     where,
     orderBy: { uploadDate: "desc" },
-    include: POST_CARD_INCLUDE,
+    select: POST_CARD_SELECT,
     take: limit,
   });
 
@@ -289,7 +317,7 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
     const posts = ids.length
       ? await db.post.findMany({
         where: { id: { in: ids } },
-        include: POST_CARD_INCLUDE,
+        select: POST_CARD_SELECT,
       })
       : [];
 
@@ -336,7 +364,7 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
   }
 
   const [posts, total] = await Promise.all([
-    db.post.findMany({ where, orderBy, include: POST_CARD_INCLUDE, take: pageSize, skip }),
+    db.post.findMany({ where, orderBy, select: POST_CARD_SELECT, take: pageSize, skip }),
     db.post.count({ where }),
   ]);
 

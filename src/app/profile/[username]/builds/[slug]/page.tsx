@@ -40,6 +40,8 @@ export default async function PublicBuildDetailPage({ params, searchParams }: Pr
   ]);
 
   const commitId = firstValue(resolvedSearchParams?.commitId);
+  const from = firstValue(resolvedSearchParams?.from);
+  const backTo = from === "profile" || from === "builds" ? from : null;
 
   let viewerUsername: string | null = null;
   if (session?.user?.email) {
@@ -100,6 +102,7 @@ export default async function PublicBuildDetailPage({ params, searchParams }: Pr
       initialData={payload}
       initialIsAuthenticated={Boolean(session?.user?.email)}
       isAuthor={isAuthor}
+      initialBackTo={backTo}
     />
   );
 }

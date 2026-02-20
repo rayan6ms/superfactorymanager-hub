@@ -9,6 +9,7 @@ type BuildCardProps = {
   visibility: BuildVisibility;
   createdAt: string | Date;
   updatedAt: string | Date;
+  backTo?: "profile" | "builds";
 };
 
 export default function BuildCard({
@@ -18,8 +19,10 @@ export default function BuildCard({
   visibility,
   createdAt,
   updatedAt,
+  backTo,
 }: BuildCardProps) {
-  const href = `/profile/${encodeURIComponent(username)}/builds/${encodeURIComponent(slug)}`;
+  const baseHref = `/profile/${encodeURIComponent(username)}/builds/${encodeURIComponent(slug)}`;
+  const href = backTo ? `${baseHref}?from=${backTo}` : baseHref;
   const createdDate = formatBuildDate(createdAt);
   const updatedDate = formatBuildDate(updatedAt);
   const createdTs = new Date(createdAt).getTime();

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui";
 import PostCard from "@/components/posts/PostCard";
 import BuildCard from "@/components/builds/BuildCard";
 import { db } from "@/lib/db";
-import { POST_CARD_INCLUDE, serializePost, type SerializedPost } from "@/lib/posts";
+import { POST_CARD_SELECT, serializePost, type SerializedPost } from "@/lib/posts";
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -67,7 +67,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
     db.post.findMany({
       where: { authorId: user.id, isDeleted: false },
       orderBy: { uploadDate: "desc" },
-      include: POST_CARD_INCLUDE,
+      select: POST_CARD_SELECT,
       take: PREVIEW_LIMIT,
     }),
   ]);
@@ -120,6 +120,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
                   visibility={build.visibility}
                   createdAt={build.createdAt}
                   updatedAt={build.updatedAt}
+                  backTo="profile"
                 />
               </li>
             ))}

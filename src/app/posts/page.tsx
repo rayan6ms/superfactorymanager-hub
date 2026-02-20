@@ -5,7 +5,7 @@ import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
 import { db } from "@/lib/db";
 import {
-  POST_CARD_INCLUDE,
+  POST_CARD_SELECT,
   searchPostsWithFilters,
   serializePost,
   type PostWithRelations,
@@ -84,7 +84,7 @@ export default async function PostsPage({ searchParams }: Props) {
 
     const ids = results.map(result => result.id);
     const posts = ids.length
-      ? await db.post.findMany({ where: { id: { in: ids } }, include: POST_CARD_INCLUDE })
+      ? await db.post.findMany({ where: { id: { in: ids } }, select: POST_CARD_SELECT })
       : [];
     const map = new Map(posts.map(post => [post.id, post]));
     const ordered = ids

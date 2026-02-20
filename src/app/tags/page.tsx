@@ -3,7 +3,7 @@ import PostCard from "@/components/posts/PostCard";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
 import { db } from "@/lib/db";
-import { POST_CARD_INCLUDE, serializePost } from "@/lib/posts";
+import { POST_CARD_SELECT, serializePost } from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
 function parseTagsParam(value: string) {
@@ -66,7 +66,7 @@ export default async function TagsPage({ searchParams }: Props) {
           })),
         },
         orderBy: { uploadDate: "desc" },
-        include: POST_CARD_INCLUDE,
+        select: POST_CARD_SELECT,
         take: 30,
       })
       .then(items => items.map(serializePost))

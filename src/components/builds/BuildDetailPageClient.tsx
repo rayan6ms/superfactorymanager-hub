@@ -69,10 +69,12 @@ export default function BuildDetailPageClient({
   initialData,
   initialIsAuthenticated,
   isAuthor,
+  initialBackTo,
 }: {
   initialData: BuildDetailPayload;
   initialIsAuthenticated: boolean;
   isAuthor: boolean;
+  initialBackTo: "profile" | "builds" | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -659,6 +661,17 @@ export default function BuildDetailPageClient({
     return null;
   }, [forkNameCheck.status]);
 
+  const backHref = initialBackTo === "profile"
+    ? `/profile/${encodeURIComponent(buildMeta.username)}`
+    : initialBackTo === "builds"
+      ? `/profile/${encodeURIComponent(buildMeta.username)}/builds`
+      : null;
+  const backLabel = initialBackTo === "profile"
+    ? "← Back to profile"
+    : initialBackTo === "builds"
+      ? "← Back to builds"
+      : null;
+
   return (
     <main className="space-y-8 pb-8">
       <PostRedirectToast />
@@ -682,6 +695,11 @@ export default function BuildDetailPageClient({
               </div>
               : null}
           </div>
+          {backHref && backLabel ? (
+            <Link href={backHref} className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline pt-4">
+              {backLabel}
+            </Link>
+          ) : null}
           {buildMeta.forkedFrom ? (
             <p>
               Forked from{" "}
