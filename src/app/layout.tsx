@@ -11,11 +11,8 @@ import { getNotificationPreview, type SerializedNotification } from "@/lib/notif
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/urls";
-import dynamic from "next/dynamic";
 
-const GoogleAdSlot = dynamic(() => import("@/components/ads/GoogleAdSlot"), {
-  ssr: false,
-});
+import AdsShell from "@/components/ads/AdsShell";
 
 const appUrl = getBaseUrl();
 
@@ -72,15 +69,15 @@ const sans = Space_Grotesk({
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  let notificationPreview: { notifications: SerializedNotification[]; unreadCount: number } | null = null;
 
-  const adsEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT);
+  let notificationPreview: { notifications: SerializedNotification[]; unreadCount: number } | null = null;
 
   if (session?.user?.email) {
     const user = await db.user.findUnique({
       where: { email: session.user.email },
       select: { id: true },
     });
+
     if (user) {
       const preview = await getNotificationPreview(user.id);
       notificationPreview = preview;
@@ -94,63 +91,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Header session={session} notifications={notificationPreview} />
 
         <main className="relative flex-1">
-          {adsEnabled && (
-            <>
-              {/* Desktop side rails */}
-              <div className="hidden xl:block fixed left-4 top-24 z-20">
-                <GoogleAdSlot
-                  className="h-150 w-40"
-                  slot="6232979234"
-                  format="fixed"
-                  width={160}
-                  height={600}
-                />
-              </div>
-
-              <div className="hidden xl:block fixed right-4 top-24 z-20">
-                <GoogleAdSlot
-                  className="h-150 w-40"
-                  slot="5105947433"
-                  format="fixed"
-                  width={160}
-                  height={600}
-                />
-              </div>
-            </>
-          )}
+          <AdsShell />
 
           <div className="container-max py-12 sm:py-16">
             <Providers>
               <ExternalLinkGuard />
 
               <div className="space-y-6 lg:space-y-10">
-                {/* Mobile top */}
-                {adsEnabled && (
-                  <div className="space-y-4 lg:hidden">
-                    <GoogleAdSlot
-                      className="min-h-30 w-full"
-                      slot="3606815892"
-                      format="auto"
-                      fullWidthResponsive
-                      layoutKey="mobile-top"
-                    />
-                  </div>
-                )}
-
                 <div className="space-y-12">{children}</div>
-
-                {/* Mobile bottom */}
-                {adsEnabled && (
-                  <div className="space-y-4 lg:hidden">
-                    <GoogleAdSlot
-                      className="min-h-30 w-full"
-                      slot="7536669655"
-                      format="auto"
-                      fullWidthResponsive
-                      layoutKey="mobile-bottom"
-                    />
-                  </div>
-                )}
               </div>
             </Providers>
           </div>

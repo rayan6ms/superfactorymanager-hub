@@ -91,16 +91,22 @@ export default async function TagsPage({ searchParams }: Props) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="space-y-3">
         <p className="eyebrow">Tags</p>
         <h1 className="text-3xl font-semibold text-white">
           Discover tags
         </h1>
-        <p className="text-white/70">
-          Select one or more tags to surface posts that match or
-          closely relate to them.
-        </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          <p className="text-white/70 sm:flex-1">
+            Select one or more tags to surface posts that match or
+            closely relate to them.
+          </p>
+
+          <p className="text-xs uppercase tracking-[0.3em] text-white/50 sm:ml-auto sm:text-right whitespace-nowrap">
+            Showing {tags.length} {tags.length === 1 ? "tag" : "tags"}
+          </p>
+        </div>
       </div>
 
       <Card className="p-5">
