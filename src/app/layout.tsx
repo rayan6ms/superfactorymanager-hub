@@ -2,18 +2,20 @@ import "./globals.css";
 import Providers from "./providers";
 import { auth } from "@/lib/auth";
 import { Space_Grotesk } from "next/font/google";
-import Script from "next/script";
 import clsx from "clsx";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ExternalLinkGuard from "@/components/layout/ExternalLinkGuard";
 import { db } from "@/lib/db";
 import { getNotificationPreview, type SerializedNotification } from "@/lib/notifications";
-import GoogleAdSlot from "@/components/ads/GoogleAdSlot";
 import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/urls";
+import dynamic from "next/dynamic";
+
+const GoogleAdSlot = dynamic(() => import("@/components/ads/GoogleAdSlot"), {
+  ssr: false,
+});
 
 const appUrl = getBaseUrl();
 
@@ -71,6 +73,7 @@ const sans = Space_Grotesk({
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   let notificationPreview: { notifications: SerializedNotification[]; unreadCount: number } | null = null;
+
   const adsEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT);
 
   if (session?.user?.email) {
@@ -88,34 +91,29 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className={clsx(sans.variable)}>
       <body className="app-shell">
         <Analytics />
-        <SpeedInsights />
         <Header session={session} notifications={notificationPreview} />
 
         <main className="relative flex-1">
           {adsEnabled && (
-            <Script
-              id="google-adsense-script"
-              strategy="afterInteractive"
-              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT}`}
-              crossOrigin="anonymous"
-            />
-          )}
-
-          {adsEnabled && (
             <>
+              {/* Desktop side rails */}
               <div className="hidden xl:block fixed left-4 top-24 z-20">
                 <GoogleAdSlot
-                  className="h-[600px] w-[180px]"
+                  className="h-150 w-40"
                   slot="6232979234"
-                  layoutKey="left-rail"
+                  format="fixed"
+                  width={160}
+                  height={600}
                 />
               </div>
 
               <div className="hidden xl:block fixed right-4 top-24 z-20">
                 <GoogleAdSlot
-                  className="h-[600px] w-[180px]"
+                  className="h-150 w-40"
                   slot="5105947433"
-                  layoutKey="right-rail"
+                  format="fixed"
+                  width={160}
+                  height={600}
                 />
               </div>
             </>
@@ -126,25 +124,29 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ExternalLinkGuard />
 
               <div className="space-y-6 lg:space-y-10">
+                {/* Mobile top */}
                 {adsEnabled && (
                   <div className="space-y-4 lg:hidden">
                     <GoogleAdSlot
-                      className="min-h-[120px] w-full"
+                      className="min-h-30 w-full"
                       slot="3606815892"
+                      format="auto"
+                      fullWidthResponsive
                       layoutKey="mobile-top"
                     />
                   </div>
                 )}
 
-                <div className="space-y-12">
-                  {children}
-                </div>
+                <div className="space-y-12">{children}</div>
 
+                {/* Mobile bottom */}
                 {adsEnabled && (
                   <div className="space-y-4 lg:hidden">
                     <GoogleAdSlot
-                      className="min-h-[120px] w-full"
+                      className="min-h-30 w-full"
                       slot="7536669655"
+                      format="auto"
+                      fullWidthResponsive
                       layoutKey="mobile-bottom"
                     />
                   </div>
