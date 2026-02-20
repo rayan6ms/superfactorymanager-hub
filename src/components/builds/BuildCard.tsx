@@ -34,7 +34,7 @@ export default function BuildCard({
       href={href}
       className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d12]"
     >
-      <Card hoverable className="h-full space-y-3 p-5">
+      <Card hoverable className="h-full space-y-3 p-5 backdrop-blur-none sm:backdrop-blur-sm">
         <div className="flex items-start justify-between gap-3">
           <h3 className="line-clamp-2 wrap-anywhere text-lg font-semibold text-white">{name}</h3>
           <Badge

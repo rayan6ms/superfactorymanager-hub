@@ -119,6 +119,73 @@ export default function PostCard({ post, compact = false }: Props) {
   const authorImage = post.author?.image ?? null;
   const description = normalizePostDescription(post.description);
 
+  if (compact) {
+    return (
+      <li>
+        <Link href={`/posts/${post.slug}`} className="block">
+          <Card className="space-y-3 p-4 backdrop-blur-none sm:backdrop-blur-sm" hoverable>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {imageSrc ? (
+                <div className="relative h-[120px] w-full overflow-hidden rounded-xl border border-white/10 sm:w-40 sm:shrink-0">
+                  <Image
+                    src={imageSrc}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 100vw, 160px"
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="grid h-[120px] w-full place-items-center rounded-xl border border-white/10 bg-white/5 text-white/40 sm:w-40 sm:shrink-0">
+                  <SearchIcon className="h-5 w-5" />
+                </div>
+              )}
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-semibold text-white">{post.title}</h3>
+                  <Badge>{post.category?.name}</Badge>
+                </div>
+                <div className="prose prose-invert prose-sm max-w-none line-clamp-2 whitespace-pre-line prose-p:my-0 prose-strong:text-white prose-em:text-white/90 prose-li:text-white/80 text-white/70">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {description}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            </div>
+            {post.tags?.length ? (
+              <div className="flex flex-wrap gap-1 text-xs text-white/50">
+                {post.tags.slice(0, 4).map(tag => (
+                  <span
+                    key={tag.slug || tag.name}
+                    className="rounded-full border border-white/10 px-2 py-0.5 text-[0.7rem] text-white/65"
+                  >
+                    #{tag.name}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            <div className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-white/60">
+              <span>v{post.modVersion}</span>
+              <div className="flex items-center gap-1">
+                <Eye className="flex h-4 w-4" aria-hidden="true" />
+                <span>{viewsFormatter.format(post.views)} views</span>
+              </div>
+              <span className="inline-flex items-center gap-1 text-white/80">
+                <Star className="h-3 w-3 text-amber-300" aria-hidden />
+                {renderRating(
+                  post.rating,
+                  post.ratingCount,
+                  post.workedCount,
+                  post.brokenCount,
+                )}
+              </span>
+            </div>
+          </Card>
+        </Link>
+      </li>
+    );
+  }
+
   return (
     <li>
       <Link href={`/posts/${post.slug}`} className="block">
@@ -169,17 +236,11 @@ export default function PostCard({ post, compact = false }: Props) {
                 <h3 className="text-lg font-semibold text-white">{post.title}</h3>
                 <Badge>{post.category?.name}</Badge>
               </div>
-              {compact ? (
-                <p className="line-clamp-2 whitespace-pre-line text-sm text-white/70">
+              <div className="prose prose-invert prose-sm max-w-none line-clamp-2 whitespace-pre-line prose-p:my-0 prose-strong:text-white prose-em:text-white/90 prose-li:text-white/80 text-white/70">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {description}
-                </p>
-              ) : (
-                <div className="prose prose-invert prose-sm max-w-none line-clamp-2 whitespace-pre-line prose-p:my-0 prose-strong:text-white prose-em:text-white/90 prose-li:text-white/80 text-white/70">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {description}
-                  </ReactMarkdown>
-                </div>
-              )}
+                </ReactMarkdown>
+              </div>
               {post.tags?.length ? (
                 <div className="flex flex-wrap gap-1 text-xs text-white/50">
                   {post.tags.slice(0, 4).map(tag => (

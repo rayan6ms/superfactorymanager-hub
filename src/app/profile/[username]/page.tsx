@@ -46,12 +46,13 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
   const session = await auth();
   const isOwnerView = session?.user?.id === user.id;
+  const buildVisibilityFilter = isOwnerView ? {} : { visibility: "PUBLIC" as const };
 
-  const [recentBuilds, totalPosts, posts] = await Promise.all([
+  const [recentBuilds, totalBuilds, totalPosts, posts] = await Promise.all([
     db.build.findMany({
       where: {
         userId: user.id,
-        ...(isOwnerView ? {} : { visibility: "PUBLIC" as const }),
+        ...buildVisibilityFilter,
       },
       orderBy: { createdAt: "desc" },
       take: PREVIEW_LIMIT,
@@ -61,6 +62,12 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         visibility: true,
         createdAt: true,
         updatedAt: true,
+      },
+    }),
+    db.build.count({
+      where: {
+        userId: user.id,
+        ...buildVisibilityFilter,
       },
     }),
     db.post.count({ where: { authorId: user.id, isDeleted: false } }),
@@ -78,7 +85,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
   return (
     <div className="space-y-5">
-      <Card className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+      <Card className="flex flex-col gap-4 p-6 backdrop-blur-none sm:flex-row sm:items-center sm:backdrop-blur-sm">
         {user.image ? (
           <span
             className="h-20 w-20 shrink-0 rounded-full border border-white/10 bg-cover bg-center"
@@ -99,15 +106,18 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         </div>
       </Card>
 
-      <Card className="space-y-4 p-6">
+      <Card className="space-y-4 p-6 backdrop-blur-none sm:backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Shared builds</h2>
-          <Link
-            href={`/profile/${encodeURIComponent(user.name)}/builds`}
-            className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
-          >
-            View all
-          </Link>
+          <div className="flex items-center gap-4">
+            <span className="text-xs uppercase tracking-[0.3em] text-white/40">{totalBuilds} builds</span>
+            <Link
+              href={`/profile/${encodeURIComponent(user.name)}/builds`}
+              className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+            >
+              View all
+            </Link>
+          </div>
         </div>
         {recentBuilds.length ? (
           <ul className="grid gap-4 md:grid-cols-2">
@@ -130,7 +140,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         )}
       </Card>
 
-      <Card className="space-y-4 p-6">
+      <Card className="space-y-4 p-6 backdrop-blur-none sm:backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">{isOwnerView ? "Your posts" : "Shared posts"}</h2>
           <div className="flex items-center gap-4">
