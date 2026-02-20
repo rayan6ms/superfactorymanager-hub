@@ -33,7 +33,7 @@ export default function BuildCard({
     >
       <Card hoverable className="h-full space-y-3 p-5">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="line-clamp-2 text-lg font-semibold text-white">{name}</h3>
+          <h3 className="line-clamp-2 wrap-anywhere text-lg font-semibold text-white">{name}</h3>
           <Badge
             className={visibility === "PRIVATE"
               ? "border-rose-500/40 bg-rose-500/10 text-rose-200"

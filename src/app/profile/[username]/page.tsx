@@ -133,11 +133,11 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">{isOwnerView ? "Your posts" : "Shared posts"}</h2>
           <div className="flex items-center gap-4">
-              <span className="text-xs uppercase tracking-[0.3em] text-white/40">{totalPosts} posts</span>
-              <Link
+            <span className="text-xs uppercase tracking-[0.3em] text-white/40">{totalPosts} posts</span>
+            <Link
               href={`/profile/${encodeURIComponent(profileUsername)}/posts`}
               className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
-              >
+            >
               View all
             </Link>
           </div>
