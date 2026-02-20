@@ -42,9 +42,14 @@ export default function BuildCard({
             {visibility}
           </Badge>
         </div>
-        <div className="text-xs text-white/55">
+        <div className="sm:flex gap-4 text-xs text-white/55">
           <p>Created {createdDate}</p>
-          {showUpdated ? <p>Updated {updatedDate}</p> : null}
+          {showUpdated ?
+            <div className='flex gap-4'>
+              <p className="hidden sm:block">|</p>
+              <p>Updated {updatedDate}</p>
+            </div>
+            : null}
         </div>
       </Card>
     </Link>

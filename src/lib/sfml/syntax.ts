@@ -13,6 +13,12 @@ export type SyntaxErrorItem = {
   message: string;
 };
 
+export type ParsedSfmlSyntax = {
+  ok: boolean;
+  errors: SyntaxErrorItem[];
+  tree: ReturnType<SFMLParser["program"]>;
+};
+
 class CollectingErrorListener implements ANTLRErrorListener<Token | undefined> {
   public errors: SyntaxErrorItem[] = [];
   syntaxError<T>(
@@ -40,7 +46,7 @@ class CollectingErrorListener implements ANTLRErrorListener<Token | undefined> {
   }
 }
 
-export function validateSyntax(code: string): { ok: boolean; errors: SyntaxErrorItem[] } {
+export function parseSfmlSyntax(code: string): ParsedSfmlSyntax {
   const input = CharStreams.fromString(code);
   const lexer = new SFMLLexer(input);
   const tokens = new CommonTokenStream(lexer);
@@ -52,7 +58,16 @@ export function validateSyntax(code: string): { ok: boolean; errors: SyntaxError
   lexer.addErrorListener(listener);
   parser.addErrorListener(listener);
 
-  parser.program();
+  const tree = parser.program();
+  const ok = parser.numberOfSyntaxErrors === 0 && listener.errors.length === 0;
 
-  return { ok: parser.numberOfSyntaxErrors === 0 && listener.errors.length === 0, errors: listener.errors };
+  return { ok, errors: listener.errors, tree };
+}
+
+export function validateSyntax(code: string): { ok: boolean; errors: SyntaxErrorItem[] } {
+  const parsed = parseSfmlSyntax(code);
+  return {
+    ok: parsed.ok,
+    errors: parsed.errors,
+  };
 }

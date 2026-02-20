@@ -1,5 +1,5 @@
-import { validateSyntax, type SyntaxErrorItem } from "./syntax";
-import { collectWarnings, type WarningItem } from "./warnings";
+import { parseSfmlSyntax, type SyntaxErrorItem } from "./syntax";
+import { collectWarningsFromTree, type WarningItem } from "./warnings";
 
 export const CONTROL_CHAR_REGEX = /[\x00-\x08\x0B\x0C\x0E-\x1F]/;
 
@@ -23,6 +23,19 @@ export type AnalyzeOptions = {
   /** Custom message when `required` and the code is empty. */
   emptyMessage?: string;
 };
+
+const ANALYZE_DEBOUNCE_BASE_MS = 350;
+const ANALYZE_DEBOUNCE_MEDIUM_MS = 700;
+const ANALYZE_DEBOUNCE_LARGE_MS = 1200;
+const ANALYZE_MEDIUM_LENGTH = 6000;
+const ANALYZE_LARGE_LENGTH = 12000;
+
+export function getSfmlAnalyzeDebounceMs(code: string): number {
+  const length = code.length;
+  if (length >= ANALYZE_LARGE_LENGTH) return ANALYZE_DEBOUNCE_LARGE_MS;
+  if (length >= ANALYZE_MEDIUM_LENGTH) return ANALYZE_DEBOUNCE_MEDIUM_MS;
+  return ANALYZE_DEBOUNCE_BASE_MS;
+}
 
 export function analyzeSfmlCode(
   code: string,
@@ -67,9 +80,9 @@ export function analyzeSfmlCode(
     };
   }
 
-  const syntax = validateSyntax(trimmed);
-  if (!syntax.ok) {
-    const first = syntax.errors[0];
+  const parsed = parseSfmlSyntax(trimmed);
+  if (!parsed.ok) {
+    const first = parsed.errors[0];
     const location = first
       ? `line ${first.lineStart}${typeof first.columnStart === "number"
         ? `, column ${first.columnStart + 1}`
@@ -82,12 +95,12 @@ export function analyzeSfmlCode(
       message: first
         ? `Syntax error on ${location}: ${first.message}`
         : "Syntax error in script.",
-      syntaxErrors: syntax.errors,
+      syntaxErrors: parsed.errors,
       warnings: [],
     };
   }
 
-  const warnings = collectWarnings(trimmed);
+  const warnings = collectWarningsFromTree(parsed.tree);
   return {
     status: "ok",
     message: null,

@@ -25,9 +25,8 @@ import {
   POST_COMPOSER_PREFILL_CODE_KEY,
 } from "@/lib/builds/links";
 import type { BuildDetailPayload, BuildWriteResponse } from "@/lib/builds/types";
-import { analyzeSfmlCode, type CodeFeedback } from "@/lib/sfml/analysis";
+import { analyzeSfmlCode, getSfmlAnalyzeDebounceMs, type CodeFeedback } from "@/lib/sfml/analysis";
 
-const CODE_ANALYZE_DEBOUNCE = 350;
 const DRAFT_SAVE_DEBOUNCE = 600;
 const NAME_CHECK_DEBOUNCE = 300;
 const CODE_TOO_SHORT_ERROR = "Code needs more than 50 non-whitespace characters before saving.";
@@ -115,6 +114,7 @@ export default function BuildDetailPageClient({
   const draftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedDraftRef = useRef(false);
   const forkNameRequestRef = useRef(0);
+  const analyzeDebounceMs = useMemo(() => getSfmlAnalyzeDebounceMs(code), [code]);
 
   const codeStats = useMemo(() => getCodeContentStats(code), [code]);
   const hasValidCodeLength = codeStats.nonWhitespaceCount >= BUILD_CODE_MIN_NON_WHITESPACE;
@@ -135,9 +135,9 @@ export default function BuildDetailPageClient({
   useEffect(() => {
     const timer = setTimeout(() => {
       setCodeFeedback(analyzeSfmlCode(code, { required: false }));
-    }, CODE_ANALYZE_DEBOUNCE);
+    }, analyzeDebounceMs);
     return () => clearTimeout(timer);
-  }, [code]);
+  }, [analyzeDebounceMs, code]);
 
   const errorMarkers = useMemo(
     () => codeFeedback.syntaxErrors.map((err) => ({ line: err.lineStart, message: err.message })),
@@ -673,8 +673,15 @@ export default function BuildDetailPageClient({
               {buildMeta.username}
             </Link>
           </p>
-          <p>Created {formatMetaDate(buildMeta.createdAt)}</p>
-          {showUpdated ? <p>Updated {formatMetaDate(buildMeta.updatedAt)}</p> : null}
+          <div className="sm:flex gap-4">
+            <p>Created {formatMetaDate(buildMeta.createdAt)}</p>
+            {showUpdated ?
+              <div className='flex gap-4'>
+                <p className="hidden sm:block">|</p>
+                <p>Updated {formatMetaDate(buildMeta.updatedAt)}</p>
+              </div>
+              : null}
+          </div>
           {buildMeta.forkedFrom ? (
             <p>
               Forked from{" "}

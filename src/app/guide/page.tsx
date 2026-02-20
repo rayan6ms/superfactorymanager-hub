@@ -6,11 +6,10 @@ import Link from "next/link";
 import { clsx } from "clsx";
 import { Card, Button } from "@/components/ui";
 import { CodeBox } from "@/components/CodeBox";
-import { analyzeSfmlCode, type CodeFeedback } from "@/lib/sfml/analysis";
+import { analyzeSfmlCode, getSfmlAnalyzeDebounceMs, type CodeFeedback } from "@/lib/sfml/analysis";
 import CopyCodeButton from "@/components/CopyCodeButton";
 import { Maximize2, Minimize2 } from "lucide-react";
 
-const CODE_ANALYZE_DEBOUNCE = 350;
 
 type ExampleKey =
   | "a_simple_program"
@@ -222,6 +221,7 @@ export default function GuidePage() {
   const isLoaded = currentExample?.loaded;
   const isLoading = currentExample?.loading;
   const currentError = currentExample?.error;
+  const analyzeDebounceMs = useMemo(() => getSfmlAnalyzeDebounceMs(currentCode), [currentCode]);
 
   useEffect(() => {
     if (!activeExample) return;
@@ -278,10 +278,10 @@ export default function GuidePage() {
 
     const timer = window.setTimeout(() => {
       setFeedback(analyzeSfmlCode(currentCode));
-    }, CODE_ANALYZE_DEBOUNCE);
+    }, analyzeDebounceMs);
 
     return () => window.clearTimeout(timer);
-  }, [currentCode, isLoaded]);
+  }, [analyzeDebounceMs, currentCode, isLoaded]);
 
   const errorMarkers = useMemo(
     () => feedback.syntaxErrors.map(err => ({ line: err.lineStart, message: err.message })),

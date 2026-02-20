@@ -18,7 +18,7 @@ import {
   POST_DESCRIPTION_MAX_LENGTH,
 } from "@/lib/validation";
 import { analyzeYoutubeUrl } from "@/lib/youtube";
-import { analyzeSfmlCode, type CodeFeedback } from "@/lib/sfml/analysis";
+import { analyzeSfmlCode, getSfmlAnalyzeDebounceMs, type CodeFeedback } from "@/lib/sfml/analysis";
 import { normalizeTag, type NormalizedTag } from "@/lib/tags";
 import { normalizePostDescription } from "@/lib/post-description";
 import { POST_COMPOSER_PREFILL_CODE_KEY } from "@/lib/builds/links";
@@ -44,7 +44,6 @@ import remarkGfm from "remark-gfm";
 const MAX_IMAGE_MB = 5;
 const MAX_IMAGE_COUNT = MAX_POST_IMAGES;
 const MAX_TITLE_LENGTH = 120;
-const CODE_ANALYZE_DEBOUNCE = 350;
 const IMAGES_PER_PAGE = 4;
 
 const DRAFT_STORAGE_PREFIX = "sfm-post-composer";
@@ -258,6 +257,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [wrapLines, setWrapLines] = useState(true);
   const [imagePage, setImagePage] = useState(0)
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
+  const analyzeDebounceMs = useMemo(() => getSfmlAnalyzeDebounceMs(form.code), [form.code]);
   const [draftCleared, setDraftCleared] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const [descriptionMaxHeight, setDescriptionMaxHeight] = useState<number | null>(null);
@@ -968,9 +968,9 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   useEffect(() => {
     const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
       setCodeFeedback(analyzeSfmlCode(form.code, { required: true }));
-    }, CODE_ANALYZE_DEBOUNCE);
+    }, analyzeDebounceMs);
     return () => clearTimeout(timer);
-  }, [form.code]);
+  }, [analyzeDebounceMs, form.code]);
 
   useEffect(() => {
     setErrors(prev => {

@@ -81,17 +81,20 @@ class InputOutputChecker implements SFMLListener {
   visitErrorNode?(_node: ErrorNode): void { void _node; }
 }
 
-export function collectWarnings(code: string): WarningItem[] {
-  const input = CharStreams.fromString(code);
-  const lexer = new SFMLLexer(input);
-  const tokens = new CommonTokenStream(lexer);
-  const parser = new SFMLParser(tokens);
-
-  const tree = parser.program();
+export function collectWarningsFromTree(tree: ParserRuleContext): WarningItem[] {
   const checker = new InputOutputChecker();
   const walker = new ParseTreeWalker();
   walker.walk(checker as SFMLListener, tree);
   checker.finalCheck();
 
   return checker.warnings;
+}
+
+export function collectWarnings(code: string): WarningItem[] {
+  const input = CharStreams.fromString(code);
+  const lexer = new SFMLLexer(input);
+  const tokens = new CommonTokenStream(lexer);
+  const parser = new SFMLParser(tokens);
+  const tree = parser.program();
+  return collectWarningsFromTree(tree);
 }

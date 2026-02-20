@@ -26,7 +26,7 @@ import {
   POST_REDIRECT_TOAST_STORAGE_KEY,
 } from "@/lib/builds/links";
 import type { BuildWriteResponse } from "@/lib/builds/types";
-import { analyzeSfmlCode, type CodeFeedback } from "@/lib/sfml/analysis";
+import { analyzeSfmlCode, getSfmlAnalyzeDebounceMs, type CodeFeedback } from "@/lib/sfml/analysis";
 
 const DEFAULT_CODE = `name " "
 
@@ -36,7 +36,6 @@ every 20 ticks do
     forget
 end`;
 
-const CODE_ANALYZE_DEBOUNCE = 350;
 const DRAFT_SAVE_DEBOUNCE = 600;
 const NAME_CHECK_DEBOUNCE = 300;
 const CODE_TOO_SHORT_ERROR = "Code needs more than 50 non-whitespace characters before saving.";
@@ -96,6 +95,7 @@ export default function CodeEditorPageClient({
   const [shareFallbackLink, setShareFallbackLink] = useState<string | null>(null);
   const [lastSavedBuild, setLastSavedBuild] = useState<SavedBuild | null>(null);
   const [lastSavedTrimmedCode, setLastSavedTrimmedCode] = useState<string | null>(null);
+  const analyzeDebounceMs = useMemo(() => getSfmlAnalyzeDebounceMs(code), [code]);
 
   const nameRequestRef = useRef(0);
   const draftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -103,9 +103,9 @@ export default function CodeEditorPageClient({
   useEffect(() => {
     const timer = setTimeout(() => {
       setCodeFeedback(analyzeSfmlCode(code, { required: false }));
-    }, CODE_ANALYZE_DEBOUNCE);
+    }, analyzeDebounceMs);
     return () => clearTimeout(timer);
-  }, [code]);
+  }, [analyzeDebounceMs, code]);
 
   const errorMarkers = useMemo(
     () =>
