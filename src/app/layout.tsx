@@ -11,6 +11,7 @@ import { db } from "@/lib/db";
 import { getNotificationPreview, type SerializedNotification } from "@/lib/notifications";
 import GoogleAdSlot from "@/components/ads/GoogleAdSlot";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/urls";
 
@@ -87,6 +88,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className={clsx(sans.variable)}>
       <body className="app-shell">
         <Analytics />
+        <SpeedInsights />
         <Header session={session} notifications={notificationPreview} />
 
         <main className="relative flex-1">
