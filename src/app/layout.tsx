@@ -91,9 +91,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Header session={session} notifications={notificationPreview} />
 
         <main className="relative flex-1">
-          <AdsShell />
+          <div className="container-max relative py-12 sm:py-16">
+            <AdsShell placement="desktop-rails" />
+            <AdsShell placement="mobile-top" />
 
-          <div className="container-max py-12 sm:py-16">
             <Providers>
               <ExternalLinkGuard />
 
@@ -101,6 +102,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <div className="space-y-12">{children}</div>
               </div>
             </Providers>
+
+            <AdsShell placement="mobile-bottom" />
           </div>
         </main>
 

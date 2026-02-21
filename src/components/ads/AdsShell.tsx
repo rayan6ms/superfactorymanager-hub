@@ -2,14 +2,48 @@
 
 import GoogleAdSlot from "@/components/ads/GoogleAdSlot";
 
-export default function AdsShell() {
+type Placement = "desktop-rails" | "mobile-top" | "mobile-bottom";
+
+type AdsShellProps = {
+  placement?: Placement;
+};
+
+export default function AdsShell({ placement = "desktop-rails" }: AdsShellProps) {
   const adsEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT);
   if (!adsEnabled) return null;
 
+  if (placement === "mobile-top") {
+    return (
+      <div className="mb-4 lg:hidden">
+        <GoogleAdSlot
+          className="min-h-30 w-full"
+          slot="3606815892"
+          format="auto"
+          fullWidthResponsive
+          layoutKey="mobile-top"
+        />
+      </div>
+    );
+  }
+
+  if (placement === "mobile-bottom") {
+    return (
+      <div className="mt-6 lg:hidden">
+        <GoogleAdSlot
+          className="min-h-30 w-full"
+          slot="7536669655"
+          format="auto"
+          fullWidthResponsive
+          layoutKey="mobile-bottom"
+        />
+      </div>
+    );
+  }
+
   return (
-    <>
-      {/* Desktop side rails */}
-      <div className="fixed left-4 top-1/2 z-20 hidden -translate-y-1/2 xl:block">
+    <div className="pointer-events-none absolute inset-0 z-20 hidden xl:block">
+      {/* Desktop side rails aligned to content wrapper */}
+      <div className="pointer-events-auto absolute left-0 top-1/2 -translate-x-[calc(100%+1rem)] -translate-y-1/2">
         <GoogleAdSlot
           className="h-150 w-40"
           slot="6232979234"
@@ -19,7 +53,7 @@ export default function AdsShell() {
         />
       </div>
 
-      <div className="fixed right-4 top-1/2 z-20 hidden -translate-y-1/2 xl:block">
+      <div className="pointer-events-auto absolute right-0 top-1/2 translate-x-[calc(100%+1rem)] -translate-y-1/2">
         <GoogleAdSlot
           className="h-150 w-40"
           slot="5105947433"
@@ -28,27 +62,6 @@ export default function AdsShell() {
           height={600}
         />
       </div>
-
-      {/* Mobile top/bottom */}
-      <div className="fixed inset-x-0 top-0 z-20 px-2 sm:px-4 lg:hidden">
-        <GoogleAdSlot
-          className="min-h-30 w-full"
-          slot="3606815892"
-          format="auto"
-          fullWidthResponsive
-          layoutKey="mobile-top"
-        />
-      </div>
-
-      <div className="fixed inset-x-0 bottom-0 z-20 px-2 pb-2 sm:px-4 lg:hidden">
-        <GoogleAdSlot
-          className="min-h-30 w-full"
-          slot="7536669655"
-          format="auto"
-          fullWidthResponsive
-          layoutKey="mobile-bottom"
-        />
-      </div>
-    </>
+    </div>
   );
 }
