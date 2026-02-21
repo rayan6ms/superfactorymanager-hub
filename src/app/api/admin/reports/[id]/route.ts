@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { recomputePostRating } from "@/lib/posts";
+import { revalidateSeoPaths } from "@/lib/seo-revalidate";
 
 const moderationSchema = z.object({
   markResolved: z.boolean().optional().default(false),
@@ -189,6 +190,14 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   if (affectedPostIds.size) {
     await Promise.all(Array.from(affectedPostIds).map(postId => recomputePostRating(postId)));
+  }
+
+  if ((flagTarget && Boolean(report.postId)) || flagAuthorPosts) {
+    try {
+      revalidateSeoPaths();
+    } catch (error) {
+      console.error("Failed to revalidate SEO routes after report moderation:", error);
+    }
   }
 
   return NextResponse.json({ success: true });

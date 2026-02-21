@@ -14,6 +14,7 @@ import { interactionBlockReason } from "@/lib/moderation";
 import { ZodError } from "zod";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 import { searchPostsHybrid } from "@/lib/search-db";
+import { revalidateSeoPaths } from "@/lib/seo-revalidate";
 
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
@@ -289,6 +290,12 @@ export async function POST(req: Request) {
 
       return { ...created, currentCommitId: initialCommit.id };
     });
+
+    try {
+      revalidateSeoPaths();
+    } catch (error) {
+      console.error("Failed to revalidate SEO routes after post create:", error);
+    }
 
     return NextResponse.json(serializePost(hydrated), { status: 201 });
   } catch (e) {

@@ -1,14 +1,24 @@
 export function getBaseUrl(defaultBase = "https://sfmhub.site") {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
-  if (envUrl) return envUrl.replace(/\/$/, "");
+  const trimTrailingSlash = (value: string) => value.replace(/\/$/, "");
+  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL;
+  const vercelUrl = process.env.VERCEL_URL;
+  const vercelEnv = process.env.VERCEL_ENV;
 
-  if (process.env.VERCEL_ENV !== "production") {
-    const vercelUrl = process.env.VERCEL_URL;
-    if (vercelUrl) {
-      const withProtocol = vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
-      return withProtocol.replace(/\/$/, "");
-    }
+  if (vercelEnv === "production") {
+    return trimTrailingSlash(appUrl || defaultBase);
   }
 
-  return defaultBase.replace(/\/$/, "");
+  if (vercelEnv === "preview" && vercelUrl) {
+    const withProtocol = vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
+    return trimTrailingSlash(withProtocol);
+  }
+
+  if (appUrl) return trimTrailingSlash(appUrl);
+
+  if (vercelUrl) {
+    const withProtocol = vercelUrl.startsWith("http") ? vercelUrl : `https://${vercelUrl}`;
+    return trimTrailingSlash(withProtocol);
+  }
+
+  return trimTrailingSlash(defaultBase);
 }

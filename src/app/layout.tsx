@@ -15,6 +15,7 @@ import { getBaseUrl } from "@/lib/urls";
 import AdsShell from "@/components/ads/AdsShell";
 
 const appUrl = getBaseUrl();
+const adsClient = process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT;
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -86,12 +87,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={clsx(sans.variable)}>
+      <head>
+        {adsClient ? (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsClient}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
+      </head>
       <body className="app-shell">
         <Analytics />
         <Header session={session} notifications={notificationPreview} />
 
         <main className="relative flex-1">
-          <div className="container-max relative py-12 sm:py-16">
+          <div className="container-max relative py-10">
             <AdsShell placement="desktop-rails" />
             <AdsShell placement="mobile-top" />
 

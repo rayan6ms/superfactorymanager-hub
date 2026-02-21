@@ -6,19 +6,20 @@ type Placement = "desktop-rails" | "mobile-top" | "mobile-bottom";
 
 type AdsShellProps = {
   placement?: Placement;
+  adsEnabled?: boolean;
 };
 
-export default function AdsShell({ placement = "desktop-rails" }: AdsShellProps) {
-  const adsEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT);
+export default function AdsShell({ placement = "desktop-rails", adsEnabled: adsEnabledProp }: AdsShellProps) {
+  const adsEnabled = adsEnabledProp ?? !!process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT;
   if (!adsEnabled) return null;
 
   if (placement === "mobile-top") {
     return (
-      <div className="mb-4 lg:hidden">
+      <div className="mb-4 min-[1512px]:hidden">
         <GoogleAdSlot
-          className="min-h-30 w-full"
+          className="min-h-[72px] w-full"
           slot="3606815892"
-          format="auto"
+          format="horizontal"
           fullWidthResponsive
           layoutKey="mobile-top"
         />
@@ -28,11 +29,11 @@ export default function AdsShell({ placement = "desktop-rails" }: AdsShellProps)
 
   if (placement === "mobile-bottom") {
     return (
-      <div className="mt-6 lg:hidden">
+      <div className="mt-6 min-[1512px]:hidden">
         <GoogleAdSlot
-          className="min-h-30 w-full"
+          className="min-h-[72px] w-full"
           slot="7536669655"
-          format="auto"
+          format="horizontal"
           fullWidthResponsive
           layoutKey="mobile-bottom"
         />
@@ -41,11 +42,16 @@ export default function AdsShell({ placement = "desktop-rails" }: AdsShellProps)
   }
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 hidden xl:block">
-      {/* Desktop side rails aligned to content wrapper */}
-      <div className="pointer-events-auto absolute left-0 top-1/2 -translate-x-[calc(100%+1rem)] -translate-y-1/2">
+    <div className="pointer-events-none fixed inset-0 z-20 hidden min-[1512px]:block" aria-hidden="true">
+      {/* Desktop side rails pinned to viewport so they stay visible while scrolling */}
+      <div
+        className="pointer-events-auto fixed top-[50vh] -translate-y-1/2"
+        style={{
+          left: "max(0.5rem, calc((100vw - min(100vw, 72rem)) / 2 - 10rem - clamp(0.5rem, (100vw - 1512px) / 8, 2.5rem)))",
+        }}
+      >
         <GoogleAdSlot
-          className="h-150 w-40"
+          className="h-[600px] w-[160px]"
           slot="6232979234"
           format="fixed"
           width={160}
@@ -53,9 +59,14 @@ export default function AdsShell({ placement = "desktop-rails" }: AdsShellProps)
         />
       </div>
 
-      <div className="pointer-events-auto absolute right-0 top-1/2 translate-x-[calc(100%+1rem)] -translate-y-1/2">
+      <div
+        className="pointer-events-auto fixed top-[50vh] -translate-y-1/2"
+        style={{
+          right: "max(0.5rem, calc((100vw - min(100vw, 72rem)) / 2 - 10rem - clamp(0.5rem, (100vw - 1512px) / 8, 2.5rem)))",
+        }}
+      >
         <GoogleAdSlot
-          className="h-150 w-40"
+          className="h-[600px] w-[160px]"
           slot="5105947433"
           format="fixed"
           width={160}

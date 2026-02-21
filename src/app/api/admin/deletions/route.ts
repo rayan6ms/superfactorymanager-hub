@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { flagAsDeleted, purgeExpiredDeletionsIfNeeded, restoreDeletion } from "@/lib/deletions";
+import { revalidateSeoPaths } from "@/lib/seo-revalidate";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -35,10 +36,24 @@ export async function POST(req: Request) {
   try {
     if (action === "flag") {
       const result = await flagAsDeleted(type, targetId, { auto: false });
+      if (type === "post") {
+        try {
+          revalidateSeoPaths();
+        } catch (error) {
+          console.error("Failed to revalidate SEO routes after post flag:", error);
+        }
+      }
       return NextResponse.json({ success: true, slug: result.slug, action: "flag" });
     }
 
     const result = await restoreDeletion(type, targetId);
+    if (type === "post") {
+      try {
+        revalidateSeoPaths();
+      } catch (error) {
+        console.error("Failed to revalidate SEO routes after post restore:", error);
+      }
+    }
     return NextResponse.json({ success: true, slug: result.slug, action: "restore" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected error";

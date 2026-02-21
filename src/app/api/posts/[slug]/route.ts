@@ -12,6 +12,7 @@ import { recordPostContributor, resetPostRatings } from "@/lib/posts";
 import type { z } from "zod";
 import { isAdminEmail } from "@/lib/admin";
 import { deleteBlobs } from "@/lib/blob";
+import { revalidateSeoPaths } from "@/lib/seo-revalidate";
 
 async function removeImageFiles(urls: Array<string | null | undefined>) {
   await deleteBlobs(urls);
@@ -224,6 +225,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     await Promise.all(
       imagesToRemove.map(img => removeImageFiles([img.original, img.thumbSm, img.thumbMd, img.thumbLg])),
     );
+  }
+
+  try {
+    revalidateSeoPaths();
+  } catch (error) {
+    console.error("Failed to revalidate SEO routes after post update:", error);
   }
 
   return NextResponse.json({ slug: updated.slug, id: post.id });

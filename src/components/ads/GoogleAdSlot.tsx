@@ -8,7 +8,7 @@ const clientId = process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT;
 type Props = {
   slot: string;
   className?: string;
-  format?: "auto" | "fixed";
+  format?: "auto" | "horizontal" | "fixed";
   fullWidthResponsive?: boolean;
   layoutKey?: string;
   width?: number;
@@ -34,6 +34,7 @@ export default function GoogleAdSlot({
 
   useEffect(() => {
     if (!clientId) return;
+
     const wrapper = adRef.current;
     if (!wrapper) return;
 
@@ -44,35 +45,61 @@ export default function GoogleAdSlot({
     if (status === "done") return;
 
     let cancelled = false;
+    const timers: number[] = [];
+    const pushDelays = [0, 600, 1600];
+    const isDev = process.env.NODE_ENV !== "production";
+    let loggedZeroWidth = false;
 
-    const tryPush = () => {
+    const pushAd = () => {
       if (cancelled) return;
+      if (ins.getAttribute("data-adsbygoogle-status") === "done") return;
 
-      if (!ins.offsetWidth || !ins.offsetHeight) return;
+      const availableWidth = Math.round(
+        ins.getBoundingClientRect().width || wrapper.getBoundingClientRect().width || 0,
+      );
+      if (format !== "fixed" && availableWidth <= 0) {
+        if (isDev && !loggedZeroWidth) {
+          loggedZeroWidth = true;
+          console.warn(`[ads] Skipping push for slot ${slot}: availableWidth is 0 (hidden or not laid out yet).`);
+        }
+        return;
+      }
 
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (err) {
-        if (process.env.NODE_ENV !== "production") {
-          console.warn("[ads] Failed to push ad", err);
+      } catch (error) {
+        if (isDev) {
+          console.warn(`[ads] adsbygoogle.push failed for slot ${slot}`, error);
         }
       }
     };
 
-    const t = window.setTimeout(tryPush, 0);
-
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(() => tryPush());
-      ro.observe(ins);
+    for (const delay of pushDelays) {
+      timers.push(window.setTimeout(pushAd, delay));
     }
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => pushAd());
+      resizeObserver.observe(wrapper);
+    }
+
+    const missingAdsByGoogleTimer = window.setTimeout(() => {
+      if (!isDev || cancelled) return;
+      if (typeof window.adsbygoogle === "undefined") {
+        console.warn(`[ads] window.adsbygoogle is undefined for slot ${slot}. Check AdSense script load or blockers.`);
+      }
+    }, 4000);
+    timers.push(missingAdsByGoogleTimer);
 
     return () => {
       cancelled = true;
-      window.clearTimeout(t);
-      ro?.disconnect();
+      for (const timer of timers) {
+        window.clearTimeout(timer);
+      }
+      resizeObserver?.disconnect();
     };
-  }, [slot]);
+  }, [format, fullWidthResponsive, height, layoutKey, slot, width]);
 
   if (!clientId) return null;
 
@@ -89,7 +116,7 @@ export default function GoogleAdSlot({
         }
         data-ad-client={clientId}
         data-ad-slot={slot}
-        {...(!isFixed ? { "data-ad-format": "auto" } : {})}
+        {...(!isFixed ? { "data-ad-format": format } : {})}
         {...(!isFixed && fullWidthResponsive ? { "data-full-width-responsive": "true" } : {})}
         {...(layoutKey ? { "data-ad-layout-key": layoutKey } : {})}
       />
