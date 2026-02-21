@@ -9,7 +9,7 @@ export default function AdsShell() {
   return (
     <>
       {/* Desktop side rails */}
-      <div className="hidden xl:block fixed left-4 top-24 z-20">
+      <div className="fixed left-4 top-1/2 z-20 hidden -translate-y-1/2 xl:block">
         <GoogleAdSlot
           className="h-150 w-40"
           slot="6232979234"
@@ -19,7 +19,7 @@ export default function AdsShell() {
         />
       </div>
 
-      <div className="hidden xl:block fixed right-4 top-24 z-20">
+      <div className="fixed right-4 top-1/2 z-20 hidden -translate-y-1/2 xl:block">
         <GoogleAdSlot
           className="h-150 w-40"
           slot="5105947433"
@@ -30,7 +30,7 @@ export default function AdsShell() {
       </div>
 
       {/* Mobile top/bottom */}
-      <div className="space-y-4 lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-20 px-2 sm:px-4 lg:hidden">
         <GoogleAdSlot
           className="min-h-30 w-full"
           slot="3606815892"
@@ -40,7 +40,7 @@ export default function AdsShell() {
         />
       </div>
 
-      <div className="space-y-4 lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-20 px-2 pb-2 sm:px-4 lg:hidden">
         <GoogleAdSlot
           className="min-h-30 w-full"
           slot="7536669655"
