@@ -31,6 +31,7 @@ export default function GoogleAdSlot({
   height,
 }: Props) {
   const adRef = useRef<HTMLDivElement | null>(null);
+  const requestedRef = useRef(false);
 
   useEffect(() => {
     if (!clientId) return;
@@ -42,7 +43,15 @@ export default function GoogleAdSlot({
     if (!ins) return;
 
     const status = ins.getAttribute("data-adsbygoogle-status");
-    if (status === "done") return;
+    if (status === "done") {
+      requestedRef.current = true;
+      return;
+    }
+
+    if (ins.getAttribute("data-sfm-pushed") === "1") {
+      requestedRef.current = true;
+      return;
+    }
 
     let cancelled = false;
     const timers: number[] = [];
@@ -52,12 +61,14 @@ export default function GoogleAdSlot({
 
     const pushAd = () => {
       if (cancelled) return;
+      if (requestedRef.current) return;
       if (ins.getAttribute("data-adsbygoogle-status") === "done") return;
 
       const wrapperRect = wrapper.getBoundingClientRect();
       const insRect = ins.getBoundingClientRect();
       const wrapperStyle = window.getComputedStyle(wrapper);
-      const isHidden = wrapperStyle.display === "none" || wrapperStyle.visibility === "hidden";
+      const isRendered = wrapper.getClientRects().length > 0 && ins.getClientRects().length > 0;
+      const isHidden = !isRendered || wrapperStyle.display === "none" || wrapperStyle.visibility === "hidden";
       const availableWidth = Math.round(insRect.width || wrapperRect.width || (format === "fixed" ? width ?? 0 : 0));
       const availableHeight = Math.round(insRect.height || wrapperRect.height || (format === "fixed" ? height ?? 0 : 0));
 
@@ -73,6 +84,8 @@ export default function GoogleAdSlot({
 
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
+        requestedRef.current = true;
+        ins.setAttribute("data-sfm-pushed", "1");
       } catch (error) {
         if (isDev) {
           console.warn(`[ads] adsbygoogle.push failed for slot ${slot}`, error);
