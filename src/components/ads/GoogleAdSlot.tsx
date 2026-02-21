@@ -54,13 +54,19 @@ export default function GoogleAdSlot({
       if (cancelled) return;
       if (ins.getAttribute("data-adsbygoogle-status") === "done") return;
 
-      const availableWidth = Math.round(
-        ins.getBoundingClientRect().width || wrapper.getBoundingClientRect().width || 0,
-      );
-      if (format !== "fixed" && availableWidth <= 0) {
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const insRect = ins.getBoundingClientRect();
+      const wrapperStyle = window.getComputedStyle(wrapper);
+      const isHidden = wrapperStyle.display === "none" || wrapperStyle.visibility === "hidden";
+      const availableWidth = Math.round(insRect.width || wrapperRect.width || (format === "fixed" ? width ?? 0 : 0));
+      const availableHeight = Math.round(insRect.height || wrapperRect.height || (format === "fixed" ? height ?? 0 : 0));
+
+      if (isHidden || availableWidth <= 0 || availableHeight <= 0) {
         if (isDev && !loggedZeroWidth) {
           loggedZeroWidth = true;
-          console.warn(`[ads] Skipping push for slot ${slot}: availableWidth is 0 (hidden or not laid out yet).`);
+          console.warn(
+            `[ads] Skipping push for slot ${slot}: hidden=${isHidden}, width=${availableWidth}, height=${availableHeight}.`,
+          );
         }
         return;
       }
