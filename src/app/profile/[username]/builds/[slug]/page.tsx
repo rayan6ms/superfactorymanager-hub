@@ -86,7 +86,7 @@ export default async function PublicBuildDetailPage({ params, searchParams }: Pr
 
   if (!response.ok || !payload) {
     return (
-      <main className="container-max flex flex-col gap-6 pb-12 pt-8">
+      <main className="flex flex-col gap-6 pb-12 pt-8">
         <div>
           <h1 className="text-3xl font-semibold text-white">Build</h1>
         </div>

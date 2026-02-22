@@ -114,7 +114,7 @@ export default async function UserPostsPage({ params, searchParams }: Props) {
   };
 
   return (
-    <main className="container-max flex flex-col gap-6 pb-12 pt-8">
+    <main className="flex flex-col gap-6 pb-12 pt-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-semibold text-white">Shared posts</h1>
         <p className="text-sm text-white/60">Posts by {user.name}</p>

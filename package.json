@@ -8,7 +8,8 @@
     "start": "next start",
     "postinstall": "prisma generate --no-engine",
     "db:migrate:deploy": "prisma migrate deploy",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sitemap:generate": "node scripts/generate-sitemap.cjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
