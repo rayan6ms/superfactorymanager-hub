@@ -60,21 +60,8 @@ export default function LoginForm({ next }: LoginFormProps) {
     if (res?.error) {
       const message: FieldErrors = {};
       switch (res.error) {
-        case "IDENTIFIER_REQUIRED":
-        case "EMAIL_REQUIRED":
-          message.email = "Email or username is required.";
-          break;
-        case "EMAIL_NOT_FOUND":
-          message.email = "Account not found.";
-          break;
-        case "PASSWORD_REQUIRED":
-          message.password = "Password is required.";
-          break;
-        case "PASSWORD_TOO_SHORT":
-          message.password = "Password must be at least 8 characters.";
-          break;
-        case "WRONG_PASSWORD":
-          message.password = "Incorrect password.";
+        case "TOO_MANY_ATTEMPTS":
+          message.form = "Too many login attempts. Please wait a few minutes and try again.";
           break;
         case "EMAIL_NOT_VERIFIED":
           message.form = "We couldn't sign you in because your email hasn't been verified yet.";
@@ -83,7 +70,7 @@ export default function LoginForm({ next }: LoginFormProps) {
           );
           break;
         default:
-          message.form = "Unable to sign you in. Please try again.";
+          message.form = "Invalid email/username or password.";
       }
       setErrors(message);
       setIsSubmitting(false);

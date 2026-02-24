@@ -1,5 +1,10 @@
 export type ParsedDep = { url: string; source: "curseforge" | "modrinth"; slug: string; name: string };
 
+function isAllowedHost(hostname: string, domain: string) {
+  const host = hostname.toLowerCase();
+  return host === domain || host.endsWith(`.${domain}`);
+}
+
 export function parseDependency(input: string): ParsedDep | null {
   const s = input.trim();
   try { new URL(s); } catch { return null; }
@@ -11,12 +16,12 @@ export function parseDependency(input: string): ParsedDep | null {
   let source: "curseforge" | "modrinth" | null = null;
   let slug = "";
 
-  if (u.hostname.includes("curseforge.com")) {
+  if (isAllowedHost(u.hostname, "curseforge.com")) {
     const m = u.pathname.match(cf);
     if (!m) return null;
     source = "curseforge";
     slug = m[1];
-  } else if (u.hostname.includes("modrinth.com")) {
+  } else if (isAllowedHost(u.hostname, "modrinth.com")) {
     const m = u.pathname.match(mr);
     if (!m) return null;
     source = "modrinth";

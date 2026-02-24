@@ -4,13 +4,8 @@ import { revalidateSeoPaths } from "@/lib/seo-revalidate";
 export const runtime = "nodejs";
 
 async function resolveSecret(request: NextRequest) {
-  const fromQuery = request.nextUrl.searchParams.get("secret");
-  if (fromQuery) return fromQuery;
-
   const fromHeader = request.headers.get("x-revalidate-secret");
   if (fromHeader) return fromHeader;
-
-  if (request.method !== "POST") return null;
 
   try {
     const body = await request.json();
@@ -44,10 +39,6 @@ async function handle(request: NextRequest) {
     revalidated,
     at: new Date().toISOString(),
   });
-}
-
-export async function GET(request: NextRequest) {
-  return handle(request);
 }
 
 export async function POST(request: NextRequest) {

@@ -1,5 +1,4 @@
-import { cookies, headers } from "next/headers";
-import { getBaseUrl } from "@/lib/urls";
+import { db } from "@/lib/db";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -72,54 +71,71 @@ function asBuildListResponse(payload: unknown): ProfileBuildListResponse | null 
   };
 }
 
-async function getRequestOrigin() {
-  const requestHeaders = await headers();
-  const forwardedProto = requestHeaders.get("x-forwarded-proto");
-  const forwardedHost = requestHeaders.get("x-forwarded-host");
-  const host = forwardedHost ?? requestHeaders.get("host");
-
-  if (host) {
-    const protocol = forwardedProto ?? (process.env.NODE_ENV === "development" ? "http" : "https");
-    return `${protocol}://${host}`;
-  }
-
-  return getBaseUrl();
-}
-
-export async function fetchProfileBuildList(
-  pathname: string,
-  options: { page: number; pageSize: number; includeAuthCookie?: boolean },
+export async function getProfileBuildList(
+  username: string,
+  options: { page: number; pageSize: number; viewerEmail?: string | null },
 ): Promise<ProfileBuildListResult> {
-  const searchParams = new URLSearchParams({
-    page: String(options.page),
-    pageSize: String(options.pageSize),
-  });
-  const origin = await getRequestOrigin();
-  const url = `${origin}${pathname}?${searchParams.toString()}`;
-
-  const requestHeaders = new Headers();
-  if (options.includeAuthCookie) {
-    const cookieHeader = (await cookies()).toString();
-    if (cookieHeader) {
-      requestHeaders.set("cookie", cookieHeader);
-    }
+  const normalizedUsername = username.trim().toLowerCase();
+  if (!normalizedUsername) {
+    return { status: 404, data: null };
   }
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: requestHeaders,
-    cache: "no-store",
+  const profile = await db.user.findUnique({
+    where: { name: normalizedUsername },
+    select: { id: true, name: true },
   });
 
-  let payload: unknown = null;
-  try {
-    payload = await response.json();
-  } catch {
-    payload = null;
+  if (!profile?.name) {
+    return { status: 404, data: null };
   }
+  const profileName = profile.name;
+
+  const viewer = options.viewerEmail
+    ? await db.user.findUnique({
+      where: { email: options.viewerEmail },
+      select: { id: true },
+    })
+    : null;
+  const isOwner = viewer?.id === profile.id;
+
+  const where = {
+    userId: profile.id,
+    ...(isOwner ? {} : { visibility: "PUBLIC" as const }),
+  };
+
+  const [items, total] = await Promise.all([
+    db.build.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (options.page - 1) * options.pageSize,
+      take: options.pageSize,
+      select: {
+        slug: true,
+        nameOriginal: true,
+        visibility: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    db.build.count({ where }),
+  ]);
+
+  const payload: ProfileBuildListResponse = {
+    items: items.map((item) => ({
+      username: profileName,
+      slug: item.slug,
+      nameOriginal: item.nameOriginal,
+      visibility: item.visibility,
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+    })),
+    page: options.page,
+    pageSize: options.pageSize,
+    total,
+  };
 
   return {
-    status: response.status,
+    status: 200,
     data: asBuildListResponse(payload),
   };
 }

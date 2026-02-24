@@ -1,7 +1,20 @@
 import { NextResponse } from "next/server";
 import { analyzeYoutubeUrl } from "@/lib/youtube";
+import { checkMemoryRateLimit, getClientIpFromHeaders } from "@/lib/request-security";
 
 export async function GET(req: Request) {
+  const ip = getClientIpFromHeaders(req.headers);
+  const limit = checkMemoryRateLimit(`meta:youtube:ip:${ip}`, {
+    windowMs: 60 * 1000,
+    limit: 120,
+  });
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "Too many metadata requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+    );
+  }
+
   const url = new URL(req.url);
   const target = url.searchParams.get("url");
   if (!target) {

@@ -9,6 +9,11 @@ export const MAX_TAG_LENGTH = 32;
 export const POST_DESCRIPTION_MIN_LENGTH = 50;
 export const POST_DESCRIPTION_MAX_LENGTH = 2000;
 
+function isAllowedHost(hostname: string, domain: string) {
+  const host = hostname.toLowerCase();
+  return host === domain || host.endsWith(`.${domain}`);
+}
+
 export const tagSchema = z
   .string()
   .trim()
@@ -21,7 +26,7 @@ export const tagSchema = z
 export const dependencyUrl = z.url().refine((u) => {
   try {
     const url = new URL(u);
-    return url.hostname.includes("curseforge.com") || url.hostname.includes("modrinth.com");
+    return isAllowedHost(url.hostname, "curseforge.com") || isAllowedHost(url.hostname, "modrinth.com");
   } catch { return false; }
 }, "Must be a CurseForge or Modrinth URL");
 

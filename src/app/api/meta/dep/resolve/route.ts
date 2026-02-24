@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import { checkMemoryRateLimit, getClientIpFromHeaders } from "@/lib/request-security";
+
+function isAllowedHost(hostname: string, domain: string) {
+  const host = hostname.toLowerCase();
+  return host === domain || host.endsWith(`.${domain}`);
+}
 
 function slugToName(u: URL) {
   const parts = u.pathname.split("/").filter(Boolean);
@@ -49,6 +55,18 @@ async function extractNameFromHtml(html: string) {
 }
 
 export async function GET(req: Request) {
+  const ip = getClientIpFromHeaders(req.headers);
+  const limit = checkMemoryRateLimit(`meta:dep-resolve:ip:${ip}`, {
+    windowMs: 60 * 1000,
+    limit: 60,
+  });
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "Too many metadata requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+    );
+  }
+
   const u = new URL(req.url);
   const q = u.searchParams.get("url");
   if (!q) return NextResponse.json({ error: "Missing url" }, { status: 400 });
@@ -56,7 +74,7 @@ export async function GET(req: Request) {
   let url: URL;
   try { url = new URL(q); } catch { return NextResponse.json({ error: "Invalid URL" }, { status: 400 }); }
 
-  if (!url.hostname.match(/(curseforge\.com|modrinth\.com)$/)) {
+  if (!isAllowedHost(url.hostname, "curseforge.com") && !isAllowedHost(url.hostname, "modrinth.com")) {
     return NextResponse.json({ error: "URL must be CurseForge or Modrinth" }, { status: 400 });
   }
 

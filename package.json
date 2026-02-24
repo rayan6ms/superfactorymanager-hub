@@ -30,7 +30,7 @@
     "diff": "^8.0.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.553.0",
-    "monaco-editor": "^0.54.0",
+    "monaco-editor": "^0.55.1",
     "next": "^16.1.6",
     "next-auth": "^5.0.0-beta.30",
     "nodemailer": "^7.0.10",

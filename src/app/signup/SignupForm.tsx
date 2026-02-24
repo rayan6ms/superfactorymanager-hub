@@ -121,10 +121,10 @@ export default function SignupForm({ next }: SignupFormProps) {
         setErrors({ form: "We created your account, but couldn’t send the verification email. Try again in a moment." });
       } else if (typeof data?.error === "string") {
         const code = data.error;
-        if (code === "Email already exists") {
-          setErrors({ email: "Email is already registered." });
-        } else if (code === "NAME_TAKEN") {
+        if (code === "NAME_TAKEN") {
           setErrors({ name: mapUsernameError("NAME_TAKEN") });
+        } else if (code === "Too many signup attempts. Please try again shortly.") {
+          setErrors({ form: code });
         } else if (
           code === "NAME_REQUIRED" ||
           code === "NAME_TOO_SHORT" ||
@@ -149,7 +149,7 @@ export default function SignupForm({ next }: SignupFormProps) {
       return;
     }
 
-    setSuccessMessage(`Account created! Verification email sent to ${trimmedEmail}.`);
+    setSuccessMessage(`If your signup can be completed, a verification email has been sent to ${trimmedEmail}.`);
     setName("");
     setEmail("");
     setPassword("");

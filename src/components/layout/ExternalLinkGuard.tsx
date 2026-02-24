@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ExternalLink, ShieldAlert, X } from "lucide-react";
 
@@ -24,6 +24,8 @@ type PendingNavigation = {
 
 export default function ExternalLinkGuard() {
   const [pending, setPending] = useState<PendingNavigation | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -74,7 +76,45 @@ export default function ExternalLinkGuard() {
     if (!pending) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const container = dialogRef.current;
+      if (!container) return;
+
+      const focusable = container.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (event.shiftKey) {
+        if (active === first || !container.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+
+      if (active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    closeButtonRef.current?.focus();
+    document.addEventListener("keydown", trapFocus);
     return () => {
+      document.removeEventListener("keydown", trapFocus);
       document.body.style.overflow = previous;
     };
   }, [pending]);
@@ -92,13 +132,17 @@ export default function ExternalLinkGuard() {
         if (event.target === event.currentTarget) close();
       }}
     >
-      <div className="w-full max-w-lg space-y-4 rounded-3xl border border-white/15 bg-neutral-900/80 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100vh-3rem)] overflow-y-auto">
+      <div
+        ref={dialogRef}
+        className="w-full max-w-lg space-y-4 rounded-3xl border border-white/15 bg-neutral-900/80 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100vh-3rem)] overflow-y-auto"
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 text-amber-200">
             <ShieldAlert className="h-5 w-5" aria-hidden />
             <p className="text-xs uppercase tracking-[0.3em] text-amber-200">External link</p>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={close}
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/70 transition hover:border-white/35 hover:text-white"
@@ -113,7 +157,7 @@ export default function ExternalLinkGuard() {
           <p className="text-sm text-white/70">
             We cannot guarantee that {pending.hostname} is safe. Continue to this site or stay on the current page.
           </p>
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/80 wrap-break-word">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/80 break-words">
             {pending.href}
           </div>
         </div>

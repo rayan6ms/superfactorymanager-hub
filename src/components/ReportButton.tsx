@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import clsx from "clsx";
 import { Flag, Loader2, X } from "lucide-react";
@@ -70,6 +70,8 @@ export default function ReportButton({
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<"idle" | "success" | "error">("idle");
   const [mounted, setMounted] = useState(false);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -100,23 +102,50 @@ export default function ReportButton({
 
   useEffect(() => {
     if (!open) return;
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        close();
-      }
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, close]);
-
-  useEffect(() => {
-    if (!open) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const container = dialogRef.current;
+      if (!container) return;
+
+      const focusable = container.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (event.shiftKey) {
+        if (active === first || !container.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+
+      if (active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    closeButtonRef.current?.focus();
+    document.addEventListener("keydown", trapFocus);
     return () => {
+      document.removeEventListener("keydown", trapFocus);
       document.body.style.overflow = previous;
     };
-  }, [open]);
+  }, [open, close]);
 
   const submitReport = useCallback(
     async (event: React.FormEvent) => {
@@ -173,13 +202,17 @@ export default function ReportButton({
             if (event.target === event.currentTarget) close();
           }}
         >
-          <div className="w-full max-w-lg space-y-5 rounded-3xl border border-white/10 bg-neutral-900/60 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto">
+          <div
+            ref={dialogRef}
+            className="w-full max-w-lg space-y-5 rounded-3xl border border-white/10 bg-neutral-900/60 p-6 text-white shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">Report {type}</p>
                 <h2 className="text-2xl font-semibold text-white">{targetLabel}</h2>
               </div>
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={close}
                 className="inline-flex h-10 w-10 p-2.5 items-center justify-center rounded-full border border-white/20 text-white/70 transition hover:border-white/40 hover:text-white"

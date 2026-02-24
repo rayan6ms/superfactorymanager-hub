@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { checkMemoryRateLimit, getClientIpFromHeaders } from "@/lib/request-security";
 
 const schema = z.object({
   email: z
@@ -11,10 +12,27 @@ const schema = z.object({
     .min(1, "EMAIL_REQUIRED")
     .pipe(
       z.email({ message: "INVALID_EMAIL" })
-    ),
+    )
+    .transform((value) => value.toLowerCase()),
 });
 
+const RESET_REQUEST_WINDOW_MS = 10 * 60 * 1000;
+const RESET_REQUEST_LIMIT_PER_IP = 12;
+const RESET_REQUEST_LIMIT_PER_EMAIL = 4;
+
 export async function POST(request: Request) {
+  const ip = getClientIpFromHeaders(request.headers);
+  const ipLimit = checkMemoryRateLimit(`auth:password-request:ip:${ip}`, {
+    windowMs: RESET_REQUEST_WINDOW_MS,
+    limit: RESET_REQUEST_LIMIT_PER_IP,
+  });
+  if (!ipLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many reset requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } },
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = schema.safeParse(body);
 
@@ -23,10 +41,21 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email;
+  const emailLimit = checkMemoryRateLimit(`auth:password-request:email:${email.toLowerCase()}`, {
+    windowMs: RESET_REQUEST_WINDOW_MS,
+    limit: RESET_REQUEST_LIMIT_PER_EMAIL,
+  });
+  if (!emailLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many reset requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(emailLimit.retryAfterSeconds) } },
+    );
+  }
+
   const user = await db.user.findUnique({ where: { email } });
 
-  if (!user) {
-    return NextResponse.json({ success: true, emailSent: false });
+  if (!user?.emailVerified) {
+    return NextResponse.json({ success: true });
   }
 
   const token = crypto.randomBytes(32).toString("hex");
@@ -49,9 +78,9 @@ export async function POST(request: Request) {
       name: user.name,
     });
 
-    return NextResponse.json({ success: true, emailSent: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to send email to reset password", error);
-    return NextResponse.json({ error: "EMAIL_SEND_FAILED" }, { status: 500 });
+    return NextResponse.json({ success: true });
   }
 }

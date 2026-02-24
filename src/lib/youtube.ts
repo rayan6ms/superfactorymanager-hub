@@ -4,6 +4,11 @@ export type YoutubeAnalysis =
   | { ok: true; id: string }
   | { ok: false; message: string };
 
+function isAllowedHost(hostname: string, domain: string) {
+  const host = hostname.toLowerCase();
+  return host === domain || host.endsWith(`.${domain}`);
+}
+
 export function analyzeYoutubeUrl(input: string): YoutubeAnalysis {
   const raw = input.trim();
   if (!raw) {
@@ -18,7 +23,7 @@ export function analyzeYoutubeUrl(input: string): YoutubeAnalysis {
   }
 
   const host = parsed.hostname.toLowerCase();
-  const isYoutubeHost = host === "youtu.be" || host.endsWith("youtube.com");
+  const isYoutubeHost = host === "youtu.be" || isAllowedHost(host, "youtube.com");
   if (!isYoutubeHost) {
     return { ok: false, message: "Use a youtube.com or youtu.be link." };
   }

@@ -11,6 +11,7 @@ import type { Adapter } from "next-auth/adapters";
 import { generateInitialAvatar, resolveProfileImage } from "./avatar";
 import { generateAvailableUsername } from "./usernames.server";
 import { createNotification } from "./notifications";
+import { checkMemoryRateLimit, getClientIpFromHeaders } from "./request-security";
 
 const credsSchema = z.object({
   identifier: z
@@ -23,6 +24,10 @@ const credsSchema = z.object({
     .min(8, "PASSWORD_TOO_SHORT"),
 });
 
+const LOGIN_WINDOW_MS = 10 * 60 * 1000;
+const LOGIN_LIMIT_PER_IP = 60;
+const LOGIN_LIMIT_PER_IDENTIFIER = 12;
+
 const providers: NextAuthConfig["providers"] = [
   Credentials({
     name: "Email / Username & Password",
@@ -30,19 +35,38 @@ const providers: NextAuthConfig["providers"] = [
       identifier: { label: "Email or username", type: "text" },
       password: { label: "Password", type: "password" },
     },
-    async authorize(credentials) {
+    async authorize(credentials, request) {
+      const headers = request?.headers instanceof Headers ? request.headers : new Headers();
+      const ip = getClientIpFromHeaders(headers);
+      const ipBucket = checkMemoryRateLimit(`auth:login:ip:${ip}`, {
+        windowMs: LOGIN_WINDOW_MS,
+        limit: LOGIN_LIMIT_PER_IP,
+      });
+      if (!ipBucket.allowed) {
+        throw new Error("TOO_MANY_ATTEMPTS");
+      }
+
       const parsed = credsSchema.safeParse({
         identifier: credentials?.identifier,
         password: credentials?.password,
       });
 
       if (!parsed.success) {
-        const issue = parsed.error.issues[0];
-        throw new Error(issue?.message ?? "INVALID_CREDENTIALS");
+        throw new Error("INVALID_CREDENTIALS");
       }
 
       const { identifier, password } = parsed.data;
       const normalizedIdentifier = identifier.toLowerCase();
+      const identifierBucket = checkMemoryRateLimit(
+        `auth:login:identifier:${normalizedIdentifier}`,
+        {
+          windowMs: LOGIN_WINDOW_MS,
+          limit: LOGIN_LIMIT_PER_IDENTIFIER,
+        },
+      );
+      if (!identifierBucket.allowed) {
+        throw new Error("TOO_MANY_ATTEMPTS");
+      }
 
       const user = await db.user.findFirst({
         where: {
@@ -54,12 +78,12 @@ const providers: NextAuthConfig["providers"] = [
       });
 
       if (!user?.passwordHash) {
-        throw new Error("EMAIL_NOT_FOUND");
+        throw new Error("INVALID_CREDENTIALS");
       }
 
       const ok = await compare(password, user.passwordHash);
       if (!ok) {
-        throw new Error("WRONG_PASSWORD");
+        throw new Error("INVALID_CREDENTIALS");
       }
 
       if (!user.emailVerified) {
@@ -90,7 +114,6 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      allowDangerousEmailAccountLinking: true,
     })
   );
 }

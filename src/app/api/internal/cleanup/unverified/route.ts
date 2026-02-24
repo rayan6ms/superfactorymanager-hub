@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { isInternalApiAuthorized } from "@/lib/internal-api-auth";
 
 const MAX_ACCOUNT_AGE_DAYS = 7;
 
-function isAuthorized(req: Request) {
-  const header = req.headers.get("authorization");
-  if (!header) return false;
-  const token = header.replace(/^Bearer\s+/i, "");
-  if (!token) return false;
-  if (!process.env.CRON_SECRET) return false;
-  return token === process.env.CRON_SECRET;
-}
-
 export async function DELETE(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!(await isInternalApiAuthorized(req, { allowAdminSession: false }))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

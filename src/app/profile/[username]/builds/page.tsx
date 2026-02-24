@@ -4,7 +4,7 @@ import BuildCard from "@/components/builds/BuildCard";
 import Pagination from "@/components/ui/Pagination";
 import { Card } from "@/components/ui";
 import { auth } from "@/lib/auth";
-import { fetchProfileBuildList, parseBuildPageSize } from "@/lib/builds/profile-list";
+import { getProfileBuildList, parseBuildPageSize } from "@/lib/builds/profile-list";
 import { getTotalPages, parsePageParam } from "@/lib/pagination";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -25,10 +25,10 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
   const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
   const requestedPageSize = parseBuildPageSize(pageSizeParam, 20);
 
-  let result = await fetchProfileBuildList(`/api/profile/${encodeURIComponent(username)}/builds`, {
+  let result = await getProfileBuildList(username, {
     page: requestedPage,
     pageSize: requestedPageSize,
-    includeAuthCookie: true,
+    viewerEmail: session?.user?.email ?? null,
   });
 
   if (result.status === 404) {
@@ -51,10 +51,10 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
   const currentPage = Math.min(requestedPage, totalPages);
 
   if (currentPage !== requestedPage) {
-    result = await fetchProfileBuildList(`/api/profile/${encodeURIComponent(username)}/builds`, {
+    result = await getProfileBuildList(username, {
       page: currentPage,
       pageSize: payload.pageSize,
-      includeAuthCookie: true,
+      viewerEmail: session?.user?.email ?? null,
     });
 
     if (result.status === 404) {

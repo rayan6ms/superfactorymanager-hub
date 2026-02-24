@@ -49,11 +49,11 @@ export default function ResetPasswordRequestPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        if (data?.error === "EMAIL_SEND_FAILED") {
-          setErrors({ form: "We couldn’t send the reset email. Please try again later." });
-        } else {
-          setErrors({ form: "Unable to send reset email. Please try again." });
-        }
+        const serverMessage =
+          typeof data?.error === "string" && data.error.length > 0
+            ? data.error
+            : "Unable to send reset email. Please try again.";
+        setErrors({ form: serverMessage });
         setState("idle");
         return;
       }
@@ -77,7 +77,7 @@ export default function ResetPasswordRequestPage() {
         </div>
         {state === "success" ? (
           <div className="space-y-3 text-center text-sm text-white/80">
-            <p>Email sent to <span className="font-semibold">{email.trim()}</span>.</p>
+            <p>If an account exists for <span className="font-semibold">{email.trim()}</span>, a reset link has been sent.</p>
             <p>Please check your inbox and follow the link to finish resetting your password.</p>
           </div>
         ) : (

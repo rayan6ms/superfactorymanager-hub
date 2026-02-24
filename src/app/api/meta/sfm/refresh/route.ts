@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { refreshSfm } from "@/lib/sfm";
 import { refreshChangelog } from "@/lib/changelog";
+import { isInternalApiAuthorized } from "@/lib/internal-api-auth";
 
-export async function POST(req: Request) {
+async function handle(req: Request) {
+  if (!(await isInternalApiAuthorized(req, { allowAdminSession: false }))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const url = new URL(req.url);
-  const source = (url.searchParams.get("source") ?? "both") as "cf" | "mr" | "both";
+  const rawSource = url.searchParams.get("source");
+  const source = rawSource === "cf" || rawSource === "mr" || rawSource === "both"
+    ? rawSource
+    : "both";
   const ignoreCooldown = url.searchParams.get("ignoreCooldown") === "1";
 
   const [{ insertedCf, insertedMr, matrix }, changelog] = await Promise.all([
@@ -21,4 +29,12 @@ export async function POST(req: Request) {
     gameVersions: matrix.gameVersions,
     refreshedAt: new Date().toISOString(),
   });
+}
+
+export async function GET(req: Request) {
+  return handle(req);
+}
+
+export async function POST(req: Request) {
+  return handle(req);
 }
