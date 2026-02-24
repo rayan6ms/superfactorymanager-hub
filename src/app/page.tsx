@@ -1,9 +1,15 @@
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import PostCard from "@/components/posts/PostCard";
+import BuildCard from "@/components/builds/BuildCard";
 import HomeQuickLinks from "@/components/home/HomeQuickLinks";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import {
+  getRecentPublicBuilds,
+  getRecentlyUpdatedPublicBuilds,
+  type SerializedBuild,
+} from "@/lib/builds/search";
 import {
   getPopularTags,
   getTrendingPosts,
@@ -38,6 +44,35 @@ function PostSection({ title, posts }: { title: string; posts: SerializedPost[] 
   );
 }
 
+function BuildSection({ title, builds }: { title: string; builds: SerializedBuild[] }) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold text-white">{title}</h3>
+        <span className="text-xs uppercase tracking-[0.35em] text-white/40">{builds.length} builds</span>
+      </div>
+      {builds.length ? (
+        <ul className="grid gap-5 md:grid-cols-2">
+          {builds.map((build) => (
+            <li key={`${build.username}:${build.slug}`}>
+              <BuildCard
+                username={build.username}
+                slug={build.slug}
+                name={build.nameOriginal}
+                visibility={build.visibility}
+                createdAt={build.createdAt}
+                updatedAt={build.updatedAt}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Card className="p-6 text-center text-white/70">No builds yet.</Card>
+      )}
+    </section>
+  );
+}
+
 export default async function Home({ searchParams }: Props) {
   const params = searchParams ? await searchParams : undefined;
   const rawQ = params?.q;
@@ -54,11 +89,13 @@ export default async function Home({ searchParams }: Props) {
     userId = user?.id ?? null;
   }
 
-  const [popularTags, trendingPosts, recentPosts, recommendedPosts] = await Promise.all([
+  const [popularTags, trendingPosts, recentPosts, recommendedPosts, recentBuilds, updatedBuilds] = await Promise.all([
     getPopularTags(12),
     getTrendingPosts(6),
     getRecentPosts(6),
     getRecommendedPosts({ userId, searchTerm: q, limit: 6 }),
+    getRecentPublicBuilds(6),
+    getRecentlyUpdatedPublicBuilds(6),
   ]);
 
   return (
@@ -112,6 +149,24 @@ export default async function Home({ searchParams }: Props) {
           <PostSection title="Trending posts" posts={trendingPosts} />
           <PostSection title="Recent posts" posts={recentPosts} />
           <PostSection title="Recommended posts" posts={recommendedPosts} />
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow">Builds</p>
+            <h2 className="text-3xl font-semibold text-white">Community code builds</h2>
+            <p className="text-white/70">Explore recently created and recently updated builds.</p>
+          </div>
+          <Link href="/builds" className="text-sm font-semibold text-brand-300">
+            View all builds →
+          </Link>
+        </div>
+
+        <div className="space-y-10">
+          <BuildSection title="Recent builds" builds={recentBuilds} />
+          <BuildSection title="Recently updated builds" builds={updatedBuilds} />
         </div>
       </section>
     </div>

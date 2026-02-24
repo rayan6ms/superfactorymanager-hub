@@ -110,7 +110,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                   <div className="flex flex-col gap-4">
                     <div className="space-y-2 lg:hidden">
                       <p className="text-xs font-semibold uppercase tracking-wide text-white/50">
-                        Search posts
+                        Search posts and builds
                       </p>
                       <Search className="w-full" />
                     </div>

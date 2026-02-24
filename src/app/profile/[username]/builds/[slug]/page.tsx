@@ -32,6 +32,14 @@ function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function normalizeBackHref(value: string | undefined) {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("/")) return null;
+  if (trimmed.startsWith("//")) return null;
+  return trimmed;
+}
+
 export default async function PublicBuildDetailPage({ params, searchParams }: Props) {
   const [{ username, slug }, resolvedSearchParams, session] = await Promise.all([
     params,
@@ -41,7 +49,14 @@ export default async function PublicBuildDetailPage({ params, searchParams }: Pr
 
   const commitId = firstValue(resolvedSearchParams?.commitId);
   const from = firstValue(resolvedSearchParams?.from);
-  const backTo = from === "profile" || from === "builds" ? from : null;
+  const back = firstValue(resolvedSearchParams?.back);
+  const backHref = normalizeBackHref(back);
+  const backTo = from === "profile"
+    || from === "builds"
+    || from === "explore-builds"
+    || from === "search"
+    ? from
+    : null;
 
   let viewerUsername: string | null = null;
   if (session?.user?.email) {
@@ -103,6 +118,7 @@ export default async function PublicBuildDetailPage({ params, searchParams }: Pr
       initialIsAuthenticated={Boolean(session?.user?.email)}
       isAuthor={isAuthor}
       initialBackTo={backTo}
+      initialBackHref={backHref}
     />
   );
 }

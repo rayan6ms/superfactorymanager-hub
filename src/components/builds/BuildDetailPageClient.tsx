@@ -65,16 +65,26 @@ function defaultForkName(sourceName: string) {
   return `${base}${suffix}`;
 }
 
+function getBackLabelFromHref(href: string) {
+  if (href.startsWith("/search")) return "← Back to search results";
+  if (href.startsWith("/builds")) return "← Back to builds";
+  if (href.includes("/builds")) return "← Back to builds";
+  if (href.startsWith("/profile/")) return "← Back to profile";
+  return "← Back";
+}
+
 export default function BuildDetailPageClient({
   initialData,
   initialIsAuthenticated,
   isAuthor,
   initialBackTo,
+  initialBackHref,
 }: {
   initialData: BuildDetailPayload;
   initialIsAuthenticated: boolean;
   isAuthor: boolean;
-  initialBackTo: "profile" | "builds" | null;
+  initialBackTo: "profile" | "builds" | "explore-builds" | "search" | null;
+  initialBackHref?: string | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -661,16 +671,29 @@ export default function BuildDetailPageClient({
     return null;
   }, [forkNameCheck.status]);
 
-  const backHref = initialBackTo === "profile"
+  const fallbackBackHref = initialBackTo === "profile"
     ? `/profile/${encodeURIComponent(buildMeta.username)}`
     : initialBackTo === "builds"
       ? `/profile/${encodeURIComponent(buildMeta.username)}/builds`
-      : null;
-  const backLabel = initialBackTo === "profile"
+      : initialBackTo === "explore-builds"
+        ? "/builds"
+        : initialBackTo === "search"
+          ? "/search"
+          : null;
+  const fallbackBackLabel = initialBackTo === "profile"
     ? "← Back to profile"
-    : initialBackTo === "builds"
+    : initialBackTo === "builds" || initialBackTo === "explore-builds"
       ? "← Back to builds"
-      : null;
+      : initialBackTo === "search"
+        ? "← Back to search results"
+        : null;
+
+  const backHref = initialBackHref
+    ? initialBackHref
+    : fallbackBackHref;
+  const backLabel = initialBackHref
+    ? getBackLabelFromHref(initialBackHref)
+    : fallbackBackLabel;
 
   return (
     <main className="space-y-8 pb-8">

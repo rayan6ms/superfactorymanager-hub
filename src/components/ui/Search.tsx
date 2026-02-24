@@ -12,10 +12,10 @@ type Props = {
 };
 
 export default function SearchBar({
-  action = "/posts",
+  action = "/search",
   method = "get",
   name = "q",
-  placeholder = "Search posts",
+  placeholder = "Search posts and builds",
   defaultValue,
   className,
 }: Props) {
