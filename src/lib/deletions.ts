@@ -1,3 +1,4 @@
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { addDays, isBefore } from "date-fns";
 import { db } from "./db";
 import { makeSlug } from "./slug";
@@ -8,6 +9,52 @@ export const AUTO_DELETE_REPORT_THRESHOLD = 5;
 
 const PURGE_THROTTLE_MS = 60 * 60 * 1000; // hourly
 let lastPurgeAt: number | null = null;
+
+type DeletionWriteClient = Pick<PrismaClient, "post" | "comment">;
+
+export function buildDeletionFlagData({ auto, now = new Date() }: { auto: boolean; now?: Date }) {
+  return {
+    isDeleted: true,
+    deletionFlaggedAt: now,
+    deletionFlaggedByAuto: auto,
+    deletionPurgeAt: auto ? null : addDays(now, MANUAL_DELETION_DAYS),
+  };
+}
+
+export async function flagManyAsDeleted(
+  client: DeletionWriteClient,
+  type: "post",
+  where: Prisma.PostWhereInput,
+  options: { auto: boolean; now?: Date }
+): Promise<number>;
+export async function flagManyAsDeleted(
+  client: DeletionWriteClient,
+  type: "comment",
+  where: Prisma.CommentWhereInput,
+  options: { auto: boolean; now?: Date }
+): Promise<number>;
+export async function flagManyAsDeleted(
+  client: DeletionWriteClient,
+  type: "post" | "comment",
+  where: Prisma.PostWhereInput | Prisma.CommentWhereInput,
+  options: { auto: boolean; now?: Date }
+) {
+  const data = buildDeletionFlagData(options);
+
+  if (type === "post") {
+    const result = await client.post.updateMany({
+      where: { ...(where as Prisma.PostWhereInput), isDeleted: false },
+      data,
+    });
+    return result.count;
+  }
+
+  const result = await client.comment.updateMany({
+    where: { ...(where as Prisma.CommentWhereInput), isDeleted: false },
+    data,
+  });
+  return result.count;
+}
 
 export async function resolveUniqueSlug(postId: string, desired: string, fallbackTitle: string) {
   const base = makeSlug(fallbackTitle || desired || `post-${postId.slice(0, 6)}`) || `post-${postId.slice(0, 8)}`;
@@ -28,8 +75,7 @@ export async function flagAsDeleted(
   targetId: string,
   { auto }: { auto: boolean }
 ) {
-  const now = new Date();
-  const purgeAt = auto ? null : addDays(now, MANUAL_DELETION_DAYS);
+  const data = buildDeletionFlagData({ auto });
 
   if (type === "post") {
     const post = await db.post.findFirst({ where: { OR: [{ id: targetId }, { slug: targetId }] } });
@@ -39,12 +85,7 @@ export async function flagAsDeleted(
 
     await db.post.update({
       where: { id: post.id },
-      data: {
-        isDeleted: true,
-        deletionFlaggedAt: now,
-        deletionFlaggedByAuto: auto,
-        deletionPurgeAt: purgeAt,
-      },
+      data,
     });
 
     return { id: post.id, slug: post.slug };
@@ -57,12 +98,7 @@ export async function flagAsDeleted(
 
   await db.comment.update({
     where: { id: targetId },
-    data: {
-      isDeleted: true,
-      deletionFlaggedAt: now,
-      deletionFlaggedByAuto: auto,
-      deletionPurgeAt: purgeAt,
-    },
+    data,
   });
 
   return { id: comment.id };

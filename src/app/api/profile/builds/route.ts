@@ -41,6 +41,7 @@ export async function GET(request: Request) {
       select: {
         slug: true,
         nameOriginal: true,
+        tag: true,
         visibility: true,
         createdAt: true,
         updatedAt: true,
@@ -54,6 +55,7 @@ export async function GET(request: Request) {
       username: user.name,
       slug: item.slug,
       nameOriginal: item.nameOriginal,
+      tag: item.tag,
       visibility: item.visibility,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,

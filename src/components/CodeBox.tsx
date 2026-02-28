@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Editor from "@monaco-editor/react";
+import Editor, { loader } from "@monaco-editor/react";
 import type * as monacoNs from "monaco-editor";
 import { clsx } from "clsx";
 
@@ -68,6 +68,56 @@ type MarkerInput = {
   endLine: number;
   message?: string;
 };
+
+type MonacoGlobal = typeof globalThis & {
+  MonacoEnvironment?: {
+    getWorker?: (moduleId: string, label: string) => Worker;
+  };
+};
+
+function ensureMonacoEnvironment() {
+  const monacoGlobal = globalThis as MonacoGlobal;
+  if (typeof window === "undefined") return;
+  if (monacoGlobal.MonacoEnvironment?.getWorker) return;
+
+  monacoGlobal.MonacoEnvironment = {
+    ...monacoGlobal.MonacoEnvironment,
+    getWorker(_moduleId, label) {
+      if (label === "json") {
+        return new Worker(
+          new URL("monaco-editor/esm/vs/language/json/json.worker.js", import.meta.url),
+          { type: "module" },
+        );
+      }
+
+      if (label === "css" || label === "scss" || label === "less") {
+        return new Worker(
+          new URL("monaco-editor/esm/vs/language/css/css.worker.js", import.meta.url),
+          { type: "module" },
+        );
+      }
+
+      if (label === "html" || label === "handlebars" || label === "razor") {
+        return new Worker(
+          new URL("monaco-editor/esm/vs/language/html/html.worker.js", import.meta.url),
+          { type: "module" },
+        );
+      }
+
+      if (label === "typescript" || label === "javascript") {
+        return new Worker(
+          new URL("monaco-editor/esm/vs/language/typescript/ts.worker.js", import.meta.url),
+          { type: "module" },
+        );
+      }
+
+      return new Worker(
+        new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url),
+        { type: "module" },
+      );
+    },
+  };
+}
 
 function normalizeMarkers(
   errorMarkers?: { line: number; message: string }[],
@@ -201,12 +251,33 @@ export function CodeBox({
   warningRanges,
   wrapLines = true,
 }: CodeBoxProps) {
+  const [isLoaderConfigured, setIsLoaderConfigured] = useState(false);
   const editorRef = useRef<monacoNs.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof monacoNs | null>(null);
 
   const [editorHeight, setEditorHeight] = useState(MIN_HEIGHT);
 
   const [initialValue] = useState(() => value);
+
+  useEffect(() => {
+    let disposed = false;
+    ensureMonacoEnvironment();
+
+    import("monaco-editor")
+      .then(monaco => {
+        loader.config({ monaco });
+        if (!disposed) {
+          setIsLoaderConfigured(true);
+        }
+      })
+      .catch(error => {
+        console.error("Monaco loader setup failed:", error);
+      });
+
+    return () => {
+      disposed = true;
+    };
+  }, []);
 
   const handleChange = useCallback(
     (next: string | undefined) => {
@@ -307,35 +378,41 @@ export function CodeBox({
         className="relative"
         style={{ backgroundColor: "rgba(0,0,0,0)", minHeight: MIN_HEIGHT }}
       >
-        <Editor
-          height={editorHeight}
-          defaultLanguage={SFML_LANGUAGE_ID}
-          language={SFML_LANGUAGE_ID}
-          theme={SFML_THEME_ID}
-          defaultValue={initialValue}
-          onChange={handleChange}
-          onMount={handleMount}
-          options={{
-            fontSize: 14,
-            fontFamily:
-              '"Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-            minimap: { enabled: false },
-            wordWrap: wrapLines ? "on" : "off",
-            wrappingIndent: "same",
-            scrollBeyondLastLine: false,
-            smoothScrolling: true,
-            renderLineHighlight: "line",
-            renderValidationDecorations: "on",
-            automaticLayout: true,
-            glyphMargin: false,
-            folding: false,
-            lineDecorationsWidth: 14,
-            lineNumbersMinChars: 3,
-            padding: { top: 14, bottom: 14 },
-            tabSize: 4,
-            ariaLabel: "Code editor",
-          }}
-        />
+        {isLoaderConfigured ? (
+          <Editor
+            height={editorHeight}
+            defaultLanguage={SFML_LANGUAGE_ID}
+            language={SFML_LANGUAGE_ID}
+            theme={SFML_THEME_ID}
+            defaultValue={initialValue}
+            onChange={handleChange}
+            onMount={handleMount}
+            options={{
+              fontSize: 14,
+              fontFamily:
+                '"Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+              minimap: { enabled: false },
+              wordWrap: wrapLines ? "on" : "off",
+              wrappingIndent: "same",
+              scrollBeyondLastLine: false,
+              smoothScrolling: true,
+              renderLineHighlight: "line",
+              renderValidationDecorations: "on",
+              automaticLayout: true,
+              glyphMargin: false,
+              folding: false,
+              lineDecorationsWidth: 14,
+              lineNumbersMinChars: 3,
+              padding: { top: 14, bottom: 14 },
+              tabSize: 4,
+              ariaLabel: "Code editor",
+            }}
+          />
+        ) : (
+          <div className="flex min-h-[256px] items-center justify-center px-4 py-10 text-sm text-white/60">
+            Loading editor...
+          </div>
+        )}
       </div>
       <div className="flex justify-center text-center">
         <span>

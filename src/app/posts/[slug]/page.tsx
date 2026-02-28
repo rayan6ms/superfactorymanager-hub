@@ -189,6 +189,12 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   return (
     <div className="space-y-8">
       <ViewBeacon slug={slug} />
+      <Link
+        href="/posts"
+        className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+      >
+        ← Back to posts
+      </Link>
 
       <Card className="overflow-hidden p-0">
         {heroSrc && (

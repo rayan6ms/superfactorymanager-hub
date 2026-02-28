@@ -1,20 +1,8 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getNextBuildSlugForUser } from "@/lib/builds/slug";
-import { forkBuildSchema, getNextForkNameForUser, normalizeBuildName } from "@/lib/builds/validation";
-
-function uniqueTargetIncludes(
-  target: string[] | string | undefined,
-  fields: string[],
-) {
-  if (!target) return false;
-  if (Array.isArray(target)) {
-    return fields.every((field) => target.includes(field));
-  }
-  return fields.every((field) => target.includes(field));
-}
+import { createForkBuild } from "@/lib/builds/fork";
+import { forkBuildSchema, getNextForkNameForUser, normalizeBuildName, normalizeBuildTag } from "@/lib/builds/validation";
 
 export async function POST(request: Request, ctx: { params: Promise<{ username: string; slug: string }> }) {
   const { username, slug } = await ctx.params;
@@ -48,119 +36,42 @@ export async function POST(request: Request, ctx: { params: Promise<{ username: 
     return NextResponse.json({ error: issue?.message ?? "INVALID_PAYLOAD" }, { status: 400 });
   }
 
-  const sourceUsername = username.trim().toLowerCase();
+  const result = await createForkBuild({
+    userId: user.id,
+    username: user.name,
+    source: { username, slug },
+    resolveDraft: async (tx, source) => {
+      const nextNameOriginal = parsed.data.name
+        ? normalizeBuildName(parsed.data.name).nameOriginal
+        : await getNextForkNameForUser(tx, user.id, source.nameOriginal);
+      const { nameOriginal, nameLower } = normalizeBuildName(nextNameOriginal);
+      const { tag, tagLower } = normalizeBuildTag(parsed.data.tag ?? source.tag);
 
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      const created = await db.$transaction(async (tx) => {
-        const source = await tx.build.findFirst({
-          where: {
-            slug,
-            user: { name: sourceUsername },
-            // Private builds should be indistinguishable from missing for non-owners.
-            OR: [{ visibility: "PUBLIC" }, { userId: user.id }],
-          },
-          select: {
-            id: true,
-            nameOriginal: true,
-            currentCode: true,
-          },
-        });
+      return {
+        nameOriginal,
+        nameLower,
+        tag,
+        tagLower,
+        code: source.currentCode,
+        visibility: parsed.data.visibility,
+      };
+    },
+  });
 
-        if (!source) {
-          throw new Error("SOURCE_NOT_FOUND");
-        }
-
-        const nextNameOriginal = parsed.data.name
-          ? normalizeBuildName(parsed.data.name).nameOriginal
-          : await getNextForkNameForUser(tx, user.id, source.nameOriginal);
-
-        const { nameOriginal, nameLower } = normalizeBuildName(nextNameOriginal);
-
-        if (parsed.data.name) {
-          const existingName = await tx.build.findUnique({
-            where: { userId_nameLower: { userId: user.id, nameLower } },
-            select: { id: true },
-          });
-          if (existingName) {
-            throw new Error("BUILD_NAME_TAKEN");
-          }
-        }
-
-        const nextSlug = await getNextBuildSlugForUser(tx, user.id, nameLower);
-
-        const build = await tx.build.create({
-          data: {
-            userId: user.id,
-            nameOriginal,
-            nameLower,
-            slug: nextSlug,
-            visibility: parsed.data.visibility,
-            currentCode: source.currentCode,
-            forkedFromBuildId: source.id,
-          },
-          select: {
-            id: true,
-            slug: true,
-            nameOriginal: true,
-            nameLower: true,
-            visibility: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        });
-
-        await tx.buildCommit.create({
-          data: {
-            buildId: build.id,
-            code: source.currentCode,
-            message: "Initial commit",
-          },
-        });
-
-        return build;
-      });
-
-      return NextResponse.json(
-        {
-          build: {
-            username: user.name,
-            slug: created.slug,
-            nameOriginal: created.nameOriginal,
-            nameLower: created.nameLower,
-            visibility: created.visibility,
-            createdAt: created.createdAt,
-            updatedAt: created.updatedAt,
-          },
-        },
-        { status: 201 },
-      );
-    } catch (error) {
-      if (error instanceof Error && error.message === "SOURCE_NOT_FOUND") {
-        return NextResponse.json({ error: "Not found" }, { status: 404 });
-      }
-
-      if (error instanceof Error && error.message === "BUILD_NAME_TAKEN") {
-        return NextResponse.json({ error: "BUILD_NAME_TAKEN" }, { status: 409 });
-      }
-
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError
-        && error.code === "P2002"
-      ) {
-        const target = error.meta?.target as string[] | string | undefined;
-        if (uniqueTargetIncludes(target, ["userId", "nameLower"])) {
-          return NextResponse.json({ error: "BUILD_NAME_TAKEN" }, { status: 409 });
-        }
-        if (uniqueTargetIncludes(target, ["userId", "slug"])) {
-          // Retry with a new suffix if another concurrent fork consumed this slug.
-          continue;
-        }
-      }
-
-      throw error;
+  if (!result.ok) {
+    if (result.error === "FORK_SOURCE_NOT_FOUND") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+
+    if (result.error === "BUILD_NAME_TAKEN") {
+      return NextResponse.json(
+        { error: "BUILD_NAME_TAKEN", normalized: result.normalized },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json({ error: "Unable to fork build" }, { status: 409 });
   }
 
-  return NextResponse.json({ error: "Unable to fork build" }, { status: 409 });
+  return NextResponse.json({ build: result.build }, { status: 201 });
 }

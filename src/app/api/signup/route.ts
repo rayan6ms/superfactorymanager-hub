@@ -7,7 +7,7 @@ import { generateRandomToken, hashToken } from "@/lib/tokens";
 import { sendEmailVerificationEmail } from "@/lib/email";
 import { validateUsernameInput } from "@/lib/usernames";
 import { isUsernameTaken } from "@/lib/usernames.server";
-import { checkMemoryRateLimit, getClientIpFromHeaders } from "@/lib/request-security";
+import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 const schema = z.object({
   email: z
@@ -38,8 +38,8 @@ function genericSignupResponse() {
 
 export async function POST(req: Request) {
   try {
-    const ip = getClientIpFromHeaders(req.headers);
-    const ipLimit = checkMemoryRateLimit(`auth:signup:ip:${ip}`, {
+    const clientKey = getClientRateLimitKey(req.headers);
+    const ipLimit = await checkRateLimit(`auth:signup:client:${clientKey}`, {
       windowMs: SIGNUP_WINDOW_MS,
       limit: SIGNUP_LIMIT_PER_IP,
     });
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     if (await isUsernameTaken(normalizedName)) {
       return NextResponse.json({ error: "NAME_TAKEN" }, { status: 409 });
     }
-    const emailLimit = checkMemoryRateLimit(`auth:signup:email:${parsed.email.toLowerCase()}`, {
+    const emailLimit = await checkRateLimit(`auth:signup:email:${parsed.email.toLowerCase()}`, {
       windowMs: SIGNUP_WINDOW_MS,
       limit: SIGNUP_LIMIT_PER_EMAIL,
     });

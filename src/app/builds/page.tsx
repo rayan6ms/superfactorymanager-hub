@@ -1,3 +1,4 @@
+import Link from "next/link";
 import HideHeaderSearch from "@/components/layout/HideHeaderSearch";
 import BuildCard from "@/components/builds/BuildCard";
 import BuildsFilterBar from "@/components/builds/BuildsFilterBar";
@@ -82,7 +83,13 @@ export default async function BuildsPage({ searchParams }: Props) {
       <div className="space-y-3">
         <p className="eyebrow">Builds</p>
         <h1 className="text-3xl font-semibold text-white">Explore builds</h1>
-        <p className="text-white/70">Search community builds by name, author, or date.</p>
+        <p className="text-white/70">Search community builds by name, tag, author, or date.</p>
+        <Link
+          href="/"
+          className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+        >
+          ← Back to home
+        </Link>
       </div>
 
       <BuildsFilterBar
@@ -108,6 +115,7 @@ export default async function BuildsPage({ searchParams }: Props) {
                   username={build.username}
                   slug={build.slug}
                   name={build.nameOriginal}
+                  tag={build.tag}
                   visibility={build.visibility}
                   createdAt={build.createdAt}
                   updatedAt={build.updatedAt}

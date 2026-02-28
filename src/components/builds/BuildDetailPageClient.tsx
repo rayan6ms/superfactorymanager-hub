@@ -14,7 +14,9 @@ import { Badge, Button, Card, Input } from "@/components/ui";
 import {
   BUILD_CODE_MIN_NON_WHITESPACE,
   BUILD_NAME_MAX_LENGTH,
+  BUILD_TAG_MAX_LENGTH,
   buildNameSchema,
+  buildTagSchema,
   buildVisibilitySchema,
   getCodeContentStats,
 } from "@/lib/builds/validation";
@@ -92,9 +94,11 @@ export default function BuildDetailPageClient({
 
   const [buildMeta, setBuildMeta] = useState(initialData.build);
   const [commits, setCommits] = useState(initialData.commits);
+  const [commitHistory, setCommitHistory] = useState(initialData.commitHistory);
   const [selectedCommitId, setSelectedCommitId] = useState<string | null>(initialData.selectedCommitId);
   const [code, setCode] = useState(initialData.code);
   const [persistedTrimmedCode, setPersistedTrimmedCode] = useState(() => getCodeContentStats(initialData.code).trimmedCode);
+  const [loadedTrimmedCodeBaseline, setLoadedTrimmedCodeBaseline] = useState(() => getCodeContentStats(initialData.code).trimmedCode);
 
   const [wrapLines, setWrapLines] = useState(true);
   const [codeFeedback, setCodeFeedback] = useState<CodeFeedback>({
@@ -115,8 +119,10 @@ export default function BuildDetailPageClient({
   const [createBackupCommit, setCreateBackupCommit] = useState(false);
   const [commitMessage, setCommitMessage] = useState("");
   const [authorSaveCount, setAuthorSaveCount] = useState(0);
+  const [buildTag, setBuildTag] = useState(initialData.build.tag);
 
   const [forkName, setForkName] = useState(() => defaultForkName(initialData.build.nameOriginal));
+  const [forkTag, setForkTag] = useState(initialData.build.tag);
   const [forkVisibility, setForkVisibility] = useState<BuildVisibility>("PUBLIC");
   const [forkNameCheck, setForkNameCheck] = useState<NameCheckState>({ status: "idle" });
 
@@ -130,7 +136,15 @@ export default function BuildDetailPageClient({
 
   const codeStats = useMemo(() => getCodeContentStats(code), [code]);
   const hasValidCodeLength = codeStats.nonWhitespaceCount >= BUILD_CODE_MIN_NON_WHITESPACE;
-  const hasUnsavedChanges = useMemo(() => codeStats.trimmedCode !== persistedTrimmedCode, [codeStats.trimmedCode, persistedTrimmedCode]);
+  const hasBufferChanges = useMemo(
+    () => codeStats.trimmedCode !== loadedTrimmedCodeBaseline,
+    [codeStats.trimmedCode, loadedTrimmedCodeBaseline],
+  );
+  const hasUnsavedChanges = useMemo(() => {
+    if (selectedCommitId) return hasBufferChanges;
+    return codeStats.trimmedCode !== persistedTrimmedCode;
+  }, [codeStats.trimmedCode, hasBufferChanges, persistedTrimmedCode, selectedCommitId]);
+  const isBuildShareable = buildMeta.visibility === "PUBLIC";
   const showUpdated = useMemo(() => {
     const createdTs = new Date(buildMeta.createdAt).getTime();
     const updatedTs = new Date(buildMeta.updatedAt).getTime();
@@ -192,7 +206,7 @@ export default function BuildDetailPageClient({
   }, [draftKey, isAuthor]);
 
   useEffect(() => {
-    if (!isAuthor || !hasLoadedDraftRef.current || typeof window === "undefined") return;
+    if (!isAuthor || !hasLoadedDraftRef.current || selectedCommitId !== null || typeof window === "undefined") return;
 
     if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current);
 
@@ -203,7 +217,7 @@ export default function BuildDetailPageClient({
     return () => {
       if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current);
     };
-  }, [code, isAuthor, persistDraftNow]);
+  }, [code, isAuthor, persistDraftNow, selectedCommitId]);
 
   useEffect(() => {
     if (!toastMessage) return;
@@ -318,6 +332,11 @@ export default function BuildDetailPageClient({
 
   const handleCopyLink = useCallback(async () => {
     if (typeof window === "undefined") return;
+    if (!isBuildShareable) {
+      setShareFallbackLink(null);
+      setToastMessage("Private builds can't be shared. Change visibility to PUBLIC first.");
+      return;
+    }
     setShareFallbackLink(null);
 
     try {
@@ -327,7 +346,7 @@ export default function BuildDetailPageClient({
       setShareFallbackLink(canonicalBuildUrl());
       setToastMessage("Clipboard access was blocked. Copy the link below.");
     }
-  }, [canonicalBuildUrl, copyCanonicalBuildLink]);
+  }, [canonicalBuildUrl, copyCanonicalBuildLink, isBuildShareable]);
 
   const openSaveDialog = useCallback((intent: SaveIntent) => {
     if (!isAuthor && !initialIsAuthenticated) {
@@ -343,14 +362,33 @@ export default function BuildDetailPageClient({
   }, [initialIsAuthenticated, isAuthor, requireLoginWithDraftWarning]);
 
   const handleShare = useCallback(async () => {
+    if (!isBuildShareable) {
+      setShareFallbackLink(null);
+      setToastMessage("Private builds can't be shared. Change visibility to PUBLIC first.");
+      return;
+    }
     if (isAuthor && hasUnsavedChanges) {
       openSaveDialog("share");
       return;
     }
     await handleCopyLink();
-  }, [handleCopyLink, hasUnsavedChanges, isAuthor, openSaveDialog]);
+  }, [handleCopyLink, hasUnsavedChanges, isAuthor, isBuildShareable, openSaveDialog]);
 
   const handleLoadCommit = useCallback(async (nextCommitId: string | null) => {
+    if (nextCommitId === selectedCommitId) return;
+
+    if (hasUnsavedChanges) {
+      const confirmed = typeof window === "undefined"
+        ? true
+        : window.confirm("You have unsaved edits. Loading another commit will replace the current editor contents. Continue?");
+      if (!confirmed) return;
+
+      if (selectedCommitId === null) {
+        persistDraftNow(code);
+        setToastMessage("Current draft saved locally before switching commits.");
+      }
+    }
+
     const query = nextCommitId ? `?commitId=${encodeURIComponent(nextCommitId)}` : "";
 
     setIsLoadingCommit(true);
@@ -367,19 +405,23 @@ export default function BuildDetailPageClient({
       }
 
       const payload = await response.json() as BuildDetailPayload;
+      const nextTrimmedCode = getCodeContentStats(payload.code).trimmedCode;
       setBuildMeta(payload.build);
+      setBuildTag(payload.build.tag);
+      setForkTag(payload.build.tag);
       setCommits(payload.commits);
+      setCommitHistory(payload.commitHistory);
       setSelectedCommitId(payload.selectedCommitId);
       setCode(payload.code);
-      // Keep draft/unsaved detection anchored to the "Current" version only.
+      setLoadedTrimmedCodeBaseline(nextTrimmedCode);
       if (!payload.selectedCommitId) {
-        setPersistedTrimmedCode(getCodeContentStats(payload.code).trimmedCode);
+        setPersistedTrimmedCode(nextTrimmedCode);
       }
       router.replace(query ? `${pathname}${query}` : pathname, { scroll: false });
     } finally {
       setIsLoadingCommit(false);
     }
-  }, [buildMeta.slug, buildMeta.username, pathname, router]);
+  }, [buildMeta.slug, buildMeta.username, code, hasUnsavedChanges, pathname, persistDraftNow, router, selectedCommitId]);
 
   const handleChangeVisibility = useCallback(async (nextVisibility: BuildVisibility) => {
     if (!isAuthor || buildMeta.visibility === nextVisibility) return;
@@ -414,14 +456,16 @@ export default function BuildDetailPageClient({
 
       setBuildMeta((prev) => ({
         ...prev,
+        tag: payload.build?.tag ?? prev.tag,
         visibility: payload.build?.visibility ?? prev.visibility,
         updatedAt: payload.build?.updatedAt ?? prev.updatedAt,
       }));
+      setBuildTag(payload.build?.tag ?? buildTag);
       setToastMessage("Saved!");
     } finally {
       setIsChangingVisibility(false);
     }
-  }, [buildMeta.slug, buildMeta.visibility, isAuthor, persistedTrimmedCode, requireLoginWithDraftWarning]);
+  }, [buildMeta.slug, buildMeta.visibility, buildTag, isAuthor, persistedTrimmedCode, requireLoginWithDraftWarning]);
 
   const handleSave = useCallback(async () => {
     if (!isAuthor) return;
@@ -439,6 +483,12 @@ export default function BuildDetailPageClient({
       return;
     }
 
+    const tagResult = buildTagSchema.safeParse(buildTag);
+    if (!tagResult.success) {
+      setSaveError(tagResult.error.issues[0]?.message ?? "Build tag is invalid.");
+      return;
+    }
+
     setIsSaving(true);
     setSaveError(null);
 
@@ -449,6 +499,7 @@ export default function BuildDetailPageClient({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          tag: tagResult.data,
           code,
           createCommit: shouldCreateCommit,
           commitMessage: shouldCreateCommit ? (commitMessage.trim() || null) : null,
@@ -481,10 +532,14 @@ export default function BuildDetailPageClient({
 
       setBuildMeta((prev) => ({
         ...prev,
+        tag: payload.build?.tag ?? prev.tag,
         visibility: payload.build?.visibility ?? prev.visibility,
         updatedAt: payload.build?.updatedAt ?? prev.updatedAt,
       }));
+      setBuildTag(payload.build?.tag ?? tagResult.data);
+      setForkTag(payload.build?.tag ?? tagResult.data);
       setPersistedTrimmedCode(codeStats.trimmedCode);
+      setLoadedTrimmedCodeBaseline(codeStats.trimmedCode);
       setSelectedCommitId(null);
       setAuthorSaveCount((count) => count + 1);
       setCreateBackupCommit(false);
@@ -494,12 +549,16 @@ export default function BuildDetailPageClient({
       router.replace(pathname, { scroll: false });
 
       if (saveIntent === "share") {
-        try {
-          await copyCanonicalBuildLink();
-          setToastMessage("Build link copied!");
-        } catch {
-          setShareFallbackLink(canonicalBuildUrl());
-          setToastMessage("Build saved. Clipboard access was blocked, copy the link below.");
+        if ((payload.build?.visibility ?? buildMeta.visibility) !== "PUBLIC") {
+          setToastMessage("Build saved. Change visibility to PUBLIC to share its link.");
+        } else {
+          try {
+            await copyCanonicalBuildLink();
+            setToastMessage("Build link copied!");
+          } catch {
+            setShareFallbackLink(canonicalBuildUrl());
+            setToastMessage("Build saved. Clipboard access was blocked, copy the link below.");
+          }
         }
       } else {
         setToastMessage("Saved!");
@@ -518,11 +577,13 @@ export default function BuildDetailPageClient({
     code,
     codeStats.nonWhitespaceCount,
     codeStats.trimmedCode,
+    buildTag,
     commitMessage,
     copyCanonicalBuildLink,
     canonicalBuildUrl,
     createBackupCommit,
     draftKey,
+    buildMeta.visibility,
     hasHistoricalAuthorSaves,
     hasValidCodeLength,
     initialIsAuthenticated,
@@ -548,9 +609,11 @@ export default function BuildDetailPageClient({
 
     const parsed = z.object({
       name: buildNameSchema,
+      tag: buildTagSchema,
       visibility: buildVisibilitySchema,
     }).safeParse({
       name: forkName,
+      tag: forkTag,
       visibility: forkVisibility,
     });
 
@@ -592,6 +655,7 @@ export default function BuildDetailPageClient({
         credentials: "include",
         body: JSON.stringify({
           name: parsed.data.name,
+          tag: parsed.data.tag,
           code,
           visibility: parsed.data.visibility,
           forkedFrom: {
@@ -643,6 +707,7 @@ export default function BuildDetailPageClient({
     codeStats.nonWhitespaceCount,
     forkName,
     forkNameCheck,
+    forkTag,
     forkVisibility,
     hasValidCodeLength,
     initialIsAuthenticated,
@@ -661,6 +726,18 @@ export default function BuildDetailPageClient({
       };
     });
   }, [commits]);
+
+  const commitHistoryMessage = useMemo(() => {
+    if (!commitHistory.hasMore) {
+      return `${commitHistory.totalCount} saved commit${commitHistory.totalCount === 1 ? "" : "s"} available.`;
+    }
+
+    if (commitHistory.includesSelectedCommitOutsideWindow) {
+      return `Showing the newest ${commitHistory.limit} commits plus the selected older commit (${commitHistory.visibleCount} of ${commitHistory.totalCount}). Older history is not available in this picker yet.`;
+    }
+
+    return `Showing the newest ${commitHistory.limit} of ${commitHistory.totalCount} saved commits. Older history is not available in this picker yet.`;
+  }, [commitHistory]);
 
   const nameStatusIcon = useMemo(() => {
     if (forkNameCheck.status === "checking") return <Loader2 className="h-4 w-4 animate-spin text-white/70" />;
@@ -702,6 +779,18 @@ export default function BuildDetailPageClient({
       <div className="space-y-2">
         <p className="eyebrow">Build</p>
         <h1 className="text-3xl font-semibold wrap-anywhere text-white">{buildMeta.nameOriginal}</h1>
+        <div className="flex flex-wrap gap-2">
+          <Badge className="border-sky-400/30 bg-sky-500/10 text-sky-100">{buildMeta.tag}</Badge>
+          {isAuthor ? (
+            <Badge
+              className={buildMeta.visibility === "PRIVATE"
+                ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                : "border-emerald-500/35 bg-emerald-500/10 text-emerald-200"}
+            >
+              {buildMeta.visibility}
+            </Badge>
+          ) : null}
+        </div>
         <div className="space-y-1 text-sm text-white/70">
           <p>
             By{" "}
@@ -762,6 +851,7 @@ export default function BuildDetailPageClient({
                 </option>
               ))}
             </select>
+            <p className="text-xs text-white/50">{commitHistoryMessage}</p>
           </div>
         </div>
 
@@ -886,7 +976,9 @@ export default function BuildDetailPageClient({
         <div className="space-y-3 rounded-2xl border border-white/10 bg-black/30 p-4">
           <p className="text-sm text-white/65">
             {isAuthor
-              ? "Share this build URL directly, or keep editing and overwrite your current build."
+              ? isBuildShareable
+                ? "Share this build URL directly, or keep editing and overwrite your current build."
+                : "Private builds are owner-only. Switch visibility to PUBLIC before sharing."
               : "You can edit this code and save a copy into your own builds."}
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
@@ -894,7 +986,13 @@ export default function BuildDetailPageClient({
               <PlusSquare className="h-4 w-4" aria-hidden="true" />
               Create post with code
             </Button>
-            <Button type="button" variant="outline" onClick={() => void handleShare()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleShare()}
+              disabled={isAuthor && !isBuildShareable}
+              title={isAuthor && !isBuildShareable ? "Private builds can't be shared until visibility is PUBLIC." : undefined}
+            >
               <Share2 className="h-4 w-4" aria-hidden="true" />
               Share
             </Button>
@@ -955,6 +1053,25 @@ export default function BuildDetailPageClient({
                 </div>
 
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="build-tag" className="text-sm font-medium text-white/75">
+                      Build tag
+                    </label>
+                    <Input
+                      id="build-tag"
+                      placeholder="Examples: starter, logistics, oil"
+                      value={buildTag}
+                      onChange={(event) => {
+                        setBuildTag(event.target.value);
+                        setSaveError(null);
+                      }}
+                      maxLength={BUILD_TAG_MAX_LENGTH}
+                    />
+                    <p className="text-sm text-white/55">
+                      Required. Keep it short because it appears directly on build cards.
+                    </p>
+                  </div>
+
                   {hasHistoricalAuthorSaves && (
                     <div className="space-y-2">
                       <label className="inline-flex items-center gap-2 text-sm text-white/80">
@@ -1030,6 +1147,25 @@ export default function BuildDetailPageClient({
                         {forkNameCheck.status === "available" ? "Name is available." : forkNameCheck.message}
                       </p>
                     )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="fork-tag" className="text-sm font-medium text-white/75">
+                      Build tag
+                    </label>
+                    <Input
+                      id="fork-tag"
+                      placeholder="Examples: starter, logistics, oil"
+                      value={forkTag}
+                      onChange={(event) => {
+                        setForkTag(event.target.value);
+                        setSaveError(null);
+                      }}
+                      maxLength={BUILD_TAG_MAX_LENGTH}
+                    />
+                    <p className="text-sm text-white/55">
+                      Required. Keep it short because it appears directly on build cards.
+                    </p>
                   </div>
 
                   <div className="space-y-2">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { ReportReason, Prisma } from "@prisma/client";
+import { ReportActionType, ReportReason, Prisma } from "@prisma/client";
 import { Card } from "@/components/ui";
 import Pagination from "@/components/ui/Pagination";
 import { auth } from "@/lib/auth";
@@ -24,7 +24,6 @@ type ModerationMetadata = {
   disableVotePosts?: boolean;
   disableVoteComments?: boolean;
   timeoutMinutes?: number;
-  reopen?: boolean;
 };
 
 function initials(value: string | null | undefined) {
@@ -56,6 +55,10 @@ function formatTarget(report: LoadedReport) {
 }
 
 function summarizeAction(action: LoadedReport["actions"][number]) {
+  if (action.type === ReportActionType.REOPENED) {
+    return "Reopened report";
+  }
+
   const metadata = action.metadata as ModerationMetadata | null;
   const items: string[] = [];
   if (metadata) {
@@ -71,6 +74,20 @@ function summarizeAction(action: LoadedReport["actions"][number]) {
     if (metadata.timeoutMinutes) items.push(`Timeout for ${metadata.timeoutMinutes} minutes`);
   }
   return items.join(" · ");
+}
+
+function formatActionType(type: ReportActionType) {
+  switch (type) {
+    case ReportActionType.REOPENED:
+      return "reopened";
+    case ReportActionType.RESOLVED:
+      return "resolved";
+    case ReportActionType.MODERATION:
+      return "moderation";
+    case ReportActionType.NOTE:
+    default:
+      return "note";
+  }
 }
 
 function formatReason(reason: ReportReason) {
@@ -396,7 +413,7 @@ export default async function AdminReportsPage({
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                       <div className="flex flex-wrap items-center gap-2 text-sm text-white">
                                         <span className="rounded-full bg-white/5 px-2 py-0.5 text-[0.7rem] uppercase tracking-wide text-white/70">
-                                          {action.type.toLowerCase()}
+                                          {formatActionType(action.type)}
                                         </span>
                                         <span>{action.actor?.name ?? action.actor?.email ?? "Admin"}</span>
                                       </div>

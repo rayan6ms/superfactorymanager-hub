@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { analyzeYoutubeUrl } from "@/lib/youtube";
-import { checkMemoryRateLimit, getClientIpFromHeaders } from "@/lib/request-security";
+import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 export async function GET(req: Request) {
-  const ip = getClientIpFromHeaders(req.headers);
-  const limit = checkMemoryRateLimit(`meta:youtube:ip:${ip}`, {
+  const clientKey = getClientRateLimitKey(req.headers);
+  const limit = await checkRateLimit(`meta:youtube:client:${clientKey}`, {
     windowMs: 60 * 1000,
     limit: 120,
   });

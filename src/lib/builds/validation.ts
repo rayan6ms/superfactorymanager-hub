@@ -3,6 +3,8 @@ import type { Prisma } from "@prisma/client";
 
 export const BUILD_NAME_MIN_LENGTH = 3;
 export const BUILD_NAME_MAX_LENGTH = 80;
+export const BUILD_TAG_MIN_LENGTH = 2;
+export const BUILD_TAG_MAX_LENGTH = 24;
 export const BUILD_CODE_MIN_NON_WHITESPACE = 51;
 
 export const buildNameSchema = z
@@ -16,6 +18,15 @@ export const buildNameSchema = z
 
 export const buildVisibilitySchema = z.enum(["PUBLIC", "PRIVATE"]);
 
+export const buildTagSchema = z
+  .string()
+  .trim()
+  .min(BUILD_TAG_MIN_LENGTH, `Tag must be at least ${BUILD_TAG_MIN_LENGTH} characters.`)
+  .max(BUILD_TAG_MAX_LENGTH, `Tag must be at most ${BUILD_TAG_MAX_LENGTH} characters.`)
+  .refine((value) => !(/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value)), {
+    message: "Tag contains invalid control characters.",
+  });
+
 export const buildReferenceSchema = z.object({
   username: z.string().trim().min(1, "Username is required."),
   slug: z.string().trim().min(1, "Slug is required."),
@@ -23,12 +34,14 @@ export const buildReferenceSchema = z.object({
 
 export const createBuildSchema = z.object({
   name: buildNameSchema,
+  tag: buildTagSchema,
   code: z.string(),
   visibility: buildVisibilitySchema.optional().default("PUBLIC"),
   forkedFrom: buildReferenceSchema.nullable().optional(),
 });
 
 export const updateBuildSchema = z.object({
+  tag: buildTagSchema.optional(),
   code: z.string(),
   visibility: buildVisibilitySchema.optional(),
   createCommit: z.boolean().optional().default(false),
@@ -37,6 +50,7 @@ export const updateBuildSchema = z.object({
 
 export const forkBuildSchema = z.object({
   name: buildNameSchema.optional(),
+  tag: buildTagSchema.optional(),
   visibility: buildVisibilitySchema.optional().default("PUBLIC"),
 });
 
@@ -44,6 +58,12 @@ export function normalizeBuildName(raw: string) {
   const nameOriginal = raw.trim();
   const nameLower = nameOriginal.toLowerCase();
   return { nameOriginal, nameLower };
+}
+
+export function normalizeBuildTag(raw: string) {
+  const tag = raw.trim().replace(/\s+/g, " ");
+  const tagLower = tag.toLowerCase();
+  return { tag, tagLower };
 }
 
 export function getCodeContentStats(rawCode: string) {

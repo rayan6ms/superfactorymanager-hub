@@ -170,6 +170,8 @@ model Build {
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   nameOriginal      String
   nameLower         String
+  tag               String
+  tagLower          String
   slug              String
   visibility        BuildVisibility @default(PUBLIC)
   currentCode       String
@@ -184,6 +186,7 @@ model Build {
   @@unique([userId, slug])
   @@index([userId, createdAt])
   @@index([slug])
+  @@index([visibility, tagLower])
 }
 
 model BuildCommit {
@@ -394,6 +397,7 @@ model ReportAction {
 
 enum ReportActionType {
   NOTE
+  REOPENED
   RESOLVED
   MODERATION
 }
@@ -443,4 +447,13 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model RateLimitBucket {
+  key       String   @id
+  count     Int
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }

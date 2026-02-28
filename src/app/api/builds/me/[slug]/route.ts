@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import {
   BUILD_CODE_MIN_NON_WHITESPACE,
   getCodeContentStats,
+  normalizeBuildTag,
   updateBuildSchema,
 } from "@/lib/builds/validation";
 
@@ -60,18 +61,21 @@ export async function PUT(request: Request, ctx: { params: Promise<{ slug: strin
   }
 
   const commitMessage = parsed.data.commitMessage?.trim() || null;
+  const normalizedTag = parsed.data.tag ? normalizeBuildTag(parsed.data.tag) : null;
 
   const updated = await db.$transaction(async (tx) => {
     const build = await tx.build.update({
       where: { id: existing.id },
       data: {
         currentCode: trimmedCode,
+        ...(normalizedTag ? { tag: normalizedTag.tag, tagLower: normalizedTag.tagLower } : {}),
         ...(parsed.data.visibility ? { visibility: parsed.data.visibility } : {}),
       },
       select: {
         slug: true,
         nameOriginal: true,
         nameLower: true,
+        tag: true,
         visibility: true,
         createdAt: true,
         updatedAt: true,
@@ -97,6 +101,7 @@ export async function PUT(request: Request, ctx: { params: Promise<{ slug: strin
       slug: updated.slug,
       nameOriginal: updated.nameOriginal,
       nameLower: updated.nameLower,
+      tag: updated.tag,
       visibility: updated.visibility,
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,

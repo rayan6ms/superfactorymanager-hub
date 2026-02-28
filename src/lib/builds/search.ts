@@ -6,6 +6,7 @@ export const BUILD_CARD_SELECT = {
   id: true,
   slug: true,
   nameOriginal: true,
+  tag: true,
   visibility: true,
   createdAt: true,
   updatedAt: true,
@@ -25,6 +26,7 @@ export type SerializedBuild = {
   username: string;
   slug: string;
   nameOriginal: string;
+  tag: string;
   visibility: BuildVisibility;
   createdAt: Date;
   updatedAt: Date;
@@ -53,6 +55,7 @@ function serializeBuild(build: BuildWithUser): SerializedBuild | null {
     username,
     slug: build.slug,
     nameOriginal: build.nameOriginal,
+    tag: build.tag,
     visibility: build.visibility,
     createdAt: build.createdAt,
     updatedAt: build.updatedAt,
@@ -102,6 +105,12 @@ function getPublicBuildWhere(opts: { q?: string; username?: string }): Prisma.Bu
             },
           },
           {
+            tag: {
+              contains: trimmedQuery,
+              mode: "insensitive",
+            },
+          },
+          {
             slug: {
               contains: trimmedQuery,
               mode: "insensitive",
@@ -137,6 +146,7 @@ function getSearchFromWhereSql(matchPattern: string, usernamePattern: string | n
       AND u."name" IS NOT NULL
       AND (
         b."nameOriginal" ILIKE ${matchPattern} ESCAPE '\\'
+        OR b."tag" ILIKE ${matchPattern} ESCAPE '\\'
         OR b."slug" ILIKE ${matchPattern} ESCAPE '\\'
         OR u."name" ILIKE ${matchPattern} ESCAPE '\\'
       )
@@ -173,12 +183,15 @@ async function searchPublicBuildsByRelevance(options: {
       ORDER BY
         (
           CASE WHEN b."nameLower" = ${queryLower} THEN 400 ELSE 0 END
+          + CASE WHEN b."tagLower" = ${queryLower} THEN 340 ELSE 0 END
           + CASE WHEN LOWER(b."slug") = ${queryLower} THEN 320 ELSE 0 END
           + CASE WHEN LOWER(u."name") = ${queryLower} THEN 260 ELSE 0 END
           + CASE WHEN b."nameLower" LIKE ${prefixLowerPattern} ESCAPE '\\' THEN 160 ELSE 0 END
+          + CASE WHEN b."tagLower" LIKE ${prefixLowerPattern} ESCAPE '\\' THEN 150 ELSE 0 END
           + CASE WHEN b."slug" ILIKE ${prefixPattern} ESCAPE '\\' THEN 140 ELSE 0 END
           + CASE WHEN u."name" ILIKE ${prefixPattern} ESCAPE '\\' THEN 120 ELSE 0 END
           + CASE WHEN b."nameLower" LIKE ${containsLowerPattern} ESCAPE '\\' THEN 80 ELSE 0 END
+          + CASE WHEN b."tagLower" LIKE ${containsLowerPattern} ESCAPE '\\' THEN 70 ELSE 0 END
           + CASE WHEN b."slug" ILIKE ${containsPattern} ESCAPE '\\' THEN 60 ELSE 0 END
           + CASE WHEN u."name" ILIKE ${containsPattern} ESCAPE '\\' THEN 40 ELSE 0 END
         ) DESC,

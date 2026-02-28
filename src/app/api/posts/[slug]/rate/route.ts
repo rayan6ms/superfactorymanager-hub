@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { recomputePostRating } from "@/lib/posts";
-import { interactionBlockReason } from "@/lib/moderation";
+import { interactionBlockReason, type InteractionUser } from "@/lib/moderation";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
 const COOLDOWN_SEC = 10;
@@ -28,13 +28,9 @@ async function enforceVoteThrottle(userId: string) {
   return null;
 }
 
-export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
-  const { slug } = await ctx.params;
-  const session = await auth();
-  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const user = await db.user.findUnique({
-    where: { email: session.user.email },
+async function getVotingUser(email: string) {
+  return (await db.user.findUnique({
+    where: { email },
     select: {
       id: true,
       canCreatePosts: true,
@@ -43,7 +39,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       canVoteComments: true,
       interactionBanUntil: true,
     },
-  });
+  })) satisfies (InteractionUser & { id: string }) | null;
+}
+
+export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const { slug } = await ctx.params;
+  const session = await auth();
+  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const user = await getVotingUser(session.user.email);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const restriction = interactionBlockReason(user, "vote-post");
@@ -113,10 +117,15 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ slug: strin
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await db.user.findUnique({ where: { email: session.user.email } });
+  const user = await getVotingUser(session.user.email);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const post = await db.post.findUnique({ where: { slug } });
+  const restriction = interactionBlockReason(user, "vote-post");
+  if (restriction) {
+    return NextResponse.json({ error: restriction }, { status: 403 });
+  }
+
+  const post = await db.post.findFirst({ where: { slug, isDeleted: false } });
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {

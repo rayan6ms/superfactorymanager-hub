@@ -98,6 +98,19 @@ export async function POST(request: Request) {
   }
 
   const trimmedMessage = message?.trim() || null;
+  const duplicateWhere =
+    type === "post"
+      ? { reporterId: user.id, postId, commentId: null, resolvedAt: null }
+      : { reporterId: user.id, commentId, resolvedAt: null };
+
+  const existingOpenReport = await db.report.findFirst({
+    where: duplicateWhere,
+    select: { id: true },
+  });
+
+  if (existingOpenReport) {
+    return NextResponse.json({ success: true, duplicate: true });
+  }
 
   await db.report.create({
     data: {
@@ -109,20 +122,44 @@ export async function POST(request: Request) {
     },
   });
 
-  if (postId) {
-    const [reportCount, postStatus] = await Promise.all([
-      db.report.count({ where: { postId } }),
+  if (type === "post" && postId) {
+    const [distinctOpenReports, postStatus] = await Promise.all([
+      db.report.groupBy({
+        by: ["reporterId"],
+        where: { postId, commentId: null, resolvedAt: null },
+      }),
       db.post.findUnique({ where: { id: postId }, select: { isDeleted: true, deletionFlaggedByAuto: true } }),
     ]);
 
     if (
-      reportCount >= AUTO_DELETE_REPORT_THRESHOLD &&
+      distinctOpenReports.length >= AUTO_DELETE_REPORT_THRESHOLD &&
       !(postStatus?.isDeleted && !postStatus?.deletionFlaggedByAuto)
     ) {
       try {
         await flagAsDeleted("post", postId, { auto: true });
       } catch (error) {
         console.warn("[reports] Failed to auto-flag post", { postId, error });
+      }
+    }
+  }
+
+  if (type === "comment" && commentId) {
+    const [distinctOpenReports, commentStatus] = await Promise.all([
+      db.report.groupBy({
+        by: ["reporterId"],
+        where: { commentId, resolvedAt: null },
+      }),
+      db.comment.findUnique({ where: { id: commentId }, select: { isDeleted: true, deletionFlaggedByAuto: true } }),
+    ]);
+
+    if (
+      distinctOpenReports.length >= AUTO_DELETE_REPORT_THRESHOLD &&
+      !(commentStatus?.isDeleted && !commentStatus?.deletionFlaggedByAuto)
+    ) {
+      try {
+        await flagAsDeleted("comment", commentId, { auto: true });
+      } catch (error) {
+        console.warn("[reports] Failed to auto-flag comment", { commentId, error });
       }
     }
   }

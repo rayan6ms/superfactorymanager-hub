@@ -1687,7 +1687,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                   id="images"
                   type="file"
                   multiple
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   className="sr-only"
                   disabled={totalImageSlots >= MAX_IMAGE_COUNT}
                   onChange={e => {
@@ -1710,6 +1710,9 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                 />
                 <p className="text-xs text-white/60">
                   <span className="font-semibold text-white/80">Selected:</span> {fileSummary}. The first image becomes your thumbnail.
+                </p>
+                <p className="text-xs text-white/60">
+                  JPG, PNG, and WEBP are supported. Uploaded images are stored as JPEG variants.
                 </p>
               </div>
               {shouldShowError("images") && errors.images && (

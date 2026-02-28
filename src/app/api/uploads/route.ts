@@ -8,7 +8,7 @@ import {
   MAX_UPLOAD_IMAGE_PIXELS,
   validateUploadBatch,
 } from "@/lib/upload-security";
-import { checkMemoryRateLimit, getClientIpFromHeaders } from "@/lib/request-security";
+import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 export const runtime = "nodejs";
 
@@ -21,9 +21,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const ip = getClientIpFromHeaders(req.headers);
-  const uploadLimit = checkMemoryRateLimit(
-    `upload:images:${session.user.email.toLowerCase()}:${ip}`,
+  const clientKey = getClientRateLimitKey(req.headers);
+  const uploadLimit = await checkRateLimit(
+    `upload:images:${session.user.email.toLowerCase()}:${clientKey}`,
     {
       windowMs: UPLOAD_WINDOW_MS,
       limit: UPLOAD_LIMIT_PER_USER,

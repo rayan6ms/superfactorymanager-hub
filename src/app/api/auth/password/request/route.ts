@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { checkMemoryRateLimit, getClientIpFromHeaders } from "@/lib/request-security";
+import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 const schema = z.object({
   email: z
@@ -21,8 +21,8 @@ const RESET_REQUEST_LIMIT_PER_IP = 12;
 const RESET_REQUEST_LIMIT_PER_EMAIL = 4;
 
 export async function POST(request: Request) {
-  const ip = getClientIpFromHeaders(request.headers);
-  const ipLimit = checkMemoryRateLimit(`auth:password-request:ip:${ip}`, {
+  const clientKey = getClientRateLimitKey(request.headers);
+  const ipLimit = await checkRateLimit(`auth:password-request:client:${clientKey}`, {
     windowMs: RESET_REQUEST_WINDOW_MS,
     limit: RESET_REQUEST_LIMIT_PER_IP,
   });
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email;
-  const emailLimit = checkMemoryRateLimit(`auth:password-request:email:${email.toLowerCase()}`, {
+  const emailLimit = await checkRateLimit(`auth:password-request:email:${email.toLowerCase()}`, {
     windowMs: RESET_REQUEST_WINDOW_MS,
     limit: RESET_REQUEST_LIMIT_PER_EMAIL,
   });

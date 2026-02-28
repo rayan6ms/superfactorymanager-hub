@@ -1,59 +1,16 @@
+import "server-only";
+
 import crypto from "crypto";
+import dns from "node:dns/promises";
+import net from "node:net";
 
 const DATA_URL_PATTERN = /^data:image\//i;
 const BASE64_DATA_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,/i;
 const REMOTE_URL_PATTERN = /^https?:\/\//i;
 const REMOTE_TIMEOUT_MS = 5000;
+const MAX_REMOTE_REDIRECTS = 3;
 
-const BLOCKED_HOSTNAMES = ["localhost"];
-const BLOCKED_IPV6_HOSTS = ["::1"];
-
-const BLOCKED_IPV4_PATTERNS = [
-  /^127\./,
-  /^10\./,
-  /^192\.168\./,
-  /^172\.(1[6-9]|2\d|3[0-1])\./,
-  /^0\.0\.0\.0$/,
-  /^169\.254\./,
-];
-
-const BLOCKED_IPV6_PATTERNS = [
-  /^::1$/i,
-  /^fe80:/i,
-  /^fc00:/i,
-  /^fd00:/i,
-];
-
-function isPrivateOrLocalAddress(hostname: string): boolean {
-  const lower = hostname.toLowerCase();
-
-  if (BLOCKED_HOSTNAMES.includes(lower)) return true;
-  if (BLOCKED_IPV6_HOSTS.includes(lower)) return true;
-
-  if (BLOCKED_IPV4_PATTERNS.some(rx => rx.test(lower))) return true;
-  if (BLOCKED_IPV6_PATTERNS.some(rx => rx.test(lower))) return true;
-
-  return false;
-}
-
-function isSafeRemoteUrl(url: string): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return false;
-  }
-
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return false;
-  }
-
-  if (isPrivateOrLocalAddress(parsed.hostname)) {
-    return false;
-  }
-
-  return true;
-}
+const BLOCKED_HOSTNAMES = new Set(["localhost"]);
 
 const COLORS = [
   "#6366F1",
@@ -67,6 +24,131 @@ const COLORS = [
   "#3B82F6",
   "#0EA5E9",
 ];
+
+function normalizeHostname(hostname: string): string {
+  return hostname.trim().toLowerCase().replace(/\.+$/, "");
+}
+
+function ipv4ToNumber(ip: string): number | null {
+  const parts = ip.split(".");
+  if (parts.length !== 4) return null;
+
+  let value = 0;
+  for (const part of parts) {
+    if (!/^\d+$/.test(part)) return null;
+    const octet = Number(part);
+    if (!Number.isInteger(octet) || octet < 0 || octet > 255) return null;
+    value = (value << 8) + octet;
+  }
+
+  return value >>> 0;
+}
+
+function ipv4IsBlocked(ip: string): boolean {
+  const value = ipv4ToNumber(ip);
+  if (value === null) return true;
+
+  const firstOctet = value >>> 24;
+  const secondOctet = (value >>> 16) & 0xff;
+
+  if (firstOctet === 0) return true;
+  if (firstOctet === 10) return true;
+  if (firstOctet === 127) return true;
+  if (firstOctet === 169 && secondOctet === 254) return true;
+  if (firstOctet === 172 && secondOctet >= 16 && secondOctet <= 31) return true;
+  if (firstOctet === 192 && secondOctet === 0) return true;
+  if (firstOctet === 192 && secondOctet === 168) return true;
+  if (firstOctet === 198 && (secondOctet === 18 || secondOctet === 19)) return true;
+  if (firstOctet === 100 && secondOctet >= 64 && secondOctet <= 127) return true;
+  if (firstOctet >= 224) return true;
+  if (value === 0xffffffff) return true;
+
+  return false;
+}
+
+function ipv6IsBlocked(ip: string): boolean {
+  const normalized = ip.toLowerCase();
+
+  if (normalized === "::" || normalized === "::1") return true;
+  if (normalized.startsWith("fe8") || normalized.startsWith("fe9")) return true;
+  if (normalized.startsWith("fea") || normalized.startsWith("feb")) return true;
+  if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+  if (normalized.startsWith("ff")) return true;
+  if (normalized.startsWith("2001:db8")) return true;
+
+  const mappedIpv4 = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (mappedIpv4?.[1]) {
+    return ipv4IsBlocked(mappedIpv4[1]);
+  }
+
+  return false;
+}
+
+function isBlockedAddress(hostnameOrIp: string): boolean {
+  const lower = normalizeHostname(hostnameOrIp);
+  if (BLOCKED_HOSTNAMES.has(lower)) {
+    return true;
+  }
+
+  const family = net.isIP(lower);
+  if (family === 4) {
+    return ipv4IsBlocked(lower);
+  }
+  if (family === 6) {
+    return ipv6IsBlocked(lower);
+  }
+
+  return false;
+}
+
+async function resolveHostAddresses(hostname: string): Promise<string[]> {
+  const records = await dns.lookup(normalizeHostname(hostname), { all: true, verbatim: true });
+  return [...new Set(records.map((record) => record.address.toLowerCase()))];
+}
+
+async function validateRemoteUrl(url: string | URL): Promise<URL | null> {
+  let parsed: URL;
+  try {
+    parsed = url instanceof URL ? new URL(url.toString()) : new URL(url);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return null;
+  }
+
+  if (parsed.username || parsed.password) {
+    return null;
+  }
+
+  const hostname = normalizeHostname(parsed.hostname);
+
+  if (isBlockedAddress(hostname)) {
+    return null;
+  }
+
+  if (net.isIP(hostname)) {
+    return parsed;
+  }
+
+  let addresses: string[];
+  try {
+    addresses = await resolveHostAddresses(hostname);
+  } catch {
+    return null;
+  }
+
+  if (addresses.length === 0) {
+    return null;
+  }
+
+  if (addresses.some(address => isBlockedAddress(address))) {
+    return null;
+  }
+
+  return parsed;
+}
 
 function getColorIndex(seed: string) {
   if (!seed) return 0;
@@ -99,54 +181,95 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
   }
 }
 
-async function remoteImageIsReachable(url: string): Promise<boolean> {
-  try {
-    const head = await fetchWithTimeout(url, {
-      method: "HEAD",
-      redirect: "follow",
+type RemoteFetchResult = {
+  response: Response;
+  finalUrl: string;
+};
+
+async function fetchValidatedRemoteResource(
+  inputUrl: string,
+  init: RequestInit,
+): Promise<RemoteFetchResult | null> {
+  let currentUrl = await validateRemoteUrl(inputUrl);
+  if (!currentUrl) {
+    return null;
+  }
+
+  for (let redirectCount = 0; redirectCount <= MAX_REMOTE_REDIRECTS; redirectCount += 1) {
+    const response = await fetchWithTimeout(currentUrl.toString(), {
+      ...init,
       cache: "no-store",
+      redirect: "manual",
     });
 
-    if (head.ok) {
-      const contentType = head.headers.get("content-type");
+    if (response.status >= 300 && response.status < 400) {
+      if (redirectCount === MAX_REMOTE_REDIRECTS) {
+        return null;
+      }
+
+      const location = response.headers.get("location");
+      if (!location) {
+        return null;
+      }
+
+      currentUrl = await validateRemoteUrl(new URL(location, currentUrl));
+      if (!currentUrl) {
+        return null;
+      }
+
+      continue;
+    }
+
+    return { response, finalUrl: currentUrl.toString() };
+  }
+
+  return null;
+}
+
+async function remoteImageIsReachable(url: string): Promise<string | null> {
+  try {
+    const head = await fetchValidatedRemoteResource(url, { method: "HEAD" });
+
+    if (head?.response.ok) {
+      const contentType = head.response.headers.get("content-type");
       if (contentType && contentType.toLowerCase().startsWith("image/")) {
-        const lengthHeader = head.headers.get("content-length");
-        if (!lengthHeader) return true;
+        const lengthHeader = head.response.headers.get("content-length");
+        if (!lengthHeader) return head.finalUrl;
         const length = Number(lengthHeader);
-        if (Number.isNaN(length) || length > 0) return true;
+        if (!Number.isNaN(length) && length > 0) {
+          return head.finalUrl;
+        }
       }
     }
 
-    if (head.status !== 405) {
-      return false;
+    if (head && head.response.status !== 405) {
+      return null;
     }
   } catch (error) {
     if ((error as Error).name !== "AbortError") {
-      return false;
+      return null;
     }
   }
 
   try {
-    const getRes = await fetchWithTimeout(url, {
+    const getRes = await fetchValidatedRemoteResource(url, {
       method: "GET",
       headers: { Range: "bytes=0-0" },
-      redirect: "follow",
-      cache: "no-store",
     });
 
-    if (!getRes.ok) {
-      return false;
+    if (!getRes?.response.ok) {
+      return null;
     }
 
-    const contentType = getRes.headers.get("content-type");
+    const contentType = getRes.response.headers.get("content-type");
     if (!contentType || !contentType.toLowerCase().startsWith("image/")) {
-      return false;
+      return null;
     }
 
-    await getRes.arrayBuffer().catch(() => undefined);
-    return true;
+    await getRes.response.arrayBuffer().catch(() => undefined);
+    return getRes.finalUrl;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -179,14 +302,14 @@ export async function resolveProfileImage({
     return dataUrlHasPayload(image) ? image : generateInitialAvatar({ name, seed });
   }
 
-  if (!REMOTE_URL_PATTERN.test(image) || !isSafeRemoteUrl(image)) {
+  if (!REMOTE_URL_PATTERN.test(image)) {
     return generateInitialAvatar({ name, seed });
   }
 
-  const reachable = await remoteImageIsReachable(image);
-  if (!reachable) {
+  const reachableUrl = await remoteImageIsReachable(image);
+  if (!reachableUrl) {
     return generateInitialAvatar({ name, seed });
   }
 
-  return image;
+  return reachableUrl;
 }

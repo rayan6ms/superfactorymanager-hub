@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkMemoryRateLimit, getClientIpFromHeaders } from "@/lib/request-security";
+import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 function isAllowedHost(hostname: string, domain: string) {
   const host = hostname.toLowerCase();
@@ -55,8 +55,8 @@ async function extractNameFromHtml(html: string) {
 }
 
 export async function GET(req: Request) {
-  const ip = getClientIpFromHeaders(req.headers);
-  const limit = checkMemoryRateLimit(`meta:dep-resolve:ip:${ip}`, {
+  const clientKey = getClientRateLimitKey(req.headers);
+  const limit = await checkRateLimit(`meta:dep-resolve:client:${clientKey}`, {
     windowMs: 60 * 1000,
     limit: 60,
   });

@@ -4,7 +4,6 @@ export const ALLOWED_IMAGE_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
-  "image/gif",
 ]);
 
 export const MAX_UPLOAD_BYTES_PER_FILE = 8 * 1024 * 1024; // 8 MB
@@ -38,7 +37,7 @@ export function validateUploadBatch(files: File[]) {
     }
 
     if (!ALLOWED_IMAGE_MIME_TYPES.has(file.type)) {
-      return { ok: false as const, error: "Only JPG, PNG, WEBP, and GIF images are allowed." };
+      return { ok: false as const, error: "Only JPG, PNG, and WEBP images are allowed." };
     }
   }
 

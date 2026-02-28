@@ -1,3 +1,4 @@
+import Link from "next/link";
 import HideHeaderSearch from "@/components/layout/HideHeaderSearch";
 import PostCard from "@/components/posts/PostCard";
 import PostsFilterBar from "@/components/posts/PostsFilterBar";
@@ -139,6 +140,12 @@ export default async function PostsPage({ searchParams }: Props) {
         <p className="eyebrow">Posts</p>
         <h1 className="text-3xl font-semibold text-white">Explore posts</h1>
         <p className="text-white/70">Dial in your search using the filters below.</p>
+        <Link
+          href="/"
+          className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+        >
+          ← Back to home
+        </Link>
       </div>
 
       <PostsFilterBar

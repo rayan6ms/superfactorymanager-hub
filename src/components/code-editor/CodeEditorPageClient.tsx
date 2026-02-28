@@ -13,7 +13,9 @@ import { Badge, Button, Card, Input } from "@/components/ui";
 import {
   BUILD_CODE_MIN_NON_WHITESPACE,
   BUILD_NAME_MAX_LENGTH,
+  BUILD_TAG_MAX_LENGTH,
   buildNameSchema,
+  buildTagSchema,
   buildVisibilitySchema,
   getCodeContentStats,
   normalizeBuildName,
@@ -86,6 +88,7 @@ export default function CodeEditorPageClient({
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [saveIntent, setSaveIntent] = useState<SaveIntent>("save");
   const [buildName, setBuildName] = useState("");
+  const [buildTag, setBuildTag] = useState("");
   const [visibility, setVisibility] = useState<BuildVisibility>("PUBLIC");
   const [nameCheck, setNameCheck] = useState<NameCheckState>({ status: "idle" });
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -348,17 +351,23 @@ export default function CodeEditorPageClient({
 
     const parsed = z.object({
       name: buildNameSchema,
+      tag: buildTagSchema,
       visibility: buildVisibilitySchema,
     }).safeParse({
       name: buildName,
+      tag: buildTag,
       visibility,
     });
 
     if (!parsed.success) {
-      setNameCheck({
-        status: "invalid",
-        message: parsed.error.issues[0]?.message ?? "Build name is required.",
-      });
+      const issue = parsed.error.issues[0];
+      if (issue?.path[0] === "name") {
+        setNameCheck({
+          status: "invalid",
+          message: issue.message ?? "Build name is required.",
+        });
+      }
+      setSaveError(issue?.message ?? "Build details are invalid.");
       return;
     }
 
@@ -397,6 +406,7 @@ export default function CodeEditorPageClient({
         credentials: "include",
         body: JSON.stringify({
           name: parsed.data.name,
+          tag: parsed.data.tag,
           code,
           visibility: parsed.data.visibility,
         }),
@@ -443,20 +453,30 @@ export default function CodeEditorPageClient({
 
       if (saveIntent === "share") {
         const shareUrl = getBuildShareUrl(savedBuild);
-        try {
-          await copyBuildLink(savedBuild);
-          if (typeof window !== "undefined") {
-            window.sessionStorage.setItem(POST_REDIRECT_TOAST_STORAGE_KEY, "Build link copied!");
-            window.sessionStorage.removeItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY);
-          }
-        } catch {
+        if (parsed.data.visibility !== "PUBLIC") {
           if (typeof window !== "undefined") {
             window.sessionStorage.setItem(
               POST_REDIRECT_TOAST_STORAGE_KEY,
-              "Build saved. Clipboard access was blocked, copy the link below.",
+              "Build saved. Change visibility to PUBLIC to share its link.",
             );
-            if (shareUrl) {
-              window.sessionStorage.setItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY, shareUrl);
+            window.sessionStorage.removeItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY);
+          }
+        } else {
+          try {
+            await copyBuildLink(savedBuild);
+            if (typeof window !== "undefined") {
+              window.sessionStorage.setItem(POST_REDIRECT_TOAST_STORAGE_KEY, "Build link copied!");
+              window.sessionStorage.removeItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY);
+            }
+          } catch {
+            if (typeof window !== "undefined") {
+              window.sessionStorage.setItem(
+                POST_REDIRECT_TOAST_STORAGE_KEY,
+                "Build saved. Clipboard access was blocked, copy the link below.",
+              );
+              if (shareUrl) {
+                window.sessionStorage.setItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY, shareUrl);
+              }
             }
           }
         }
@@ -471,6 +491,7 @@ export default function CodeEditorPageClient({
     }
   }, [
     buildName,
+    buildTag,
     code,
     codeStats.nonWhitespaceCount,
     codeStats.trimmedCode,
@@ -495,6 +516,20 @@ export default function CodeEditorPageClient({
     }
     return null;
   }, [nameCheck.status]);
+
+  const saveModalTitle = saveIntent === "share"
+    ? visibility === "PUBLIC"
+      ? "Save build and copy link"
+      : "Save private build"
+    : "Save build";
+  const saveModalDescription = saveIntent === "share" && visibility === "PRIVATE"
+    ? "Add one short tag and save this build privately. Switch visibility to PUBLIC when you want a shareable link."
+    : "Add one short tag to describe what this build is for. It will be shown on build cards and used in search.";
+  const submitLabel = saveIntent === "share"
+    ? visibility === "PUBLIC"
+      ? "Save and copy link"
+      : "Save private build"
+    : "Save build";
 
   return (
     <div className="space-y-8 pb-4">
@@ -628,12 +663,8 @@ export default function CodeEditorPageClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <Card className="w-full max-w-lg space-y-5 p-5 sm:p-6">
             <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-white">
-                {saveIntent === "share" ? "Save build to share" : "Save build"}
-              </h2>
-              <p className="text-sm text-white/65">
-                Name will be saved in lowercase.
-              </p>
+              <h2 className="text-xl font-semibold text-white">{saveModalTitle}</h2>
+              <p className="text-sm text-white/65">{saveModalDescription}</p>
             </div>
 
             <form className="space-y-4" onSubmit={handleSaveSubmit}>
@@ -653,6 +684,9 @@ export default function CodeEditorPageClient({
                   autoFocus
                   rightIcon={nameStatusIcon}
                 />
+                <p className="text-sm text-white/55">
+                  Displayed casing is preserved. Name matching is case-insensitive.
+                </p>
                 {nameCheck.status !== "idle" && nameCheck.status !== "checking" && (
                   <p className={clsx(
                     "text-sm",
@@ -661,6 +695,25 @@ export default function CodeEditorPageClient({
                     {nameCheck.status === "available" ? "Name is available." : nameCheck.message}
                   </p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="build-tag" className="text-sm font-medium text-white/75">
+                  Build tag
+                </label>
+                <Input
+                  id="build-tag"
+                  placeholder="Examples: starter, logistics, oil"
+                  value={buildTag}
+                  onChange={(event) => {
+                    setBuildTag(event.target.value);
+                    setSaveError(null);
+                  }}
+                  maxLength={BUILD_TAG_MAX_LENGTH}
+                />
+                <p className="text-sm text-white/55">
+                  Required. Keep it short because it appears directly on the build card.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -691,8 +744,12 @@ export default function CodeEditorPageClient({
                 </div>
                 <p className="text-sm text-white/65">
                   {visibility === "PUBLIC"
-                    ? "Will be shown publicly on your profile."
-                    : "Will not be shown on your public profile."}
+                    ? saveIntent === "share"
+                      ? "Will be shown publicly on your profile and a shareable link will be copied after saving."
+                      : "Will be shown publicly on your profile."
+                    : saveIntent === "share"
+                      ? "Will stay private. Save it now, or switch to PUBLIC to copy a shareable link."
+                      : "Will not be shown on your public profile."}
                 </p>
               </div>
 
@@ -728,7 +785,7 @@ export default function CodeEditorPageClient({
                         Saving...
                       </>
                     ) : (
-                      saveIntent === "share" ? "Save and share" : "Save build"
+                      submitLabel
                     )}
                   </Button>
                 </div>

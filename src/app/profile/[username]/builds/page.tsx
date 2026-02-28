@@ -20,6 +20,8 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
   const session = await auth();
   const viewerName = session?.user?.name?.trim().toLowerCase() ?? null;
   const isOwnerView = viewerName !== null && viewerName === username.trim().toLowerCase();
+  const pageTitle = isOwnerView ? "Your builds" : "Shared builds";
+  const loadingErrorTitle = isOwnerView ? "Your builds" : "Shared builds";
   const pageParam = resolved?.page;
   const pageSizeParam = resolved?.pageSize;
   const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
@@ -39,7 +41,7 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
     return (
       <main className="flex flex-col gap-6">
         <div>
-          <h1 className="text-3xl font-semibold text-white">Shared builds</h1>
+          <h1 className="text-3xl font-semibold text-white">{loadingErrorTitle}</h1>
         </div>
         <Card className="p-6 text-sm text-white/70">Unable to load builds right now.</Card>
       </main>
@@ -64,7 +66,7 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
       return (
         <main className="flex flex-col gap-6">
           <div>
-            <h1 className="text-3xl font-semibold text-white">Shared builds</h1>
+            <h1 className="text-3xl font-semibold text-white">{loadingErrorTitle}</h1>
           </div>
           <Card className="p-6 text-sm text-white/70">Unable to load builds right now.</Card>
         </main>
@@ -101,8 +103,12 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
   return (
     <main className="flex flex-col gap-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-white">Shared builds</h1>
-        <p className="text-sm text-white/60">Browse shared builds by {profileUsername}.</p>
+        <h1 className="text-3xl font-semibold text-white">{pageTitle}</h1>
+        <p className="text-sm text-white/60">
+          {isOwnerView
+            ? "All your builds, including private ones."
+            : `Browse shared builds by ${profileUsername}.`}
+        </p>
         <Link
           href={`/profile/${encodeURIComponent(profileUsername)}`}
           className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
@@ -119,6 +125,7 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
                 username={build.username}
                 slug={build.slug}
                 name={build.nameOriginal}
+                tag={build.tag}
                 visibility={build.visibility}
                 createdAt={build.createdAt}
                 updatedAt={build.updatedAt}
@@ -128,7 +135,9 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
           ))}
         </ul>
       ) : (
-        <Card className="p-6 text-sm text-white/70">{isOwnerView ? "No builds yet." : "No public builds."}</Card>
+        <Card className="p-6 text-sm text-white/70">
+          {isOwnerView ? "You haven't saved any builds yet." : "No public builds."}
+        </Card>
       )}
 
       <Pagination

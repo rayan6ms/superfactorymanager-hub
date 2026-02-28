@@ -6,6 +6,7 @@ type BuildCardProps = {
   username: string;
   slug: string;
   name: string;
+  tag: string;
   visibility: BuildVisibility;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -17,6 +18,7 @@ export default function BuildCard({
   username,
   slug,
   name,
+  tag,
   visibility,
   createdAt,
   updatedAt,
@@ -44,21 +46,28 @@ export default function BuildCard({
         <div className="flex items-start justify-between gap-3">
           <h3 className="line-clamp-2 wrap-anywhere text-lg font-semibold text-white">{name}</h3>
           <Badge
+            className="max-w-[11rem] shrink-0 truncate border-sky-400/30 bg-sky-500/10 text-sky-100"
+          >
+            {tag}
+          </Badge>
+        </div>
+        <div className="flex items-end justify-between gap-3">
+          <div className="sm:flex gap-4 text-xs text-white/55">
+            <p>Created {createdDate}</p>
+            {showUpdated ?
+              <div className="flex gap-4">
+                <p className="hidden sm:block">|</p>
+                <p>Updated {updatedDate}</p>
+              </div>
+              : null}
+          </div>
+          <Badge
             className={visibility === "PRIVATE"
-              ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-              : "border-emerald-500/35 bg-emerald-500/10 text-emerald-200"}
+              ? "shrink-0 border-rose-500/40 bg-rose-500/10 text-rose-200"
+              : "shrink-0 border-emerald-500/35 bg-emerald-500/10 text-emerald-200"}
           >
             {visibility}
           </Badge>
-        </div>
-        <div className="sm:flex gap-4 text-xs text-white/55">
-          <p>Created {createdDate}</p>
-          {showUpdated ?
-            <div className='flex gap-4'>
-              <p className="hidden sm:block">|</p>
-              <p>Updated {updatedDate}</p>
-            </div>
-            : null}
         </div>
       </Card>
     </Link>

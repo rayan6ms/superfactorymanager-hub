@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { shouldCountViewAndMark } from "@/lib/views";
 import { auth } from "@/lib/auth";
 import { MAX_POST_IMAGES, normalizeImages } from "@/lib/images";
 import { postSchema, TAG_MIN_COUNT } from "@/lib/validation";
@@ -20,17 +19,18 @@ async function removeImageFiles(urls: Array<string | null | undefined>) {
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
-  const post = await db.post.findUnique({
-    where: { slug: slug },
-    include: { category: true, images: true, dependencies: true, author: true, tags: { include: { tag: true } } },
+  const post = await db.post.findFirst({
+    where: { slug, isDeleted: false },
+    include: {
+      category: true,
+      images: true,
+      dependencies: true,
+      author: { select: { id: true, name: true, image: true } },
+      tags: { include: { tag: true } },
+    },
   }).catch(() => null);
 
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  if (await shouldCountViewAndMark(post.id)) {
-    await db.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } });
-    post.views += 1;
-  }
 
   return NextResponse.json(post);
 }

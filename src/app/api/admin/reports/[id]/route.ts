@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { flagManyAsDeleted } from "@/lib/deletions";
 import { recomputePostRating } from "@/lib/posts";
 import { revalidateSeoPaths } from "@/lib/seo-revalidate";
 
@@ -102,9 +103,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
         data: {
           reportId: id,
           actorId: adminUser.id,
-          type: ReportActionType.RESOLVED,
+          type: ReportActionType.REOPENED,
           note: note?.trim() || null,
-          metadata: { reopen: true },
         },
       });
     });
@@ -118,18 +118,18 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   await db.$transaction(async tx => {
     if (flagTarget && report.commentId) {
-      await tx.comment.update({ where: { id: report.commentId }, data: { isDeleted: true } });
+      await flagManyAsDeleted(tx, "comment", { id: report.commentId }, { auto: false, now });
     }
     if (flagTarget && report.postId) {
-      await tx.post.update({ where: { id: report.postId }, data: { isDeleted: true } });
+      await flagManyAsDeleted(tx, "post", { id: report.postId }, { auto: false, now });
     }
 
     if (offenderId) {
       if (flagAuthorPosts) {
-        await tx.post.updateMany({ where: { authorId: offenderId }, data: { isDeleted: true } });
+        await flagManyAsDeleted(tx, "post", { authorId: offenderId }, { auto: false, now });
       }
       if (flagAuthorComments) {
-        await tx.comment.updateMany({ where: { authorId: offenderId }, data: { isDeleted: true } });
+        await flagManyAsDeleted(tx, "comment", { authorId: offenderId }, { auto: false, now });
       }
       if (revokePostVotes) {
         const ratings = await tx.rating.findMany({ where: { userId: offenderId }, select: { postId: true } });

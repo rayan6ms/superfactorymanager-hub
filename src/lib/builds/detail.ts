@@ -3,6 +3,8 @@ import type { BuildVisibility } from "@prisma/client";
 import { db } from "@/lib/db";
 import type { BuildDetailPayload } from "@/lib/builds/types";
 
+const BUILD_DETAIL_COMMITS_LIMIT = 50;
+
 export type BuildDetailQueryResult =
   | {
     status: 404;
@@ -49,6 +51,7 @@ export async function getBuildDetail(
       id: true,
       slug: true,
       nameOriginal: true,
+      tag: true,
       visibility: true,
       currentCode: true,
       createdAt: true,
@@ -69,6 +72,7 @@ export async function getBuildDetail(
 
   let code = build.currentCode;
   let selectedCommitId: string | null = null;
+  let selectedCommitSummary: { id: string; createdAt: Date; message: string | null } | null = null;
 
   if (options.commitId) {
     const commit = await db.buildCommit.findFirst({
@@ -79,6 +83,8 @@ export async function getBuildDetail(
       select: {
         id: true,
         code: true,
+        createdAt: true,
+        message: true,
       },
     });
 
@@ -88,18 +94,36 @@ export async function getBuildDetail(
 
     code = commit.code;
     selectedCommitId = commit.id;
+    selectedCommitSummary = {
+      id: commit.id,
+      createdAt: commit.createdAt,
+      message: commit.message,
+    };
   }
 
-  const commits = await db.buildCommit.findMany({
-    where: { buildId: build.id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    select: {
-      id: true,
-      createdAt: true,
-      message: true,
-    },
-  });
+  const [recentCommits, totalCommitCount] = await Promise.all([
+    db.buildCommit.findMany({
+      where: { buildId: build.id },
+      orderBy: { createdAt: "desc" },
+      take: BUILD_DETAIL_COMMITS_LIMIT,
+      select: {
+        id: true,
+        createdAt: true,
+        message: true,
+      },
+    }),
+    db.buildCommit.count({
+      where: { buildId: build.id },
+    }),
+  ]);
+
+  const includesSelectedCommitOutsideWindow = Boolean(
+    selectedCommitSummary
+    && !recentCommits.some((commit) => commit.id === selectedCommitSummary?.id),
+  );
+  const commits = includesSelectedCommitOutsideWindow && selectedCommitSummary
+    ? [selectedCommitSummary, ...recentCommits]
+    : recentCommits;
 
   return {
     status: 200,
@@ -109,6 +133,7 @@ export async function getBuildDetail(
         username: build.user.name,
         slug: build.slug,
         nameOriginal: build.nameOriginal,
+        tag: build.tag,
         visibility: build.visibility,
         createdAt: build.createdAt.toISOString(),
         updatedAt: build.updatedAt.toISOString(),
@@ -125,6 +150,13 @@ export async function getBuildDetail(
         createdAt: commit.createdAt.toISOString(),
         message: commit.message,
       })),
+      commitHistory: {
+        totalCount: totalCommitCount,
+        visibleCount: commits.length,
+        limit: BUILD_DETAIL_COMMITS_LIMIT,
+        hasMore: totalCommitCount > recentCommits.length,
+        includesSelectedCommitOutsideWindow,
+      },
       selectedCommitId,
     },
   };

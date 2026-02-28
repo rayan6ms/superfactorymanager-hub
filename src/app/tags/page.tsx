@@ -97,6 +97,12 @@ export default async function TagsPage({ searchParams }: Props) {
         <h1 className="text-3xl font-semibold text-white">
           Discover tags
         </h1>
+        <Link
+          href="/"
+          className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+        >
+          ← Back to home
+        </Link>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
           <p className="text-white/70 sm:flex-1">
             Select one or more tags to surface posts that match or

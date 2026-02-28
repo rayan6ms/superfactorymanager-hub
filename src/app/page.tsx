@@ -6,8 +6,7 @@ import HomeQuickLinks from "@/components/home/HomeQuickLinks";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
-  getRecentPublicBuilds,
-  getRecentlyUpdatedPublicBuilds,
+  searchPublicBuildsWithFilters,
   type SerializedBuild,
 } from "@/lib/builds/search";
 import {
@@ -44,12 +43,20 @@ function PostSection({ title, posts }: { title: string; posts: SerializedPost[] 
   );
 }
 
-function BuildSection({ title, builds }: { title: string; builds: SerializedBuild[] }) {
+function BuildSection({
+  title,
+  builds,
+  total,
+}: {
+  title: string;
+  builds: SerializedBuild[];
+  total: number;
+}) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold text-white">{title}</h3>
-        <span className="text-xs uppercase tracking-[0.35em] text-white/40">{builds.length} builds</span>
+        <span className="text-xs uppercase tracking-[0.35em] text-white/40">{total} builds</span>
       </div>
       {builds.length ? (
         <ul className="grid gap-5 md:grid-cols-2">
@@ -59,6 +66,7 @@ function BuildSection({ title, builds }: { title: string; builds: SerializedBuil
                 username={build.username}
                 slug={build.slug}
                 name={build.nameOriginal}
+                tag={build.tag}
                 visibility={build.visibility}
                 createdAt={build.createdAt}
                 updatedAt={build.updatedAt}
@@ -89,13 +97,13 @@ export default async function Home({ searchParams }: Props) {
     userId = user?.id ?? null;
   }
 
-  const [popularTags, trendingPosts, recentPosts, recommendedPosts, recentBuilds, updatedBuilds] = await Promise.all([
+  const [popularTags, trendingPosts, recentPosts, recommendedPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
     getPopularTags(12),
     getTrendingPosts(6),
     getRecentPosts(6),
     getRecommendedPosts({ userId, searchTerm: q, limit: 6 }),
-    getRecentPublicBuilds(6),
-    getRecentlyUpdatedPublicBuilds(6),
+    searchPublicBuildsWithFilters({ order: "newest", limit: 6, page: 1 }),
+    searchPublicBuildsWithFilters({ order: "recently-updated", limit: 6, page: 1 }),
   ]);
 
   return (
@@ -165,8 +173,16 @@ export default async function Home({ searchParams }: Props) {
         </div>
 
         <div className="space-y-10">
-          <BuildSection title="Recent builds" builds={recentBuilds} />
-          <BuildSection title="Recently updated builds" builds={updatedBuilds} />
+          <BuildSection
+            title="Recent builds"
+            builds={recentBuildsResult.builds}
+            total={recentBuildsResult.total}
+          />
+          <BuildSection
+            title="Recently updated builds"
+            builds={updatedBuildsResult.builds}
+            total={updatedBuildsResult.total}
+          />
         </div>
       </section>
     </div>

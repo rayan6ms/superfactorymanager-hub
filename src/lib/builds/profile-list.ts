@@ -8,6 +8,7 @@ export type ProfileBuildItem = {
   username: string;
   slug: string;
   nameOriginal: string;
+  tag: string;
   visibility: BuildVisibility;
   createdAt: string;
   updatedAt: string;
@@ -57,6 +58,7 @@ function asBuildListResponse(payload: unknown): ProfileBuildListResponse | null 
         typeof candidate.username === "string"
         && typeof candidate.slug === "string"
         && typeof candidate.nameOriginal === "string"
+        && typeof candidate.tag === "string"
         && isBuildVisibility(candidate.visibility)
         && typeof candidate.createdAt === "string"
         && typeof candidate.updatedAt === "string"
@@ -112,6 +114,7 @@ export async function getProfileBuildList(
       select: {
         slug: true,
         nameOriginal: true,
+        tag: true,
         visibility: true,
         createdAt: true,
         updatedAt: true,
@@ -125,6 +128,7 @@ export async function getProfileBuildList(
       username: profileName,
       slug: item.slug,
       nameOriginal: item.nameOriginal,
+      tag: item.tag,
       visibility: item.visibility,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),

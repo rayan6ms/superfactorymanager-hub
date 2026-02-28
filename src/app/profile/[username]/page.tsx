@@ -59,6 +59,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
       select: {
         slug: true,
         nameOriginal: true,
+        tag: true,
         visibility: true,
         createdAt: true,
         updatedAt: true,
@@ -82,6 +83,8 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   const serializedPosts: SerializedPost[] = posts.map(serializePost);
   const joined = formatDate(user.createdAt);
   const bio = user.bio?.trim();
+  const buildsSectionTitle = isOwnerView ? "Your builds" : "Shared builds";
+  const emptyBuildsMessage = isOwnerView ? "You haven't saved any builds yet." : "No builds published yet.";
 
   return (
     <div className="space-y-5">
@@ -108,7 +111,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
       <Card className="space-y-4 p-6 backdrop-blur-none sm:backdrop-blur-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Shared builds</h2>
+          <h2 className="text-lg font-semibold text-white">{buildsSectionTitle}</h2>
           <div className="flex items-center gap-4">
             <span className="text-xs uppercase tracking-[0.3em] text-white/40">{totalBuilds} builds</span>
             <Link
@@ -127,6 +130,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
                   username={profileUsername}
                   slug={build.slug}
                   name={build.nameOriginal ?? build.slug}
+                  tag={build.tag}
                   visibility={build.visibility}
                   createdAt={build.createdAt}
                   updatedAt={build.updatedAt}
@@ -136,7 +140,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-white/60">No builds published yet.</p>
+          <p className="text-sm text-white/60">{emptyBuildsMessage}</p>
         )}
       </Card>
 

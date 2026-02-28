@@ -1,5 +1,9 @@
 import "server-only";
 
+import crypto from "crypto";
+import net from "net";
+import { db } from "./db";
+
 type RateLimitResult = {
   allowed: boolean;
   retryAfterSeconds: number;
@@ -11,8 +15,23 @@ type Bucket = {
   resetAt: number;
 };
 
+type DatabaseBucketRow = {
+  count: number | bigint;
+  resetAt: Date;
+};
+
 const buckets = new Map<string, Bucket>();
 const MAX_BUCKETS = 20_000;
+const DATABASE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+const TRUSTED_PROXY_IP_HEADERS = new Set([
+  "cf-connecting-ip",
+  "x-forwarded-for",
+  "x-real-ip",
+]);
+
+let lastDatabaseCleanupAt = 0;
+let didWarnAboutDatabaseFallback = false;
+let trustedProxyHeaderCache: string | null | undefined;
 
 function trimBuckets(now: number) {
   if (buckets.size <= MAX_BUCKETS) return;
@@ -23,23 +42,91 @@ function trimBuckets(now: number) {
   }
 }
 
-export function getClientIpFromHeaders(headers: Headers): string {
-  const forwardedFor = headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    const first = forwardedFor.split(",")[0]?.trim();
-    if (first) return first;
+function normalizeIp(candidate: string | null | undefined): string | null {
+  if (!candidate) return null;
+
+  const trimmed = candidate.trim().replace(/^"|"$/g, "");
+  if (!trimmed) return null;
+
+  if (net.isIP(trimmed)) {
+    return trimmed.toLowerCase();
   }
 
-  const realIp = headers.get("x-real-ip")?.trim();
-  if (realIp) return realIp;
+  if (trimmed.startsWith("[") && trimmed.includes("]")) {
+    const bracketEnd = trimmed.indexOf("]");
+    const inside = trimmed.slice(1, bracketEnd);
+    return net.isIP(inside) ? inside.toLowerCase() : null;
+  }
 
-  const cfIp = headers.get("cf-connecting-ip")?.trim();
-  if (cfIp) return cfIp;
+  const maybeHost = trimmed.match(/^(.+):(\d+)$/);
+  if (maybeHost?.[1] && maybeHost[1].includes(".") && net.isIP(maybeHost[1])) {
+    return maybeHost[1].toLowerCase();
+  }
 
-  return "unknown";
+  return null;
 }
 
-export function checkMemoryRateLimit(
+function getConfiguredTrustedProxyHeader(): string | null {
+  if (typeof trustedProxyHeaderCache !== "undefined") {
+    return trustedProxyHeaderCache;
+  }
+
+  const configured = process.env.TRUSTED_PROXY_IP_HEADER?.trim().toLowerCase();
+  if (!configured) {
+    trustedProxyHeaderCache = null;
+    return null;
+  }
+  if (!TRUSTED_PROXY_IP_HEADERS.has(configured)) {
+    console.warn(
+      `Ignoring unsupported TRUSTED_PROXY_IP_HEADER value: ${configured}`,
+    );
+    trustedProxyHeaderCache = null;
+    return null;
+  }
+  trustedProxyHeaderCache = configured;
+  return configured;
+}
+
+function buildAnonymousFingerprint(headers: Headers): string {
+  const material = [
+    headers.get("user-agent")?.trim().toLowerCase() ?? "",
+    headers.get("accept-language")?.trim().toLowerCase() ?? "",
+    headers.get("sec-ch-ua")?.trim().toLowerCase() ?? "",
+    headers.get("sec-ch-ua-mobile")?.trim().toLowerCase() ?? "",
+    headers.get("sec-ch-ua-platform")?.trim().toLowerCase() ?? "",
+  ].join("|");
+
+  return crypto.createHash("sha256").update(material || "anonymous").digest("hex").slice(0, 24);
+}
+
+export function getTrustedClientIpFromHeaders(headers: Headers): string | null {
+  const trustedHeader = getConfiguredTrustedProxyHeader();
+  if (!trustedHeader) {
+    return null;
+  }
+
+  const rawValue = headers.get(trustedHeader);
+  if (!rawValue) {
+    return null;
+  }
+
+  const firstValue = trustedHeader === "x-forwarded-for"
+    ? rawValue.split(",")[0]?.trim()
+    : rawValue.trim();
+
+  return normalizeIp(firstValue);
+}
+
+export function getClientRateLimitKey(headers: Headers): string {
+  const trustedIp = getTrustedClientIpFromHeaders(headers);
+  if (trustedIp) {
+    return `ip:${trustedIp}`;
+  }
+
+  return `anon:${buildAnonymousFingerprint(headers)}`;
+}
+
+function checkMemoryRateLimit(
   key: string,
   options: { windowMs: number; limit: number },
 ): RateLimitResult {
@@ -73,4 +160,122 @@ export function checkMemoryRateLimit(
     retryAfterSeconds: 0,
     remaining: Math.max(0, limit - current.count),
   };
+}
+
+async function cleanupDatabaseBuckets(now: Date) {
+  const nowMs = now.getTime();
+  if (nowMs - lastDatabaseCleanupAt < DATABASE_CLEANUP_INTERVAL_MS) {
+    return;
+  }
+
+  lastDatabaseCleanupAt = nowMs;
+  await db.$executeRaw`
+    DELETE FROM "RateLimitBucket"
+    WHERE "resetAt" <= ${now}
+  `;
+}
+
+function toCount(value: number | bigint): number {
+  return typeof value === "bigint" ? Number(value) : value;
+}
+
+async function checkDatabaseRateLimit(
+  key: string,
+  options: { windowMs: number; limit: number },
+): Promise<RateLimitResult> {
+  const now = new Date();
+  const windowMs = Math.max(1_000, Math.floor(options.windowMs));
+  const limit = Math.max(1, Math.floor(options.limit));
+  const resetAt = new Date(now.getTime() + windowMs);
+
+  await cleanupDatabaseBuckets(now);
+
+  return db.$transaction(async (tx) => {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const rows = await tx.$queryRaw<DatabaseBucketRow[]>`
+        SELECT "count", "resetAt"
+        FROM "RateLimitBucket"
+        WHERE "key" = ${key}
+        FOR UPDATE
+      `;
+
+      const current = rows[0];
+      if (!current) {
+        const inserted = await tx.$executeRaw`
+          INSERT INTO "RateLimitBucket" ("key", "count", "resetAt", "updatedAt")
+          VALUES (${key}, 1, ${resetAt}, ${now})
+          ON CONFLICT ("key") DO NOTHING
+        `;
+
+        if (inserted > 0) {
+          return {
+            allowed: true,
+            retryAfterSeconds: 0,
+            remaining: Math.max(0, limit - 1),
+          };
+        }
+
+        continue;
+      }
+
+      const currentCount = toCount(current.count);
+      if (current.resetAt <= now) {
+        await tx.$executeRaw`
+          UPDATE "RateLimitBucket"
+          SET "count" = 1,
+              "resetAt" = ${resetAt},
+              "updatedAt" = ${now}
+          WHERE "key" = ${key}
+        `;
+
+        return {
+          allowed: true,
+          retryAfterSeconds: 0,
+          remaining: Math.max(0, limit - 1),
+        };
+      }
+
+      if (currentCount >= limit) {
+        return {
+          allowed: false,
+          retryAfterSeconds: Math.max(
+            1,
+            Math.ceil((current.resetAt.getTime() - now.getTime()) / 1000),
+          ),
+          remaining: 0,
+        };
+      }
+
+      const nextCount = currentCount + 1;
+      await tx.$executeRaw`
+        UPDATE "RateLimitBucket"
+        SET "count" = ${nextCount},
+            "updatedAt" = ${now}
+        WHERE "key" = ${key}
+      `;
+
+      return {
+        allowed: true,
+        retryAfterSeconds: 0,
+        remaining: Math.max(0, limit - nextCount),
+      };
+    }
+
+    throw new Error("RATE_LIMIT_INSERT_RACE");
+  });
+}
+
+export async function checkRateLimit(
+  key: string,
+  options: { windowMs: number; limit: number },
+): Promise<RateLimitResult> {
+  try {
+    return await checkDatabaseRateLimit(key, options);
+  } catch (error) {
+    if (!didWarnAboutDatabaseFallback) {
+      didWarnAboutDatabaseFallback = true;
+      console.warn("Falling back to in-memory rate limiting:", error);
+    }
+    return checkMemoryRateLimit(key, options);
+  }
 }

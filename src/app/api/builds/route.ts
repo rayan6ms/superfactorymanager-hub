@@ -7,7 +7,9 @@ import {
   createBuildSchema,
   getCodeContentStats,
   normalizeBuildName,
+  normalizeBuildTag,
 } from "@/lib/builds/validation";
+import { createForkBuild } from "@/lib/builds/fork";
 import { getNextBuildSlugForUser } from "@/lib/builds/slug";
 
 function uniqueTargetIncludes(
@@ -52,6 +54,7 @@ export async function POST(request: Request) {
   }
 
   const { nameOriginal, nameLower } = normalizeBuildName(parsed.data.name);
+  const { tag, tagLower } = normalizeBuildTag(parsed.data.tag);
   const { trimmedCode, nonWhitespaceCount } = getCodeContentStats(parsed.data.code);
 
   if (nonWhitespaceCount < BUILD_CODE_MIN_NON_WHITESPACE) {
@@ -67,10 +70,43 @@ export async function POST(request: Request) {
 
   const forkedFrom = parsed.data.forkedFrom
     ? {
-      username: parsed.data.forkedFrom.username.trim().toLowerCase(),
+      username: parsed.data.forkedFrom.username.trim(),
       slug: parsed.data.forkedFrom.slug.trim(),
     }
     : null;
+
+  if (forkedFrom) {
+    const result = await createForkBuild({
+      userId: user.id,
+      username: user.name,
+      source: forkedFrom,
+      resolveDraft: () => ({
+        nameOriginal,
+        nameLower,
+        tag,
+        tagLower,
+        code: trimmedCode,
+        visibility: parsed.data.visibility,
+      }),
+    });
+
+    if (!result.ok) {
+      if (result.error === "BUILD_NAME_TAKEN") {
+        return NextResponse.json(
+          { error: "BUILD_NAME_TAKEN", normalized: result.normalized || nameLower },
+          { status: 409 },
+        );
+      }
+
+      if (result.error === "FORK_SOURCE_NOT_FOUND") {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({ error: "Unable to create build" }, { status: 409 });
+    }
+
+    return NextResponse.json({ build: result.build }, { status: 201 });
+  }
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
@@ -83,27 +119,6 @@ export async function POST(request: Request) {
           throw new Error("BUILD_NAME_TAKEN");
         }
 
-        let forkedFromBuildId: string | null = null;
-        if (forkedFrom) {
-          const source = await tx.build.findFirst({
-            where: {
-              slug: forkedFrom.slug,
-              user: { name: forkedFrom.username },
-              // Hide private source existence from non-owners.
-              OR: [{ visibility: "PUBLIC" }, { userId: user.id }],
-            },
-            select: {
-              id: true,
-            },
-          });
-
-          if (!source) {
-            throw new Error("FORK_SOURCE_NOT_FOUND");
-          }
-
-          forkedFromBuildId = source.id;
-        }
-
         const slug = await getNextBuildSlugForUser(tx, user.id, nameLower);
 
         const build = await tx.build.create({
@@ -111,16 +126,18 @@ export async function POST(request: Request) {
             userId: user.id,
             nameOriginal,
             nameLower,
+            tag,
+            tagLower,
             slug,
             visibility: parsed.data.visibility,
             currentCode: trimmedCode,
-            forkedFromBuildId,
           },
           select: {
             id: true,
             slug: true,
             nameOriginal: true,
             nameLower: true,
+            tag: true,
             visibility: true,
             createdAt: true,
             updatedAt: true,
@@ -145,6 +162,7 @@ export async function POST(request: Request) {
             slug: created.slug,
             nameOriginal: created.nameOriginal,
             nameLower: created.nameLower,
+            tag: created.tag,
             visibility: created.visibility,
             createdAt: created.createdAt,
             updatedAt: created.updatedAt,
@@ -155,10 +173,6 @@ export async function POST(request: Request) {
     } catch (error) {
       if (error instanceof Error && error.message === "BUILD_NAME_TAKEN") {
         return NextResponse.json({ error: "BUILD_NAME_TAKEN", normalized: nameLower }, { status: 409 });
-      }
-
-      if (error instanceof Error && error.message === "FORK_SOURCE_NOT_FOUND") {
-        return NextResponse.json({ error: "Not found" }, { status: 404 });
       }
 
       if (

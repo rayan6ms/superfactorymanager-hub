@@ -11,7 +11,7 @@ import type { Adapter } from "next-auth/adapters";
 import { generateInitialAvatar, resolveProfileImage } from "./avatar";
 import { generateAvailableUsername } from "./usernames.server";
 import { createNotification } from "./notifications";
-import { checkMemoryRateLimit, getClientIpFromHeaders } from "./request-security";
+import { checkRateLimit, getClientRateLimitKey } from "./request-security";
 
 const credsSchema = z.object({
   identifier: z
@@ -37,8 +37,8 @@ const providers: NextAuthConfig["providers"] = [
     },
     async authorize(credentials, request) {
       const headers = request?.headers instanceof Headers ? request.headers : new Headers();
-      const ip = getClientIpFromHeaders(headers);
-      const ipBucket = checkMemoryRateLimit(`auth:login:ip:${ip}`, {
+      const clientKey = getClientRateLimitKey(headers);
+      const ipBucket = await checkRateLimit(`auth:login:client:${clientKey}`, {
         windowMs: LOGIN_WINDOW_MS,
         limit: LOGIN_LIMIT_PER_IP,
       });
@@ -57,7 +57,7 @@ const providers: NextAuthConfig["providers"] = [
 
       const { identifier, password } = parsed.data;
       const normalizedIdentifier = identifier.toLowerCase();
-      const identifierBucket = checkMemoryRateLimit(
+      const identifierBucket = await checkRateLimit(
         `auth:login:identifier:${normalizedIdentifier}`,
         {
           windowMs: LOGIN_WINDOW_MS,

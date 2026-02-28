@@ -154,6 +154,7 @@ export default async function SearchPage({ searchParams }: Props) {
                         username={build.username}
                         slug={build.slug}
                         name={build.nameOriginal}
+                        tag={build.tag}
                         visibility={build.visibility}
                         createdAt={build.createdAt}
                         updatedAt={build.updatedAt}
