@@ -10,7 +10,8 @@ type BuildCardProps = {
   visibility: BuildVisibility;
   createdAt: string | Date;
   updatedAt: string | Date;
-  backTo?: "profile" | "builds" | "explore-builds" | "search";
+  showVisibility?: boolean;
+  backTo?: "home" | "profile" | "builds" | "explore-builds" | "search";
   backHref?: string;
 };
 
@@ -22,6 +23,7 @@ export default function BuildCard({
   visibility,
   createdAt,
   updatedAt,
+  showVisibility = false,
   backTo,
   backHref,
 }: BuildCardProps) {
@@ -44,30 +46,30 @@ export default function BuildCard({
     >
       <Card hoverable className="h-full space-y-3 p-5 backdrop-blur-none sm:backdrop-blur-sm">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="line-clamp-2 wrap-anywhere text-lg font-semibold text-white">{name}</h3>
-          <Badge
-            className="max-w-[11rem] shrink-0 truncate border-sky-400/30 bg-sky-500/10 text-sky-100"
-          >
-            {tag}
-          </Badge>
+          <h3 className="min-w-0 flex-1 line-clamp-2 wrap-anywhere text-lg font-semibold text-white">{name}</h3>
+          <div className="flex max-w-[11rem] shrink-0 flex-wrap justify-end gap-2">
+            <Badge className="max-w-[11rem] truncate border-sky-400/30 bg-sky-500/10 text-sky-100">
+              {tag}
+            </Badge>
+            {showVisibility ? (
+              <Badge
+                className={visibility === "PRIVATE"
+                  ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                  : "border-emerald-500/35 bg-emerald-500/10 text-emerald-200"}
+              >
+                {visibility}
+              </Badge>
+            ) : null}
+          </div>
         </div>
         <div className="flex items-end justify-between gap-3">
-          <div className="sm:flex gap-4 text-xs text-white/55">
+          <p className="min-w-0 truncate text-xs text-white/60">
+            By <span className="font-medium text-white/80">{username}</span>
+          </p>
+          <div className="shrink-0 text-right text-xs text-white/55">
             <p>Created {createdDate}</p>
-            {showUpdated ?
-              <div className="flex gap-4">
-                <p className="hidden sm:block">|</p>
-                <p>Updated {updatedDate}</p>
-              </div>
-              : null}
+            {showUpdated ? <p>Updated {updatedDate}</p> : null}
           </div>
-          <Badge
-            className={visibility === "PRIVATE"
-              ? "shrink-0 border-rose-500/40 bg-rose-500/10 text-rose-200"
-              : "shrink-0 border-emerald-500/35 bg-emerald-500/10 text-emerald-200"}
-          >
-            {visibility}
-          </Badge>
         </div>
       </Card>
     </Link>

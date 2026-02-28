@@ -34,7 +34,8 @@ export default async function PublicBuildDetailPage({ params, searchParams }: Pr
   const from = firstValue(resolvedSearchParams?.from);
   const back = firstValue(resolvedSearchParams?.back);
   const backHref = normalizeBackHref(back);
-  const backTo = from === "profile"
+  const backTo = from === "home"
+    || from === "profile"
     || from === "builds"
     || from === "explore-builds"
     || from === "search"

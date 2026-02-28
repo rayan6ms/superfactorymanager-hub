@@ -134,6 +134,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
                   visibility={build.visibility}
                   createdAt={build.createdAt}
                   updatedAt={build.updatedAt}
+                  showVisibility={isOwnerView}
                   backTo="profile"
                 />
               </li>

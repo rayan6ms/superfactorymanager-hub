@@ -129,6 +129,7 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
                 visibility={build.visibility}
                 createdAt={build.createdAt}
                 updatedAt={build.updatedAt}
+                showVisibility={isOwnerView}
                 backTo="builds"
               />
             </li>

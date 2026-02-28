@@ -47,10 +47,14 @@ function BuildSection({
   title,
   builds,
   total,
+  viewerUsername,
+  backHref,
 }: {
   title: string;
   builds: SerializedBuild[];
   total: number;
+  viewerUsername: string | null;
+  backHref?: string;
 }) {
   return (
     <section className="space-y-4">
@@ -70,6 +74,9 @@ function BuildSection({
                 visibility={build.visibility}
                 createdAt={build.createdAt}
                 updatedAt={build.updatedAt}
+                showVisibility={viewerUsername === build.username.toLowerCase()}
+                backTo="home"
+                backHref={backHref}
               />
             </li>
           ))}
@@ -87,6 +94,7 @@ export default async function Home({ searchParams }: Props) {
   const q = Array.isArray(rawQ) ? rawQ[0] : rawQ;
 
   const session = await auth();
+  const viewerUsername = session?.user?.name?.trim().toLowerCase() ?? null;
 
   let userId: string | null = null;
   if (session?.user?.email) {
@@ -96,6 +104,10 @@ export default async function Home({ searchParams }: Props) {
     });
     userId = user?.id ?? null;
   }
+
+  const currentHomeHref = q?.trim()
+    ? `/?${new URLSearchParams({ q: q.trim() }).toString()}`
+    : "/";
 
   const [popularTags, trendingPosts, recentPosts, recommendedPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
     getPopularTags(12),
@@ -177,11 +189,15 @@ export default async function Home({ searchParams }: Props) {
             title="Recent builds"
             builds={recentBuildsResult.builds}
             total={recentBuildsResult.total}
+            viewerUsername={viewerUsername}
+            backHref={currentHomeHref}
           />
           <BuildSection
             title="Recently updated builds"
             builds={updatedBuildsResult.builds}
             total={updatedBuildsResult.total}
+            viewerUsername={viewerUsername}
+            backHref={currentHomeHref}
           />
         </div>
       </section>

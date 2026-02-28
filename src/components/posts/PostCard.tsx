@@ -141,10 +141,15 @@ export default function PostCard({ post, compact = false }: Props) {
                 </div>
               )}
               <div className="min-w-0 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-base font-semibold text-white">{post.title}</h3>
-                  <Badge>{post.category?.name}</Badge>
-                </div>
+                <h3 className="text-base font-semibold leading-snug text-white">
+                  <span className="wrap-anywhere">{post.title}</span>
+                  {post.category?.name ? (
+                    <>
+                      {" "}
+                      <Badge className="translate-y-[-0.05rem] align-middle">{post.category.name}</Badge>
+                    </>
+                  ) : null}
+                </h3>
                 <div className="prose prose-invert prose-sm max-w-none line-clamp-2 whitespace-pre-line prose-p:my-0 prose-strong:text-white prose-em:text-white/90 prose-li:text-white/80 text-white/70">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {description}
@@ -232,10 +237,15 @@ export default function PostCard({ post, compact = false }: Props) {
             </div>
 
             <div className="min-w-0 flex-1 space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-lg font-semibold text-white">{post.title}</h3>
-                <Badge>{post.category?.name}</Badge>
-              </div>
+              <h3 className="text-lg font-semibold leading-snug text-white">
+                <span className="wrap-anywhere">{post.title}</span>
+                {post.category?.name ? (
+                  <>
+                    {" "}
+                    <Badge className="translate-y-[-0.05rem] align-middle">{post.category.name}</Badge>
+                  </>
+                ) : null}
+              </h3>
               <div className="prose prose-invert prose-sm max-w-none line-clamp-2 whitespace-pre-line prose-p:my-0 prose-strong:text-white prose-em:text-white/90 prose-li:text-white/80 text-white/70">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {description}

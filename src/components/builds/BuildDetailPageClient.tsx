@@ -68,6 +68,7 @@ function defaultForkName(sourceName: string) {
 }
 
 function getBackLabelFromHref(href: string) {
+  if (href === "/" || href.startsWith("/?")) return "← Back to home";
   if (href.startsWith("/search")) return "← Back to search results";
   if (href.startsWith("/builds")) return "← Back to builds";
   if (href.includes("/builds")) return "← Back to builds";
@@ -85,7 +86,7 @@ export default function BuildDetailPageClient({
   initialData: BuildDetailPayload;
   initialIsAuthenticated: boolean;
   isAuthor: boolean;
-  initialBackTo: "profile" | "builds" | "explore-builds" | "search" | null;
+  initialBackTo: "home" | "profile" | "builds" | "explore-builds" | "search" | null;
   initialBackHref?: string | null;
 }) {
   const router = useRouter();
@@ -748,7 +749,9 @@ export default function BuildDetailPageClient({
     return null;
   }, [forkNameCheck.status]);
 
-  const fallbackBackHref = initialBackTo === "profile"
+  const fallbackBackHref = initialBackTo === "home"
+    ? "/"
+    : initialBackTo === "profile"
     ? `/profile/${encodeURIComponent(buildMeta.username)}`
     : initialBackTo === "builds"
       ? `/profile/${encodeURIComponent(buildMeta.username)}/builds`
@@ -757,7 +760,9 @@ export default function BuildDetailPageClient({
         : initialBackTo === "search"
           ? "/search"
           : null;
-  const fallbackBackLabel = initialBackTo === "profile"
+  const fallbackBackLabel = initialBackTo === "home"
+    ? "← Back to home"
+    : initialBackTo === "profile"
     ? "← Back to profile"
     : initialBackTo === "builds" || initialBackTo === "explore-builds"
       ? "← Back to builds"
