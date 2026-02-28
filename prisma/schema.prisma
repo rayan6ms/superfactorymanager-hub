@@ -301,6 +301,7 @@ model Comment {
   score                 Int           @default(0)
   voteCount             Int           @default(0)
   isDeleted             Boolean       @default(false)
+  pinnedAt              DateTime?
   deletionFlaggedAt     DateTime?
   deletionFlaggedByAuto Boolean       @default(false)
   deletionPurgeAt       DateTime?
@@ -311,6 +312,7 @@ model Comment {
   reports Report[]
 
   @@index([postId, createdAt])
+  @@index([postId, pinnedAt])
   @@index([authorId, createdAt])
   @@index([parentId])
 }

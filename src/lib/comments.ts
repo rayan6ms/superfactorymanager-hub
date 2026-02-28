@@ -23,6 +23,7 @@ const serializeComment = (
   id: comment.id,
   content: comment.content,
   isDeleted: comment.isDeleted,
+  isPinned: comment.pinnedAt !== null,
   createdAt: comment.createdAt.toISOString(),
   updatedAt: comment.updatedAt.toISOString(),
   parentId: comment.parentId ?? null,
@@ -38,6 +39,31 @@ const serializeComment = (
   vote: voteMap?.get(comment.id) ?? null,
   replies,
 });
+
+function compareComments(
+  a: Pick<CommentWithAuthor, "createdAt" | "score" | "pinnedAt">,
+  b: Pick<CommentWithAuthor, "createdAt" | "score" | "pinnedAt">,
+  sort: "recent" | "top",
+  depth: number,
+) {
+  const aPinned = a.pinnedAt ? 1 : 0;
+  const bPinned = b.pinnedAt ? 1 : 0;
+  if (aPinned !== bPinned) return bPinned - aPinned;
+
+  if (depth > 0) {
+    return a.createdAt.getTime() - b.createdAt.getTime();
+  }
+
+  if (sort === "top" && a.score !== b.score) {
+    return b.score - a.score;
+  }
+
+  if (sort === "top") {
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  }
+
+  return a.createdAt.getTime() - b.createdAt.getTime();
+}
 
 async function fetchRepliesForParents(parentIds: string[]): Promise<CommentWithAuthor[]> {
   const collected: CommentWithAuthor[] = [];
@@ -71,19 +97,21 @@ function buildChildrenMap(comments: CommentWithAuthor[]) {
 function attachReplies(
   comment: CommentWithAuthor,
   childrenMap: Map<string, CommentWithAuthor[]>,
+  sort: "recent" | "top",
   voteMap?: Map<string, "up" | "down">,
+  depth = 1,
 ): SerializedComment {
   const children = childrenMap.get(comment.id) ?? [];
   const replies = children
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-    .map(child => attachReplies(child, childrenMap, voteMap));
+    .sort((a, b) => compareComments(a, b, sort, depth))
+    .map(child => attachReplies(child, childrenMap, sort, voteMap, depth + 1));
   return serializeComment(comment, replies, voteMap);
 }
 
 export async function getPostComments(
   postId: string,
   options: { take?: number; cursor?: string | null; sort?: "recent" | "top"; viewerId?: string | null } = {},
-): Promise<{ comments: SerializedComment[]; nextCursor: string | null; total: number }> {
+): Promise<{ comments: SerializedComment[]; nextCursor: string | null; total: number; pinnedComment: SerializedComment | null }> {
   const take = Math.min(Math.max(options.take ?? COMMENT_PAGE_SIZE, 1), 50);
   const cursor = options.cursor ?? null;
   const sort = options.sort ?? "recent";
@@ -106,6 +134,16 @@ export async function getPostComments(
     }),
   });
 
+  const pinned = await db.comment.findFirst({
+    where: {
+      postId,
+      isDeleted: false,
+      pinnedAt: { not: null },
+    },
+    orderBy: { pinnedAt: "desc" },
+    include: { author: { select: authorSelect } },
+  });
+
   let nextCursor: string | null = null;
   if (roots.length > take) {
     const next = roots.pop();
@@ -121,6 +159,7 @@ export async function getPostComments(
     const allIds = [
       ...visibleRoots.map(item => item.id),
       ...descendants.map(item => item.id),
+      ...(pinned ? [pinned.id] : []),
     ];
     if (allIds.length) {
       const votes = await db.commentVote.findMany({
@@ -131,7 +170,8 @@ export async function getPostComments(
     }
   }
 
-  const serialized = visibleRoots.map(comment => attachReplies(comment, childrenMap, voteMap));
+  const serialized = visibleRoots.map(comment => attachReplies(comment, childrenMap, sort, voteMap));
+  const pinnedComment = pinned ? serializeComment(pinned, [], voteMap) : null;
 
   const total = await db.comment.count({ where: { postId } });
 
@@ -139,6 +179,7 @@ export async function getPostComments(
     comments: serialized,
     nextCursor,
     total,
+    pinnedComment,
   };
 }
 

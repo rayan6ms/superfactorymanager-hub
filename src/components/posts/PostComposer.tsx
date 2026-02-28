@@ -1584,11 +1584,20 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                 {errors.description}
               </p>
             )}
+          </div>
+        </Card>
 
-            {normalizedDescription.length > 0 && (
-              <div className="mt-3 space-y-2 rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+        <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
+          <SectionTitle
+            title="Preview"
+            description="Live markdown rendering of your description."
+          />
+
+          <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+            {normalizedDescription.length > 0 ? (
+              <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                  Preview
+                  Markdown preview
                 </p>
                 <div className="prose prose-invert prose-sm max-w-none whitespace-pre-line prose-headings:text-white prose-strong:text-white prose-em:text-white/90 prose-p:text-white/85 prose-li:text-white/80">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -1596,11 +1605,15 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                   </ReactMarkdown>
                 </div>
               </div>
+            ) : (
+              <div className="grid min-h-32 place-items-center text-center text-sm text-white/50">
+                Start writing your description to see the markdown preview here.
+              </div>
             )}
           </div>
         </Card>
 
-        <Card className="space-y-6 p-6 sm:px-8 sm:py-7">
+        <Card className="space-y-6 p-6 sm:px-8 sm:py-7 lg:col-span-2">
           <SectionTitle
             title="Media"
             description="Enhance your post with a video or screenshots."

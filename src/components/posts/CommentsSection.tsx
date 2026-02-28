@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import clsx from "clsx";
-import { ArrowBigDown, ArrowBigUp, ArrowLeft, CornerDownRight, Eye, Loader2, MessageCircle } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp, ArrowLeft, CornerDownRight, Eye, Loader2, MessageCircle, Pin, PinOff } from "lucide-react";
 import { Card } from "@/components/ui";
 import Button from "@/components/ui/Button";
 import ReportButton from "@/components/ReportButton";
@@ -37,6 +37,7 @@ type CommentsSectionProps = {
   initialComments: SerializedComment[];
   initialCursor: string | null;
   initialTotal: number;
+  initialPinnedComment: SerializedComment | null;
   currentUser: CurrentUser | null;
   postAuthorId: string;
   isAdmin: boolean;
@@ -46,12 +47,18 @@ type CommentResponse = {
   comments?: SerializedComment[];
   nextCursor?: string | null;
   total?: number;
+  pinnedComment?: SerializedComment | null;
   error?: string;
 };
 
 type CreateCommentResponse = {
   comment?: SerializedComment;
   total?: number;
+  error?: string;
+};
+
+type PinCommentResponse = {
+  comment?: SerializedComment;
   error?: string;
 };
 
@@ -156,20 +163,46 @@ function updateCommentTree(
   return { items: next, updated };
 }
 
+function mapCommentTree(
+  items: SerializedComment[],
+  mapper: (comment: SerializedComment) => SerializedComment,
+): SerializedComment[] {
+  return items.map(item => ({
+    ...mapper(item),
+    replies: mapCommentTree(item.replies, mapper),
+  }));
+}
+
+function sortCommentTree(items: SerializedComment[], sort: SortOption, depth = 0): SerializedComment[] {
+  return [...items]
+    .map(item => ({
+      ...item,
+      replies: sortCommentTree(item.replies, sort, depth + 1),
+    }))
+    .sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      if (depth > 0) return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (sort === "top" && a.score !== b.score) return b.score - a.score;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+}
+
 export default function CommentsSection({
   postSlug,
   initialComments,
   initialCursor,
   initialTotal,
+  initialPinnedComment,
   currentUser,
   postAuthorId,
   isAdmin,
 }: CommentsSectionProps) {
-  const [comments, setComments] = useState<SerializedComment[]>(initialComments);
+  const [comments, setComments] = useState<SerializedComment[]>(() => sortCommentTree(initialComments, "recent"));
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [total, setTotal] = useState<number>(initialTotal);
   const [sortOrder, setSortOrder] = useState<SortOption>("recent");
   const [sortLoading, setSortLoading] = useState(false);
+  const [pinnedComment, setPinnedComment] = useState<SerializedComment | null>(initialPinnedComment);
   const [commentText, setCommentText] = useState("");
   const [replyText, setReplyText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -184,6 +217,7 @@ export default function CommentsSection({
   const [visibleRepliesMap, setVisibleRepliesMap] = useState<Record<string, number>>({});
   const [revealedHidden, setRevealedHidden] = useState<Record<string, boolean>>({});
   const [voting, setVoting] = useState<Record<string, boolean>>({});
+  const [pinning, setPinning] = useState<Record<string, boolean>>({});
   const [replyDisplayLimit, setReplyDisplayLimit] = useState(5);
   const [threadRootId, setThreadRootId] = useState<string | null>(null);
   const [threadRootDepth, setThreadRootDepth] = useState(0);
@@ -195,6 +229,7 @@ export default function CommentsSection({
   const pulseTimeoutRef = useRef<number | null>(null);
 
   const canPost = Boolean(currentUser);
+  const canManagePins = currentUser?.id === postAuthorId;
   const loginRedirect = `/login?from=/posts/${postSlug}`;
   const isCommentValid = commentText.trim().length >= COMMENT_MIN_LENGTH;
   const isReplyValid = replyText.trim().length >= COMMENT_MIN_LENGTH;
@@ -217,22 +252,14 @@ export default function CommentsSection({
 
   const markCommentDeleted = (id: string) => {
     setComments(prev => {
-      const updated = updateCommentTree(prev, id, comment => ({ ...comment, isDeleted: true }));
+      const updated = updateCommentTree(prev, id, comment => ({ ...comment, isDeleted: true, isPinned: false }));
       return updated.updated ? updated.items : prev;
     });
+    setPinnedComment(prev => (prev?.id === id ? null : prev));
   };
 
   const sortComments = useCallback((items: SerializedComment[], sort: SortOption) => {
-    const sorted = [...items];
-    if (sort === "top") {
-      sorted.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-    } else {
-      sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-    return sorted.map(item => ({ ...item }));
+    return sortCommentTree(items, sort);
   }, []);
 
   useEffect(() => {
@@ -492,6 +519,45 @@ export default function CommentsSection({
     setReplyText("");
   }, []);
 
+  const handlePinToggle = useCallback(
+    async (comment: SerializedComment) => {
+      if (!canManagePins || pinning[comment.id] || comment.isDeleted) return;
+
+      setPinning(prev => ({ ...prev, [comment.id]: true }));
+      setError(null);
+
+      const method = comment.isPinned ? "DELETE" : "POST";
+
+      try {
+        const res = await fetch(`/api/comments/${comment.id}/pin`, {
+          method,
+          credentials: "include",
+        });
+        const data = (await res.json().catch(() => ({}))) as PinCommentResponse;
+        if (!res.ok) {
+          throw new Error(data.error ?? "Failed to update pinned comment");
+        }
+
+        setComments(prev =>
+          sortComments(
+            mapCommentTree(prev, current => ({
+              ...current,
+              isPinned: method === "POST" ? current.id === comment.id : false,
+            })),
+            sortOrder,
+          ),
+        );
+        setPinnedComment(method === "POST" ? (data.comment ?? { ...comment, isPinned: true, replies: [] }) : null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to update pinned comment";
+        setError(message);
+      } finally {
+        setPinning(prev => ({ ...prev, [comment.id]: false }));
+      }
+    },
+    [canManagePins, pinning, sortComments, sortOrder],
+  );
+
   const INITIAL_VISIBLE_REPLIES = 2;
 
   const AUTO_EXPANDED_DEPTH = 2;
@@ -552,6 +618,7 @@ export default function CommentsSection({
         setComments(sortComments(data.comments ?? [], value));
         setCursor(data.nextCursor ?? null);
         setTotal(data.total ?? total);
+        setPinnedComment(data.pinnedComment ?? null);
         setVisibleRepliesMap({});
         setRevealedHidden({});
         setThreadRootId(null);
@@ -583,6 +650,9 @@ export default function CommentsSection({
       }
       if (typeof data.total === "number") {
         setTotal(data.total);
+      }
+      if ("pinnedComment" in data) {
+        setPinnedComment(data.pinnedComment ?? null);
       }
       setCursor(data.nextCursor ?? null);
     } catch (err) {
@@ -663,10 +733,10 @@ export default function CommentsSection({
   const renderThread = (
     nodes: SerializedComment[],
     depth = 0,
-    options: { limitReplies?: boolean; depthOffset?: number; maxDepthOverride?: number } = {},
+    options: { limitReplies?: boolean; depthOffset?: number; idPrefix?: string; maxDepthOverride?: number } = {},
   ): ReactNode => {
     if (!nodes.length) return null;
-    const { limitReplies = true, depthOffset = 0, maxDepthOverride } = options;
+    const { limitReplies = true, depthOffset = 0, idPrefix = "comment", maxDepthOverride } = options;
 
     return (
       <div
@@ -723,15 +793,16 @@ export default function CommentsSection({
           const confidence = wilsonScore(upvotes, downvotes, WILSON_Z_80);
           const isScoreHidden =
             totalVotes > 0 && downvotes > upvotes && confidence < COMMENT_HIDE_THRESHOLD;
-          const isHidden = isScoreHidden && !revealedHidden[comment.id];
+          const isHidden = !comment.isPinned && isScoreHidden && !revealedHidden[comment.id];
           const votingHere = Boolean(voting[comment.id]);
+          const pinningHere = Boolean(pinning[comment.id]);
 
           if (isHidden) {
             return (
               <div
                 key={comment.id}
                 className="relative space-y-3"
-                id={`comment-${comment.id}`}
+                id={`${idPrefix}-${comment.id}`}
               >
                 {depth > 0 && (
                   <span
@@ -804,7 +875,7 @@ export default function CommentsSection({
             <div
               key={comment.id}
               className="relative space-y-3"
-              id={`comment-${comment.id}`}
+              id={`${idPrefix}-${comment.id}`}
             >
               {depth > 0 && (
                 <span
@@ -814,7 +885,10 @@ export default function CommentsSection({
               )}
               <article
                 className={clsx(
-                  "rounded-2xl border border-white/10 bg-white/5 p-4",
+                  "rounded-2xl border bg-white/5 p-4",
+                  comment.isPinned
+                    ? "border-brand-400/60 bg-brand-500/10 shadow-[0_0_0_1px_rgba(120,200,255,0.12)]"
+                    : "border-white/10",
                   isHighlighted &&
                   (pulseHighlights
                     ? "ring-4 ring-brand-400/80 animate-pulse"
@@ -868,6 +942,12 @@ export default function CommentsSection({
                     {isAuthor && (
                       <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-emerald-100">
                         Author
+                      </span>
+                    )}
+                    {comment.isPinned && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-brand-300/50 bg-brand-500/15 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-brand-100">
+                        <Pin className="h-3 w-3" aria-hidden="true" />
+                        Pinned
                       </span>
                     )}
                     {comment.isDeleted && (
@@ -939,6 +1019,22 @@ export default function CommentsSection({
                         <span className="text-[0.7rem] text-white/60">
                           Reply limit reached. Start a new top-level comment to continue.
                         </span>
+                      )}
+
+                      {canManagePins && !comment.isDeleted && (
+                        <button
+                          type="button"
+                          onClick={() => handlePinToggle(comment)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-100/90 transition hover:text-brand-100 disabled:cursor-not-allowed disabled:text-white/40"
+                          disabled={pinningHere}
+                        >
+                          {comment.isPinned ? (
+                            <PinOff className="h-3.5 w-3.5" aria-hidden="true" />
+                          ) : (
+                            <Pin className="h-3.5 w-3.5" aria-hidden="true" />
+                          )}
+                          {pinningHere ? "Updating..." : comment.isPinned ? "Unpin" : "Pin comment"}
+                        </button>
                       )}
 
                       {!comment.isDeleted && (
@@ -1014,7 +1110,7 @@ export default function CommentsSection({
 
               {repliesToRender.length > 0 && (
                 <div className="ml-4 sm:ml-6">
-                  {renderThread(repliesToRender, depth + 1, options)}
+                  {renderThread(repliesToRender, depth + 1, { ...options, idPrefix })}
                 </div>
               )}
 
@@ -1105,6 +1201,26 @@ export default function CommentsSection({
         {targetMissing && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
             We couldn’t find the comment linked in your notification. It may have been deleted or moved.
+          </div>
+        )}
+
+        {pinnedComment && (
+          <div className="space-y-3 rounded-2xl border border-brand-400/50 bg-brand-500/10 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-brand-100">
+                <Pin className="h-4 w-4" aria-hidden="true" />
+                Pinned comment
+              </div>
+              <p className="text-xs text-brand-100/80">
+                Highlighted by the post author
+              </p>
+            </div>
+            <div className="rounded-2xl border border-brand-300/30 bg-black/15 p-3">
+              {renderThread([{ ...pinnedComment, replies: [] }], 0, {
+                idPrefix: "pinned-comment",
+                limitReplies: false,
+              })}
+            </div>
           </div>
         )}
 

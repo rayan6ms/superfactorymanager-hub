@@ -13,6 +13,7 @@ export type SerializedComment = {
   id: string;
   content: string;
   isDeleted: boolean;
+  isPinned: boolean;
   createdAt: string;
   updatedAt: string;
   parentId: string | null;

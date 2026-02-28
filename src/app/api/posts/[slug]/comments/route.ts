@@ -183,6 +183,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     id: comment.id,
     content: comment.content,
     isDeleted: false,
+    isPinned: false,
     createdAt: comment.createdAt.toISOString(),
     updatedAt: comment.updatedAt.toISOString(),
     parentId: comment.parentId,

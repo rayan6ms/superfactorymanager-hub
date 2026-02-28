@@ -51,7 +51,7 @@ export async function flagManyAsDeleted(
 
   const result = await client.comment.updateMany({
     where: { ...(where as Prisma.CommentWhereInput), isDeleted: false },
-    data,
+    data: { ...data, pinnedAt: null },
   });
   return result.count;
 }
@@ -98,7 +98,7 @@ export async function flagAsDeleted(
 
   await db.comment.update({
     where: { id: targetId },
-    data,
+    data: { ...data, pinnedAt: null },
   });
 
   return { id: comment.id };
