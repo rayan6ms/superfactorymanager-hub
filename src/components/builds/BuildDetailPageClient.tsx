@@ -146,6 +146,15 @@ export default function BuildDetailPageClient({
     return codeStats.trimmedCode !== persistedTrimmedCode;
   }, [codeStats.trimmedCode, hasBufferChanges, persistedTrimmedCode, selectedCommitId]);
   const isBuildShareable = buildMeta.visibility === "PUBLIC";
+  const displayedBuildTag = useMemo(() => {
+    if (!isAuthor) return buildMeta.tag;
+    const trimmed = buildTag.trim();
+    return trimmed || buildMeta.tag;
+  }, [buildMeta.tag, buildTag, isAuthor]);
+  const buildTagValidationMessage = useMemo(() => {
+    const parsed = buildTagSchema.safeParse(buildTag);
+    return parsed.success ? null : (parsed.error.issues[0]?.message ?? "Build tag is invalid.");
+  }, [buildTag]);
   const showUpdated = useMemo(() => {
     const createdTs = new Date(buildMeta.createdAt).getTime();
     const updatedTs = new Date(buildMeta.updatedAt).getTime();
@@ -785,7 +794,7 @@ export default function BuildDetailPageClient({
         <p className="eyebrow">Build</p>
         <h1 className="text-3xl font-semibold wrap-anywhere text-white">{buildMeta.nameOriginal}</h1>
         <div className="flex flex-wrap gap-2">
-          <Badge className="border-sky-400/30 bg-sky-500/10 text-sky-100">{buildMeta.tag}</Badge>
+          <Badge className="border-sky-400/30 bg-sky-500/10 text-sky-100">{displayedBuildTag}</Badge>
           {isAuthor ? (
             <Badge
               className={buildMeta.visibility === "PRIVATE"
@@ -889,6 +898,31 @@ export default function BuildDetailPageClient({
                 PRIVATE
               </button>
             </div>
+          </div>
+        )}
+
+        {isAuthor && (
+          <div className="space-y-2 rounded-2xl border border-white/10 bg-black/30 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-white/80">Build tag</p>
+                <p className="text-sm text-white/55">This label appears on build cards and in build search.</p>
+              </div>
+              <span className="text-xs text-white/45">{buildTag.trim().length}/{BUILD_TAG_MAX_LENGTH}</span>
+            </div>
+            <Input
+              id="build-tag-inline"
+              placeholder="Examples: starter, logistics, oil"
+              value={buildTag}
+              onChange={(event) => {
+                setBuildTag(event.target.value);
+                setSaveError(null);
+              }}
+              maxLength={BUILD_TAG_MAX_LENGTH}
+            />
+            <p className={clsx("text-sm", buildTagValidationMessage ? "text-red-300" : "text-white/55")}>
+              {buildTagValidationMessage ?? "Save build to apply any tag change."}
+            </p>
           </div>
         )}
 
@@ -1059,11 +1093,11 @@ export default function BuildDetailPageClient({
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label htmlFor="build-tag" className="text-sm font-medium text-white/75">
+                    <label htmlFor="build-tag-modal" className="text-sm font-medium text-white/75">
                       Build tag
                     </label>
                     <Input
-                      id="build-tag"
+                      id="build-tag-modal"
                       placeholder="Examples: starter, logistics, oil"
                       value={buildTag}
                       onChange={(event) => {

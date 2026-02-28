@@ -399,6 +399,7 @@ export function CodeBox({
               renderLineHighlight: "line",
               renderValidationDecorations: "on",
               automaticLayout: true,
+              colorDecorators: false,
               glyphMargin: false,
               folding: false,
               lineDecorationsWidth: 14,
