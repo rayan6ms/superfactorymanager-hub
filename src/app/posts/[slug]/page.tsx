@@ -209,7 +209,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
 
           </div>
         )}
-        <div className="space-y-6 px-6 py-6">
+        <div className="space-y-6 px-2 md:px-6 py-6">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="space-y-2">

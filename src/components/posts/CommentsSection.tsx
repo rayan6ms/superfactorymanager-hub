@@ -1215,12 +1215,10 @@ export default function CommentsSection({
                 Highlighted by the post author
               </p>
             </div>
-            <div className="rounded-2xl border border-brand-300/30 bg-black/15 p-3">
-              {renderThread([{ ...pinnedComment, replies: [] }], 0, {
-                idPrefix: "pinned-comment",
-                limitReplies: false,
-              })}
-            </div>
+            {renderThread([{ ...pinnedComment, replies: [] }], 0, {
+              idPrefix: "pinned-comment",
+              limitReplies: false,
+            })}
           </div>
         )}
 
