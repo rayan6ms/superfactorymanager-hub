@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useId } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useId, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import Link from "next/link";
@@ -70,6 +70,8 @@ type UploadedImage = {
   thumbMd?: string | null;
   thumbLg?: string | null;
 };
+
+type MarkdownInlineMarker = "`" | "```" | "*" | "**" | "~~";
 
 type FormState = {
   title: string;
@@ -188,6 +190,73 @@ function nsfwFileKey(file: File) {
   return `${file.name}-${file.size}-${file.lastModified}`;
 }
 
+function isUniformMarker(marker: MarkdownInlineMarker) {
+  return marker.split("").every(char => char === marker[0]);
+}
+
+function hasExactMarkerAt(value: string, start: number, marker: MarkdownInlineMarker) {
+  if (start < 0 || start + marker.length > value.length) return false;
+  if (value.slice(start, start + marker.length) !== marker) return false;
+  if (!isUniformMarker(marker)) return true;
+
+  const markerChar = marker[0];
+  const beforeChar = value[start - 1];
+  const afterChar = value[start + marker.length];
+
+  return beforeChar !== markerChar && afterChar !== markerChar;
+}
+
+function isExactlyWrapped(value: string, marker: MarkdownInlineMarker) {
+  if (value.length <= marker.length * 2) return false;
+  if (!value.startsWith(marker) || !value.endsWith(marker)) return false;
+  return hasExactMarkerAt(value, 0, marker) && hasExactMarkerAt(value, value.length - marker.length, marker);
+}
+
+function toggleExactMarkdown(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+  markers: MarkdownInlineMarker[],
+) {
+  const selected = value.slice(selectionStart, selectionEnd);
+  const before = value.slice(0, selectionStart);
+  const after = value.slice(selectionEnd);
+
+  for (const marker of markers) {
+    if (isExactlyWrapped(selected, marker)) {
+      const inner = selected.slice(marker.length, -marker.length);
+      return {
+        nextValue: `${before}${inner}${after}`,
+        selectionStart,
+        selectionEnd: selectionStart + inner.length,
+        toggled: true,
+      };
+    }
+
+    const openingStart = selectionStart - marker.length;
+    const closingStart = selectionEnd;
+
+    if (
+      hasExactMarkerAt(value, openingStart, marker)
+      && hasExactMarkerAt(value, closingStart, marker)
+    ) {
+      return {
+        nextValue: `${value.slice(0, openingStart)}${selected}${value.slice(closingStart + marker.length)}`,
+        selectionStart: openingStart,
+        selectionEnd: openingStart + selected.length,
+        toggled: true,
+      };
+    }
+  }
+
+  return {
+    nextValue: value,
+    selectionStart,
+    selectionEnd,
+    toggled: false,
+  };
+}
+
 export default function PostComposer({ mode = "create", slug, initialData }: PostComposerProps) {
   const r = useRouter();
   const idPrefix = useId();
@@ -285,7 +354,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       const parentHeight = parent.clientHeight;
       if (!parentHeight) return;
 
-      const maxHeight = parentHeight * 0.65;
+      const maxHeight = Math.max(220, parentHeight * 0.8);
       setDescriptionMaxHeight(maxHeight);
     };
 
@@ -653,6 +722,22 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     }
   }, [tagInput, tryAddTag]);
 
+  const handleTagInputKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+
+    const rawValue = event.currentTarget.value;
+    if (!rawValue.trim()) {
+      setTagInput("");
+      return;
+    }
+
+    if (tryAddTag(rawValue)) {
+      setTagInput("");
+    }
+  }, [tryAddTag]);
+
   const removeTag = useCallback(
     (slug: string) => {
       setTags(prev => prev.filter(tag => tag.slug !== slug));
@@ -850,6 +935,30 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       const text = selected || defaultText;
 
       let replacement = text;
+      let nextSelectionStart = selectionStart;
+      let nextSelectionEnd = selectionEnd;
+
+      if (format === "bold" || format === "italic" || format === "strike" || format === "code") {
+        const markers =
+          format === "bold"
+            ? (["**"] as MarkdownInlineMarker[])
+            : format === "italic"
+              ? (["*"] as MarkdownInlineMarker[])
+              : format === "strike"
+                ? (["~~"] as MarkdownInlineMarker[])
+                : (["```", "`"] as MarkdownInlineMarker[]);
+        const toggled = toggleExactMarkdown(value, selectionStart, selectionEnd, markers);
+
+        if (toggled.toggled) {
+          change("description", toggled.nextValue);
+
+          requestAnimationFrame(() => {
+            textarea.focus();
+            textarea.setSelectionRange(toggled.selectionStart, toggled.selectionEnd);
+          });
+          return;
+        }
+      }
 
       switch (format) {
         case "bold":
@@ -892,12 +1001,28 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
       change("description", nextValue);
 
-      const cursorStart = before.length;
-      const cursorEnd = cursorStart + replacement.length;
+      if (selected) {
+        nextSelectionStart = before.length;
+        nextSelectionEnd = nextSelectionStart + replacement.length;
+      } else {
+        const markerWidth =
+          format === "bold"
+            ? 2
+            : format === "italic" || format === "code"
+              ? 1
+              : format === "strike"
+                ? 2
+                : format === "ul"
+                  ? 2
+                  : 3;
+
+        nextSelectionStart = before.length + markerWidth;
+        nextSelectionEnd = nextSelectionStart + text.length;
+      }
 
       requestAnimationFrame(() => {
         textarea.focus();
-        textarea.setSelectionRange(cursorStart, cursorEnd);
+        textarea.setSelectionRange(nextSelectionStart, nextSelectionEnd);
       });
     },
     [change],
@@ -1354,12 +1479,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                     value={tagInput}
                     onChange={e => handleTagInputChange(e.target.value)}
                     onBlur={() => markTouched("tags")}
-                    onKeyDown={event => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        commitTagInput();
-                      }
-                    }}
+                    onKeyDown={handleTagInputKeyDown}
                     maxLength={MAX_TAG_LENGTH}
                     aria-invalid={shouldShowError("tags") || undefined}
                     aria-describedby={shouldShowError("tags") ? errorId("tags") : undefined}
@@ -1546,7 +1666,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
               id="description"
               ref={descriptionRef}
               className={clsx(
-                "min-h-32 w-full resize-none overflow-y-auto rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:ring-2",
+                "min-h-40 w-full resize-y overflow-y-auto rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:ring-2",
                 shouldShowError("description")
                   ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
                   : "focus:border-brand-400 focus:ring-brand-400"
