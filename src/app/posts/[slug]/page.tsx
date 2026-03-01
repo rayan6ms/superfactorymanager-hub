@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const post = await db.post.findUnique({
     where: { slug },
-    include: { images: true, author: true },
+    include: { images: { orderBy: { position: "asc" } }, author: true },
   });
 
   if (!post || post.isDeleted) {
@@ -118,7 +118,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
     where: { slug },
     include: {
       category: true,
-      images: true,
+      images: { orderBy: { position: "asc" } },
       dependencies: true,
       author: true,
       tags: { include: { tag: true } },

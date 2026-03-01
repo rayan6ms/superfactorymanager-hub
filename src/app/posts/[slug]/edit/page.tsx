@@ -23,7 +23,7 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
     where: { slug },
     include: {
       category: true,
-      images: true,
+      images: { orderBy: { position: "asc" } },
       dependencies: true,
       tags: { include: { tag: true } },
       commits: {

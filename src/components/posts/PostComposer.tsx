@@ -44,7 +44,7 @@ import remarkGfm from "remark-gfm";
 const MAX_IMAGE_MB = 5;
 const MAX_IMAGE_COUNT = MAX_POST_IMAGES;
 const MAX_TITLE_LENGTH = 120;
-const IMAGES_PER_PAGE = 4;
+const IMAGES_PER_PAGE = 6;
 
 const DRAFT_STORAGE_PREFIX = "sfm-post-composer";
 const DRAFT_VERSION = 1;
@@ -69,6 +69,25 @@ type UploadedImage = {
   thumbSm?: string | null;
   thumbMd?: string | null;
   thumbLg?: string | null;
+};
+
+type NewImage = {
+  id: string;
+  file: File;
+};
+
+type ComposerImageOrderItem =
+  | { type: "existing"; id: string }
+  | { type: "new"; id: string };
+
+type PreviewItem = {
+  key: string;
+  type: "existing" | "new";
+  src: string;
+  labelIndex: number;
+  orderIndex: number;
+  fileName?: string;
+  galleryImage: GalleryImage;
 };
 
 type MarkdownInlineMarker = "`" | "```" | "*" | "**" | "~~";
@@ -318,8 +337,11 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [persistedImages, setPersistedImages] = useState<ExistingImage[]>(existingImages);
-  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<NewImage[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [imageOrder, setImageOrder] = useState<ComposerImageOrderItem[]>(
+    () => existingImages.map(image => ({ type: "existing", id: image.id })),
+  );
   const [nsfwCheckStatus, setNsfwCheckStatus] = useState<"idle" | "running" | "error">("idle");
   const [nsfwMessage, setNsfwMessage] = useState<string | null>(null);
   const [limitedByMax, setLimitedByMax] = useState(false);
@@ -333,16 +355,21 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const saveDraftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nsfwCheckedRef = useRef<Record<string, true>>({});
-  const totalImageSlots = persistedImages.length + mediaFiles.length;
+  const newFiles = useMemo(() => newImages.map(image => image.file), [newImages]);
+  const newImageIndexById = useMemo(
+    () => new Map(newImages.map((image, index) => [image.id, index])),
+    [newImages],
+  );
+  const totalImageSlots = persistedImages.length + newImages.length;
   const submitButtonLabel = isEditMode ? "Save changes" : "Publish post";
   const submitLoadingLabel = isEditMode ? "Saving..." : "Publishing...";
   const fileSummary = useMemo(() => {
     if (!totalImageSlots) return `No files chosen (0/${MAX_IMAGE_COUNT})`;
     const parts: string[] = [];
     if (persistedImages.length) parts.push(`${persistedImages.length} existing`);
-    if (mediaFiles.length) parts.push(`${mediaFiles.length} new`);
+    if (newImages.length) parts.push(`${newImages.length} new`);
     return `${totalImageSlots}/${MAX_IMAGE_COUNT} image slots used${parts.length ? ` (${parts.join(", ")})` : ""}`;
-  }, [mediaFiles.length, persistedImages.length, totalImageSlots]);
+  }, [newImages.length, persistedImages.length, totalImageSlots]);
 
   useLayoutEffect(() => {
     const textarea = descriptionRef.current;
@@ -388,39 +415,63 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     };
   }, []);
 
-  const previewItems = useMemo(
-    () => [
-      ...persistedImages.map((image, index) => ({
-        key: image.id,
-        type: "existing" as const,
-        src: image.thumbMd || image.thumbLg || image.thumbSm || image.original,
-        labelIndex: index,
-      })),
-      ...previews.map((src, i) => {
-        const file = mediaFiles[i];
-        const key = file ? `${file.name}-${file.lastModified}-${file.size}` : `${src}-${i}`;
-        return {
-          key,
-          type: "new" as const,
+  const previewItems = useMemo<PreviewItem[]>(
+    () => {
+      const existingById = new Map(persistedImages.map(image => [image.id, image]));
+      const newImagesById = new Map(newImages.map(image => [image.id, image]));
+      const items: PreviewItem[] = [];
+
+      imageOrder.forEach((item, orderIndex) => {
+        if (item.type === "existing") {
+          const image = existingById.get(item.id);
+          if (!image) return;
+
+          const src = image.thumbMd || image.thumbLg || image.thumbSm || image.original;
+          items.push({
+            key: image.id,
+            type: "existing",
+            src,
+            labelIndex: orderIndex,
+            orderIndex,
+            galleryImage: {
+              id: image.id,
+              original: image.original,
+              thumbSm: image.thumbSm || image.original,
+              thumbMd: image.thumbMd || image.original,
+              thumbLg: image.thumbLg || image.original,
+            },
+          });
+          return;
+        }
+
+        const image = newImagesById.get(item.id);
+        const src = previewUrls[item.id];
+        if (!image || !src) return;
+
+        items.push({
+          key: item.id,
+          type: "new",
           src,
-          labelIndex: persistedImages.length + i,
-          fileIndex: i,
-          fileName: file?.name ?? `upload-${i + 1}`,
-        };
-      }),
-    ],
-    [mediaFiles, persistedImages, previews],
+          labelIndex: orderIndex,
+          orderIndex,
+          fileName: image.file.name,
+          galleryImage: {
+            id: item.id,
+            original: src,
+            thumbSm: src,
+            thumbMd: src,
+            thumbLg: src,
+          },
+        });
+      });
+
+      return items;
+    },
+    [imageOrder, newImages, persistedImages, previewUrls],
   );
 
   const galleryImages: GalleryImage[] = useMemo(
-    () =>
-      previewItems.map(item => ({
-        id: item.key,
-        original: item.src,
-        thumbSm: item.src,
-        thumbMd: item.src,
-        thumbLg: item.src,
-      })),
+    () => previewItems.map(item => item.galleryImage),
     [previewItems],
   );
 
@@ -457,8 +508,9 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     setTags(initialTags);
     setDeps(initialDependencies);
     setPersistedImages(existingImages);
-    setMediaFiles([]);
-    setPreviews([]);
+    setNewImages([]);
+    setPreviewUrls({});
+    setImageOrder(existingImages.map(image => ({ type: "existing", id: image.id })));
     setErrors({ ...INITIAL_ERRORS });
     setTouched({ ...INITIAL_TOUCHED });
     setSubmitError(null);
@@ -599,7 +651,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
     const imageMessage = limitedByMax
       ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-      : computeImagesError(mediaFiles, persistedImages);
+      : computeImagesError(newFiles, persistedImages);
 
     next.images = imageMessage;
     return next;
@@ -609,7 +661,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     codeFeedback.message,
     limitedByMax,
     computeImagesError,
-    mediaFiles,
+    newFiles,
     validateTags,
     tags,
     persistedImages,
@@ -819,25 +871,27 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
     const message = limitedByMax
       ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-      : computeImagesError(mediaFiles, persistedImages);
+      : computeImagesError(newFiles, persistedImages);
     setErrors(prev => (prev.images === message ? prev : { ...prev, images: message }));
-    if (!mediaFiles.length) {
-      setPreviews(prev => (prev.length ? [] : prev));
+    if (!newImages.length) {
+      setPreviewUrls(prev => (Object.keys(prev).length ? {} : prev));
       return;
     }
-    const urls = mediaFiles.map(file => URL.createObjectURL(file));
-    setPreviews(urls);
-    return () => urls.forEach(url => URL.revokeObjectURL(url));
-  }, [mediaFiles, computeImagesError, limitedByMax, persistedImages, totalImageSlots]);
+    const urls = Object.fromEntries(
+      newImages.map(image => [image.id, URL.createObjectURL(image.file)]),
+    );
+    setPreviewUrls(urls);
+    return () => Object.values(urls).forEach(url => URL.revokeObjectURL(url));
+  }, [newFiles, newImages, computeImagesError, limitedByMax, persistedImages, totalImageSlots]);
 
   useEffect(() => {
-    if (!mediaFiles.length) {
+    if (!newFiles.length) {
       setNsfwCheckStatus("idle");
       setNsfwMessage(null);
       return;
     }
 
-    const filesToScan = mediaFiles.filter((file) => {
+    const filesToScan = newFiles.filter((file) => {
       const key = nsfwFileKey(file);
       return !nsfwCheckedRef.current[key];
     });
@@ -903,18 +957,20 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       cancelled = true;
       controller.abort();
     };
-  }, [mediaFiles]);
+  }, [newFiles]);
 
-  const removeMediaAt = useCallback((index: number) => {
-    setMediaFiles(prev => prev.filter((_, idx) => idx !== index));
+  const removeNewImage = useCallback((id: string) => {
+    setNewImages(prev => prev.filter(image => image.id !== id));
+    setImageOrder(prev => prev.filter(item => !(item.type === "new" && item.id === id)));
   }, []);
 
   const removeExistingImage = useCallback((id: string) => {
     setPersistedImages(prev => prev.filter(image => image.id !== id));
+    setImageOrder(prev => prev.filter(item => !(item.type === "existing" && item.id === id)));
   }, []);
 
-  const moveMedia = useCallback((from: number, to: number) => {
-    setMediaFiles(prev => {
+  const moveImage = useCallback((from: number, to: number) => {
+    setImageOrder(prev => {
       if (to < 0 || to >= prev.length) return prev;
       const next = [...prev];
       const [item] = next.splice(from, 1);
@@ -1190,7 +1246,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
     const imageMessage = limitedByMax
       ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
-      : computeImagesError(mediaFiles, persistedImages);
+      : computeImagesError(newFiles, persistedImages);
     const tagMessage = validateTags(tags);
 
     const nextErrors: Record<FormErrorKey, string | null> = {
@@ -1220,10 +1276,10 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
       setLoading(true);
       let uploadedImages: UploadedImage[] = [];
 
-      if (mediaFiles.length) {
+      if (newImages.length) {
         const fd = new FormData();
-        for (const file of mediaFiles) {
-          fd.append("file", file);
+        for (const image of newImages) {
+          fd.append("file", image.file);
         }
 
         const uploadRes = await fetch("/api/uploads", {
@@ -1264,6 +1320,20 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
         tags: tags.map((tag) => tag.name),
         images: uploadedImages,
         keepImageIds: persistedImages.map(image => image.id),
+        imageOrder: imageOrder.reduce<Array<{ existingId: string } | { uploadIndex: number }>>((ordered, item) => {
+          if (item.type === "existing") {
+            if (persistedImages.some(image => image.id === item.id)) {
+              ordered.push({ existingId: item.id });
+            }
+            return ordered;
+          }
+
+          const uploadIndex = newImageIndexById.get(item.id);
+          if (uploadIndex !== undefined) {
+            ordered.push({ uploadIndex });
+          }
+          return ordered;
+        }, []),
         code: form.code,
         description: normalizedDescription,
         youtubeUrl: form.youtubeUrl.trim(),
@@ -1827,14 +1897,23 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                     markTouched("images");
                     const incoming = e.target.files ? Array.from(e.target.files) : [];
                     if (incoming.length) {
-                      const remainingSlots = Math.max(0, MAX_IMAGE_COUNT - persistedImages.length);
-                      setMediaFiles(prev => {
-                        const merged = [...prev, ...incoming];
-                        if (merged.length > remainingSlots) {
-                          setLimitedByMax(true);
-                        }
-                        return merged.slice(0, remainingSlots || 0);
-                      });
+                      const remainingSlots = Math.max(0, MAX_IMAGE_COUNT - totalImageSlots);
+                      if (incoming.length > remainingSlots) {
+                        setLimitedByMax(true);
+                      }
+
+                      const accepted = incoming.slice(0, remainingSlots);
+                      if (accepted.length) {
+                        const additions = accepted.map(file => ({
+                          id: crypto.randomUUID(),
+                          file,
+                        }));
+                        setNewImages(prev => [...prev, ...additions]);
+                        setImageOrder(prev => [
+                          ...prev,
+                          ...additions.map(image => ({ type: "new" as const, id: image.id })),
+                        ]);
+                      }
                     }
                     e.target.value = "";
                   }}
@@ -1918,35 +1997,31 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                     </div>
                   )}
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {currentPageItems.map(item => {
-                      const isNew = item.type === "new";
                       return (
                         <div
                           key={item.key}
-                          className="relative aspect-video overflow-hidden rounded-2xl border border-white/10"
+                          className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10"
                         >
-                          <span className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                          <span className="absolute left-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-black/65 px-2 py-0.5 text-[0.7rem] font-semibold text-white">
                             <span>#{item.labelIndex + 1}</span>
                             {item.labelIndex === 0 && (
                               <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black">
                                 thumb
                               </span>
                             )}
-                            {!isNew && (
+                            {item.type === "existing" && (
                               <span className="rounded-full bg-white/80 px-2 py-0.5 text-[0.6rem] uppercase tracking-wide text-black text-xs">
                                 existing
                               </span>
                             )}
                           </span>
 
-                          {isNew ? (
+                          {item.type === "new" ? (
                             <button
                               type="button"
-                              onClick={() =>
-                                item.fileIndex !== undefined &&
-                                removeMediaAt(item.fileIndex)
-                              }
+                              onClick={() => removeNewImage(item.key)}
                               className="absolute right-3 top-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
                               aria-label={item.fileName ? `Remove ${item.fileName}` : "Remove image"}
                             >
@@ -1968,31 +2043,29 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                             alt=""
                             fill
                             className="z-0 object-cover"
-                            sizes="(min-width: 1280px) 33vw, (min-width: 1024px) 50vw, 100vw"
+                            sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 26vw, (min-width: 640px) 30vw, 45vw"
                           />
 
-                          {isNew && item.fileIndex !== undefined && (
-                            <div className="absolute bottom-3 left-3 z-10 flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => moveMedia(item.fileIndex, item.fileIndex - 1)}
-                                disabled={item.fileIndex === 0}
-                                className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                                aria-label={item.fileName ? `Move ${item.fileName} earlier` : "Move image earlier"}
-                              >
-                                ←
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => moveMedia(item.fileIndex, item.fileIndex + 1)}
-                                disabled={item.fileIndex === mediaFiles.length - 1}
-                                className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                                aria-label={item.fileName ? `Move ${item.fileName} later` : "Move image later"}
-                              >
-                                →
-                              </button>
-                            </div>
-                          )}
+                          <div className="absolute bottom-2 left-2 z-10 flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => moveImage(item.orderIndex, item.orderIndex - 1)}
+                              disabled={item.orderIndex === 0}
+                              className="rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
+                              aria-label={item.fileName ? `Move ${item.fileName} earlier` : "Move image earlier"}
+                            >
+                              ←
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveImage(item.orderIndex, item.orderIndex + 1)}
+                              disabled={item.orderIndex === previewItems.length - 1}
+                              className="rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
+                              aria-label={item.fileName ? `Move ${item.fileName} later` : "Move image later"}
+                            >
+                              →
+                            </button>
+                          </div>
                         </div>
                       );
                     })}

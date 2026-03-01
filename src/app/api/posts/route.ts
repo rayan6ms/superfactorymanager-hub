@@ -19,7 +19,7 @@ import { revalidateSeoPaths } from "@/lib/seo-revalidate";
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
     category: true;
-    images: true;
+    images: { orderBy: { position: "asc" } };
     dependencies: true;
     author: { select: { id: true; name: true } };
     tags: { include: { tag: true } };
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
         where: { id: { in: ids } },
         include: {
           category: true,
-          images: true,
+          images: { orderBy: { position: "asc" } },
           dependencies: true,
           author: { select: { id: true, name: true } },
           tags: { include: { tag: true } },
@@ -89,7 +89,7 @@ export async function GET(req: Request) {
       orderBy: { uploadDate: "desc" },
       include: {
         category: true,
-        images: true,
+        images: { orderBy: { position: "asc" } },
         dependencies: true,
         author: { select: { id: true, name: true } },
         tags: { include: { tag: true } },
@@ -234,11 +234,12 @@ export async function POST(req: Request) {
           youtubeUrl: yt,
           openForImprovement: parsed.openForImprovement ?? false,
           images: {
-            create: normalizedImages.map(i => ({
-              original: i.original,
-              thumbSm: i.thumbSm,
-              thumbMd: i.thumbMd,
-              thumbLg: i.thumbLg,
+            create: normalizedImages.map((image, index) => ({
+              position: index,
+              original: image.original,
+              thumbSm: image.thumbSm,
+              thumbMd: image.thumbMd,
+              thumbLg: image.thumbLg,
             })),
           },
           dependencies: {
@@ -262,7 +263,7 @@ export async function POST(req: Request) {
         },
         include: {
           category: true,
-          images: true,
+          images: { orderBy: { position: "asc" } },
           dependencies: true,
           author: { select: { id: true, name: true } },
           tags: { include: { tag: true } },

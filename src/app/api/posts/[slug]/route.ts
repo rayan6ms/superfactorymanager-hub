@@ -23,7 +23,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     where: { slug, isDeleted: false },
     include: {
       category: true,
-      images: true,
+      images: { orderBy: { position: "asc" } },
       dependencies: true,
       author: { select: { id: true, name: true, image: true } },
       tags: { include: { tag: true } },
@@ -50,7 +50,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     where: { slug },
     include: {
       category: true,
-      images: true,
+      images: { orderBy: { position: "asc" } },
       dependencies: true,
       author: true,
       tags: { include: { tag: true } },
@@ -118,8 +118,47 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
   const codeChanged = code !== post.code;
   const normalizedImages = normalizeImages(parsed.images);
   const existingImageIds = new Set(post.images.map(img => img.id));
-  const keepImageIds = new Set((parsed.keepImageIds ?? []).filter(id => existingImageIds.has(id)));
-  const totalImages = normalizedImages.length + keepImageIds.size;
+  const keepImageIdList = (parsed.keepImageIds ?? []).filter(id => existingImageIds.has(id));
+  const keepImageIds = new Set(keepImageIdList);
+  const preferredImageOrder = parsed.imageOrder.length
+    ? parsed.imageOrder
+    : [
+      ...keepImageIdList.map(id => ({ existingId: id })),
+      ...normalizedImages.map((_, uploadIndex) => ({ uploadIndex })),
+    ];
+  const seenExisting = new Set<string>();
+  const seenUploads = new Set<number>();
+  const finalImagePlan: Array<
+    | { kind: "existing"; imageId: string; position: number }
+    | { kind: "new"; image: (typeof normalizedImages)[number]; position: number }
+  > = [];
+
+  const pushExisting = (imageId: string) => {
+    if (seenExisting.has(imageId) || !keepImageIds.has(imageId)) return;
+    seenExisting.add(imageId);
+    finalImagePlan.push({ kind: "existing", imageId, position: finalImagePlan.length });
+  };
+
+  const pushUpload = (uploadIndex: number) => {
+    if (seenUploads.has(uploadIndex)) return;
+    const image = normalizedImages[uploadIndex];
+    if (!image) return;
+    seenUploads.add(uploadIndex);
+    finalImagePlan.push({ kind: "new", image, position: finalImagePlan.length });
+  };
+
+  for (const item of preferredImageOrder) {
+    if ("existingId" in item) {
+      pushExisting(item.existingId);
+    } else {
+      pushUpload(item.uploadIndex);
+    }
+  }
+
+  keepImageIdList.forEach(pushExisting);
+  normalizedImages.forEach((_, uploadIndex) => pushUpload(uploadIndex));
+
+  const totalImages = finalImagePlan.length;
 
   if (totalImages === 0) {
     return NextResponse.json(
@@ -145,6 +184,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     }
     await tx.postTag.deleteMany({ where: { postId: post.id } });
     await tx.dependency.deleteMany({ where: { postId: post.id } });
+    await Promise.all(
+      finalImagePlan
+        .filter((entry): entry is Extract<typeof finalImagePlan[number], { kind: "existing" }> => entry.kind === "existing")
+        .map(entry =>
+          tx.postImage.update({
+            where: { id: entry.imageId },
+            data: { position: entry.position },
+          }),
+        ),
+    );
 
     const updatedPost = await tx.post.update({
       where: { id: post.id },
@@ -171,12 +220,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
           })),
         },
         images: {
-          create: normalizedImages.map(image => ({
-            original: image.original,
-            thumbSm: image.thumbSm,
-            thumbMd: image.thumbMd,
-            thumbLg: image.thumbLg,
-          })),
+          create: finalImagePlan
+            .filter((entry): entry is Extract<typeof finalImagePlan[number], { kind: "new" }> => entry.kind === "new")
+            .map(entry => ({
+              position: entry.position,
+              original: entry.image.original,
+              thumbSm: entry.image.thumbSm,
+              thumbMd: entry.image.thumbMd,
+              thumbLg: entry.image.thumbLg,
+            })),
         },
         tags: {
           create: normalizedTags.map(tag => ({
@@ -189,12 +241,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
           })),
         },
       },
-      include: {
-        category: true,
-        images: true,
-        dependencies: true,
-        author: { select: { id: true, name: true } },
-        tags: { include: { tag: true } },
+        include: {
+          category: true,
+          images: { orderBy: { position: "asc" } },
+          dependencies: true,
+          author: { select: { id: true, name: true } },
+          tags: { include: { tag: true } },
       },
     });
 

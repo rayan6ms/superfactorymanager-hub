@@ -416,7 +416,7 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         {imgs.map((img, index) => {
           const preview =
             img.thumbLg || img.thumbMd || img.thumbSm || img.original;
@@ -425,17 +425,16 @@ export default function ImageGallery({ imgs }: ImageGalleryProps) {
               type="button"
               key={img.id}
               onClick={() => openViewer(index)}
-              className="group relative overflow-hidden min-h-28 rounded-2xl border border-white/10 bg-white/5"
+              className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-white/5"
             >
               <Image
                 src={preview}
                 alt=""
-                width={800}
-                height={600}
-                className="w-full h-auto max-h-60 object-cover transition duration-300 group-hover:scale-[1.02]"
-                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                fill
+                className="object-cover transition duration-300 group-hover:scale-[1.02]"
+                sizes="(min-width: 1280px) 22vw, (min-width: 640px) 30vw, 45vw"
               />
-              <span className="pointer-events-none absolute left-2 top-2 inline-flex h-7 min-w-8 items-center justify-center rounded-full bg-[#0e111a]/80 px-2 text-xs font-semibold text-white">
+              <span className="pointer-events-none absolute left-2 top-2 inline-flex h-6 min-w-7 items-center justify-center rounded-full bg-[#0e111a]/80 px-2 text-[0.7rem] font-semibold text-white">
                 #{index + 1}
               </span>
               <span className="pointer-events-none absolute inset-0 border-2 border-transparent transition group-hover:border-white/20" />

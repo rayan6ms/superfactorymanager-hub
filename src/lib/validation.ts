@@ -68,6 +68,12 @@ export const postSchema = z.object({
     .default([]),
 
   keepImageIds: z.array(z.string().min(1)).optional().default([]),
+  imageOrder: z.array(
+    z.union([
+      z.object({ existingId: z.string().min(1) }),
+      z.object({ uploadIndex: z.number().int().min(0) }),
+    ]),
+  ).optional().default([]),
 
   dependencies: z.array(dependencyUrl).optional().default([]),
 

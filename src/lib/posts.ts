@@ -18,6 +18,7 @@ export const POST_CARD_SELECT = {
   authorName: true,
   category: { select: { name: true } },
   images: {
+    orderBy: { position: "asc" },
     select: {
       original: true,
       thumbSm: true,
