@@ -2018,18 +2018,12 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
           />
 
           <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/75 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-xl text-white/70">
-              Need inspiration or not sure how to structure your script? Open the code guide in a new tab to see some
-              complete SuperFactoryManager examples.
+            <p className="max-w-3xl text-white/70">
+              Need inspiration or not sure how to structure your script? Click to open the official guide in a new tab.
             </p>
-            <Link
-              href="/guide"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex sm:shrink-0"
-            >
-              <Button size="sm" variant="ghost" className="w-full justify-center gap-2">
-                <BookOpen className="h-4 w-4" />
+            <Link href="/guide" target="_blank" rel="noreferrer" className="inline-flex sm:shrink-0">
+              <Button size="sm" variant="transparent" className="w-full justify-center gap-2">
+                <BookOpen className="h-4 w-4" aria-hidden="true" />
                 Open guide
               </Button>
             </Link>
