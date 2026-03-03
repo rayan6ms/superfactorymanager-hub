@@ -40,7 +40,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const prisma = globalForPrisma.prisma ?? new PrismaClient(
-  isAccelerateUrl ? { accelerateUrl: prismaUrl } : undefined,
+  prismaUrl ? { datasourceUrl: prismaUrl } : undefined,
 );
 
 export const db = (isAccelerateUrl ? prisma.$extends(withAccelerate()) : prisma) as PrismaClient;
