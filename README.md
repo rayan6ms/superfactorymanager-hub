@@ -69,6 +69,35 @@ BLOB_READ_WRITE_TOKEN=""
 DEBUG_SFM="0"
 ```
 
+### Vercel production database setup
+
+The production errors `P1001: Can't reach database server` all point to one thing: the deployed app cannot open the database connection it was given.
+
+This repo uses:
+
+- `PRISMA_DATABASE_URL` for Prisma Client at runtime
+- `POSTGRES_URL` for Prisma `directUrl` during migrations and other direct database operations
+
+Use one production mode consistently:
+
+```bash
+# Option 1: direct TCP Postgres from Vercel
+PRISMA_DATABASE_URL="postgresql://...?...sslmode=require"
+POSTGRES_URL="postgresql://...?...sslmode=require"
+```
+
+```bash
+# Option 2: Prisma Accelerate / Prisma Postgres HTTP
+PRISMA_DATABASE_URL="prisma://..."            # or prisma+postgres://...
+POSTGRES_URL="postgresql://...?...sslmode=require"
+```
+
+Notes:
+
+- If you use the Vercel Prisma integration, it commonly injects `DATABASE_URL`. This project does not read that name by default, so copy the value into `PRISMA_DATABASE_URL` as well.
+- If `PRISMA_DATABASE_URL` points at `*.prisma-data.net` over `postgres://` or `postgresql://`, include `sslmode=require`.
+- `POSTGRES_URL` is still required even when runtime traffic goes through Accelerate, because Prisma CLI operations use `directUrl`.
+
 ### 3) Run migrations
 
 ```bash
