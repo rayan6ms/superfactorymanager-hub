@@ -23,12 +23,22 @@ type Props = {
   searchParams?: SearchParams;
 };
 
-function PostSection({ title, posts }: { title: string; posts: SerializedPost[] }) {
+const HOME_SECTION_LIMIT = 4;
+
+function PostSection({
+  title,
+  posts,
+  total,
+}: {
+  title: string;
+  posts: SerializedPost[];
+  total: number;
+}) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold text-white">{title}</h3>
-        <span className="text-xs uppercase tracking-[0.35em] text-white/40">{posts.length} posts</span>
+        <span className="text-xs uppercase tracking-[0.35em] text-white/40">{total} posts</span>
       </div>
       {posts.length ? (
         <ul className="grid gap-5 md:grid-cols-2">
@@ -109,13 +119,14 @@ export default async function Home({ searchParams }: Props) {
     ? `/?${new URLSearchParams({ q: q.trim() }).toString()}`
     : "/";
 
-  const [popularTags, trendingPosts, recentPosts, recommendedPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
+  const [popularTags, totalPosts, trendingPosts, recentPosts, recommendedPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
     getPopularTags(12),
-    getTrendingPosts(6),
-    getRecentPosts(6),
-    getRecommendedPosts({ userId, searchTerm: q, limit: 6 }),
-    searchPublicBuildsWithFilters({ order: "newest", limit: 6, page: 1 }),
-    searchPublicBuildsWithFilters({ order: "recently-updated", limit: 6, page: 1 }),
+    db.post.count({ where: { isDeleted: false } }),
+    getTrendingPosts(HOME_SECTION_LIMIT),
+    getRecentPosts(HOME_SECTION_LIMIT),
+    getRecommendedPosts({ userId, searchTerm: q, limit: HOME_SECTION_LIMIT }),
+    searchPublicBuildsWithFilters({ order: "newest", limit: HOME_SECTION_LIMIT, page: 1 }),
+    searchPublicBuildsWithFilters({ order: "recently-updated", limit: HOME_SECTION_LIMIT, page: 1 }),
   ]);
 
   return (
@@ -166,9 +177,9 @@ export default async function Home({ searchParams }: Props) {
         </div>
 
         <div className="space-y-10">
-          <PostSection title="Trending posts" posts={trendingPosts} />
-          <PostSection title="Recent posts" posts={recentPosts} />
-          <PostSection title="Recommended posts" posts={recommendedPosts} />
+          <PostSection title="Trending posts" posts={trendingPosts} total={totalPosts} />
+          <PostSection title="Recent posts" posts={recentPosts} total={totalPosts} />
+          <PostSection title="Recommended posts" posts={recommendedPosts} total={totalPosts} />
         </div>
       </section>
 

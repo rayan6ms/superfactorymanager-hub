@@ -87,6 +87,14 @@ export default async function BuildsPage({ searchParams }: Props) {
         <p className="eyebrow">Builds</p>
         <h1 className="text-3xl font-semibold text-white">Explore builds</h1>
         <p className="text-white/70">Search community builds by name, tag, author, or date.</p>
+        <Card className="border-white/10 bg-white/5 p-4 text-sm text-white/75">
+          Builds listed here do not necessarily work. They are publicly saved code snapshots.
+          For tested builds with more detail and explanation, check the{" "}
+          <Link href="/posts" className="font-semibold text-brand-300 underline-offset-4 transition hover:underline">
+            posts
+          </Link>
+          .
+        </Card>
         <Link
           href="/"
           className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"

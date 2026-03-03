@@ -205,10 +205,6 @@ function SectionTitle({ title, description }: { title: string; description?: str
   );
 }
 
-function nsfwFileKey(file: File) {
-  return `${file.name}-${file.size}-${file.lastModified}`;
-}
-
 function isUniformMarker(marker: MarkdownInlineMarker) {
   return marker.split("").every(char => char === marker[0]);
 }
@@ -342,8 +338,6 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [imageOrder, setImageOrder] = useState<ComposerImageOrderItem[]>(
     () => existingImages.map(image => ({ type: "existing", id: image.id })),
   );
-  const [nsfwCheckStatus, setNsfwCheckStatus] = useState<"idle" | "running" | "error">("idle");
-  const [nsfwMessage, setNsfwMessage] = useState<string | null>(null);
   const [limitedByMax, setLimitedByMax] = useState(false);
   const [wrapLines, setWrapLines] = useState(true);
   const [imagePage, setImagePage] = useState(0)
@@ -354,7 +348,6 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   const [descriptionMaxHeight, setDescriptionMaxHeight] = useState<number | null>(null);
   const saveDraftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const nsfwCheckedRef = useRef<Record<string, true>>({});
   const newFiles = useMemo(() => newImages.map(image => image.file), [newImages]);
   const newImageIndexById = useMemo(
     () => new Map(newImages.map((image, index) => [image.id, index])),
@@ -667,19 +660,13 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     persistedImages,
   ]);
 
-  const nsfwBlockingMessage = useMemo(() => {
-    if (nsfwCheckStatus === "running") return "Scanning your images for safety...";
-    return nsfwMessage;
-  }, [nsfwCheckStatus, nsfwMessage]);
-
   const blockingMessages = useMemo(() => {
     const unique = new Set<string>();
     Object.values(formEvaluations).forEach(message => {
       if (message) unique.add(message);
     });
-    if (nsfwBlockingMessage) unique.add(nsfwBlockingMessage);
     return Array.from(unique);
-  }, [formEvaluations, nsfwBlockingMessage]);
+  }, [formEvaluations]);
 
   const publishDisabled = loading || blockingMessages.length > 0;
   const normalizedDescription = useMemo(
@@ -883,81 +870,6 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     setPreviewUrls(urls);
     return () => Object.values(urls).forEach(url => URL.revokeObjectURL(url));
   }, [newFiles, newImages, computeImagesError, limitedByMax, persistedImages, totalImageSlots]);
-
-  useEffect(() => {
-    if (!newFiles.length) {
-      setNsfwCheckStatus("idle");
-      setNsfwMessage(null);
-      return;
-    }
-
-    const filesToScan = newFiles.filter((file) => {
-      const key = nsfwFileKey(file);
-      return !nsfwCheckedRef.current[key];
-    });
-
-    if (!filesToScan.length) {
-      setNsfwCheckStatus("idle");
-      setNsfwMessage(null);
-      return;
-    }
-
-    let cancelled = false;
-    const controller = new AbortController();
-
-    setNsfwCheckStatus("running");
-    setNsfwMessage(null);
-
-    const analyze = async () => {
-      const fd = new FormData();
-      filesToScan.forEach((file) => fd.append("file", file));
-
-      try {
-        const res = await fetch("/api/nsfw-check", {
-          method: "POST",
-          body: fd,
-          credentials: "include",
-          signal: controller.signal,
-        });
-        const payload = await res.json().catch(() => null);
-
-        if (cancelled) return;
-
-        if (!res.ok) {
-          setNsfwCheckStatus("error");
-          setNsfwMessage(
-            payload?.error ??
-            "We couldn't analyze your images for safety. Please try again.",
-          );
-          return;
-        }
-
-        filesToScan.forEach((file) => {
-          nsfwCheckedRef.current[nsfwFileKey(file)] = true;
-        });
-
-        setNsfwCheckStatus("idle");
-        setNsfwMessage(null);
-      } catch (error) {
-        if (cancelled) return;
-        if (error instanceof DOMException && error.name === "AbortError") return;
-
-        const message =
-          error instanceof Error
-            ? error.message
-            : "We couldn't analyze your images for safety. Please try again.";
-        setNsfwCheckStatus("error");
-        setNsfwMessage(message);
-      }
-    };
-
-    void analyze();
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [newFiles]);
 
   const removeNewImage = useCallback((id: string) => {
     setNewImages(prev => prev.filter(image => image.id !== id));
@@ -1263,14 +1175,6 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
 
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
-    if (nsfwCheckStatus === "running") {
-      setSubmitError("Please wait while we finish scanning your images for safety.");
-      return;
-    }
-    if (nsfwMessage) {
-      setSubmitError(nsfwMessage);
-      return;
-    }
 
     try {
       setLoading(true);
@@ -1932,12 +1836,6 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                   {errors.images}
                 </p>
               )}
-              {nsfwCheckStatus === "running" && (
-                <p className="text-xs text-white/60">Scanning your images for safety…</p>
-              )}
-              {nsfwCheckStatus === "error" && nsfwMessage && (
-                <p className="text-sm text-amber-300">{nsfwMessage}</p>
-              )}
               {previewItems.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-white/15 bg-black/20 px-4 py-6 text-center text-sm text-white/60">
                   No images have been attached to this post yet.
@@ -2071,11 +1969,13 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
                     })}
                   </div>
                   {galleryImages.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t border-white/10">
+                    <div className="space-y-2 border-t border-white/10 pt-2">
                       <p className="text-xs font-medium text-white/70">
                         Gallery preview (what readers will see)
                       </p>
-                      <ImageGallery imgs={galleryImages} />
+                      <div className="w-full lg:max-w-[66.6667%]">
+                        <ImageGallery imgs={galleryImages} />
+                      </div>
                     </div>
                   )}
                 </div>

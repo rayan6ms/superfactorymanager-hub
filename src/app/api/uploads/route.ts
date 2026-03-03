@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { auth } from "@/lib/auth";
 import { MAX_POST_IMAGES } from "@/lib/images";
-import { detectNsfwInBufferCached } from "@/lib/nsfw";
 import { uploadImageVariant } from "@/lib/blob";
 import {
   MAX_UPLOAD_IMAGE_PIXELS,
@@ -58,38 +57,20 @@ export async function POST(req: Request) {
   }
 
   try {
-    const scanned = await Promise.all(
-      files.map(async (file, index) => {
+    const normalizedImages = await Promise.all(
+      files.map(async (file) => {
         const buffer = Buffer.from(await file.arrayBuffer());
         const metadata = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS }).metadata();
         if (!metadata.width || !metadata.height) {
           throw new Error("Unsupported image format.");
         }
 
-        const nsfw = await detectNsfwInBufferCached(buffer, 0.5);
-
-        return { file, buffer, nsfw, index };
+        return { buffer };
       }),
     );
 
-    const flagged = scanned.filter(scan => scan.nsfw);
-    if (flagged.length) {
-      return NextResponse.json(
-        {
-          error: "Some images look unsafe to share. Replace the flagged images and try again.",
-          nsfw: flagged.map(item => ({
-            imageNumber: item.index + 1,
-            fileName: item.file.name,
-            label: item.nsfw?.label ?? "unknown",
-            probability: item.nsfw?.probability ?? 0,
-          })),
-        },
-        { status: 400 },
-      );
-    }
-
     const uploads = await Promise.all(
-      scanned.map(async ({ buffer }) => {
+      normalizedImages.map(async ({ buffer }) => {
         const base = sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS }).jpeg({ quality: 90 });
         const original = await base.toBuffer();
         const originalUrl = await uploadImageVariant("uploads/original", original, "image/jpeg");

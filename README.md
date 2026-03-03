@@ -20,7 +20,6 @@ Built with Next.js (App Router), Prisma/PostgreSQL, and NextAuth.
 - **NextAuth** (Credentials + optional Google/GitHub)
 - **Vercel Blob** for image storage (optional)
 - Email via **SMTP** (Nodemailer) for verification, password reset, and notifications
-- Optional NSFW image detection via `nsfwjs` + `@tensorflow/tfjs` (server-side)
 
 ---
 
@@ -127,7 +126,6 @@ Upstream repository:
 
 - Remote profile images are validated to avoid private/local network fetches.
 - Rate limits are enforced for posting, commenting, voting, and reporting.
-- Optional NSFW scanning can be enabled for uploaded content.
 
 ---
 
