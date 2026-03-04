@@ -382,8 +382,8 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
         postSlug={post.slug}
         initialComments={commentData.comments}
         initialCursor={commentData.nextCursor}
-        initialTotal={commentData.total}
-        initialPinnedComment={commentData.pinnedComment}
+        initialTotal={commentData.total ?? 0}
+        initialPinnedComment={commentData.pinnedComment ?? null}
         postAuthorId={post.authorId}
       />
     </div>

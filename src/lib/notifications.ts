@@ -123,7 +123,7 @@ export async function createNotification(options: {
     },
   });
 
-  await maybeSendNotificationEmail(notification).catch(error => {
+  void maybeSendNotificationEmail(notification).catch(error => {
     console.warn("Failed to process notification email delivery", error);
   });
 

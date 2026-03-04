@@ -6,7 +6,8 @@ import { generateInitialAvatar, resolveProfileImage } from "@/lib/avatar";
 import { validateUsernameInput } from "@/lib/usernames";
 import { isUsernameTaken } from "@/lib/usernames.server";
 
-const MAX_IMAGE_VALUE_LENGTH = 1_000_000;
+const MAX_IMAGE_VALUE_LENGTH = 4096;
+const REMOTE_IMAGE_URL_PATTERN = /^https?:\/\//i;
 
 const schema = z.object({
   name: z
@@ -103,10 +104,10 @@ export async function PATCH(request: Request) {
   } else if (typeof image === "string") {
     if (!image) {
       updateData.image = generateInitialAvatar({ name: normalizedName, seed: user.email });
-    } else if (!/^https?:\/\//i.test(image) && !image.startsWith("data:")) {
-      return NextResponse.json({ error: "INVALID_IMAGE_URL" }, { status: 400 });
     } else if (image === user.image) {
       updateData.image = user.image;
+    } else if (!REMOTE_IMAGE_URL_PATTERN.test(image)) {
+      return NextResponse.json({ error: "INVALID_IMAGE_URL" }, { status: 400 });
     } else {
       updateData.image = await resolveProfileImage({
         image,

@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import {
   COMMENT_PAGE_SIZE,
@@ -66,21 +66,36 @@ function compareComments(
 }
 
 async function fetchRepliesForParents(parentIds: string[]): Promise<CommentWithAuthor[]> {
-  const collected: CommentWithAuthor[] = [];
-  let currentParentIds = parentIds;
-
-  while (currentParentIds.length) {
-    const children = await db.comment.findMany({
-      where: { parentId: { in: currentParentIds } },
-      orderBy: { createdAt: "asc" },
-      include: { author: { select: authorSelect } },
-    });
-    if (!children.length) break;
-    collected.push(...children);
-    currentParentIds = children.map(child => child.id);
+  if (!parentIds.length) {
+    return [];
   }
 
-  return collected;
+  const descendantIds = await db.$queryRaw<{ id: string }[]>(Prisma.sql`
+    WITH RECURSIVE "CommentTree" AS (
+      SELECT c."id"
+      FROM "Comment" c
+      WHERE c."parentId" IN (${Prisma.join(parentIds)})
+
+      UNION ALL
+
+      SELECT child."id"
+      FROM "Comment" child
+      INNER JOIN "CommentTree" tree ON child."parentId" = tree."id"
+    )
+    SELECT tree."id"
+    FROM "CommentTree" tree
+  `);
+
+  if (!descendantIds.length) {
+    return [];
+  }
+
+  return db.comment.findMany({
+    where: {
+      id: { in: descendantIds.map(comment => comment.id) },
+    },
+    include: { author: { select: authorSelect } },
+  });
 }
 
 function buildChildrenMap(comments: CommentWithAuthor[]) {
@@ -110,39 +125,59 @@ function attachReplies(
 
 export async function getPostComments(
   postId: string,
-  options: { take?: number; cursor?: string | null; sort?: "recent" | "top"; viewerId?: string | null } = {},
-): Promise<{ comments: SerializedComment[]; nextCursor: string | null; total: number; pinnedComment: SerializedComment | null }> {
+  options: {
+    take?: number;
+    cursor?: string | null;
+    sort?: "recent" | "top";
+    viewerId?: string | null;
+    includeTotal?: boolean;
+    includePinnedComment?: boolean;
+  } = {},
+): Promise<{
+  comments: SerializedComment[];
+  nextCursor: string | null;
+  total?: number;
+  pinnedComment?: SerializedComment | null;
+}> {
   const take = Math.min(Math.max(options.take ?? COMMENT_PAGE_SIZE, 1), 50);
   const cursor = options.cursor ?? null;
   const sort = options.sort ?? "recent";
   const viewerId = options.viewerId ?? null;
+  const includeTotal = options.includeTotal ?? true;
+  const includePinnedComment = options.includePinnedComment ?? true;
 
-  const roots: CommentWithAuthor[] = await db.comment.findMany({
-    where: { postId, parentId: null },
-    orderBy:
-      sort === "top"
-        ? [
-            { score: "desc" },
-            { createdAt: "desc" },
-          ]
-        : [{ createdAt: "desc" }],
-    take: take + 1,
-    include: { author: { select: authorSelect } },
-    ...(cursor && {
-      cursor: { id: cursor },
-      skip: 1,
+  const [roots, pinned, total] = await Promise.all([
+    db.comment.findMany({
+      where: { postId, parentId: null },
+      orderBy:
+        sort === "top"
+          ? [
+              { score: "desc" },
+              { createdAt: "desc" },
+            ]
+          : [{ createdAt: "desc" }],
+      take: take + 1,
+      include: { author: { select: authorSelect } },
+      ...(cursor && {
+        cursor: { id: cursor },
+        skip: 1,
+      }),
     }),
-  });
-
-  const pinned = await db.comment.findFirst({
-    where: {
-      postId,
-      isDeleted: false,
-      pinnedAt: { not: null },
-    },
-    orderBy: { pinnedAt: "desc" },
-    include: { author: { select: authorSelect } },
-  });
+    includePinnedComment
+      ? db.comment.findFirst({
+          where: {
+            postId,
+            isDeleted: false,
+            pinnedAt: { not: null },
+          },
+          orderBy: { pinnedAt: "desc" },
+          include: { author: { select: authorSelect } },
+        })
+      : Promise.resolve(null),
+    includeTotal
+      ? db.comment.count({ where: { postId } })
+      : Promise.resolve(null),
+  ]);
 
   let nextCursor: string | null = null;
   if (roots.length > take) {
@@ -156,11 +191,11 @@ export async function getPostComments(
 
   let voteMap: Map<string, "up" | "down"> | undefined;
   if (viewerId) {
-    const allIds = [
+    const allIds = Array.from(new Set([
       ...visibleRoots.map(item => item.id),
       ...descendants.map(item => item.id),
       ...(pinned ? [pinned.id] : []),
-    ];
+    ]));
     if (allIds.length) {
       const votes = await db.commentVote.findMany({
         where: { userId: viewerId, commentId: { in: allIds } },
@@ -171,15 +206,13 @@ export async function getPostComments(
   }
 
   const serialized = visibleRoots.map(comment => attachReplies(comment, childrenMap, sort, voteMap));
-  const pinnedComment = pinned ? serializeComment(pinned, [], voteMap) : null;
-
-  const total = await db.comment.count({ where: { postId } });
+  const pinnedComment = includePinnedComment ? (pinned ? serializeComment(pinned, [], voteMap) : null) : undefined;
 
   return {
     comments: serialized,
     nextCursor,
-    total,
-    pinnedComment,
+    ...(typeof total === "number" ? { total } : {}),
+    ...(typeof pinnedComment !== "undefined" ? { pinnedComment } : {}),
   };
 }
 

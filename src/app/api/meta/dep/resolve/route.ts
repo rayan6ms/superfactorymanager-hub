@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
+const FETCH_TIMEOUT_MS = 5000;
+
 function isAllowedHost(hostname: string, domain: string) {
   const host = hostname.toLowerCase();
   return host === domain || host.endsWith(`.${domain}`);
@@ -54,6 +56,17 @@ async function extractNameFromHtml(html: string) {
   return null;
 }
 
+async function fetchWithTimeout(url: string, init: RequestInit) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function GET(req: Request) {
   const clientKey = getClientRateLimitKey(req.headers);
   const limit = await checkRateLimit(`meta:dep-resolve:client:${clientKey}`, {
@@ -79,9 +92,9 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await fetch(url.toString(), {
+    const res = await fetchWithTimeout(url.toString(), {
       cache: "no-store",
-      headers: { "user-agent": "Mozilla/5.0 superfactorymanager" }
+      headers: { "user-agent": "Mozilla/5.0 superfactorymanager" },
     });
     const html = await res.text();
 

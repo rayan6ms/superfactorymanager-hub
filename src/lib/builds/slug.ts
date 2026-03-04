@@ -8,6 +8,10 @@ function getSlugBase(nameLower: string) {
   return base || FALLBACK_SLUG;
 }
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // Slugs are deterministic per user: first "base", then "base-2", "base-3", ...
 // Callers run this inside a transaction and retry on unique slug conflicts.
 export async function getNextBuildSlugForUser(
@@ -17,25 +21,26 @@ export async function getNextBuildSlugForUser(
 ) {
   const base = getSlugBase(nameLower);
 
-  const existing = await tx.build.findMany({
-    where: {
-      userId,
-      slug: { startsWith: base },
-    },
+  const existingBase = await tx.build.findUnique({
+    where: { userId_slug: { userId, slug: base } },
     select: { slug: true },
   });
-
-  const taken = new Set(existing.map((entry) => entry.slug));
-  if (!taken.has(base)) {
+  if (!existingBase) {
     return base;
   }
 
-  for (let i = 2; i < 10_000; i += 1) {
-    const candidate = `${base}-${i}`;
-    if (!taken.has(candidate)) {
-      return candidate;
-    }
+  const suffixPattern = `^${escapeRegex(base)}-(\\d+)$`;
+  const rows = await tx.$queryRaw<{ maxSuffix: number | null }[]>`
+    SELECT MAX(NULLIF(SUBSTRING("slug" FROM ${suffixPattern}), '')::int) AS "maxSuffix"
+    FROM "Build"
+    WHERE "userId" = ${userId}
+      AND "slug" ~ ${suffixPattern}
+  `;
+
+  const maxSuffix = rows[0]?.maxSuffix ?? null;
+  if (typeof maxSuffix === "number" && Number.isInteger(maxSuffix) && maxSuffix >= 2) {
+    return `${base}-${maxSuffix + 1}`;
   }
 
-  throw new Error("UNABLE_TO_GENERATE_SLUG");
+  return `${base}-2`;
 }

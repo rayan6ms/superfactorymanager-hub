@@ -20,6 +20,12 @@ export type PostSearchFilters = {
   authorId?: string;
 };
 
+const POST_SEARCH_VECTOR_SQL = Prisma.sql`
+  setweight(to_tsvector('english', coalesce("title", '')), 'A') ||
+  setweight(to_tsvector('english', coalesce("description", '')), 'B') ||
+  setweight(to_tsvector('english', coalesce("code", '')), 'C')
+`;
+
 function buildConditions(filters?: PostSearchFilters) {
   const conditions: Prisma.Sql[] = [Prisma.sql`p."isDeleted" = false`];
 
@@ -127,4 +133,12 @@ export async function searchPostsHybrid(options: {
   if (!prefixQuery) return primary;
 
   return runRankedSearch(Prisma.sql`to_tsquery('english', ${prefixQuery})`, options);
+}
+
+export async function reindexPostSearch(): Promise<number> {
+  return db.$executeRaw(Prisma.sql`
+    UPDATE "Post"
+    SET "searchVector" = ${POST_SEARCH_VECTOR_SQL}
+    WHERE "searchVector" IS DISTINCT FROM ${POST_SEARCH_VECTOR_SQL}
+  `);
 }

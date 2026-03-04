@@ -5,7 +5,7 @@ import clsx from "clsx";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button, Input, Card } from "@/components/ui";
-import { Loader2, RefreshCw, Upload, ShieldCheck, Pencil } from "lucide-react";
+import { Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import {
   USERNAME_HELP_TEXT,
   USERNAME_MAX_LENGTH,
@@ -53,7 +53,6 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   const [status, setStatus] = useState<Status>("idle");
   const [resetStatus, setResetStatus] = useState<ResetStatus>("idle");
   const [errors, setErrors] = useState<FormErrors>({});
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const statusResetTimeoutRef = useRef<number | null>(null);
   const resetBlinkTimeoutRef = useRef<number | null>(null);
   const router = useRouter();
@@ -87,20 +86,6 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       }
     };
   }, []);
-
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setImage(reader.result);
-        setPreview(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-    event.target.value = "";
-  }
 
   function usernameErrorMessage(code: UsernameValidationCode | "NAME_TAKEN") {
     switch (code) {
@@ -178,7 +163,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           });
         } else if (errorMessage === "INVALID_IMAGE_URL") {
           setErrors({
-            image: "Please provide a valid image URL (starting with http(s):// or an image data URL).",
+            image: "Please provide a valid image URL starting with http:// or https://.",
           });
         } else {
           console.error("Unexpected profile update error", errorMessage);
@@ -259,24 +244,6 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       />
       {errors.image && <p className="mt-1 text-sm text-error">{errors.image}</p>}
       <div className="mt-2 flex flex-wrap gap-2 text-sm text-white/70">
-        <label className="inline-flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="gap-2"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="h-4 w-4" aria-hidden /> Upload image
-          </Button>
-        </label>
         <Button
           type="button"
           size="sm"
@@ -387,32 +354,21 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   return (
     <Card className="space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="relative h-24 w-24 self-center sm:self-auto overflow-hidden rounded-full border border-white/15 bg-white/5 group">
+        <div className="relative h-24 w-24 self-center overflow-hidden rounded-full border border-white/15 bg-white/5 sm:self-auto">
           {preview ? (
             <Image
               src={preview}
               alt={name || "Profile avatar"}
               fill
               sizes="96px"
-              className="object-cover transition group-hover:opacity-60"
+              className="object-cover"
               unoptimized
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-white/70 transition group-hover:opacity-60">
+            <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-white/70">
               {(name || initialUser.email).charAt(0).toUpperCase()}
             </div>
           )}
-          <div className="pointer-events-none absolute inset-0 bg-black/0 transition group-hover:bg-black/30" />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center
-               rounded-full border border-white/30 bg-black/60 p-1 text-white shadow-sm
-               transition hover:border-white/60 hover:bg-black/80"
-          >
-            <Pencil className="h-4 w-4" aria-hidden />
-            <span className="sr-only">Change avatar image</span>
-          </button>
         </div>
 
         <div className="flex-1 space-y-3">

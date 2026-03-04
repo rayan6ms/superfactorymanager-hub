@@ -62,7 +62,15 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     }
   }
 
-  const data = await getPostComments(post.id, { cursor, take, sort, viewerId: session?.user?.id ?? null });
+  const includeSummary = !cursor;
+  const data = await getPostComments(post.id, {
+    cursor,
+    take,
+    sort,
+    viewerId: session?.user?.id ?? null,
+    includeTotal: includeSummary,
+    includePinnedComment: includeSummary,
+  });
   return NextResponse.json(data);
 }
 
@@ -253,7 +261,5 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     );
   }
 
-  const total = await db.comment.count({ where: { postId: post.id } });
-
-  return NextResponse.json({ comment: serialized, total });
+  return NextResponse.json({ comment: serialized });
 }
