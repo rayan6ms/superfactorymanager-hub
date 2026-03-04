@@ -167,6 +167,8 @@ export default function NotificationCenter({
       const params = new URLSearchParams({
         cursor,
         limit: String(NOTIFICATION_PAGE_SIZE),
+        includeUnreadCount: "0",
+        unreadCountHint: String(unreadCount),
       });
       const res = await fetch(`/api/notifications?${params.toString()}`, {
         cache: "no-store",

@@ -305,6 +305,7 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
       q: q.trim(),
       limit: pageSize,
       offset: skip,
+      order,
       filters: {
         minRating,
         categoryKey,

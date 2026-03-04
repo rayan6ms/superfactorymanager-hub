@@ -5,7 +5,7 @@ import { z } from "zod";
 import { generateInitialAvatar } from "@/lib/avatar";
 import { validateUsernameInput } from "@/lib/usernames";
 import { isUsernameTaken } from "@/lib/usernames.server";
-import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
+import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
 import { sendVerificationEmailForUser } from "@/lib/email-verification";
 
 const schema = z.object({
@@ -66,7 +66,8 @@ export async function POST(req: Request) {
     if (await isUsernameTaken(normalizedName)) {
       return NextResponse.json({ error: "NAME_TAKEN" }, { status: 409 });
     }
-    const emailLimit = await checkRateLimit(`auth:signup:email:${parsed.email.toLowerCase()}`, {
+    const emailKey = hashRateLimitIdentifier(parsed.email, "auth:signup:email");
+    const emailLimit = await checkRateLimit(`auth:signup:email:${emailKey}`, {
       windowMs: SIGNUP_WINDOW_MS,
       limit: SIGNUP_LIMIT_PER_EMAIL,
     });

@@ -2,6 +2,19 @@ import { NextResponse } from "next/server";
 import { analyzeYoutubeUrl } from "@/lib/youtube";
 import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
+const YOUTUBE_FETCH_TIMEOUT_MS = 5000;
+
+async function fetchWithTimeout(url: string, init: RequestInit) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), YOUTUBE_FETCH_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function GET(req: Request) {
   const clientKey = getClientRateLimitKey(req.headers);
   const limit = await checkRateLimit(`meta:youtube:client:${clientKey}`, {
@@ -32,7 +45,7 @@ export async function GET(req: Request) {
   )}&format=json`;
 
   try {
-    const res = await fetch(oembedUrl, { cache: "no-store" });
+    const res = await fetchWithTimeout(oembedUrl, { cache: "no-store" });
 
     if (!res.ok) {
       return NextResponse.json(

@@ -73,6 +73,7 @@ export default async function PostsPage({ searchParams }: Props) {
       q: trimmedQuery,
       limit: PAGE_SIZE,
       offset: (pageNumber - 1) * PAGE_SIZE,
+      order,
       filters: {
         minRating: minRatingNumber,
         categoryKey: category || undefined,

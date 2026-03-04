@@ -11,7 +11,7 @@ import type { Adapter } from "next-auth/adapters";
 import { generateInitialAvatar, resolveProfileImage } from "./avatar";
 import { generateAvailableUsername } from "./usernames.server";
 import { createNotification } from "./notifications";
-import { checkRateLimit, getClientRateLimitKey } from "./request-security";
+import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "./request-security";
 import { isAdminEmail } from "./admin";
 
 const credsSchema = z.object({
@@ -65,8 +65,9 @@ const providers: NextAuthConfig["providers"] = [
 
       const { identifier, password } = parsed.data;
       const normalizedIdentifier = identifier.toLowerCase();
+      const identifierKey = hashRateLimitIdentifier(normalizedIdentifier, "auth:login:identifier");
       const identifierBucket = await checkRateLimit(
-        `auth:login:identifier:${normalizedIdentifier}`,
+        `auth:login:identifier:${identifierKey}`,
         {
           windowMs: LOGIN_WINDOW_MS,
           limit: LOGIN_LIMIT_PER_IDENTIFIER,

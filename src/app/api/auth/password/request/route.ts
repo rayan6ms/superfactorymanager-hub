@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
+import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
 
 const schema = z.object({
   email: z
@@ -41,7 +41,8 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email;
-  const emailLimit = await checkRateLimit(`auth:password-request:email:${email.toLowerCase()}`, {
+  const emailKey = hashRateLimitIdentifier(email, "auth:password-request:email");
+  const emailLimit = await checkRateLimit(`auth:password-request:email:${emailKey}`, {
     windowMs: RESET_REQUEST_WINDOW_MS,
     limit: RESET_REQUEST_LIMIT_PER_EMAIL,
   });

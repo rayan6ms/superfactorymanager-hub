@@ -20,6 +20,15 @@ export type PostSearchFilters = {
   authorId?: string;
 };
 
+export type PostSearchOrder =
+  | "best"
+  | "newest"
+  | "oldest"
+  | "highest-rating"
+  | "lowest-rating"
+  | "most-views"
+  | "least-views";
+
 const POST_SEARCH_VECTOR_SQL = Prisma.sql`
   setweight(to_tsvector('english', coalesce("title", '')), 'A') ||
   setweight(to_tsvector('english', coalesce("description", '')), 'B') ||
@@ -52,11 +61,32 @@ function buildConditions(filters?: PostSearchFilters) {
 
 async function runRankedSearch(
   tsQuerySql: Prisma.Sql,
-  options: { limit?: number; offset?: number; filters?: PostSearchFilters },
+  options: { limit?: number; offset?: number; filters?: PostSearchFilters; order?: PostSearchOrder },
 ): Promise<{ results: PostSearchResult[]; total: number }> {
   const limit = Math.max(1, Math.min(options.limit ?? 20, 100));
   const offset = Math.max(0, options.offset ?? 0);
   const whereClause = buildConditions(options.filters);
+  const order = options.order ?? "best";
+
+  const orderBy = (() => {
+    switch (order) {
+      case "newest":
+        return Prisma.sql`p."uploadDate" DESC, p."rating" DESC`;
+      case "oldest":
+        return Prisma.sql`p."uploadDate" ASC, p."rating" DESC`;
+      case "highest-rating":
+        return Prisma.sql`p."rating" DESC, p."ratingCount" DESC, p."uploadDate" DESC`;
+      case "lowest-rating":
+        return Prisma.sql`p."rating" ASC, p."ratingCount" ASC, p."uploadDate" DESC`;
+      case "most-views":
+        return Prisma.sql`p."views" DESC, p."uploadDate" DESC`;
+      case "least-views":
+        return Prisma.sql`p."views" ASC, p."uploadDate" DESC`;
+      case "best":
+      default:
+        return Prisma.sql`rank DESC, p."uploadDate" DESC, p."rating" DESC`;
+    }
+  })();
 
   const results = await db.$queryRaw<PostSearchResult[]>(Prisma.sql`
     WITH search AS (SELECT ${tsQuerySql} AS query)
@@ -64,7 +94,7 @@ async function runRankedSearch(
            ts_rank_cd(p."searchVector", search.query) AS rank
     FROM "Post" p, search
     WHERE ${whereClause} AND p."searchVector" @@ search.query
-    ORDER BY rank DESC, p."uploadDate" DESC, p."rating" DESC
+    ORDER BY ${orderBy}
     LIMIT ${limit} OFFSET ${offset}
   `);
 
@@ -118,6 +148,7 @@ export async function searchPostsHybrid(options: {
   limit?: number;
   offset?: number;
   filters?: PostSearchFilters;
+  order?: PostSearchOrder;
 }): Promise<{ results: PostSearchResult[]; total: number }> {
   const trimmed = options.q.trim();
   if (!trimmed) return { results: [], total: 0 };

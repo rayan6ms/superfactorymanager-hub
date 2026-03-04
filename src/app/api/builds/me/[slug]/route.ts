@@ -7,6 +7,8 @@ import {
   normalizeBuildTag,
   updateBuildSchema,
 } from "@/lib/builds/validation";
+import { assertBuildRateLimit, BuildRateLimitError } from "@/lib/builds/rate-limit";
+import { interactionBlockReason } from "@/lib/moderation";
 
 export async function PUT(request: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
@@ -18,13 +20,38 @@ export async function PUT(request: Request, ctx: { params: Promise<{ slug: strin
 
   const user = await db.user.findUnique({
     where: { email: session.user.email },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      canCreatePosts: true,
+      canCreateComments: true,
+      canVotePosts: true,
+      canVoteComments: true,
+      interactionBanUntil: true,
+    },
   });
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!user.name) {
     return NextResponse.json({ error: "USERNAME_REQUIRED" }, { status: 400 });
+  }
+
+  const restriction = interactionBlockReason(user, "update-build");
+  if (restriction) {
+    return NextResponse.json({ error: restriction }, { status: 403 });
+  }
+
+  try {
+    await assertBuildRateLimit(user.id, "update");
+  } catch (error) {
+    if (error instanceof BuildRateLimitError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } },
+      );
+    }
+    throw error;
   }
 
   let payload: unknown;

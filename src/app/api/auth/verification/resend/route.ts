@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { sendVerificationEmailForUser } from "@/lib/email-verification";
-import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
+import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
 
 const schema = z.object({
   identifier: z
@@ -37,7 +37,8 @@ export async function POST(request: Request) {
   }
 
   const identifier = parsed.data.identifier;
-  const identifierLimit = await checkRateLimit(`auth:verification-resend:identifier:${identifier}`, {
+  const identifierKey = hashRateLimitIdentifier(identifier, "auth:verification-resend:identifier");
+  const identifierLimit = await checkRateLimit(`auth:verification-resend:identifier:${identifierKey}`, {
     windowMs: RESEND_WINDOW_MS,
     limit: RESEND_LIMIT_PER_IDENTIFIER,
   });

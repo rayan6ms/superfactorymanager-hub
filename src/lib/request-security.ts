@@ -32,6 +32,7 @@ const TRUSTED_PROXY_IP_HEADERS = new Set([
 let lastDatabaseCleanupAt = 0;
 let didWarnAboutDatabaseFallback = false;
 let didWarnAboutAnonymousFingerprintFallback = false;
+let didWarnAboutRateLimitHashFallback = false;
 let trustedProxyHeaderCache: string | null | undefined;
 
 export class TrustedProxyConfigurationError extends Error {
@@ -47,6 +48,16 @@ function trimBuckets(now: number) {
     if (bucket.resetAt <= now) {
       buckets.delete(key);
     }
+  }
+
+  if (buckets.size <= MAX_BUCKETS) return;
+
+  const overflow = buckets.size - MAX_BUCKETS;
+  let removed = 0;
+  for (const key of buckets.keys()) {
+    buckets.delete(key);
+    removed += 1;
+    if (removed >= overflow) break;
   }
 }
 
@@ -114,6 +125,35 @@ function buildAnonymousFingerprint(headers: Headers): string {
   return crypto.createHash("sha256").update(material || "anonymous").digest("hex").slice(0, 24);
 }
 
+function getRateLimitHashSecret(): string | null {
+  const configuredSecret = process.env.RATE_LIMIT_HASH_SECRET
+    ?? process.env.AUTH_SECRET
+    ?? process.env.NEXTAUTH_SECRET;
+
+  if (configuredSecret && configuredSecret.trim().length > 0) {
+    return configuredSecret;
+  }
+
+  if (!didWarnAboutRateLimitHashFallback) {
+    didWarnAboutRateLimitHashFallback = true;
+    console.warn(
+      "RATE_LIMIT_HASH_SECRET is not configured. Falling back to unkeyed SHA-256 for rate-limit identifiers.",
+    );
+  }
+
+  return null;
+}
+
+export function hashRateLimitIdentifier(identifier: string, scope: string): string {
+  const normalizedIdentifier = identifier.trim().toLowerCase();
+  const material = `${scope}:${normalizedIdentifier}`;
+  const secret = getRateLimitHashSecret();
+  const digest = secret
+    ? crypto.createHmac("sha256", secret).update(material).digest("hex")
+    : crypto.createHash("sha256").update(material).digest("hex");
+  return digest.slice(0, 32);
+}
+
 export function getTrustedClientIpFromHeaders(headers: Headers): string | null {
   const trustedHeader = getConfiguredTrustedProxyHeader();
   if (!trustedHeader) {
@@ -167,6 +207,7 @@ function checkMemoryRateLimit(
   const current = buckets.get(key);
   if (!current || current.resetAt <= now) {
     buckets.set(key, { count: 1, resetAt: now + windowMs });
+    trimBuckets(now);
     return {
       allowed: true,
       retryAfterSeconds: 0,

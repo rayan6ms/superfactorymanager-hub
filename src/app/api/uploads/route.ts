@@ -13,6 +13,8 @@ export const runtime = "nodejs";
 
 const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 const UPLOAD_LIMIT_PER_USER = 40;
+const MAX_FILE_PROCESSING_CONCURRENCY = 2;
+const MAX_VARIANT_PROCESSING_CONCURRENCY = 2;
 
 function getOriginalUploadExtension(contentType: string) {
   switch (contentType) {
@@ -49,6 +51,28 @@ function mapUploadFailure(error: unknown): { status: number; message: string } {
   }
 
   return { status: 500, message: "Failed to upload images." };
+}
+
+async function mapWithConcurrency<TInput, TOutput>(
+  values: TInput[],
+  maxConcurrency: number,
+  mapper: (value: TInput, index: number) => Promise<TOutput>,
+): Promise<TOutput[]> {
+  const results = new Array<TOutput>(values.length);
+  const safeConcurrency = Math.max(1, Math.min(Math.floor(maxConcurrency), values.length || 1));
+  let nextIndex = 0;
+
+  async function worker() {
+    while (true) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      if (currentIndex >= values.length) return;
+      results[currentIndex] = await mapper(values[currentIndex], currentIndex);
+    }
+  }
+
+  await Promise.all(Array.from({ length: safeConcurrency }, worker));
+  return results;
 }
 
 export async function POST(req: Request) {
@@ -94,44 +118,42 @@ export async function POST(req: Request) {
   }
 
   try {
-    const normalizedImages = await Promise.all(
-      files.map(async (file) => {
+    const uploads = await mapWithConcurrency(
+      files,
+      MAX_FILE_PROCESSING_CONCURRENCY,
+      async (file) => {
         const buffer = Buffer.from(await file.arrayBuffer());
         const metadata = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS }).metadata();
         if (!metadata.width || !metadata.height) {
           throw new Error("Unsupported image format.");
         }
 
-        return { buffer };
-      }),
-    );
-
-    const uploads = await Promise.all(
-      normalizedImages.map(async ({ buffer }, index) => {
-        const file = files[index];
-        const originalUrl = await uploadImageVariant(
+        const original = await uploadImageVariant(
           "uploads/original",
           buffer,
           file.type || "image/jpeg",
           getOriginalUploadExtension(file.type),
         );
 
-        async function make(width: number, prefix: string) {
-          const resized = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })
-            .resize({ width })
-            .jpeg({ quality: 80 })
-            .toBuffer();
-          return uploadImageVariant(`uploads/${prefix}`, resized, "image/jpeg");
-        }
+        const variants = await mapWithConcurrency(
+          [
+            { width: 320, prefix: "sm" },
+            { width: 640, prefix: "md" },
+            { width: 1024, prefix: "lg" },
+          ],
+          MAX_VARIANT_PROCESSING_CONCURRENCY,
+          async ({ width, prefix }) => {
+            const resized = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })
+              .resize({ width })
+              .jpeg({ quality: 80 })
+              .toBuffer();
+            return uploadImageVariant(`uploads/${prefix}`, resized, "image/jpeg");
+          },
+        );
 
-        const [thumbSm, thumbMd, thumbLg] = await Promise.all([
-          make(320, "sm"),
-          make(640, "md"),
-          make(1024, "lg"),
-        ]);
-
-        return { original: originalUrl, thumbSm, thumbMd, thumbLg };
-      }),
+        const [thumbSm, thumbMd, thumbLg] = variants;
+        return { original, thumbSm, thumbMd, thumbLg };
+      },
     );
 
     return NextResponse.json(uploads, { status: 201 });

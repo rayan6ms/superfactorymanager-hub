@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { revalidateSeoPaths } from "@/lib/seo-revalidate";
 
 export const runtime = "nodejs";
@@ -6,6 +7,17 @@ export const runtime = "nodejs";
 async function resolveSecret(request: NextRequest) {
   const fromHeader = request.headers.get("x-revalidate-secret");
   return fromHeader;
+}
+
+function isTimingSafeSecretMatch(provided: string, expected: string): boolean {
+  const providedBuffer = Buffer.from(provided, "utf8");
+  const expectedBuffer = Buffer.from(expected, "utf8");
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(providedBuffer, expectedBuffer);
 }
 
 async function handle(request: NextRequest) {
@@ -18,7 +30,7 @@ async function handle(request: NextRequest) {
   }
 
   const providedSecret = await resolveSecret(request);
-  if (!providedSecret || providedSecret !== expectedSecret) {
+  if (!providedSecret || !isTimingSafeSecretMatch(providedSecret, expectedSecret)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

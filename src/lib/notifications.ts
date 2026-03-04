@@ -39,7 +39,13 @@ export async function getNotificationPreview(userId: string, limit = NOTIFICATIO
 
 export async function getNotifications(
   userId: string,
-  options: { take?: number; cursor?: string | null; unreadOnly?: boolean } = {}
+  options: {
+    take?: number;
+    cursor?: string | null;
+    unreadOnly?: boolean;
+    includeUnreadCount?: boolean;
+    unreadCountHint?: number;
+  } = {},
 ): Promise<NotificationQueryResult> {
   const take = Math.min(Math.max(options.take ?? NOTIFICATION_PAGE_SIZE, 1), 50);
   const where: Prisma.NotificationWhereInput = {
@@ -59,7 +65,11 @@ export async function getNotifications(
     nextCursor = next ? next.id : null;
   }
 
-  const unreadCount = await db.notification.count({ where: { userId, readAt: null } });
+  const shouldIncludeUnreadCount = options.includeUnreadCount !== false;
+  const unreadCount = shouldIncludeUnreadCount
+    ? await db.notification.count({ where: { userId, readAt: null } })
+    : Math.max(0, Math.floor(options.unreadCountHint ?? 0));
+
   return {
     notifications: notifications.map(serialize),
     unreadCount,

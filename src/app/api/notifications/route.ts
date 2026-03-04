@@ -15,8 +15,20 @@ export async function GET(req: Request) {
   const takeCandidate = limitParam ? Number.parseInt(limitParam, 10) : undefined;
   const take = typeof takeCandidate === "number" && Number.isFinite(takeCandidate) ? takeCandidate : undefined;
   const unreadOnly = url.searchParams.get("unreadOnly") === "1";
+  const includeUnreadCount = url.searchParams.get("includeUnreadCount") !== "0";
+  const unreadCountHintRaw = url.searchParams.get("unreadCountHint");
+  const unreadCountHintCandidate = unreadCountHintRaw ? Number.parseInt(unreadCountHintRaw, 10) : undefined;
+  const unreadCountHint = typeof unreadCountHintCandidate === "number" && Number.isFinite(unreadCountHintCandidate)
+    ? unreadCountHintCandidate
+    : undefined;
 
-  const data = await getNotifications(userId, { take, cursor: cursor || undefined, unreadOnly });
+  const data = await getNotifications(userId, {
+    take,
+    cursor: cursor || undefined,
+    unreadOnly,
+    includeUnreadCount,
+    unreadCountHint,
+  });
   return NextResponse.json(data);
 }
 

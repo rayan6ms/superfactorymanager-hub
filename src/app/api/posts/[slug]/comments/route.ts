@@ -169,16 +169,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
         postId: post.id,
         authorId: user.id,
         parentId,
-        score: 1,
-        voteCount: 1,
+        score: 0,
+        voteCount: 0,
       },
       include: {
         author: { select: { id: true, name: true, image: true } },
       },
-    });
-
-    await tx.commentVote.create({
-      data: { value: 1, userId: user.id, commentId: created.id },
     });
 
     return created;
@@ -195,7 +191,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     author: comment.author,
     score: comment.score,
     voteCount: comment.voteCount,
-    vote: "up" as const,
+    vote: null,
     replyCount: 0,
     replies: [],
   };

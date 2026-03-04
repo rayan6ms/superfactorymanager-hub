@@ -1,6 +1,13 @@
 import type { User } from "@prisma/client";
 
-export type InteractionAction = "create-post" | "create-comment" | "vote-post" | "vote-comment";
+export type InteractionAction =
+  | "create-post"
+  | "create-comment"
+  | "vote-post"
+  | "vote-comment"
+  | "create-build"
+  | "update-build"
+  | "fork-build";
 
 export type InteractionUser = Pick<
   User,
@@ -12,6 +19,9 @@ const actionMap: Record<InteractionAction, { flag: keyof InteractionUser; label:
   "create-comment": { flag: "canCreateComments", label: "add comments" },
   "vote-post": { flag: "canVotePosts", label: "vote on posts" },
   "vote-comment": { flag: "canVoteComments", label: "vote on comments" },
+  "create-build": { flag: "canCreatePosts", label: "create builds" },
+  "update-build": { flag: "canCreatePosts", label: "update builds" },
+  "fork-build": { flag: "canCreatePosts", label: "fork builds" },
 };
 
 export function interactionBlockReason(user: InteractionUser | null, action: InteractionAction): string | null {

@@ -17,6 +17,74 @@ function isAllowedHost(hostname: string, domain: string) {
   return host === domain || host.endsWith(`.${domain}`);
 }
 
+const TRUSTED_POST_IMAGE_HOST_SUFFIXES = [
+  "public.blob.vercel-storage.com",
+];
+
+function toConfiguredHost(value: string | undefined): string | null {
+  if (!value) return null;
+  const withProtocol = value.startsWith("http://") || value.startsWith("https://")
+    ? value
+    : `https://${value}`;
+  try {
+    return new URL(withProtocol).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function getConfiguredAppHosts() {
+  const hosts = new Set<string>();
+  const appHost = toConfiguredHost(process.env.APP_URL);
+  const publicAppHost = toConfiguredHost(process.env.NEXT_PUBLIC_APP_URL);
+  const authHost = toConfiguredHost(process.env.NEXTAUTH_URL);
+  const vercelHost = toConfiguredHost(process.env.VERCEL_URL);
+
+  if (appHost) hosts.add(appHost);
+  if (publicAppHost) hosts.add(publicAppHost);
+  if (authHost) hosts.add(authHost);
+  if (vercelHost) hosts.add(vercelHost);
+
+  return hosts;
+}
+
+const configuredAppHosts = getConfiguredAppHosts();
+
+function isTrustedPostImageUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  if (trimmed.startsWith("/")) {
+    return trimmed.startsWith("/uploads/");
+  }
+
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return false;
+  }
+
+  if (url.protocol !== "https:") {
+    return false;
+  }
+
+  const host = url.hostname.toLowerCase();
+  if (TRUSTED_POST_IMAGE_HOST_SUFFIXES.some(domain => isAllowedHost(host, domain))) {
+    return true;
+  }
+
+  if (url.pathname.startsWith("/uploads/")) {
+    return configuredAppHosts.has(host);
+  }
+
+  return false;
+}
+
+const postImageUrlSchema = z.string().trim().refine(isTrustedPostImageUrl, {
+  message: "Images must be HTTPS URLs from trusted storage or site-local /uploads paths.",
+});
+
 export const tagSchema = z
   .string()
   .trim()
@@ -58,14 +126,14 @@ export const postSchema = z.object({
 
   images: z.array(
     z.union([
-      z.url(),
+      postImageUrlSchema,
       z.object({
-        original: z.url(),
-        thumbSm: z.url().optional(),
-        thumbMd: z.url().optional(),
-        thumbLg: z.url().optional(),
-      })
-    ])
+        original: postImageUrlSchema,
+        thumbSm: postImageUrlSchema.optional(),
+        thumbMd: postImageUrlSchema.optional(),
+        thumbLg: postImageUrlSchema.optional(),
+      }),
+    ]),
   )
     .max(MAX_POST_IMAGES, { message: `You can upload up to ${MAX_POST_IMAGES} images.` })
     .default([]),

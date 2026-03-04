@@ -42,7 +42,7 @@ async function getVotingUser(email: string) {
 }
 
 async function getVoteableComment(id: string) {
-  return db.comment.findUnique({ where: { id }, select: { id: true, isDeleted: true } });
+  return db.comment.findUnique({ where: { id }, select: { id: true, isDeleted: true, authorId: true } });
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -60,6 +60,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const commentExists = await getVoteableComment(id);
   if (!commentExists || commentExists.isDeleted) {
     return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+  }
+  if (commentExists.authorId === user.id) {
+    return NextResponse.json({ error: "Authors cannot vote on their own comments" }, { status: 403 });
   }
 
   const restriction = interactionBlockReason(user, "vote-comment");

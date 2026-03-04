@@ -69,7 +69,8 @@ export async function POST(request: Request) {
   }
 
   const { token, password } = parsed.data;
-  const tokenLimit = await checkRateLimit(`auth:password-reset:token:${token}`, {
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const tokenLimit = await checkRateLimit(`auth:password-reset:token:${tokenHash}`, {
     windowMs: RESET_TOKEN_CHECK_WINDOW_MS,
     limit: RESET_SUBMIT_LIMIT_PER_TOKEN,
   });
@@ -79,8 +80,6 @@ export async function POST(request: Request) {
       { status: 429, headers: { "Retry-After": String(tokenLimit.retryAfterSeconds) } },
     );
   }
-
-  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
   const record = await db.passwordResetToken.findUnique({ where: { tokenHash } });
 

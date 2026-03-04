@@ -11,6 +11,8 @@ import {
 } from "@/lib/builds/validation";
 import { createForkBuild } from "@/lib/builds/fork";
 import { getNextBuildSlugForUser } from "@/lib/builds/slug";
+import { assertBuildRateLimit, BuildRateLimitError } from "@/lib/builds/rate-limit";
+import { interactionBlockReason } from "@/lib/moderation";
 
 function uniqueTargetIncludes(
   target: string[] | string | undefined,
@@ -31,7 +33,15 @@ export async function POST(request: Request) {
 
   const user = await db.user.findUnique({
     where: { email: session.user.email },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      canCreatePosts: true,
+      canCreateComments: true,
+      canVotePosts: true,
+      canVoteComments: true,
+      interactionBanUntil: true,
+    },
   });
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -74,6 +84,24 @@ export async function POST(request: Request) {
       slug: parsed.data.forkedFrom.slug.trim(),
     }
     : null;
+
+  const moderationAction = forkedFrom ? "fork-build" : "create-build";
+  const restriction = interactionBlockReason(user, moderationAction);
+  if (restriction) {
+    return NextResponse.json({ error: restriction }, { status: 403 });
+  }
+
+  try {
+    await assertBuildRateLimit(user.id, forkedFrom ? "fork" : "create");
+  } catch (error) {
+    if (error instanceof BuildRateLimitError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } },
+      );
+    }
+    throw error;
+  }
 
   if (forkedFrom) {
     const result = await createForkBuild({

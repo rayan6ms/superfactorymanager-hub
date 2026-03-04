@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 const FETCH_TIMEOUT_MS = 5000;
+const MAX_REMOTE_HTML_BYTES = 1_500_000;
 
 function isAllowedHost(hostname: string, domain: string) {
   const host = hostname.toLowerCase();
@@ -37,6 +38,13 @@ function looksLikeCloudflare(html: string) {
   );
 }
 
+class ResponseBodyTooLargeError extends Error {
+  constructor() {
+    super("REMOTE_BODY_TOO_LARGE");
+    this.name = "ResponseBodyTooLargeError";
+  }
+}
+
 async function extractNameFromHtml(html: string) {
   let m = html.match(/<div[^>]*class="[^"]*\bname-container\b[^"]*"[^>]*>[\s\S]*?<h1[^>]*>([\s\S]*?)<\/h1>/i);
   if (m?.[1]) return clean(m[1]);
@@ -54,6 +62,49 @@ async function extractNameFromHtml(html: string) {
   if (m?.[1]) return clean(m[1].replace(/-?\s*Minecraft Mods.*$/i, ""));
 
   return null;
+}
+
+function parseContentLengthHeader(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+async function readTextWithLimit(res: Response, maxBytes: number) {
+  const contentLength = parseContentLengthHeader(res.headers.get("content-length"));
+  if (contentLength !== null && contentLength > maxBytes) {
+    throw new ResponseBodyTooLargeError();
+  }
+
+  if (!res.body) {
+    const text = await res.text();
+    if (new TextEncoder().encode(text).length > maxBytes) {
+      throw new ResponseBodyTooLargeError();
+    }
+    return text;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let totalBytes = 0;
+  let text = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    totalBytes += value.byteLength;
+    if (totalBytes > maxBytes) {
+      await reader.cancel();
+      throw new ResponseBodyTooLargeError();
+    }
+
+    text += decoder.decode(value, { stream: true });
+  }
+
+  text += decoder.decode();
+  return text;
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit) {
@@ -96,7 +147,7 @@ export async function GET(req: Request) {
       cache: "no-store",
       headers: { "user-agent": "Mozilla/5.0 superfactorymanager" },
     });
-    const html = await res.text();
+    const html = await readTextWithLimit(res, MAX_REMOTE_HTML_BYTES);
 
     if (!html || looksLikeCloudflare(html)) {
       const fallback = slugToName(url);
