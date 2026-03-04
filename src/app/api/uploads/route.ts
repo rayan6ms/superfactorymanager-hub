@@ -26,6 +26,31 @@ function getOriginalUploadExtension(contentType: string) {
   }
 }
 
+function mapUploadFailure(error: unknown): { status: number; message: string } {
+  const lowered = error instanceof Error ? error.message.toLowerCase() : "";
+
+  if (
+    lowered.includes("unsupported image") ||
+    lowered.includes("input buffer") ||
+    lowered.includes("invalid image") ||
+    lowered.includes("pixel limit") ||
+    lowered.includes("corrupt")
+  ) {
+    return { status: 400, message: "One or more files could not be processed as valid images." };
+  }
+
+  if (
+    lowered.includes("blob") ||
+    lowered.includes("token") ||
+    lowered.includes("network") ||
+    lowered.includes("fetch failed")
+  ) {
+    return { status: 503, message: "Upload service is temporarily unavailable. Please try again." };
+  }
+
+  return { status: 500, message: "Failed to upload images." };
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.email) {
@@ -111,9 +136,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json(uploads, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to upload images.";
-    const lowered = message.toLowerCase();
-    const status = lowered.includes("unsafe") || lowered.includes("image") ? 400 : 500;
-    return NextResponse.json({ error: message }, { status });
+    console.error("Upload processing failed:", error);
+    const mapped = mapUploadFailure(error);
+    return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
 }

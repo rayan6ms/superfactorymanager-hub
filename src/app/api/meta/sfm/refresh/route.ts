@@ -34,8 +34,11 @@ async function handle(req: Request) {
   });
 }
 
-export async function GET(req: Request) {
-  return handle(req);
+export async function GET() {
+  return NextResponse.json({ error: "Method not allowed" }, {
+    status: 405,
+    headers: { Allow: "POST" },
+  });
 }
 
 export async function POST(req: Request) {

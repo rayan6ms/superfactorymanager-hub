@@ -5,18 +5,7 @@ export const runtime = "nodejs";
 
 async function resolveSecret(request: NextRequest) {
   const fromHeader = request.headers.get("x-revalidate-secret");
-  if (fromHeader) return fromHeader;
-
-  try {
-    const body = await request.json();
-    if (body && typeof body.secret === "string") {
-      return body.secret;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
+  return fromHeader;
 }
 
 async function handle(request: NextRequest) {

@@ -8,6 +8,9 @@ export const TAG_MAX_COUNT = 6;
 export const MAX_TAG_LENGTH = 32;
 export const POST_DESCRIPTION_MIN_LENGTH = 50;
 export const POST_DESCRIPTION_MAX_LENGTH = 2000;
+export const POSTS_PAGE_MIN = 1;
+export const POSTS_PER_PAGE_DEFAULT = 20;
+export const POSTS_PER_PAGE_MAX = 100;
 
 function isAllowedHost(hostname: string, domain: string) {
   const host = hostname.toLowerCase();
@@ -99,8 +102,8 @@ export const searchQuerySchema = z.object({
   q: z.string().optional(),
   category: z.string().optional(),
   version: z.string().optional(),
-  page: z.coerce.number().optional().default(1),
-  perPage: z.coerce.number().optional().default(20),
+  page: z.coerce.number().int().min(POSTS_PAGE_MIN).default(POSTS_PAGE_MIN),
+  perPage: z.coerce.number().int().min(1).max(POSTS_PER_PAGE_MAX).default(POSTS_PER_PAGE_DEFAULT),
 });
 
 export const commentSchema = z.object({

@@ -67,6 +67,7 @@ export default function SignupForm({ next }: SignupFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [resendIdentifier, setResendIdentifier] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,6 +106,7 @@ export default function SignupForm({ next }: SignupFormProps) {
     setErrors({});
     setSuccessMessage("");
     setShowResendVerification(false);
+    setResendIdentifier("");
 
     const payload = {
       name: usernameValidation.ok ? usernameValidation.normalized : name.trim(),
@@ -120,10 +122,7 @@ export default function SignupForm({ next }: SignupFormProps) {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      if (data?.error === "EMAIL_SEND_FAILED") {
-        setErrors({ form: "We created your account, but couldn’t send the verification email. Try again in a moment." });
-        setShowResendVerification(true);
-      } else if (typeof data?.error === "string") {
+      if (typeof data?.error === "string") {
         const code = data.error;
         if (code === "NAME_TAKEN") {
           setErrors({ name: mapUsernameError("NAME_TAKEN") });
@@ -153,9 +152,22 @@ export default function SignupForm({ next }: SignupFormProps) {
       return;
     }
 
-    setSuccessMessage(`If your signup can be completed, a verification email has been sent to ${trimmedEmail}.`);
+    if (data?.verificationEmailSent === false) {
+      setSuccessMessage(
+        `Your account was created, but we couldn’t send the verification email yet. Use resend to send it to ${trimmedEmail}.`,
+      );
+      setShowResendVerification(true);
+      setResendIdentifier(trimmedEmail);
+    } else {
+      setSuccessMessage(`If your signup can be completed, a verification email has been sent to ${trimmedEmail}.`);
+      setShowResendVerification(false);
+      setResendIdentifier("");
+    }
+
     setName("");
-    setEmail("");
+    if (data?.verificationEmailSent !== false) {
+      setEmail("");
+    }
     setPassword("");
     setIsSubmitting(false);
     router.refresh();
@@ -191,6 +203,7 @@ export default function SignupForm({ next }: SignupFormProps) {
                 setName(e.target.value);
                 setErrors(prev => ({ ...prev, name: undefined, form: undefined }));
                 setShowResendVerification(false);
+                setResendIdentifier("");
               }}
               autoComplete="name"
               aria-invalid={Boolean(errors.name)}
@@ -215,6 +228,7 @@ export default function SignupForm({ next }: SignupFormProps) {
                 setEmail(e.target.value);
                 setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
                 setShowResendVerification(false);
+                setResendIdentifier("");
               }}
               autoComplete="email"
               aria-invalid={Boolean(errors.email)}
@@ -238,6 +252,7 @@ export default function SignupForm({ next }: SignupFormProps) {
                 setPassword(e.target.value);
                 setErrors(prev => ({ ...prev, password: undefined, form: undefined }));
                 setShowResendVerification(false);
+                setResendIdentifier("");
               }}
               autoComplete="new-password"
               aria-invalid={Boolean(errors.password)}
@@ -266,7 +281,7 @@ export default function SignupForm({ next }: SignupFormProps) {
             </p>
           )}
           {showResendVerification ? (
-            <ResendVerificationButton identifier={email} />
+            <ResendVerificationButton identifier={resendIdentifier || email} />
           ) : null}
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             Create account

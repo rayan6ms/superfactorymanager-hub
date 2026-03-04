@@ -322,15 +322,20 @@ export async function getCommentById(commentId: string, postId?: string | null, 
   });
   if (!comment) return null;
   if (postId && comment.postId !== postId) return null;
-  let voteMap: Map<string, "up" | "down"> | undefined;
-  if (viewerId) {
-    const vote = await db.commentVote.findUnique({
-      where: { userId_commentId: { userId: viewerId, commentId } },
-      select: { value: true },
-    });
-    if (vote) {
-      voteMap = new Map([[commentId, vote.value > 0 ? "up" : "down"]]);
-    }
-  }
-  return serializeComment(comment, [], voteMap, 0);
+
+  const [replyCount, vote] = await Promise.all([
+    db.comment.count({ where: { parentId: commentId } }),
+    viewerId
+      ? db.commentVote.findUnique({
+          where: { userId_commentId: { userId: viewerId, commentId } },
+          select: { value: true },
+        })
+      : Promise.resolve(null),
+  ]);
+
+  const voteMap = vote
+    ? new Map<string, "up" | "down">([[commentId, vote.value > 0 ? "up" : "down"]])
+    : undefined;
+
+  return serializeComment(comment, [], voteMap, replyCount);
 }

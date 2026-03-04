@@ -31,8 +31,14 @@ const SIGNUP_WINDOW_MS = 10 * 60 * 1000;
 const SIGNUP_LIMIT_PER_IP = 10;
 const SIGNUP_LIMIT_PER_EMAIL = 4;
 
-function genericSignupResponse() {
-  return NextResponse.json({ success: true }, { status: 201 });
+function genericSignupResponse(options: { verificationEmailSent?: boolean } = {}) {
+  return NextResponse.json(
+    {
+      success: true,
+      verificationEmailSent: options.verificationEmailSent ?? true,
+    },
+    { status: 201 },
+  );
 }
 
 export async function POST(req: Request) {
@@ -76,14 +82,16 @@ export async function POST(req: Request) {
       select: { id: true, email: true, name: true, emailVerified: true },
     });
     if (existing) {
+      let verificationEmailSent = true;
       if (!existing.emailVerified) {
         try {
           await sendVerificationEmailForUser(existing);
         } catch (err) {
           console.error("Failed to resend verification email during signup:", err);
+          verificationEmailSent = false;
         }
       }
-      return genericSignupResponse();
+      return genericSignupResponse({ verificationEmailSent });
     }
 
     const passwordHash = await hash(parsed.password, 10);
@@ -98,14 +106,15 @@ export async function POST(req: Request) {
       },
     });
 
+    let verificationEmailSent = true;
     try {
       await sendVerificationEmailForUser(user);
     } catch (err) {
       console.error("Failed to send verification email:", err);
-      return NextResponse.json({ error: "EMAIL_SEND_FAILED" }, { status: 503 });
+      verificationEmailSent = false;
     }
 
-    return genericSignupResponse();
+    return genericSignupResponse({ verificationEmailSent });
   } catch (error: unknown) {
     console.error("Signup error:", error);
     if (error instanceof z.ZodError) {
