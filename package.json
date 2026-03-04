@@ -9,7 +9,7 @@
     "postinstall": "node scripts/prisma-generate.mjs",
     "db:migrate:deploy": "prisma migrate deploy",
     "lint": "eslint",
-    "sitemap:generate": "node scripts/generate-sitemap.cjs"
+    "sitemap:generate": "node scripts/generate-sitemap.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

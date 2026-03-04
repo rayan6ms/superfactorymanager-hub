@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const fs = require("node:fs/promises");
-const path = require("node:path");
-const { PrismaClient, BuildVisibility } = require("@prisma/client");
+import fs from "node:fs/promises";
+import path from "node:path";
+import { BuildVisibility, PrismaClient } from "@prisma/client";
 
 function getBaseUrl(defaultBase = "https://sfmhub.site") {
   const trimTrailingSlash = (value) => value.replace(/\/$/, "");
