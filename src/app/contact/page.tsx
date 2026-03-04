@@ -10,6 +10,7 @@ export default function ContactPage() {
   const [message, setMessage] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +34,7 @@ export default function ContactPage() {
           message: message.trim(),
           contactName: name.trim() || undefined,
           contactEmail: email.trim() || undefined,
+          website: website.trim() || undefined,
         }),
       });
 
@@ -46,6 +48,7 @@ export default function ContactPage() {
       setMessage("");
       setName("");
       setEmail("");
+      setWebsite("");
     } catch (err) {
       console.error("Failed to submit suggestion", err);
       setError("Unexpected error submitting your suggestion.");
@@ -92,7 +95,20 @@ export default function ContactPage() {
           </div>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="relative space-y-4" onSubmit={handleSubmit}>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-[9999px] top-auto h-px w-px overflow-hidden opacity-0"
+          >
+            <label htmlFor="website">Website</label>
+            <input
+              id="website"
+              autoComplete="off"
+              tabIndex={-1}
+              value={website}
+              onChange={event => setWebsite(event.target.value)}
+            />
+          </div>
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-medium text-white" htmlFor="message">
               <Send className="h-4 w-4" />

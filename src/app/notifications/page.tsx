@@ -21,12 +21,12 @@ type NotificationData = {
 export default async function NotificationsPage() {
   const session = await auth();
   if (!session?.user?.email) {
-    redirect("/login?from=/notifications");
+    redirect(`/login?next=${encodeURIComponent("/notifications")}`);
   }
 
   const user = await db.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
   if (!user) {
-    redirect("/login?from=/notifications");
+    redirect(`/login?next=${encodeURIComponent("/notifications")}`);
   }
 
   const data: NotificationData = await getNotifications(user.id, { take: NOTIFICATION_PAGE_SIZE });

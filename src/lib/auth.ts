@@ -25,6 +25,13 @@ const credsSchema = z.object({
     .min(8, "PASSWORD_TOO_SHORT"),
 });
 
+const sessionProfileUpdateSchema = z.object({
+  user: z.object({
+    name: z.string().trim().min(1).optional(),
+    image: z.string().trim().max(4096).nullable().optional(),
+  }).partial(),
+});
+
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const LOGIN_LIMIT_PER_IP = 60;
 const LOGIN_LIMIT_PER_IDENTIFIER = 12;
@@ -246,14 +253,27 @@ export const authOptions: NextAuthConfig = {
         session.user.isAdmin = token.isAdmin;
       }
       const tokenWithImage = token as JWT & { image?: string | null };
-      if (typeof tokenWithImage.image === "string") {
+      if (typeof tokenWithImage.image === "string" || tokenWithImage.image === null) {
         session.user.image = tokenWithImage.image;
       }
 
       return session;
     },
 
-    async jwt({ token, user }): Promise<JWT> {
+    async jwt({ token, user, trigger, session }): Promise<JWT> {
+      if (trigger === "update") {
+        const parsed = sessionProfileUpdateSchema.safeParse(session);
+        if (parsed.success) {
+          const nextUser = parsed.data.user;
+          if (typeof nextUser?.name === "string" && nextUser.name) {
+            token.name = nextUser.name;
+          }
+          if (nextUser && "image" in nextUser) {
+            (token as JWT & { image?: string | null }).image = nextUser.image ?? null;
+          }
+        }
+      }
+
       if (user) {
         if (user.name) {
           token.name = user.name;

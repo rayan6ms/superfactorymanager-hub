@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button, Input, Card } from "@/components/ui";
 import { Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import {
@@ -13,6 +14,7 @@ import {
   validateUsernameInput,
   type UsernameValidationCode,
 } from "@/lib/usernames";
+import { supportedAvatarHostLabels } from "@/lib/avatar-hosts";
 
 const BIO_MAX_LENGTH = 300;
 
@@ -56,6 +58,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   const statusResetTimeoutRef = useRef<number | null>(null);
   const resetBlinkTimeoutRef = useRef<number | null>(null);
   const router = useRouter();
+  const { update: updateSession } = useSession();
 
   const [highlightReset, setHighlightReset] = useState(false);
 
@@ -163,7 +166,11 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           });
         } else if (errorMessage === "INVALID_IMAGE_URL") {
           setErrors({
-            image: "Please provide a valid image URL starting with http:// or https://.",
+            image: "Please provide a valid HTTPS image URL.",
+          });
+        } else if (errorMessage === "UNSUPPORTED_IMAGE_HOST") {
+          setErrors({
+            image: `Supported avatar hosts: ${supportedAvatarHostLabels.join(", ")}.`,
           });
         } else {
           console.error("Unexpected profile update error", errorMessage);
@@ -190,6 +197,12 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       setEmailNotifyPost(data.user.emailNotifyPost);
       setEmailNotifySystem(data.user.emailNotifySystem);
       setEmailNotifyReport(data.user.emailNotifyReport);
+      await updateSession({
+        user: {
+          name: data.user.name,
+          image: data.user.image,
+        },
+      });
       setStatus("success");
       router.refresh();
 
@@ -238,10 +251,13 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           setPreview(event.target.value);
           setErrors(prev => ({ ...prev, image: undefined, form: undefined }));
         }}
-        placeholder="https://example.com/avatar.png"
+        placeholder="https://avatars.githubusercontent.com/u/123456"
         className="mt-1"
         aria-invalid={Boolean(errors.image)}
       />
+      <p className="mt-1 text-xs text-white/60">
+        Supported hosts: {supportedAvatarHostLabels.join(", ")}.
+      </p>
       {errors.image && <p className="mt-1 text-sm text-error">{errors.image}</p>}
       <div className="mt-2 flex flex-wrap gap-2 text-sm text-white/70">
         <Button

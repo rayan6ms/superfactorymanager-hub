@@ -6,7 +6,7 @@ import { getSfmMatrix } from "@/lib/sfm";
 
 export default async function NewPostPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login?from=/posts/new");
+  if (!session?.user) redirect(`/login?next=${encodeURIComponent("/posts/new")}`);
 
   const [categories, matrix] = await Promise.all([
     getCategoryOptions(),

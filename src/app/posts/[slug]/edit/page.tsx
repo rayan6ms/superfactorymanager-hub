@@ -14,11 +14,11 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
   const { slug } = await props.params;
   const session = await auth();
   if (!session?.user?.email) {
-    redirect(`/login?from=/posts/${slug}/edit`);
+    redirect(`/login?next=${encodeURIComponent(`/posts/${slug}/edit`)}`);
   }
 
   const user = await db.user.findUnique({ where: { email: session.user.email! } });
-  if (!user) redirect(`/login?from=/posts/${slug}/edit`);
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/posts/${slug}/edit`)}`);
   const isAdmin = isAdminEmail(session.user.email);
 
   const post = await db.post.findUnique({

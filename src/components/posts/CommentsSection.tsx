@@ -236,7 +236,7 @@ export default function CommentsSection({
 
   const canPost = Boolean(currentUser);
   const canManagePins = currentUser?.id === postAuthorId;
-  const loginRedirect = `/login?from=/posts/${postSlug}`;
+  const loginRedirect = `/login?next=${encodeURIComponent(`/posts/${postSlug}`)}`;
   const isCommentValid = commentText.trim().length >= COMMENT_MIN_LENGTH;
   const isReplyValid = replyText.trim().length >= COMMENT_MIN_LENGTH;
   const replyTargetId = replyTarget?.id ?? null;
@@ -1181,7 +1181,7 @@ export default function CommentsSection({
             <p className="text-sm text-white/60">Share your feedback, tips, or troubleshooting steps.</p>
           </div>
           {canPost ? null : (
-            <Link href={`/login?from=/posts/${postSlug}`} className="inline-flex">
+            <Link href={`/login?next=${encodeURIComponent(`/posts/${postSlug}`)}`} className="inline-flex">
               <Button variant="outline" size="sm">Log in to comment</Button>
             </Link>
           )}

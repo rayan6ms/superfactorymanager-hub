@@ -55,7 +55,7 @@ export function PostCollaborationCard({
 
   if (!openForImprovement || isAuthor) return null;
 
-  const href = isAuthenticated ? `/posts/${slug}/edit` : `/login?from=/posts/${slug}/edit`;
+  const href = isAuthenticated ? `/posts/${slug}/edit` : `/login?next=${encodeURIComponent(`/posts/${slug}/edit`)}`;
   const cta = isAuthenticated ? "Suggest an improvement" : "Log in to collaborate";
 
   return (

@@ -13,9 +13,11 @@ export async function uploadImageVariant(
   prefix: string,
   buffer: Buffer,
   contentType: string,
+  extension = ".jpg",
 ) {
   const token = requireBlobToken();
-  const key = `${prefix}/${randomUUID()}.jpg`;
+  const normalizedExtension = extension.startsWith(".") ? extension : `.${extension}`;
+  const key = `${prefix}/${randomUUID()}${normalizedExtension}`;
   const res = await put(key, buffer, {
     access: "public",
     contentType,

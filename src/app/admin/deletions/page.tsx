@@ -96,6 +96,10 @@ export default async function AdminDeletionsPage({
     activeTab === "auto"
       ? "Posts hidden automatically after repeated reports."
       : "Content hidden by moderators with a 15-day deletion timer.";
+  const commentDescription =
+    activeTab === "auto"
+      ? "Comments hidden automatically after repeated reports."
+      : "Comments removed by moderators.";
   const tabs: { key: TabKey; label: string }[] = [
     { key: "manual", label: "Manual flags" },
     { key: "auto", label: "Auto-deleted" },
@@ -137,7 +141,7 @@ export default async function AdminDeletionsPage({
         <Card className="space-y-1 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Comments</p>
           <p className="text-2xl font-semibold text-white">{commentCount}</p>
-          <p className="text-xs text-white/60">Comments removed by moderators.</p>
+          <p className="text-xs text-white/60">{commentDescription}</p>
         </Card>
         <Card className="space-y-1 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Total</p>

@@ -3,11 +3,10 @@ import { db } from "@/lib/db";
 import { hash } from "bcrypt";
 import { z } from "zod";
 import { generateInitialAvatar } from "@/lib/avatar";
-import { generateRandomToken, hashToken } from "@/lib/tokens";
-import { sendEmailVerificationEmail } from "@/lib/email";
 import { validateUsernameInput } from "@/lib/usernames";
 import { isUsernameTaken } from "@/lib/usernames.server";
 import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
+import { sendVerificationEmailForUser } from "@/lib/email-verification";
 
 const schema = z.object({
   email: z
@@ -74,9 +73,16 @@ export async function POST(req: Request) {
 
     const existing = await db.user.findUnique({
       where: { email: parsed.email },
-      select: { id: true },
+      select: { id: true, email: true, name: true, emailVerified: true },
     });
     if (existing) {
+      if (!existing.emailVerified) {
+        try {
+          await sendVerificationEmailForUser(existing);
+        } catch (err) {
+          console.error("Failed to resend verification email during signup:", err);
+        }
+      }
       return genericSignupResponse();
     }
 
@@ -92,26 +98,11 @@ export async function POST(req: Request) {
       },
     });
 
-    const rawToken = generateRandomToken();
-    const tokenHash = hashToken(rawToken);
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
-    await db.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        tokenHash,
-        expiresAt,
-      },
-    });
-
     try {
-      await sendEmailVerificationEmail({
-        to: user.email,
-        verificationToken: rawToken,
-        name: user.name,
-      });
+      await sendVerificationEmailForUser(user);
     } catch (err) {
       console.error("Failed to send verification email:", err);
-      return genericSignupResponse();
+      return NextResponse.json({ error: "EMAIL_SEND_FAILED" }, { status: 503 });
     }
 
     return genericSignupResponse();

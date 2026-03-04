@@ -245,18 +245,29 @@ async function fetchFromModrinthFallback(): Promise<Pair[]> {
     for (const g of uniqueGames) out.push({ game: g, mod, source: "modrinth" });
   }
   const uniq = uniqPairs(out);
-  if (uniq.length) {
+  if (!uniq.length) {
+    return [];
+  }
+
+  const existing = await db.sfmVersion.findMany({
+    select: { gameVersion: true, modVersion: true },
+  });
+  const known = new Set(existing.map(row => `${row.gameVersion}|${normalizeKnownSfmModVersion(row.modVersion)}`));
+  const newPairs = uniq.filter(pair => !known.has(`${pair.game}|${pair.mod}`));
+
+  if (newPairs.length) {
     await db.sfmVersion.createMany({
-      data: uniq.map(p => ({
+      data: newPairs.map(p => ({
         gameVersion: p.game,
         modVersion: p.mod,
         source: p.source,
         firstSeen: new Date(),
         lastSeen: new Date(),
       })),
+      skipDuplicates: true,
     });
   }
-  return uniq;
+  return newPairs;
 }
 
 async function matrixFromDB() {

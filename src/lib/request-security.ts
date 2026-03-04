@@ -31,7 +31,15 @@ const TRUSTED_PROXY_IP_HEADERS = new Set([
 
 let lastDatabaseCleanupAt = 0;
 let didWarnAboutDatabaseFallback = false;
+let didWarnAboutAnonymousFingerprintFallback = false;
 let trustedProxyHeaderCache: string | null | undefined;
+
+export class TrustedProxyConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TrustedProxyConfigurationError";
+  }
+}
 
 function trimBuckets(now: number) {
   if (buckets.size <= MAX_BUCKETS) return;
@@ -73,13 +81,20 @@ function getConfiguredTrustedProxyHeader(): string | null {
 
   const configured = process.env.TRUSTED_PROXY_IP_HEADER?.trim().toLowerCase();
   if (!configured) {
+    if (process.env.NODE_ENV === "production") {
+      throw new TrustedProxyConfigurationError(
+        "TRUSTED_PROXY_IP_HEADER must be configured for production rate limiting.",
+      );
+    }
     trustedProxyHeaderCache = null;
     return null;
   }
   if (!TRUSTED_PROXY_IP_HEADERS.has(configured)) {
-    console.warn(
-      `Ignoring unsupported TRUSTED_PROXY_IP_HEADER value: ${configured}`,
-    );
+    const message = `Unsupported TRUSTED_PROXY_IP_HEADER value: ${configured}`;
+    if (process.env.NODE_ENV === "production") {
+      throw new TrustedProxyConfigurationError(message);
+    }
+    console.warn(`Ignoring ${message}`);
     trustedProxyHeaderCache = null;
     return null;
   }
@@ -118,9 +133,23 @@ export function getTrustedClientIpFromHeaders(headers: Headers): string | null {
 }
 
 export function getClientRateLimitKey(headers: Headers): string {
-  const trustedIp = getTrustedClientIpFromHeaders(headers);
-  if (trustedIp) {
-    return `ip:${trustedIp}`;
+  const trustedHeader = getConfiguredTrustedProxyHeader();
+  if (trustedHeader) {
+    const trustedIp = getTrustedClientIpFromHeaders(headers);
+    if (trustedIp) {
+      return `ip:${trustedIp}`;
+    }
+
+    if (process.env.NODE_ENV === "production") {
+      throw new TrustedProxyConfigurationError(
+        `Expected a valid client IP in the ${trustedHeader} header for production rate limiting.`,
+      );
+    }
+  }
+
+  if (!didWarnAboutAnonymousFingerprintFallback) {
+    didWarnAboutAnonymousFingerprintFallback = true;
+    console.warn("Using best-effort anonymous request fingerprint for rate limiting.");
   }
 
   return `anon:${buildAnonymousFingerprint(headers)}`;

@@ -64,8 +64,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     reopen,
   } = parsed.data;
 
-  const performedModeration =
-    markResolved ||
+  const hasEnforcementAction =
     flagTarget ||
     flagAuthorPosts ||
     flagAuthorComments ||
@@ -75,12 +74,13 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     disableVotePosts ||
     disableVoteComments ||
     Boolean(timeoutMinutes);
+  const shouldResolve = markResolved || hasEnforcementAction;
 
-  if (reopen && performedModeration) {
+  if (reopen && shouldResolve) {
     return NextResponse.json({ error: "Reopening cannot be combined with other actions." }, { status: 400 });
   }
 
-  if (!performedModeration && !note && !reopen) {
+  if (!shouldResolve && !note && !reopen) {
     return NextResponse.json({ error: "Select at least one action or leave a note." }, { status: 400 });
   }
 
@@ -159,18 +159,24 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
       }
     }
 
-    if (performedModeration) {
+    if (shouldResolve) {
       await tx.report.update({
         where: { id },
         data: { resolvedAt: report.resolvedAt ?? now },
       });
     }
 
+    const actionType = hasEnforcementAction
+      ? ReportActionType.MODERATION
+      : markResolved
+        ? ReportActionType.RESOLVED
+        : ReportActionType.NOTE;
+
     await tx.reportAction.create({
       data: {
         reportId: id,
         actorId: adminUser.id,
-        type: performedModeration ? ReportActionType.MODERATION : ReportActionType.NOTE,
+        type: actionType,
         note: note?.trim() || null,
         metadata: {
           markResolved,

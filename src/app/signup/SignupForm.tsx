@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Card, Input } from "@/components/ui/index";
 import { Eye, EyeOff, Github, MailCheck } from "lucide-react";
+import ResendVerificationButton from "@/components/auth/ResendVerificationButton";
 import {
   USERNAME_HELP_TEXT,
   USERNAME_MAX_LENGTH,
@@ -70,6 +71,7 @@ export default function SignupForm({ next }: SignupFormProps) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showResendVerification, setShowResendVerification] = useState(false);
   const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
@@ -102,6 +104,7 @@ export default function SignupForm({ next }: SignupFormProps) {
     setIsSubmitting(true);
     setErrors({});
     setSuccessMessage("");
+    setShowResendVerification(false);
 
     const payload = {
       name: usernameValidation.ok ? usernameValidation.normalized : name.trim(),
@@ -119,6 +122,7 @@ export default function SignupForm({ next }: SignupFormProps) {
     if (!res.ok) {
       if (data?.error === "EMAIL_SEND_FAILED") {
         setErrors({ form: "We created your account, but couldn’t send the verification email. Try again in a moment." });
+        setShowResendVerification(true);
       } else if (typeof data?.error === "string") {
         const code = data.error;
         if (code === "NAME_TAKEN") {
@@ -186,6 +190,7 @@ export default function SignupForm({ next }: SignupFormProps) {
               onChange={e => {
                 setName(e.target.value);
                 setErrors(prev => ({ ...prev, name: undefined, form: undefined }));
+                setShowResendVerification(false);
               }}
               autoComplete="name"
               aria-invalid={Boolean(errors.name)}
@@ -209,6 +214,7 @@ export default function SignupForm({ next }: SignupFormProps) {
               onChange={e => {
                 setEmail(e.target.value);
                 setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
+                setShowResendVerification(false);
               }}
               autoComplete="email"
               aria-invalid={Boolean(errors.email)}
@@ -231,6 +237,7 @@ export default function SignupForm({ next }: SignupFormProps) {
               onChange={e => {
                 setPassword(e.target.value);
                 setErrors(prev => ({ ...prev, password: undefined, form: undefined }));
+                setShowResendVerification(false);
               }}
               autoComplete="new-password"
               aria-invalid={Boolean(errors.password)}
@@ -258,6 +265,9 @@ export default function SignupForm({ next }: SignupFormProps) {
               {errors.form}
             </p>
           )}
+          {showResendVerification ? (
+            <ResendVerificationButton identifier={email} />
+          ) : null}
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             Create account
           </Button>

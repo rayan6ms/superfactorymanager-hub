@@ -14,6 +14,18 @@ export const runtime = "nodejs";
 const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 const UPLOAD_LIMIT_PER_USER = 40;
 
+function getOriginalUploadExtension(contentType: string) {
+  switch (contentType) {
+    case "image/png":
+      return ".png";
+    case "image/webp":
+      return ".webp";
+    case "image/jpeg":
+    default:
+      return ".jpg";
+  }
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.email) {
@@ -70,10 +82,14 @@ export async function POST(req: Request) {
     );
 
     const uploads = await Promise.all(
-      normalizedImages.map(async ({ buffer }) => {
-        const base = sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS }).jpeg({ quality: 90 });
-        const original = await base.toBuffer();
-        const originalUrl = await uploadImageVariant("uploads/original", original, "image/jpeg");
+      normalizedImages.map(async ({ buffer }, index) => {
+        const file = files[index];
+        const originalUrl = await uploadImageVariant(
+          "uploads/original",
+          buffer,
+          file.type || "image/jpeg",
+          getOriginalUploadExtension(file.type),
+        );
 
         async function make(width: number, prefix: string) {
           const resized = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })

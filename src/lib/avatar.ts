@@ -2,7 +2,10 @@ import "server-only";
 
 import crypto from "crypto";
 import dns from "node:dns/promises";
+import http from "node:http";
+import https from "node:https";
 import net from "node:net";
+import { isAllowedAvatarRemoteUrl } from "./avatar-hosts";
 
 const DATA_URL_PATTERN = /^data:image\//i;
 const BASE64_DATA_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,/i;
@@ -106,7 +109,12 @@ async function resolveHostAddresses(hostname: string): Promise<string[]> {
   return [...new Set(records.map((record) => record.address.toLowerCase()))];
 }
 
-async function validateRemoteUrl(url: string | URL): Promise<URL | null> {
+type ValidatedRemoteUrl = {
+  url: URL;
+  addresses: string[];
+};
+
+async function validateRemoteUrl(url: string | URL): Promise<ValidatedRemoteUrl | null> {
   let parsed: URL;
   try {
     parsed = url instanceof URL ? new URL(url.toString()) : new URL(url);
@@ -129,7 +137,7 @@ async function validateRemoteUrl(url: string | URL): Promise<URL | null> {
   }
 
   if (net.isIP(hostname)) {
-    return parsed;
+    return { url: parsed, addresses: [hostname] };
   }
 
   let addresses: string[];
@@ -147,7 +155,7 @@ async function validateRemoteUrl(url: string | URL): Promise<URL | null> {
     return null;
   }
 
-  return parsed;
+  return { url: parsed, addresses };
 }
 
 function getColorIndex(seed: string) {
@@ -171,36 +179,160 @@ export function generateInitialAvatar({ name, seed }: { name: string; seed?: str
   return `data:image/svg+xml,${encoded}`;
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REMOTE_TIMEOUT_MS);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 type RemoteFetchResult = {
-  response: Response;
+  response: {
+    status: number;
+    ok: boolean;
+    headers: Headers;
+  };
   finalUrl: string;
 };
+
+function createAbortError(message: string) {
+  const error = new Error(message);
+  error.name = "AbortError";
+  return error;
+}
+
+function getHostHeader(url: URL): string {
+  const hostname = net.isIP(url.hostname) === 6 ? `[${url.hostname}]` : url.hostname;
+  const defaultPort = url.protocol === "https:" ? "443" : "80";
+
+  if (!url.port || url.port === defaultPort) {
+    return hostname;
+  }
+
+  return `${hostname}:${url.port}`;
+}
+
+function toOutgoingHeaders(url: URL, headersInit?: HeadersInit): http.OutgoingHttpHeaders {
+  const headers = new Headers(headersInit);
+  headers.set("accept", headers.get("accept") ?? "image/*");
+  headers.set("connection", "close");
+  headers.set("host", getHostHeader(url));
+
+  return Object.fromEntries(headers.entries());
+}
+
+function requestPinnedRemoteHeaders(
+  url: URL,
+  address: string,
+  init: RequestInit,
+): Promise<RemoteFetchResult["response"]> {
+  const method = init.method ?? "GET";
+  const path = `${url.pathname}${url.search}`;
+  const baseOptions = {
+    family: net.isIP(address) || undefined,
+    headers: toOutgoingHeaders(url, init.headers),
+    hostname: address,
+    method,
+    path,
+    port: url.port ? Number(url.port) : undefined,
+  };
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let request: http.ClientRequest | null = null;
+    const timer = setTimeout(() => {
+      const abortError = createAbortError("Remote image request timed out.");
+      if (settled) return;
+      settled = true;
+      request?.destroy(abortError);
+      reject(abortError);
+    }, REMOTE_TIMEOUT_MS);
+
+    const handleResponse = (response: http.IncomingMessage) => {
+      const headers = new Headers();
+      for (const [key, value] of Object.entries(response.headers)) {
+        if (Array.isArray(value)) {
+          headers.set(key, value.join(", "));
+        } else if (typeof value === "string") {
+          headers.set(key, value);
+        }
+      }
+
+      if (settled) {
+        response.destroy();
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timer);
+      response.destroy();
+      const status = response.statusCode ?? 0;
+      resolve({
+        status,
+        ok: status >= 200 && status < 300,
+        headers,
+      });
+    };
+
+    try {
+      request = url.protocol === "https:"
+        ? https.request(
+          {
+            ...baseOptions,
+            servername: net.isIP(url.hostname) ? undefined : url.hostname,
+          },
+          handleResponse,
+        )
+        : http.request(baseOptions, handleResponse);
+    } catch (error) {
+      settled = true;
+      clearTimeout(timer);
+      reject(error);
+      return;
+    }
+
+    request.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(error);
+    });
+
+    request.end();
+  });
+}
+
+async function fetchPinnedRemoteResponse(
+  target: ValidatedRemoteUrl,
+  init: RequestInit,
+): Promise<RemoteFetchResult["response"] | null> {
+  let lastError: unknown = null;
+
+  for (const address of target.addresses) {
+    try {
+      return await requestPinnedRemoteHeaders(target.url, address, init);
+    } catch (error) {
+      lastError = error;
+      if ((error as Error).name === "AbortError") {
+        throw error;
+      }
+    }
+  }
+
+  if (lastError) {
+    return null;
+  }
+
+  return null;
+}
 
 async function fetchValidatedRemoteResource(
   inputUrl: string,
   init: RequestInit,
 ): Promise<RemoteFetchResult | null> {
   let currentUrl = await validateRemoteUrl(inputUrl);
-  if (!currentUrl) {
+  if (!currentUrl || !isAllowedAvatarRemoteUrl(currentUrl.url)) {
     return null;
   }
 
   for (let redirectCount = 0; redirectCount <= MAX_REMOTE_REDIRECTS; redirectCount += 1) {
-    const response = await fetchWithTimeout(currentUrl.toString(), {
-      ...init,
-      cache: "no-store",
-      redirect: "manual",
-    });
+    const response = await fetchPinnedRemoteResponse(currentUrl, init);
+    if (!response) {
+      return null;
+    }
 
     if (response.status >= 300 && response.status < 400) {
       if (redirectCount === MAX_REMOTE_REDIRECTS) {
@@ -212,15 +344,15 @@ async function fetchValidatedRemoteResource(
         return null;
       }
 
-      currentUrl = await validateRemoteUrl(new URL(location, currentUrl));
-      if (!currentUrl) {
+      currentUrl = await validateRemoteUrl(new URL(location, currentUrl.url));
+      if (!currentUrl || !isAllowedAvatarRemoteUrl(currentUrl.url)) {
         return null;
       }
 
       continue;
     }
 
-    return { response, finalUrl: currentUrl.toString() };
+    return { response, finalUrl: currentUrl.url.toString() };
   }
 
   return null;
@@ -266,7 +398,6 @@ async function remoteImageIsReachable(url: string): Promise<string | null> {
       return null;
     }
 
-    await getRes.response.arrayBuffer().catch(() => undefined);
     return getRes.finalUrl;
   } catch {
     return null;
@@ -303,6 +434,10 @@ export async function resolveProfileImage({
   }
 
   if (!REMOTE_URL_PATTERN.test(image)) {
+    return generateInitialAvatar({ name, seed });
+  }
+
+  if (!isAllowedAvatarRemoteUrl(image)) {
     return generateInitialAvatar({ name, seed });
   }
 

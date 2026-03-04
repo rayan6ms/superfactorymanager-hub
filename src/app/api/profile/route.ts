@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { isAllowedAvatarRemoteUrl } from "@/lib/avatar-hosts";
 import { db } from "@/lib/db";
 import { generateInitialAvatar, resolveProfileImage } from "@/lib/avatar";
 import { validateUsernameInput } from "@/lib/usernames";
 import { isUsernameTaken } from "@/lib/usernames.server";
 
 const MAX_IMAGE_VALUE_LENGTH = 4096;
-const REMOTE_IMAGE_URL_PATTERN = /^https?:\/\//i;
-
+const DATA_IMAGE_URL_PATTERN = /^data:image\//i;
 const schema = z.object({
   name: z
     .string()
@@ -105,9 +105,13 @@ export async function PATCH(request: Request) {
     if (!image) {
       updateData.image = generateInitialAvatar({ name: normalizedName, seed: user.email });
     } else if (image === user.image) {
-      updateData.image = user.image;
-    } else if (!REMOTE_IMAGE_URL_PATTERN.test(image)) {
-      return NextResponse.json({ error: "INVALID_IMAGE_URL" }, { status: 400 });
+      updateData.image =
+        DATA_IMAGE_URL_PATTERN.test(image) || isAllowedAvatarRemoteUrl(image)
+          ? user.image
+          : generateInitialAvatar({ name: normalizedName, seed: user.email });
+    } else if (!isAllowedAvatarRemoteUrl(image)) {
+      const error = /^https?:\/\//i.test(image) ? "UNSUPPORTED_IMAGE_HOST" : "INVALID_IMAGE_URL";
+      return NextResponse.json({ error }, { status: 400 });
     } else {
       updateData.image = await resolveProfileImage({
         image,

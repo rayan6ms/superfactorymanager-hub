@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { avatarImageCspSources, avatarImageRemotePatterns } from "./src/lib/avatar-hosts";
 
 function buildCsp() {
   const scriptSrc = [
@@ -44,7 +45,7 @@ function buildCsp() {
     "form-action 'self'",
     `script-src ${scriptSrc.join(" ")}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://i.ytimg.com https://*.public.blob.vercel-storage.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://lh3.googleusercontent.com https://*.googleusercontent.com https://*.adtrafficquality.google",
+    `img-src 'self' data: blob: https://i.ytimg.com ${avatarImageCspSources.join(" ")} https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.adtrafficquality.google`,
     "font-src 'self' data: https://fonts.gstatic.com",
     `connect-src ${connectSrc.join(" ")}`,
     `frame-src ${frameSrc.join(" ")}`,
@@ -70,9 +71,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com" },
-      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
-      { protocol: "https", hostname: "lh3.googleusercontent.com" },
-      { protocol: "https", hostname: "*.googleusercontent.com" },
+      ...avatarImageRemotePatterns,
     ],
   },
 

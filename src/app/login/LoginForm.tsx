@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Input } from "@/components/ui/index";
 import { Eye, EyeOff, Github, MailWarning } from "lucide-react";
+import ResendVerificationButton from "@/components/auth/ResendVerificationButton";
 
 type FieldErrors = {
   email?: string;
@@ -23,6 +24,7 @@ export default function LoginForm({ next }: LoginFormProps) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [canResendVerification, setCanResendVerification] = useState(false);
   const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
@@ -47,6 +49,7 @@ export default function LoginForm({ next }: LoginFormProps) {
     setIsSubmitting(true);
     setErrors({});
     setStatusMessage("");
+    setCanResendVerification(false);
 
     const sanitizedIdentifier = email.trim();
 
@@ -66,8 +69,9 @@ export default function LoginForm({ next }: LoginFormProps) {
         case "EMAIL_NOT_VERIFIED":
           message.form = "We couldn't sign you in because your email hasn't been verified yet.";
           setStatusMessage(
-            "Check your inbox (and spam folder) for the verification email we sent. You can request a new link from the sign-up confirmation email if needed."
+            "Check your inbox and spam folder. If the original link never arrived or expired, request a fresh verification email below."
           );
+          setCanResendVerification(true);
           break;
         default:
           message.form = "Invalid email/username or password.";
@@ -112,6 +116,7 @@ export default function LoginForm({ next }: LoginFormProps) {
                 setEmail(e.target.value);
                 setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
                 setStatusMessage("");
+                setCanResendVerification(false);
               }}
               autoComplete="username"
               aria-invalid={Boolean(errors.email)}
@@ -135,6 +140,7 @@ export default function LoginForm({ next }: LoginFormProps) {
                 setPassword(e.target.value);
                 setErrors(prev => ({ ...prev, password: undefined, form: undefined }));
                 setStatusMessage("");
+                setCanResendVerification(false);
               }}
               autoComplete="current-password"
               aria-invalid={Boolean(errors.password)}
@@ -205,7 +211,12 @@ export default function LoginForm({ next }: LoginFormProps) {
         {statusMessage && (
           <div className="flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-left text-sm text-error">
             <MailWarning className="mt-0.5 h-4 w-4 shrink-0 text-error" aria-hidden />
-            <p className="text-error">{statusMessage}</p>
+            <div className="w-full">
+              <p className="text-error">{statusMessage}</p>
+              {canResendVerification ? (
+                <ResendVerificationButton identifier={email} className="mt-3" />
+              ) : null}
+            </div>
           </div>
         )}
       </Card>
