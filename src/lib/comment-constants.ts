@@ -21,5 +21,6 @@ export type SerializedComment = {
   score: number;
   voteCount: number;
   vote: "up" | "down" | null;
+  replyCount: number;
   replies: SerializedComment[];
 };

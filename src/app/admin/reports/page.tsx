@@ -118,7 +118,6 @@ async function loadReports(
   where: Prisma.ReportWhereInput,
   skip: number,
   take: number,
-  reporterCountMap: Map<string, number>
 ) {
   const reports = await db.report.findMany({
     where,
@@ -151,6 +150,18 @@ async function loadReports(
     take,
   });
 
+  const reporterIds = Array.from(new Set(reports.map(report => report.reporterId)));
+  const reporterCounts = reporterIds.length
+    ? await db.report.groupBy({
+        by: ["reporterId"],
+        where: { reporterId: { in: reporterIds } },
+        _count: { _all: true },
+      })
+    : [];
+  const reporterCountMap = new Map<string, number>(
+    reporterCounts.map(item => [item.reporterId, item._count._all])
+  );
+
   return reports.map(report => ({
     ...report,
     otherReportsByReporter: Math.max(
@@ -177,11 +188,6 @@ export default async function AdminReportsPage({
     notFound();
   }
 
-  const reporterCounts = await db.report.groupBy({ by: ["reporterId"], _count: { _all: true } });
-  const reporterCountMap = new Map<string, number>(
-    reporterCounts.map(item => [item.reporterId, item._count._all])
-  );
-
   const PAGE_SIZE = 20;
   const pageParam = resolvedSearchParams.page;
   const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
@@ -200,8 +206,7 @@ export default async function AdminReportsPage({
   const reports = await loadReports(
     activeWhere,
     (currentPage - 1) * PAGE_SIZE,
-    PAGE_SIZE,
-    reporterCountMap
+    PAGE_SIZE
   );
 
   const buildPageHref = (page: number) => {

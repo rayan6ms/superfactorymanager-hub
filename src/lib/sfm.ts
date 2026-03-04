@@ -371,7 +371,29 @@ export async function getSfmMatrix(force = false) {
     return matrix;
   }
 
-  return getCachedSfmMatrix();
+  if (memoMatrix) {
+    const withinCooldown = Date.now() - lastFetchAt <= COOLDOWN_MS;
+    if (memoMatrix.gameVersions.length || withinCooldown) {
+      return memoMatrix;
+    }
+  }
+
+  const cached = await getCachedSfmMatrix();
+  if (cached.gameVersions.length) {
+    memoMatrix = cached;
+    return cached;
+  }
+
+  // If the persistent cache is stale/empty but DB has rows, prefer DB over a network refresh.
+  const fromDb = await matrixFromDB();
+  if (fromDb.gameVersions.length) {
+    memoMatrix = fromDb;
+    return fromDb;
+  }
+
+  // Fresh DB bootstrap: seed matrix automatically instead of waiting for an internal refresh job.
+  const { matrix } = await refreshSfm({ source: "both" });
+  return matrix;
 }
 
 export async function refreshSfm(opts: { source: "cf" | "mr" | "both"; ignoreCooldown?: boolean }) {

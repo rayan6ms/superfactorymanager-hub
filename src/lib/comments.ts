@@ -5,6 +5,8 @@ import {
   type SerializedComment,
 } from "@/lib/comment-constants";
 
+const INITIAL_EAGER_REPLY_DEPTH = 2;
+
 const authorSelect = {
   id: true,
   name: true,
@@ -19,6 +21,7 @@ const serializeComment = (
   comment: CommentWithAuthor,
   replies: SerializedComment[] = [],
   voteMap?: Map<string, "up" | "down">,
+  replyCount = replies.length,
 ): SerializedComment => ({
   id: comment.id,
   content: comment.content,
@@ -37,6 +40,7 @@ const serializeComment = (
   score: comment.score,
   voteCount: comment.voteCount,
   vote: voteMap?.get(comment.id) ?? null,
+  replyCount,
   replies,
 });
 
@@ -65,22 +69,36 @@ function compareComments(
   return a.createdAt.getTime() - b.createdAt.getTime();
 }
 
-async function fetchRepliesForParents(parentIds: string[]): Promise<CommentWithAuthor[]> {
+async function fetchRepliesForParents(
+  parentIds: string[],
+  options: { maxDepth?: number } = {},
+): Promise<CommentWithAuthor[]> {
   if (!parentIds.length) {
     return [];
   }
 
+  const maxDepth =
+    typeof options.maxDepth === "number" && Number.isFinite(options.maxDepth) && options.maxDepth > 0
+      ? Math.floor(options.maxDepth)
+      : null;
+
+  const depthGuard =
+    typeof maxDepth === "number"
+      ? Prisma.sql`WHERE tree."depth" < ${maxDepth}`
+      : Prisma.empty;
+
   const descendantIds = await db.$queryRaw<{ id: string }[]>(Prisma.sql`
     WITH RECURSIVE "CommentTree" AS (
-      SELECT c."id"
+      SELECT c."id", 1 AS "depth"
       FROM "Comment" c
       WHERE c."parentId" IN (${Prisma.join(parentIds)})
 
       UNION ALL
 
-      SELECT child."id"
+      SELECT child."id", tree."depth" + 1
       FROM "Comment" child
       INNER JOIN "CommentTree" tree ON child."parentId" = tree."id"
+      ${depthGuard}
     )
     SELECT tree."id"
     FROM "CommentTree" tree
@@ -98,6 +116,47 @@ async function fetchRepliesForParents(parentIds: string[]): Promise<CommentWithA
   });
 }
 
+async function fetchReplyCountMap(parentIds: string[]): Promise<Map<string, number>> {
+  if (!parentIds.length) {
+    return new Map<string, number>();
+  }
+
+  const grouped = await db.comment.groupBy({
+    by: ["parentId"],
+    where: {
+      parentId: {
+        in: parentIds,
+      },
+    },
+    _count: {
+      _all: true,
+    },
+  });
+
+  const map = new Map<string, number>();
+  for (const row of grouped) {
+    if (row.parentId) {
+      map.set(row.parentId, row._count._all);
+    }
+  }
+  return map;
+}
+
+async function fetchVoteMap(
+  viewerId: string | null | undefined,
+  commentIds: string[],
+): Promise<Map<string, "up" | "down"> | undefined> {
+  if (!viewerId || !commentIds.length) {
+    return undefined;
+  }
+
+  const votes = await db.commentVote.findMany({
+    where: { userId: viewerId, commentId: { in: commentIds } },
+    select: { commentId: true, value: true },
+  });
+  return new Map(votes.map(vote => [vote.commentId, vote.value > 0 ? "up" : "down"]));
+}
+
 function buildChildrenMap(comments: CommentWithAuthor[]) {
   const map = new Map<string, CommentWithAuthor[]>();
   for (const comment of comments) {
@@ -112,6 +171,7 @@ function buildChildrenMap(comments: CommentWithAuthor[]) {
 function attachReplies(
   comment: CommentWithAuthor,
   childrenMap: Map<string, CommentWithAuthor[]>,
+  replyCountMap: Map<string, number>,
   sort: "recent" | "top",
   voteMap?: Map<string, "up" | "down">,
   depth = 1,
@@ -119,8 +179,9 @@ function attachReplies(
   const children = childrenMap.get(comment.id) ?? [];
   const replies = children
     .sort((a, b) => compareComments(a, b, sort, depth))
-    .map(child => attachReplies(child, childrenMap, sort, voteMap, depth + 1));
-  return serializeComment(comment, replies, voteMap);
+    .map(child => attachReplies(child, childrenMap, replyCountMap, sort, voteMap, depth + 1));
+  const replyCount = replyCountMap.get(comment.id) ?? children.length;
+  return serializeComment(comment, replies, voteMap, replyCount);
 }
 
 export async function getPostComments(
@@ -186,27 +247,34 @@ export async function getPostComments(
   }
 
   const visibleRoots = roots;
-  const descendants = await fetchRepliesForParents(visibleRoots.map(comment => comment.id));
+  const descendants = await fetchRepliesForParents(
+    visibleRoots.map(comment => comment.id),
+    { maxDepth: INITIAL_EAGER_REPLY_DEPTH },
+  );
   const childrenMap = buildChildrenMap(descendants);
 
-  let voteMap: Map<string, "up" | "down"> | undefined;
-  if (viewerId) {
-    const allIds = Array.from(new Set([
-      ...visibleRoots.map(item => item.id),
-      ...descendants.map(item => item.id),
-      ...(pinned ? [pinned.id] : []),
-    ]));
-    if (allIds.length) {
-      const votes = await db.commentVote.findMany({
-        where: { userId: viewerId, commentId: { in: allIds } },
-        select: { commentId: true, value: true },
-      });
-      voteMap = new Map(votes.map(vote => [vote.commentId, vote.value > 0 ? "up" : "down"]));
-    }
-  }
+  const loadedCommentIds = Array.from(new Set([
+    ...visibleRoots.map(item => item.id),
+    ...descendants.map(item => item.id),
+  ]));
+  const idsNeedingReplyCounts = Array.from(new Set([
+    ...loadedCommentIds,
+    ...(pinned ? [pinned.id] : []),
+  ]));
+  const idsNeedingVotes = Array.from(new Set([
+    ...loadedCommentIds,
+    ...(pinned ? [pinned.id] : []),
+  ]));
 
-  const serialized = visibleRoots.map(comment => attachReplies(comment, childrenMap, sort, voteMap));
-  const pinnedComment = includePinnedComment ? (pinned ? serializeComment(pinned, [], voteMap) : null) : undefined;
+  const [replyCountMap, voteMap] = await Promise.all([
+    fetchReplyCountMap(idsNeedingReplyCounts),
+    fetchVoteMap(viewerId, idsNeedingVotes),
+  ]);
+
+  const serialized = visibleRoots.map(comment => attachReplies(comment, childrenMap, replyCountMap, sort, voteMap));
+  const pinnedComment = includePinnedComment
+    ? (pinned ? serializeComment(pinned, [], voteMap, replyCountMap.get(pinned.id) ?? 0) : null)
+    : undefined;
 
   return {
     comments: serialized,
@@ -214,6 +282,36 @@ export async function getPostComments(
     ...(typeof total === "number" ? { total } : {}),
     ...(typeof pinnedComment !== "undefined" ? { pinnedComment } : {}),
   };
+}
+
+export async function getCommentThread(
+  commentId: string,
+  options: {
+    postId?: string | null;
+    viewerId?: string | null;
+    sort?: "recent" | "top";
+  } = {},
+): Promise<SerializedComment | null> {
+  if (!commentId) return null;
+  const sort = options.sort ?? "recent";
+
+  const rootComment = await db.comment.findUnique({
+    where: { id: commentId },
+    include: { author: { select: authorSelect } },
+  });
+  if (!rootComment) return null;
+  if (options.postId && rootComment.postId !== options.postId) return null;
+
+  const descendants = await fetchRepliesForParents([rootComment.id]);
+  const childrenMap = buildChildrenMap(descendants);
+
+  const allCommentIds = [rootComment.id, ...descendants.map(item => item.id)];
+  const [replyCountMap, voteMap] = await Promise.all([
+    fetchReplyCountMap(allCommentIds),
+    fetchVoteMap(options.viewerId, allCommentIds),
+  ]);
+
+  return attachReplies(rootComment, childrenMap, replyCountMap, sort, voteMap);
 }
 
 export async function getCommentById(commentId: string, postId?: string | null, viewerId?: string | null) {
@@ -234,5 +332,5 @@ export async function getCommentById(commentId: string, postId?: string | null, 
       voteMap = new Map([[commentId, vote.value > 0 ? "up" : "down"]]);
     }
   }
-  return serializeComment(comment, [], voteMap);
+  return serializeComment(comment, [], voteMap, 0);
 }

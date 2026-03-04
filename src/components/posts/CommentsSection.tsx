@@ -61,6 +61,11 @@ type PinCommentResponse = {
   error?: string;
 };
 
+type ThreadResponse = {
+  comment?: SerializedComment;
+  error?: string;
+};
+
 function formatTimestamp(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -103,8 +108,9 @@ const insertReply = (
     if (inserted) return item;
     if (item.id === parentId) {
       inserted = true;
-      replyCount = item.replies.length + 1;
-      return { ...item, replies: [...item.replies, reply] };
+      const nextReplyCount = Math.max(item.replyCount, item.replies.length) + 1;
+      replyCount = nextReplyCount;
+      return { ...item, replyCount: nextReplyCount, replies: [...item.replies, reply] };
     }
     if (item.replies.length) {
       const childResult = insertReply(item.replies, parentId, reply);
@@ -218,8 +224,12 @@ export default function CommentsSection({
   const [pinning, setPinning] = useState<Record<string, boolean>>({});
   const [replyDisplayLimit, setReplyDisplayLimit] = useState(5);
   const [threadRootId, setThreadRootId] = useState<string | null>(null);
+  const [threadRootComment, setThreadRootComment] = useState<SerializedComment | null>(null);
   const [threadRootDepth, setThreadRootDepth] = useState(0);
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [targetThreadLookupId, setTargetThreadLookupId] = useState<string | null>(null);
   const [threadMaxDepth, setThreadMaxDepth] = useState(5);
+  const threadRequestSeqRef = useRef(0);
   const focusHandledRef = useRef(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const cameFromNotificationsRef = useRef(false);
@@ -243,18 +253,26 @@ export default function CommentsSection({
   const replyTargetDepth = replyTarget?.depth ?? null;
 
   const flatComments = useMemo(() => flattenComments(comments), [comments]);
+  const flatThreadComments = useMemo(
+    () => (threadRootComment ? flattenComments([threadRootComment]) : []),
+    [threadRootComment],
+  );
   const commentExists = useCallback(
     (id: string | null) => {
       if (!id) return false;
-      return flatComments.some(comment => comment.id === id);
+      return (
+        flatComments.some(comment => comment.id === id) ||
+        flatThreadComments.some(comment => comment.id === id)
+      );
     },
-    [flatComments],
+    [flatComments, flatThreadComments],
   );
 
-  const threadRoot = useMemo(() => {
+  const threadRootFromComments = useMemo(() => {
     if (!threadRootId) return null;
     return findCommentById(comments, threadRootId);
   }, [comments, threadRootId]);
+  const threadRoot = threadRootComment ?? threadRootFromComments;
 
   const markCommentDeleted = (id: string) => {
     setComments(prev => {
@@ -325,19 +343,13 @@ export default function CommentsSection({
   }, []);
 
   useEffect(() => {
-    if (threadRootId && !threadRoot) {
-      setThreadRootId(null);
-      setThreadRootDepth(0);
-    }
     if (!threadRootId) {
+      threadRequestSeqRef.current += 1;
       setThreadRootDepth(0);
+      setThreadRootComment(null);
+      setThreadLoading(false);
     }
-  }, [threadRootId, threadRoot]);
-
-  const openThread = useCallback((id: string, depth: number) => {
-    setThreadRootId(id);
-    setThreadRootDepth(depth);
-  }, []);
+  }, [threadRootId]);
 
   const fetchComments = useCallback(
     async (cursorValue: string | null, sortOverride?: SortOption): Promise<CommentResponse> => {
@@ -357,6 +369,50 @@ export default function CommentsSection({
       return (await res.json()) as CommentResponse;
     },
     [postSlug, sortOrder],
+  );
+
+  const fetchThread = useCallback(
+    async (commentId: string, sortOverride?: SortOption): Promise<ThreadResponse> => {
+      const params = new URLSearchParams();
+      params.set("sort", sortOverride ?? sortOrder);
+      const res = await fetch(`/api/posts/${postSlug}/comments/${commentId}/thread?${params.toString()}`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as ThreadResponse;
+        return { error: data.error ?? "Failed to load thread" };
+      }
+      return (await res.json()) as ThreadResponse;
+    },
+    [postSlug, sortOrder],
+  );
+
+  const openThread = useCallback(
+    async (id: string, depth: number) => {
+      const requestSeq = threadRequestSeqRef.current + 1;
+      threadRequestSeqRef.current = requestSeq;
+      setThreadRootId(id);
+      setThreadRootDepth(depth);
+      setThreadLoading(true);
+      setError(null);
+      try {
+        const data = await fetchThread(id);
+        if (threadRequestSeqRef.current !== requestSeq) return;
+        if (data.error || !data.comment) {
+          throw new Error(data.error ?? "Failed to load thread");
+        }
+        setThreadRootComment(data.comment);
+      } catch (err) {
+        if (threadRequestSeqRef.current !== requestSeq) return;
+        const message = err instanceof Error ? err.message : "Failed to load thread";
+        setError(message);
+      } finally {
+        if (threadRequestSeqRef.current !== requestSeq) return;
+        setThreadLoading(false);
+      }
+    },
+    [fetchThread],
   );
 
   useEffect(() => {
@@ -602,34 +658,27 @@ export default function CommentsSection({
   };
 
   const getVisibleReplies = useCallback(
-    (commentId: string, depth: number, totalReplies: number, baseline?: number) => {
-      if (totalReplies <= 0) return 0;
-
-      const allowedMax =
-        typeof baseline === "number" ? Math.min(baseline, totalReplies) : totalReplies;
-
+    (commentId: string, depth: number, loadedReplies: number) => {
+      if (loadedReplies <= 0) return 0;
       const stored = visibleRepliesMap[commentId];
-      const initial = getInitialVisibleReplies(depth, allowedMax);
+      const initial = getInitialVisibleReplies(depth, loadedReplies);
 
       const current = typeof stored === "number" ? stored : initial;
-      return Math.min(current, allowedMax);
+      return Math.min(current, loadedReplies);
     },
     [visibleRepliesMap],
   );
 
   const showNextReply = useCallback(
-    (commentId: string, depth: number, totalReplies: number, baseline?: number) => {
-      if (totalReplies <= 0) return;
+    (commentId: string, depth: number, loadedReplies: number) => {
+      if (loadedReplies <= 0) return;
 
       setVisibleRepliesMap(prev => {
-        const allowedMax =
-          typeof baseline === "number" ? Math.min(baseline, totalReplies) : totalReplies;
-
         const stored = prev[commentId];
-        const initial = getInitialVisibleReplies(depth, allowedMax);
+        const initial = getInitialVisibleReplies(depth, loadedReplies);
         const current = typeof stored === "number" ? stored : initial;
 
-        if (current >= allowedMax) return prev;
+        if (current >= loadedReplies) return prev;
 
         return { ...prev, [commentId]: current + 1 };
       });
@@ -653,6 +702,9 @@ export default function CommentsSection({
         setVisibleRepliesMap({});
         setRevealedHidden({});
         setThreadRootId(null);
+        setThreadRootComment(null);
+        setThreadLoading(false);
+        setTargetThreadLookupId(null);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to update sort order";
         setError(message);
@@ -711,9 +763,11 @@ export default function CommentsSection({
       if (hash.startsWith("#comment-")) {
         const id = hash.replace("#comment-", "");
         setTargetCommentId(id);
+        setTargetThreadLookupId(null);
         focusHandledRef.current = false;
       } else {
         setTargetCommentId(null);
+        setTargetThreadLookupId(null);
         focusHandledRef.current = false;
       }
     }
@@ -741,11 +795,31 @@ export default function CommentsSection({
     loadMore();
   }, [targetCommentId, commentExists, cursor, loadingMore, loadMore]);
 
+  useEffect(() => {
+    if (!targetCommentId) return;
+    if (commentExists(targetCommentId)) return;
+    if (cursor || loadingMore || threadLoading) return;
+    if (targetThreadLookupId === targetCommentId) return;
+
+    setTargetThreadLookupId(targetCommentId);
+    void openThread(targetCommentId, 0);
+  }, [
+    targetCommentId,
+    commentExists,
+    cursor,
+    loadingMore,
+    threadLoading,
+    targetThreadLookupId,
+    openThread,
+  ]);
+
   const targetMissing = Boolean(
     targetCommentId &&
     !commentExists(targetCommentId) &&
     !cursor &&
-    !loadingMore,
+    !loadingMore &&
+    !threadLoading &&
+    targetThreadLookupId === targetCommentId,
   );
 
   useEffect(() => {
@@ -794,14 +868,16 @@ export default function CommentsSection({
           const isAtDepthLimit = limitReplies && relativeDepth >= maxInlineDepth;
           const isReplyDepthCapped = depth >= COMMENT_MAX_DEPTH;
 
-          const totalReplies = comment.replies.length;
+          const loadedReplies = comment.replies.length;
+          const totalReplies = Math.max(comment.replyCount, loadedReplies);
+          const unloadedReplies = Math.max(totalReplies - loadedReplies, 0);
 
           let visibleReplies = 0;
           let remainingReplies = 0;
           let hiddenReplies: SerializedComment[] = [];
 
           if (!limitReplies) {
-            visibleReplies = totalReplies;
+            visibleReplies = loadedReplies;
             remainingReplies = 0;
             hiddenReplies = [];
           } else if (isAtDepthLimit) {
@@ -809,15 +885,17 @@ export default function CommentsSection({
             remainingReplies = totalReplies;
             hiddenReplies = comment.replies;
           } else {
-            visibleReplies = getVisibleReplies(comment.id, relativeDepth, totalReplies);
+            visibleReplies = getVisibleReplies(comment.id, relativeDepth, loadedReplies);
             remainingReplies = Math.max(totalReplies - visibleReplies, 0);
             hiddenReplies = comment.replies.slice(visibleReplies);
           }
 
           const repliesToRender = comment.replies.slice(0, visibleReplies);
-          const hiddenReplyCount = limitReplies ? countNestedReplies(hiddenReplies) : 0;
+          const hiddenReplyCount = limitReplies
+            ? Math.max(countNestedReplies(hiddenReplies), remainingReplies)
+            : 0;
 
-          const showRestInThread = limitReplies && remainingReplies > 0 && isAtDepthLimit;
+          const shouldOpenThread = limitReplies && remainingReplies > 0 && (isAtDepthLimit || unloadedReplies > 0);
 
           const profileHref = comment.author?.name ? `/profile/${comment.author.name}` : null;
           const { upvotes, downvotes, totalVotes } = splitVotesFromScore(comment.score, comment.voteCount);
@@ -1150,14 +1228,14 @@ export default function CommentsSection({
                   <button
                     type="button"
                     onClick={() =>
-                      showRestInThread
-                        ? openThread(comment.id, depth)
-                        : showNextReply(comment.id, relativeDepth, totalReplies)
+                      shouldOpenThread
+                        ? void openThread(comment.id, depth)
+                        : showNextReply(comment.id, relativeDepth, loadedReplies)
                     }
                     className="text-xs font-semibold text-brand-200 underline-offset-4 transition hover:text-brand-100 hover:underline"
                   >
-                    {showRestInThread ? "Show rest in thread" : "Show 1 more reply"}
-                    {showRestInThread && hiddenReplyCount > 0 ? ` (${hiddenReplyCount} more)` : ""}
+                    {shouldOpenThread ? "Show rest in thread" : "Show 1 more reply"}
+                    {shouldOpenThread && hiddenReplyCount > 0 ? ` (${hiddenReplyCount} more)` : ""}
                   </button>
                 </div>
               )}
@@ -1284,13 +1362,21 @@ export default function CommentsSection({
                     Showing the rest of the replies in this thread. Use the back button to return to the main comments.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setThreadRootId(null)}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/40"
-                >
-                  <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to comments
-                </button>
+                <div className="flex items-center gap-3">
+                  {threadLoading && (
+                    <div className="flex items-center gap-2 text-xs text-white/60">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      Loading full thread
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setThreadRootId(null)}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/40"
+                  >
+                    <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to comments
+                  </button>
+                </div>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/20 p-3">

@@ -196,6 +196,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     score: comment.score,
     voteCount: comment.voteCount,
     vote: "up" as const,
+    replyCount: 0,
     replies: [],
   };
 
