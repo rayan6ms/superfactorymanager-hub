@@ -154,14 +154,13 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ slug: strin
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
   const session = await auth();
-  if (!session?.user?.email) return NextResponse.json({ my: null });
+  if (!session?.user?.id) return NextResponse.json({ my: null });
 
-  const user = await db.user.findUnique({ where: { email: session.user.email } });
   const post = await db.post.findFirst({ where: { slug, isDeleted: false } });
-  if (!user || !post) return NextResponse.json({ my: null });
+  if (!post) return NextResponse.json({ my: null });
 
   const r = await db.rating.findUnique({
-    where: { userId_postId: { userId: user.id, postId: post.id } },
+    where: { userId_postId: { userId: session.user.id, postId: post.id } },
   });
 
   return NextResponse.json({ my: r ? (r.value > 0 ? "up" : "down") : null });

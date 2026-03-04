@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Badge, Card } from "@/components/ui";
 import { formatBuildDate, type BuildVisibility } from "@/lib/builds/profile-list";
 
@@ -27,6 +30,7 @@ export default function BuildCard({
   backTo,
   backHref,
 }: BuildCardProps) {
+  const { data: session } = useSession();
   const baseHref = `/profile/${encodeURIComponent(username)}/builds/${encodeURIComponent(slug)}`;
   const query = new URLSearchParams();
   if (backTo) query.set("from", backTo);
@@ -35,6 +39,8 @@ export default function BuildCard({
   const href = suffix ? `${baseHref}?${suffix}` : baseHref;
   const createdDate = formatBuildDate(createdAt);
   const updatedDate = formatBuildDate(updatedAt);
+  const viewerUsername = session?.user?.name?.trim().toLowerCase() ?? null;
+  const effectiveShowVisibility = showVisibility ?? viewerUsername === username.trim().toLowerCase();
   const createdTs = new Date(createdAt).getTime();
   const updatedTs = new Date(updatedAt).getTime();
   const showUpdated = Number.isFinite(createdTs) && Number.isFinite(updatedTs) && Math.abs(updatedTs - createdTs) > 1000;
@@ -51,7 +57,7 @@ export default function BuildCard({
             <Badge className="max-w-[11rem] truncate border-sky-400/30 bg-sky-500/10 text-sky-100">
               {tag}
             </Badge>
-            {showVisibility ? (
+            {effectiveShowVisibility ? (
               <Badge
                 className={visibility === "PRIVATE"
                   ? "border-rose-500/40 bg-rose-500/10 text-rose-200"

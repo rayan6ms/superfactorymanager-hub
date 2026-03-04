@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { createPortal } from "react-dom";
 import clsx from "clsx";
 import { Flag, Loader2, X } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 const MIN_LENGTH = 10;
 const MAX_LENGTH = 500;
@@ -63,6 +64,7 @@ export default function ReportButton({
   className,
   children,
 }: ReportButtonProps) {
+  const { status } = useSession();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<(typeof REASONS)[number] | null>(null);
   const [message, setMessage] = useState("");
@@ -80,6 +82,8 @@ export default function ReportButton({
   const remainingChars = useMemo(() => MAX_LENGTH - message.length, [message]);
   const isOtherReason = reason === "other";
   const tooShort = isOtherReason && message.trim().length < MIN_LENGTH;
+  const isAuthenticated = status === "authenticated";
+  const canOpenReport = canReport ?? isAuthenticated;
 
   const close = useCallback(() => {
     if (submitting) return;
@@ -91,14 +95,14 @@ export default function ReportButton({
   }, [submitting]);
 
   const openDialog = useCallback(() => {
-    if (!canReport) {
+    if (!canOpenReport) {
       if (loginHref) {
         window.location.href = loginHref;
       }
       return;
     }
     setOpen(true);
-  }, [canReport, loginHref]);
+  }, [canOpenReport, loginHref]);
 
   useEffect(() => {
     if (!open) return;

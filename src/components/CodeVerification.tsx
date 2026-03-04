@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useAuthRequired } from "@/components/auth/AuthRequiredProvider";
+import { useSession } from "next-auth/react";
 
 type VoteValue = "up" | "down" | null;
 
@@ -17,10 +18,10 @@ type ApiResponse = {
 
 type CodeVerificationProps = {
   slug: string;
+  authorId: string;
   initialVote: VoteValue;
   worked: number;
   broken: number;
-  isAuthor: boolean;
   codeStatus: "VERIFIED" | "UNVERIFIED" | "BROKEN";
   codeNote?: string | null;
 };
@@ -41,24 +42,50 @@ function getErrorMessage(data: unknown, fallback: string) {
 
 export default function CodeVerification({
   slug,
+  authorId,
   initialVote,
   worked,
   broken,
-  isAuthor,
   codeStatus,
   codeNote,
 }: CodeVerificationProps) {
   const { apiFetchJson } = useAuthRequired();
+  const { data: session, status: sessionStatus } = useSession();
 
   const [myVote, setMyVote] = useState<VoteValue>(initialVote);
   const [workedCount, setWorkedCount] = useState(worked);
   const [brokenCount, setBrokenCount] = useState(broken);
   const [busy, setBusy] = useState(false);
+  const isAuthor = session?.user?.id === authorId;
+  const activeVote = isAuthor ? null : (sessionStatus === "authenticated" ? myVote : initialVote);
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated" || isAuthor) return;
+
+    let active = true;
+
+    void (async () => {
+      try {
+        const { res, data } = await apiFetchJson<{ my?: VoteValue }>(`/api/posts/${slug}/rate`, {
+          method: "GET",
+        });
+        if (!active || !res.ok) return;
+        setMyVote(data && typeof data === "object" && "my" in data ? (data.my ?? null) : null);
+      } catch (error) {
+        if (!active) return;
+        console.error("Failed to load current vote:", error);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [apiFetchJson, initialVote, isAuthor, sessionStatus, slug]);
 
   const total = workedCount + brokenCount;
   const successRate = total > 0 ? Math.round((workedCount / total) * 100) : 0;
 
-  const status = useMemo(() => {
+  const verificationStatus = useMemo(() => {
     if (codeStatus === "BROKEN") {
       return {
         tone: "danger" as const,
@@ -97,7 +124,7 @@ export default function CodeVerification({
   }, [codeStatus, codeNote, total, workedCount, brokenCount, successRate]);
 
   const toneClasses = useMemo(() => {
-    switch (status.tone) {
+    switch (verificationStatus.tone) {
       case "positive":
         return "border-emerald-400/40 bg-emerald-500/10 text-emerald-100";
       case "danger":
@@ -107,11 +134,11 @@ export default function CodeVerification({
       default:
         return "border-white/20 bg-white/5 text-white/80";
     }
-  }, [status.tone]);
+  }, [verificationStatus.tone]);
 
   const sendVote = async (vote: "up" | "down") => {
     if (isAuthor || busy) return;
-    if (myVote === vote) {
+      if (activeVote === vote) {
       await clearVote();
       return;
     }
@@ -136,7 +163,7 @@ export default function CodeVerification({
   };
 
   const clearVote = async () => {
-    if (isAuthor || busy || myVote === null) return;
+    if (isAuthor || busy || activeVote === null) return;
     setBusy(true);
     const { res, data } = await apiFetchJson<ApiResponse>(`/api/posts/${slug}/rate`, {
       method: "DELETE",
@@ -159,7 +186,7 @@ export default function CodeVerification({
     label: string,
     count: number,
   ) => {
-    const active = myVote === vote;
+    const active = activeVote === vote;
     const icon = vote === "up" ? <ThumbsUp className="h-4 w-4" aria-hidden /> : <ThumbsDown className="h-4 w-4" aria-hidden />;
     return (
       <button
@@ -198,7 +225,7 @@ export default function CodeVerification({
       <div className="mt-4 flex flex-wrap gap-3">
         {voteButton("up", "Code worked for me", workedCount)}
         {voteButton("down", "Code didn’t work for me", brokenCount)}
-        {!isAuthor && myVote !== null && (
+        {!isAuthor && activeVote !== null && (
           <button
             type="button"
             onClick={clearVote}
@@ -211,11 +238,11 @@ export default function CodeVerification({
       </div>
 
       <div className={clsx("mt-4 rounded-xl border px-4 py-3 text-sm", toneClasses)}>
-        <p>{status.message}</p>
-        {status.tone === "positive" && total > 0 && successRate >= 85 && (
+        <p>{verificationStatus.message}</p>
+        {verificationStatus.tone === "positive" && total > 0 && successRate >= 85 && (
           <p className="mt-1 text-xs text-white/70">Thanks for helping verify this script!</p>
         )}
-        {status.tone === "danger" && codeStatus !== "BROKEN" && total > 0 && (
+        {verificationStatus.tone === "danger" && codeStatus !== "BROKEN" && total > 0 && (
           <p className="mt-1 text-xs text-white/70">
             Double-check the required game and mod versions before using this code.
           </p>

@@ -12,6 +12,7 @@ import { generateInitialAvatar, resolveProfileImage } from "./avatar";
 import { generateAvailableUsername } from "./usernames.server";
 import { createNotification } from "./notifications";
 import { checkRateLimit, getClientRateLimitKey } from "./request-security";
+import { isAdminEmail } from "./admin";
 
 const credsSchema = z.object({
   identifier: z
@@ -241,6 +242,9 @@ export const authOptions: NextAuthConfig = {
       if (token.email) {
         session.user.email = token.email as string;
       }
+      if (typeof token.isAdmin === "boolean") {
+        session.user.isAdmin = token.isAdmin;
+      }
       const tokenWithImage = token as JWT & { image?: string | null };
       if (typeof tokenWithImage.image === "string") {
         session.user.image = tokenWithImage.image;
@@ -257,6 +261,7 @@ export const authOptions: NextAuthConfig = {
         if (user.email) {
           token.email = user.email;
         }
+        token.isAdmin = isAdminEmail(user.email);
         if (typeof user.image === "string") {
           (token as JWT & { image?: string | null }).image = user.image;
         }

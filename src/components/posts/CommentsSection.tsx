@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import clsx from "clsx";
+import { useSession } from "next-auth/react";
 import { ArrowBigDown, ArrowBigUp, ArrowLeft, CornerDownRight, Eye, Loader2, MessageCircle, Pin, PinOff } from "lucide-react";
 import { Card } from "@/components/ui";
 import Button from "@/components/ui/Button";
@@ -38,9 +39,7 @@ type CommentsSectionProps = {
   initialCursor: string | null;
   initialTotal: number;
   initialPinnedComment: SerializedComment | null;
-  currentUser: CurrentUser | null;
   postAuthorId: string;
-  isAdmin: boolean;
 };
 
 type CommentResponse = {
@@ -193,10 +192,9 @@ export default function CommentsSection({
   initialCursor,
   initialTotal,
   initialPinnedComment,
-  currentUser,
   postAuthorId,
-  isAdmin,
 }: CommentsSectionProps) {
+  const { data: session, status } = useSession();
   const [comments, setComments] = useState<SerializedComment[]>(() => sortCommentTree(initialComments, "recent"));
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [total, setTotal] = useState<number>(initialTotal);
@@ -227,6 +225,14 @@ export default function CommentsSection({
   const cameFromNotificationsRef = useRef(false);
   const [pulseHighlights, setPulseHighlights] = useState(false);
   const pulseTimeoutRef = useRef<number | null>(null);
+  const currentUser: CurrentUser | null = session?.user?.id
+    ? {
+      id: session.user.id,
+      name: session.user.name ?? null,
+      image: session.user.image ?? null,
+    }
+    : null;
+  const isAdmin = session?.user?.isAdmin === true;
 
   const canPost = Boolean(currentUser);
   const canManagePins = currentUser?.id === postAuthorId;
@@ -352,6 +358,31 @@ export default function CommentsSection({
     },
     [postSlug, sortOrder],
   );
+
+  useEffect(() => {
+    if (status !== "authenticated" || !currentUser?.id) return;
+
+    let active = true;
+    setError(null);
+
+    void (async () => {
+      try {
+        const data = await fetchComments(null, sortOrder);
+        if (!active || data.error) return;
+        setComments(sortComments(data.comments ?? [], sortOrder));
+        setCursor(data.nextCursor ?? null);
+        setTotal(data.total ?? initialTotal);
+        setPinnedComment(data.pinnedComment ?? null);
+      } catch (error) {
+        if (!active) return;
+        console.error("Failed to refresh viewer-specific comments:", error);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser?.id, fetchComments, initialTotal, sortComments, sortOrder, status]);
 
   const handleVote = useCallback(
     async (comment: SerializedComment, direction: "up" | "down") => {

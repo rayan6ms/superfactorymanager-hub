@@ -3,7 +3,6 @@ import Card from "@/components/ui/Card";
 import PostCard from "@/components/posts/PostCard";
 import BuildCard from "@/components/builds/BuildCard";
 import HomeQuickLinks from "@/components/home/HomeQuickLinks";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   searchPublicBuildsWithFilters,
@@ -57,13 +56,11 @@ function BuildSection({
   title,
   builds,
   total,
-  viewerUsername,
   backHref,
 }: {
   title: string;
   builds: SerializedBuild[];
   total: number;
-  viewerUsername: string | null;
   backHref?: string;
 }) {
   return (
@@ -84,7 +81,6 @@ function BuildSection({
                 visibility={build.visibility}
                 createdAt={build.createdAt}
                 updatedAt={build.updatedAt}
-                showVisibility={viewerUsername === build.username.toLowerCase()}
                 backTo="home"
                 backHref={backHref}
               />
@@ -103,18 +99,6 @@ export default async function Home({ searchParams }: Props) {
   const rawQ = params?.q;
   const q = Array.isArray(rawQ) ? rawQ[0] : rawQ;
 
-  const session = await auth();
-  const viewerUsername = session?.user?.name?.trim().toLowerCase() ?? null;
-
-  let userId: string | null = null;
-  if (session?.user?.email) {
-    const user = await db.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    });
-    userId = user?.id ?? null;
-  }
-
   const currentHomeHref = q?.trim()
     ? `/?${new URLSearchParams({ q: q.trim() }).toString()}`
     : "/";
@@ -124,7 +108,7 @@ export default async function Home({ searchParams }: Props) {
     db.post.count({ where: { isDeleted: false } }),
     getTrendingPosts(HOME_SECTION_LIMIT),
     getRecentPosts(HOME_SECTION_LIMIT),
-    getRecommendedPosts({ userId, searchTerm: q, limit: HOME_SECTION_LIMIT }),
+    getRecommendedPosts({ searchTerm: q, limit: HOME_SECTION_LIMIT }),
     searchPublicBuildsWithFilters({ order: "newest", limit: HOME_SECTION_LIMIT, page: 1 }),
     searchPublicBuildsWithFilters({ order: "recently-updated", limit: HOME_SECTION_LIMIT, page: 1 }),
   ]);
@@ -200,14 +184,12 @@ export default async function Home({ searchParams }: Props) {
             title="Recent builds"
             builds={recentBuildsResult.builds}
             total={recentBuildsResult.total}
-            viewerUsername={viewerUsername}
             backHref={currentHomeHref}
           />
           <BuildSection
             title="Recently updated builds"
             builds={updatedBuildsResult.builds}
             total={updatedBuildsResult.total}
-            viewerUsername={viewerUsername}
             backHref={currentHomeHref}
           />
         </div>

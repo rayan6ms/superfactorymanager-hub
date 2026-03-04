@@ -1,19 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import Image from "next/image";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import ViewBeacon from "@/components/ViewBeacon";
-import { Card, Button } from "@/components/ui";
+import { Card } from "@/components/ui";
 import ImageGallery from "@/components/ImageGallery";
 import PostCodePanel from "@/components/posts/PostCodePanel";
 import CodeVerification from "@/components/CodeVerification";
 import CommentsSection from "@/components/posts/CommentsSection";
+import {
+  PostCollaborationCard,
+  PostEditLink,
+  PostHeroAdminAction,
+} from "@/components/posts/PostPageViewerActions";
 import { getPostComments } from "@/lib/comments";
 import ReportButton from "@/components/ReportButton";
-import { isAdminEmail } from "@/lib/admin";
-import AdminFlagPostButton from "@/components/posts/AdminFlagPostButton";
-import { Eye } from 'lucide-react';
+import { Eye } from "lucide-react";
 import { getBaseUrl } from "@/lib/urls";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -111,8 +113,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function PostPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
-  const session = await auth();
-  const isAdmin = isAdminEmail(session?.user?.email);
 
   const post = await db.post.findUnique({
     where: { slug },
@@ -149,24 +149,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
     _count: { value: true },
   });
 
-  let myVoteValue: number | null = null;
-  let isAuthor = false;
-  let me: { id: string; name: string | null; image: string | null } | null = null;
-
-  if (session?.user?.email) {
-    const meResult = await db.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, name: true, image: true },
-    });
-    if (meResult) {
-      me = meResult;
-      isAuthor = meResult.id === post.authorId;
-      const vote = await db.rating.findUnique({ where: { userId_postId: { userId: meResult.id, postId: post.id } } });
-      myVoteValue = vote?.value ?? null;
-    }
-  }
-
-  const verification = buildVerificationSummary(groups, myVoteValue, isAuthor);
+  const verification = buildVerificationSummary(groups, null, false);
 
   const views = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(post.views ?? 0);
   const uploadDate = formatUploadDate(post.uploadDate);
@@ -179,11 +162,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   const authorProfile = post.author?.name ? `/profile/${post.author.name}` : null;
   const authorBio = post.author?.bio?.trim() ?? null;
 
-  const commentData = await getPostComments(post.id, { viewerId: me?.id ?? null });
-
-  const improvementHref = me ? `/posts/${post.slug}/edit` : `/login?from=/posts/${post.slug}/edit`;
-  const improvementCta = me ? "Suggest an improvement" : "Log in to collaborate";
-  const reportLoginHref = `/login?from=/posts/${post.slug}`;
+  const commentData = await getPostComments(post.id, { viewerId: null });
   const postDescription = normalizePostDescription(post.description);
 
   return (
@@ -221,9 +200,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                   <div>Minecraft {post.gameVersion}</div>
                   <div>SFM {post.modVersion}</div>
                 </div>
-                {isAdmin && (
-                  <AdminFlagPostButton slug={post.slug} title={post.title} />
-                )}
+                <PostHeroAdminAction slug={post.slug} title={post.title} />
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-sm text-white/60">
@@ -232,14 +209,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 <Eye className="flex h-4 w-4" aria-hidden="true" />
                 <span>{views} views</span>
               </div>
-              {(isAdmin || verification.isAuthor) && (
-                <Link
-                  href={`/posts/${slug}/edit`}
-                  className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
-                >
-                  Edit post
-                </Link>
-              )}
+              <PostEditLink slug={slug} authorId={post.authorId} />
             </div>
 
             {post.moderationEditedNote && (
@@ -354,28 +324,19 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
         <div className="space-y-6">
           <CodeVerification
             slug={post.slug}
+            authorId={post.authorId}
             initialVote={verification.my}
             worked={verification.worked}
             broken={verification.broken}
-            isAuthor={verification.isAuthor}
             codeStatus={post.codeStatus}
             codeNote={post.codeNote}
           />
 
-          {!isAuthor && post.openForImprovement && (
-            <Card className="space-y-3">
-              <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Collaborate</p>
-                <h2 className="text-lg font-semibold text-white">Share an improvement</h2>
-                <p className="text-sm text-white/65">
-                  Paste your revised code and send it to the author for review. We’ll keep the edit history for them.
-                </p>
-              </div>
-              <Link href={improvementHref} className="inline-flex">
-                <Button className="w-full justify-center">{improvementCta}</Button>
-              </Link>
-            </Card>
-          )}
+          <PostCollaborationCard
+            slug={post.slug}
+            authorId={post.authorId}
+            openForImprovement={post.openForImprovement}
+          />
 
           <Card className="space-y-4">
             <h2 className="text-lg font-semibold text-white">Post details</h2>
@@ -407,8 +368,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 type="post"
                 targetId={post.slug}
                 targetLabel={`post "${post.title}"`}
-                canReport={Boolean(me)}
-                loginHref={reportLoginHref}
+                loginHref={`/login?from=/posts/${post.slug}`}
                 className="mt-3 w-full justify-center rounded-2xl border border-red-400/40 px-4 py-2 text-sm text-red-100"
               >
                 Report post
@@ -424,9 +384,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
         initialCursor={commentData.nextCursor}
         initialTotal={commentData.total}
         initialPinnedComment={commentData.pinnedComment}
-        currentUser={me}
         postAuthorId={post.authorId}
-        isAdmin={isAdmin}
       />
     </div>
   );

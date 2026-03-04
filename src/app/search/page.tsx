@@ -4,7 +4,6 @@ import BuildCard from "@/components/builds/BuildCard";
 import PostCard from "@/components/posts/PostCard";
 import SearchBar from "@/components/ui/Search";
 import Card from "@/components/ui/Card";
-import { auth } from "@/lib/auth";
 import { searchPublicBuildsWithFilters } from "@/lib/builds/search";
 import { searchPostsWithFilters } from "@/lib/posts";
 
@@ -36,8 +35,6 @@ function parseSectionLimit(value: string) {
 
 export default async function SearchPage({ searchParams }: Props) {
   const params = searchParams ? await searchParams : undefined;
-  const session = await auth();
-  const viewerUsername = session?.user?.name?.trim().toLowerCase() ?? null;
   const q = getParam(params, "q");
   const trimmedQuery = q.trim();
   const postsLimit = parseSectionLimit(getParam(params, "postsLimit"));
@@ -161,7 +158,6 @@ export default async function SearchPage({ searchParams }: Props) {
                         visibility={build.visibility}
                         createdAt={build.createdAt}
                         updatedAt={build.updatedAt}
-                        showVisibility={viewerUsername === build.username.toLowerCase()}
                         backTo="search"
                         backHref={`${currentSearchHref}#builds-results`}
                       />

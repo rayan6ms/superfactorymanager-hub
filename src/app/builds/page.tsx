@@ -4,7 +4,6 @@ import BuildCard from "@/components/builds/BuildCard";
 import BuildsFilterBar from "@/components/builds/BuildsFilterBar";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
-import { auth } from "@/lib/auth";
 import { parseBuildPageSize } from "@/lib/builds/profile-list";
 import { searchPublicBuildsWithFilters, type BuildFilterOptions } from "@/lib/builds/search";
 import { getTotalPages, parsePageParam } from "@/lib/pagination";
@@ -36,8 +35,6 @@ function getParam(
 
 export default async function BuildsPage({ searchParams }: Props) {
   const params = searchParams ? await searchParams : undefined;
-  const session = await auth();
-  const viewerUsername = session?.user?.name?.trim().toLowerCase() ?? null;
 
   const q = getParam(params, "q");
   const orderParam = getParam(params, "order");
@@ -130,7 +127,6 @@ export default async function BuildsPage({ searchParams }: Props) {
                   visibility={build.visibility}
                   createdAt={build.createdAt}
                   updatedAt={build.updatedAt}
-                  showVisibility={viewerUsername === build.username.toLowerCase()}
                   backTo="explore-builds"
                   backHref={currentPageHref}
                 />

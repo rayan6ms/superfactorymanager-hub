@@ -62,10 +62,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     }
   }
 
-  const viewer = session?.user?.email
-    ? await db.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
-    : null;
-  const data = await getPostComments(post.id, { cursor, take, sort, viewerId: viewer?.id });
+  const data = await getPostComments(post.id, { cursor, take, sort, viewerId: session?.user?.id ?? null });
   return NextResponse.json(data);
 }
 
