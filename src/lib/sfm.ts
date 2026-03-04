@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 
 const COOLDOWN_MS = 15 * 60 * 1000;
@@ -271,6 +272,15 @@ async function matrixFromDB() {
   return { byGame, gameVersions: games };
 }
 
+const getCachedSfmMatrix = unstable_cache(
+  async () => matrixFromDB(),
+  ["sfm-matrix"],
+  {
+    revalidate: 60 * 60,
+    tags: ["sfm-matrix"],
+  },
+);
+
 async function repairKnownSfmVersionRows() {
   const brokenRows = await db.sfmVersion.findMany({
     where: { modVersion: { in: Object.keys(KNOWN_MOD_VERSION_FIXUPS) } },
@@ -345,12 +355,12 @@ async function repairKnownSfmVersionRows() {
 }
 
 export async function getSfmMatrix(force = false) {
-  await repairKnownSfmVersionRows();
-  const now = Date.now();
-  const shouldFetch = force || !memoMatrix || (now - lastFetchAt > COOLDOWN_MS);
-  if (shouldFetch) await refreshSfm({ source: "both", ignoreCooldown: true });
-  if (!memoMatrix) memoMatrix = await matrixFromDB();
-  return memoMatrix!;
+  if (force) {
+    const { matrix } = await refreshSfm({ source: "both", ignoreCooldown: true });
+    return matrix;
+  }
+
+  return getCachedSfmMatrix();
 }
 
 export async function refreshSfm(opts: { source: "cf" | "mr" | "both"; ignoreCooldown?: boolean }) {

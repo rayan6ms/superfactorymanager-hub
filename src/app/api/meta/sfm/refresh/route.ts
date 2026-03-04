@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { refreshSfm } from "@/lib/sfm";
 import { refreshChangelog } from "@/lib/changelog";
@@ -19,6 +20,8 @@ async function handle(req: Request) {
     refreshSfm({ source, ignoreCooldown }),
     refreshChangelog({ ignoreCooldown }),
   ]);
+
+  revalidateTag("sfm-matrix", "max");
 
   return NextResponse.json({
     ok: true,

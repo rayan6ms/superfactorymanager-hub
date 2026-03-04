@@ -140,6 +140,8 @@ const INITIAL_TOUCHED: Record<FormErrorKey, boolean> = {
 type PostComposerProps = {
   mode?: "create" | "edit";
   slug?: string;
+  initialMatrix?: Matrix;
+  initialCategories?: CategoryOption[];
   initialData?: Partial<Omit<FormState, "openForImprovement">> & {
     id?: string;
     tags?: NormalizedTag[];
@@ -272,7 +274,13 @@ function toggleExactMarkdown(
   };
 }
 
-export default function PostComposer({ mode = "create", slug, initialData }: PostComposerProps) {
+export default function PostComposer({
+  mode = "create",
+  slug,
+  initialMatrix = { byGame: {}, gameVersions: [] },
+  initialCategories = [],
+  initialData,
+}: PostComposerProps) {
   const r = useRouter();
   const idPrefix = useId();
   const isEditMode = mode === "edit";
@@ -306,9 +314,9 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     [initialData?.dependencies],
   );
 
-  const [matrix, setMatrix] = useState<Matrix>({ byGame: {}, gameVersions: [] });
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [matrix, setMatrix] = useState<Matrix>(initialMatrix);
+  const [categories, setCategories] = useState<CategoryOption[]>(initialCategories);
+  const [categoriesLoading, setCategoriesLoading] = useState(initialCategories.length === 0);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(initialFormState);
   const [tags, setTags] = useState<NormalizedTag[]>(initialTags);
@@ -787,14 +795,21 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
   );
 
   useEffect(() => {
+    if (initialMatrix.gameVersions.length) return;
+
     (async () => {
       const res = await fetch("/api/meta/sfm/versions");
       const data = await res.json();
       setMatrix(data);
     })();
-  }, []);
+  }, [initialMatrix]);
 
   useEffect(() => {
+    if (initialCategories.length) {
+      setCategoriesLoading(false);
+      return;
+    }
+
     let active = true;
     setCategoriesLoading(true);
     setCategoriesError(null);
@@ -822,7 +837,7 @@ export default function PostComposer({ mode = "create", slug, initialData }: Pos
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialCategories]);
 
   const modOptions = useMemo(
     () => (form.gameVersion ? (matrix.byGame[form.gameVersion] || []) : []),

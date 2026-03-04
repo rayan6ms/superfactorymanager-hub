@@ -241,23 +241,9 @@ export const authOptions: NextAuthConfig = {
       if (token.email) {
         session.user.email = token.email as string;
       }
-
-      if (token.sub) {
-        try {
-          const dbUser = await db.user.findUnique({
-            where: { id: token.sub },
-            select: { id: true, name: true, image: true, email: true },
-          });
-
-          if (dbUser) {
-            session.user.id = dbUser.id;
-            session.user.name = dbUser.name ?? session.user.name ?? null;
-            session.user.image = dbUser.image ?? session.user.image ?? null;
-            session.user.email = dbUser.email ?? session.user.email ?? null;
-          }
-        } catch (error) {
-          console.warn("Session callback failed to refresh user:", error);
-        }
+      const tokenWithImage = token as JWT & { image?: string | null };
+      if (typeof tokenWithImage.image === "string") {
+        session.user.image = tokenWithImage.image;
       }
 
       return session;
@@ -270,6 +256,9 @@ export const authOptions: NextAuthConfig = {
         }
         if (user.email) {
           token.email = user.email;
+        }
+        if (typeof user.image === "string") {
+          (token as JWT & { image?: string | null }).image = user.image;
         }
       }
 

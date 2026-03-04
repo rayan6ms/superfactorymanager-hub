@@ -4,6 +4,7 @@ import PostCard from "@/components/posts/PostCard";
 import PostsFilterBar from "@/components/posts/PostsFilterBar";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
+import { getCategoryOptions } from "@/lib/categories";
 import { db } from "@/lib/db";
 import { searchPostsWithFilters, type PostsFilterOptions } from "@/lib/posts";
 import { parsePageParam } from "@/lib/pagination";
@@ -72,10 +73,7 @@ export default async function UserPostsPage({ params, searchParams }: Props) {
   }
 
   const [categories, sfmMatrix] = await Promise.all([
-    db.category.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, key: true, name: true },
-    }),
+    getCategoryOptions(),
     getSfmMatrix(false),
   ]);
 

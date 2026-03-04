@@ -1,14 +1,12 @@
 import "./globals.css";
 import Providers from "./providers";
-import { auth } from "@/lib/auth";
 import { Space_Grotesk } from "next/font/google";
 import clsx from "clsx";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ExternalLinkGuard from "@/components/layout/ExternalLinkGuard";
-import { db } from "@/lib/db";
-import { getNotificationPreview, type SerializedNotification } from "@/lib/notifications";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/urls";
 
@@ -69,22 +67,6 @@ const sans = Space_Grotesk({
 });
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-
-  let notificationPreview: { notifications: SerializedNotification[]; unreadCount: number } | null = null;
-
-  if (session?.user?.email) {
-    const user = await db.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    });
-
-    if (user) {
-      const preview = await getNotificationPreview(user.id);
-      notificationPreview = preview;
-    }
-  }
-
   return (
     <html lang="en" className={clsx(sans.variable)}>
       <head>
@@ -97,27 +79,28 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : null}
       </head>
       <body className="app-shell">
-        <Analytics />
-        <Header session={session} notifications={notificationPreview} />
+        <Providers>
+          <Analytics />
+          <SpeedInsights />
+          <Header />
 
-        <main className="relative flex-1">
-          <div className="container-max relative py-8 sm:py-12">
-            <AdsShell placement="desktop-rails" />
-            <AdsShell placement="mobile-top" />
+          <main className="relative flex-1">
+            <div className="container-max relative py-8 sm:py-12">
+              <AdsShell placement="desktop-rails" />
+              <AdsShell placement="mobile-top" />
 
-            <Providers>
               <ExternalLinkGuard />
 
               <div className="space-y-6 lg:space-y-10">
                 <div className="space-y-12">{children}</div>
               </div>
-            </Providers>
 
-            <AdsShell placement="mobile-bottom" />
-          </div>
-        </main>
+              <AdsShell placement="mobile-bottom" />
+            </div>
+          </main>
 
-        <Footer />
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

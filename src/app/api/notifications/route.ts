@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { getNotifications, markNotifications } from "@/lib/notifications";
 
 export async function GET(req: Request) {
   const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const user = await db.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
-  if (!user) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -21,18 +16,14 @@ export async function GET(req: Request) {
   const take = typeof takeCandidate === "number" && Number.isFinite(takeCandidate) ? takeCandidate : undefined;
   const unreadOnly = url.searchParams.get("unreadOnly") === "1";
 
-  const data = await getNotifications(user.id, { take, cursor: cursor || undefined, unreadOnly });
+  const data = await getNotifications(userId, { take, cursor: cursor || undefined, unreadOnly });
   return NextResponse.json(data);
 }
 
 export async function PATCH(req: Request) {
   const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const user = await db.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
-  if (!user) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -49,6 +40,6 @@ export async function PATCH(req: Request) {
     : [];
   const read = payload.read !== false;
 
-  const result = await markNotifications(user.id, ids, read);
+  const result = await markNotifications(userId, ids, read);
   return NextResponse.json(result);
 }

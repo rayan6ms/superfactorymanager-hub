@@ -7,6 +7,8 @@ import CodeImprovementForm from "@/components/posts/CodeImprovementForm";
 import type { CommitForHistory, ContributorSummary } from "@/components/posts/CodeHistoryPanel";
 import type { Tag as TagModel } from "@prisma/client";
 import { isAdminEmail } from "@/lib/admin";
+import { getCategoryOptions } from "@/lib/categories";
+import { getSfmMatrix } from "@/lib/sfm";
 
 export default async function EditPostPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
@@ -87,6 +89,11 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
     mergedCommits: contributor.mergedCommits,
   }));
 
+  const [categories, matrix] = await Promise.all([
+    getCategoryOptions(),
+    getSfmMatrix(false),
+  ]);
+
   return (
     <div className="space-y-10">
       <div className="space-y-2">
@@ -98,7 +105,13 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
       </div>
 
       {(isAuthor || isAdmin) && (
-        <PostComposer mode="edit" slug={slug} initialData={initialData} />
+        <PostComposer
+          mode="edit"
+          slug={slug}
+          initialData={initialData}
+          initialCategories={categories}
+          initialMatrix={matrix}
+        />
       )}
 
       <CodeHistoryPanel

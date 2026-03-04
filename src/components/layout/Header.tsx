@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { signOut as clientSignOut, useSession } from "next-auth/react";
 import Button from "@/components/ui/Button";
 import Search from "@/components/ui/Search";
 import {
@@ -12,23 +16,61 @@ import {
   UserRoundPen,
   Menu,
 } from "lucide-react";
-import { signOut } from "@/lib/auth";
-import type { Session } from "next-auth";
 import type { SerializedNotification } from "@/lib/notifications-shared";
 import UserMenuAutoCloser from "@/components/layout/UserMenuAutoCloser";
 import HeaderNotifications from "@/components/layout/HeaderNotifications";
 import NotificationBadge from "@/components/layout/NotificationBadge";
-import Image from 'next/image';
+import Image from "next/image";
+import { NOTIFICATION_PREVIEW_LIMIT } from "@/lib/notifications-shared";
 
-type HeaderProps = {
-  session: Session | null;
-  notifications?: { notifications: SerializedNotification[]; unreadCount: number } | null;
+type NotificationsResponse = {
+  unreadCount?: number;
+  notifications?: SerializedNotification[];
 };
 
-export default function Header({ session, notifications }: HeaderProps) {
-  const notificationItems = notifications?.notifications ?? [];
-  const unreadCount = notifications?.unreadCount ?? 0;
+export default function Header() {
+  const { data: session, status } = useSession();
   const user = session?.user ?? null;
+  const [notificationItems, setNotificationItems] = useState<SerializedNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !user?.id) return;
+
+    const controller = new AbortController();
+
+    void (async () => {
+      try {
+        const params = new URLSearchParams({
+          limit: String(NOTIFICATION_PREVIEW_LIMIT),
+          unreadOnly: "1",
+        });
+        const res = await fetch(`/api/notifications?${params.toString()}`, {
+          cache: "no-store",
+          credentials: "include",
+          signal: controller.signal,
+        });
+        if (!res.ok) return;
+
+        const data = await res.json() as NotificationsResponse;
+        if (Array.isArray(data.notifications)) {
+          setNotificationItems(data.notifications);
+        }
+        if (typeof data.unreadCount === "number") {
+          setUnreadCount(data.unreadCount);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error("Failed to load header notifications:", error);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [status, user?.id]);
+
+  const visibleNotificationItems = user ? notificationItems : [];
+  const visibleUnreadCount = user ? unreadCount : 0;
+
   const username = user?.name?.trim() || null;
   const avatarUrl = user?.image ?? null;
   const initial = (user?.name ?? user?.email ?? "?").trim().charAt(0).toUpperCase() || "?";
@@ -96,7 +138,7 @@ export default function Header({ session, notifications }: HeaderProps) {
                           {initial}
                         </span>
                       )}
-                      <NotificationBadge initialCount={unreadCount} />
+                      <NotificationBadge initialCount={visibleUnreadCount} />
                     </>
                   ) : (
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg font-semibold">
@@ -117,8 +159,8 @@ export default function Header({ session, notifications }: HeaderProps) {
 
                     {user && (
                       <HeaderNotifications
-                        initialNotifications={notificationItems}
-                        initialUnreadCount={unreadCount}
+                        initialNotifications={visibleNotificationItems}
+                        initialUnreadCount={visibleUnreadCount}
                         scrollClassName="max-h-64"
                       />
                     )}
@@ -188,21 +230,16 @@ export default function Header({ session, notifications }: HeaderProps) {
                     </div>
 
                     {user ? (
-                      <form
-                        className="inline-flex"
-                        action={async () => {
-                          "use server";
-                          await signOut({ redirectTo: "/" });
-                        }}
-                      >
+                      <div className="inline-flex">
                         <Button
                           size="md"
                           variant="ghost"
                           className="w-full justify-center text-red-200 hover:text-red-100"
+                          onClick={() => void clientSignOut({ callbackUrl: "/" })}
                         >
                           <LogOut /> Log out
                         </Button>
-                      </form>
+                      </div>
                     ) : (
                       <Link href="/login" className="inline-flex">
                         <Button
