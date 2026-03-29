@@ -1,24 +1,10 @@
 import { NextResponse } from "next/server";
+import { parseDependencyTarget } from "@/lib/deps";
 import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 const FETCH_TIMEOUT_MS = 5000;
 const MAX_REMOTE_HTML_BYTES = 1_500_000;
-
-function isAllowedHost(hostname: string, domain: string) {
-  const host = hostname.toLowerCase();
-  return host === domain || host.endsWith(`.${domain}`);
-}
-
-function slugToName(u: URL) {
-  const parts = u.pathname.split("/").filter(Boolean);
-  const idx = parts.findIndex(p => p === "mc-mods" || p === "mod");
-  const slug = idx >= 0 ? parts[idx + 1] : parts[parts.length - 1];
-  if (!slug) return null;
-  return slug
-    .split("-")
-    .map(s => s.charAt(0).toUpperCase() + s.slice(1))
-    .join(" ");
-}
+const MAX_REDIRECTS = 2;
 
 function clean(text: string) {
   return text
@@ -118,6 +104,45 @@ async function fetchWithTimeout(url: string, init: RequestInit) {
   }
 }
 
+function isRedirectStatus(status: number) {
+  return status === 301 || status === 302 || status === 303 || status === 307 || status === 308;
+}
+
+async function fetchAllowedDependencyPage(initialUrl: URL) {
+  let currentUrl = initialUrl;
+
+  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
+    const res = await fetchWithTimeout(currentUrl.toString(), {
+      cache: "no-store",
+      headers: { "user-agent": "Mozilla/5.0 superfactorymanager" },
+      redirect: "manual",
+    });
+
+    if (!isRedirectStatus(res.status)) {
+      return res;
+    }
+
+    if (redirectCount === MAX_REDIRECTS) {
+      throw new Error("Too many redirects");
+    }
+
+    const location = res.headers.get("location");
+    if (!location) {
+      throw new Error("Missing redirect location");
+    }
+
+    const redirected = new URL(location, currentUrl);
+    const nextTarget = parseDependencyTarget(redirected);
+    if (!nextTarget) {
+      throw new Error("Dependency redirect left the allowed hosts");
+    }
+
+    currentUrl = nextTarget.url;
+  }
+
+  throw new Error("Unable to resolve dependency page");
+}
+
 export async function GET(req: Request) {
   const clientKey = getClientRateLimitKey(req.headers);
   const limit = await checkRateLimit(`meta:dep-resolve:client:${clientKey}`, {
@@ -135,24 +160,29 @@ export async function GET(req: Request) {
   const q = u.searchParams.get("url");
   if (!q) return NextResponse.json({ error: "Missing url" }, { status: 400 });
 
-  let url: URL;
-  try { url = new URL(q); } catch { return NextResponse.json({ error: "Invalid URL" }, { status: 400 }); }
-
-  if (!isAllowedHost(url.hostname, "curseforge.com") && !isAllowedHost(url.hostname, "modrinth.com")) {
-    return NextResponse.json({ error: "URL must be CurseForge or Modrinth" }, { status: 400 });
+  const dependency = parseDependencyTarget(q);
+  if (!dependency) {
+    return NextResponse.json(
+      { error: "URL must be an HTTPS CurseForge or Modrinth mod page." },
+      { status: 400 },
+    );
   }
 
   try {
-    const res = await fetchWithTimeout(url.toString(), {
-      cache: "no-store",
-      headers: { "user-agent": "Mozilla/5.0 superfactorymanager" },
-    });
+    const res = await fetchAllowedDependencyPage(dependency.url);
+    if (!res.ok) {
+      throw new Error(`Dependency resolver responded with ${res.status}`);
+    }
+
+    const contentType = res.headers.get("content-type")?.toLowerCase() ?? "";
+    if (contentType && !contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) {
+      throw new Error("Unsupported dependency response content type");
+    }
+
     const html = await readTextWithLimit(res, MAX_REMOTE_HTML_BYTES);
 
     if (!html || looksLikeCloudflare(html)) {
-      const fallback = slugToName(url);
-      if (fallback) return NextResponse.json({ name: fallback });
-      return NextResponse.json({ error: "Could not resolve mod name" }, { status: 502 });
+      return NextResponse.json({ name: dependency.name });
     }
 
     const name = await extractNameFromHtml(html);
@@ -160,7 +190,5 @@ export async function GET(req: Request) {
   } catch {
   }
 
-  const fallback = slugToName(url);
-  if (fallback) return NextResponse.json({ name: fallback });
-  return NextResponse.json({ error: "Could not resolve mod name" }, { status: 404 });
+  return NextResponse.json({ name: dependency.name });
 }

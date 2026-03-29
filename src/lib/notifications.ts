@@ -3,6 +3,7 @@ import { NotificationOrigin, type Notification, Prisma } from "@prisma/client";
 import {
   NOTIFICATION_PAGE_SIZE,
   NOTIFICATION_PREVIEW_LIMIT,
+  normalizeNotificationLink,
   type SerializedNotification,
 } from "./notifications-shared";
 export * from "./notifications-shared";
@@ -18,7 +19,7 @@ const serialize = (notification: Notification): SerializedNotification => ({
   title: notification.title,
   message: notification.message,
   origin: notification.origin,
-  link: notification.link ?? null,
+  link: normalizeNotificationLink(notification.link),
   imageUrl: notification.imageUrl ?? null,
   createdAt: notification.createdAt.toISOString(),
   readAt: notification.readAt ? notification.readAt.toISOString() : null,
@@ -126,7 +127,7 @@ export async function createNotification(options: {
       title,
       message,
       origin,
-      link,
+      link: normalizeNotificationLink(link),
       imageUrl,
       metadata: prismaMetadata,
       readAt: markUnread ? null : new Date(),

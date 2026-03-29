@@ -11,6 +11,7 @@ import {
   NOTIFICATION_PREVIEW_LIMIT,
   NOTIFICATION_SYNC_EVENT,
   formatNotificationTimestamp,
+  withNotificationSource,
   type SerializedNotification,
 } from "@/lib/notifications-shared";
 import {
@@ -41,23 +42,6 @@ type ApiResponse = {
   unreadCount?: number;
   nextCursor?: string | null;
 };
-
-function withNotificationSource(href: string | null): string | null {
-  if (!href) return href;
-
-  if (
-    href.includes("from=notifications") ||
-    href.includes("source=notifications") ||
-    href.includes("fromNotifications")
-  ) {
-    return href;
-  }
-
-  const [pathAndQuery, hash] = href.split("#");
-  const separator = pathAndQuery.includes("?") ? "&" : "?";
-  const next = `${pathAndQuery}${separator}from=notifications`;
-  return hash ? `${next}#${hash}` : next;
-}
 
 export default function NotificationCenter({
   initialNotifications,

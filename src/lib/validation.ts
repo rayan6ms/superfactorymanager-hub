@@ -2,6 +2,7 @@ import { z } from "zod";
 import { MAX_POST_IMAGES } from "./images";
 import { COMMENT_MAX_LENGTH, COMMENT_MIN_LENGTH } from "./comment-constants";
 import { normalizePostDescription } from "./post-description";
+import { parseDependency } from "./deps";
 
 export const TAG_MIN_COUNT = 2;
 export const TAG_MAX_COUNT = 6;
@@ -94,12 +95,9 @@ export const tagSchema = z
     message: "Tags may include letters, numbers, spaces, hyphens, underscores, and slashes.",
   });
 
-export const dependencyUrl = z.url().refine((u) => {
-  try {
-    const url = new URL(u);
-    return isAllowedHost(url.hostname, "curseforge.com") || isAllowedHost(url.hostname, "modrinth.com");
-  } catch { return false; }
-}, "Must be a CurseForge or Modrinth URL");
+export const dependencyUrl = z.string().trim().refine((value) => Boolean(parseDependency(value)), {
+  message: "Must be an HTTPS CurseForge or Modrinth mod URL.",
+});
 
 export const postSchema = z.object({
   title: z.string().min(1),

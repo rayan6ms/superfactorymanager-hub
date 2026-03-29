@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { NotificationOrigin } from "@prisma/client";
+import { normalizeNotificationLink } from "./notifications-shared";
 
 let transporterPromise: Promise<nodemailer.Transporter> | null = null;
 
@@ -54,12 +55,9 @@ function escapeHtml(value: string) {
 }
 
 function resolveNotificationLink(link: string) {
-  if (/^https?:\/\//i.test(link)) {
-    return link;
-  }
-  const baseUrl = getAppBaseUrl();
-  const normalizedLink = link.startsWith("/") ? link : `/${link}`;
-  return `${baseUrl}${normalizedLink}`;
+  const normalizedLink = normalizeNotificationLink(link);
+  if (!normalizedLink) return null;
+  return `${getAppBaseUrl()}${normalizedLink}`;
 }
 
 function notificationSubject(origin: NotificationOrigin, title: string) {

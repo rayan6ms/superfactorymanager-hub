@@ -52,15 +52,17 @@ export default function HeaderNotifications({
 
       if (detail.updates?.length) {
         setNotifications(prev =>
-          prev.map(item => {
-            const update = detail.updates!.find(change => change.id === item.id);
-            return update ? { ...item, readAt: update.readAt } : item;
-          }),
+          prev
+            .map(item => {
+              const update = detail.updates!.find(change => change.id === item.id);
+              return update ? { ...item, readAt: update.readAt } : item;
+            })
+            .filter(item => !item.readAt),
         );
       }
 
       if (detail.preview) {
-        setNotifications(detail.preview);
+        setNotifications(detail.preview.filter(item => !item.readAt));
       }
     }
 

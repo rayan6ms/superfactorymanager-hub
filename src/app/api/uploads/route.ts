@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { auth } from "@/lib/auth";
 import { MAX_POST_IMAGES } from "@/lib/images";
-import { uploadImageVariant } from "@/lib/blob";
+import { deleteBlobs, uploadImageVariant } from "@/lib/blob";
 import {
   MAX_UPLOAD_IMAGE_PIXELS,
   validateUploadBatch,
@@ -122,37 +122,47 @@ export async function POST(req: Request) {
       files,
       MAX_FILE_PROCESSING_CONCURRENCY,
       async (file) => {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const metadata = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS }).metadata();
-        if (!metadata.width || !metadata.height) {
-          throw new Error("Unsupported image format.");
+        const uploadedUrls: string[] = [];
+
+        try {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const metadata = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS }).metadata();
+          if (!metadata.width || !metadata.height) {
+            throw new Error("Unsupported image format.");
+          }
+
+          const original = await uploadImageVariant(
+            "uploads/original",
+            buffer,
+            file.type || "image/jpeg",
+            getOriginalUploadExtension(file.type),
+          );
+          uploadedUrls.push(original);
+
+          const variants = await mapWithConcurrency(
+            [
+              { width: 320, prefix: "sm" },
+              { width: 640, prefix: "md" },
+              { width: 1024, prefix: "lg" },
+            ],
+            MAX_VARIANT_PROCESSING_CONCURRENCY,
+            async ({ width, prefix }) => {
+              const resized = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })
+                .resize({ width })
+                .jpeg({ quality: 80 })
+                .toBuffer();
+              const variantUrl = await uploadImageVariant(`uploads/${prefix}`, resized, "image/jpeg");
+              uploadedUrls.push(variantUrl);
+              return variantUrl;
+            },
+          );
+
+          const [thumbSm, thumbMd, thumbLg] = variants;
+          return { original, thumbSm, thumbMd, thumbLg };
+        } catch (error) {
+          await deleteBlobs(uploadedUrls);
+          throw error;
         }
-
-        const original = await uploadImageVariant(
-          "uploads/original",
-          buffer,
-          file.type || "image/jpeg",
-          getOriginalUploadExtension(file.type),
-        );
-
-        const variants = await mapWithConcurrency(
-          [
-            { width: 320, prefix: "sm" },
-            { width: 640, prefix: "md" },
-            { width: 1024, prefix: "lg" },
-          ],
-          MAX_VARIANT_PROCESSING_CONCURRENCY,
-          async ({ width, prefix }) => {
-            const resized = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })
-              .resize({ width })
-              .jpeg({ quality: 80 })
-              .toBuffer();
-            return uploadImageVariant(`uploads/${prefix}`, resized, "image/jpeg");
-          },
-        );
-
-        const [thumbSm, thumbMd, thumbLg] = variants;
-        return { original, thumbSm, thumbMd, thumbLg };
       },
     );
 

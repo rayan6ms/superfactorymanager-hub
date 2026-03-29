@@ -5,7 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
 import { CheckCheck, Loader2 } from "lucide-react";
-import { formatNotificationTimestamp, type SerializedNotification } from "@/lib/notifications-shared";
+import {
+  formatNotificationTimestamp,
+  withNotificationSource,
+  type SerializedNotification,
+} from "@/lib/notifications-shared";
 
 const ORIGIN_LABEL: Record<SerializedNotification["origin"], string> = {
   SYSTEM: "System",
@@ -27,23 +31,6 @@ type NotificationPreviewListProps = {
   maxVisible?: number;
   onMarkRead?: (id: string) => void | Promise<void>;
 };
-
-function withNotificationSource(href: string | null): string | null {
-  if (!href) return href;
-
-  if (
-    href.includes("from=notifications") ||
-    href.includes("source=notifications") ||
-    href.includes("fromNotifications")
-  ) {
-    return href;
-  }
-
-  const [pathAndQuery, hash] = href.split("#");
-  const separator = pathAndQuery.includes("?") ? "&" : "?";
-  const next = `${pathAndQuery}${separator}from=notifications`;
-  return hash ? `${next}#${hash}` : next;
-}
 
 export default function NotificationPreviewList({
   notifications,

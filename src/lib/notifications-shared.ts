@@ -16,6 +16,35 @@ export type SerializedNotification = {
   readAt: string | null;
 };
 
+export function normalizeNotificationLink(link: string | null | undefined): string | null {
+  if (typeof link !== "string") return null;
+
+  const trimmed = link.trim();
+  if (!trimmed || !trimmed.startsWith("/") || trimmed.startsWith("//")) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+export function withNotificationSource(link: string | null | undefined): string | null {
+  const href = normalizeNotificationLink(link);
+  if (!href) return null;
+
+  if (
+    href.includes("from=notifications") ||
+    href.includes("source=notifications") ||
+    href.includes("fromNotifications")
+  ) {
+    return href;
+  }
+
+  const [pathAndQuery, hash] = href.split("#");
+  const separator = pathAndQuery.includes("?") ? "&" : "?";
+  const next = `${pathAndQuery}${separator}from=notifications`;
+  return hash ? `${next}#${hash}` : next;
+}
+
 export function formatNotificationTimestamp(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
