@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Badge, Card } from "@/components/ui";
-import { formatBuildDate, type BuildVisibility } from "@/lib/builds/profile-list";
+import { formatBuildDate, type BuildVisibility } from "@/lib/builds/profile-list-shared";
 
 type BuildCardProps = {
   username: string;

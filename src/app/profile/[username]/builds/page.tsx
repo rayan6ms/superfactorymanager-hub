@@ -4,7 +4,8 @@ import BuildCard from "@/components/builds/BuildCard";
 import Pagination from "@/components/ui/Pagination";
 import { Card } from "@/components/ui";
 import { auth } from "@/lib/auth";
-import { getProfileBuildList, parseBuildPageSize } from "@/lib/builds/profile-list";
+import { parseBuildPageSize } from "@/lib/builds/profile-list-shared";
+import { getProfileBuildList } from "@/lib/builds/profile-list";
 import { getTotalPages, parsePageParam } from "@/lib/pagination";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

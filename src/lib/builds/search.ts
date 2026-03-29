@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import type { BuildVisibility } from "@/lib/builds/profile-list";
+import type { BuildVisibility } from "@/lib/builds/profile-list-shared";
 
 export const BUILD_CARD_SELECT = {
   id: true,

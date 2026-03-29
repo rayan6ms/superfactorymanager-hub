@@ -2,6 +2,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { BuildVisibility, PrismaClient } from "@prisma/client";
 
 function getBaseUrl(defaultBase = "https://sfmhub.site") {
@@ -80,7 +81,22 @@ function buildXml(items) {
 
 async function generateSitemap() {
   const baseUrl = getBaseUrl();
-  const prisma = new PrismaClient();
+  const prismaUrl = process.env.PRISMA_DATABASE_URL?.trim();
+  const isAccelerateUrl = Boolean(
+    prismaUrl
+    && (prismaUrl.startsWith("prisma://") || prismaUrl.startsWith("prisma+postgres://")),
+  );
+  const directDatabaseUrl = process.env.POSTGRES_URL?.trim()
+    || process.env.DATABASE_URL?.trim()
+    || (!isAccelerateUrl ? prismaUrl : undefined);
+
+  if (!directDatabaseUrl) {
+    throw new Error("Sitemap generation requires a direct Postgres URL. Set POSTGRES_URL or DATABASE_URL.");
+  }
+
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: directDatabaseUrl }),
+  });
   const urlMap = new Map();
 
   try {

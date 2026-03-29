@@ -4,7 +4,7 @@ import BuildCard from "@/components/builds/BuildCard";
 import BuildsFilterBar from "@/components/builds/BuildsFilterBar";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
-import { parseBuildPageSize } from "@/lib/builds/profile-list";
+import { parseBuildPageSize } from "@/lib/builds/profile-list-shared";
 import { searchPublicBuildsWithFilters, type BuildFilterOptions } from "@/lib/builds/search";
 import { getTotalPages, parsePageParam } from "@/lib/pagination";
 
