@@ -8,6 +8,8 @@ import { parseBuildPageSize } from "@/lib/builds/profile-list-shared";
 import { searchPublicBuildsWithFilters, type BuildFilterOptions } from "@/lib/builds/search";
 import { getTotalPages, parsePageParam } from "@/lib/pagination";
 
+export const revalidate = 60;
+
 const ORDER_VALUES: BuildFilterOptions["order"][] = [
   "best",
   "newest",

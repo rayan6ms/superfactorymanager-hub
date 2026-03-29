@@ -3,18 +3,20 @@ import Card from "@/components/ui/Card";
 import PostCard from "@/components/posts/PostCard";
 import BuildCard from "@/components/builds/BuildCard";
 import HomeQuickLinks from "@/components/home/HomeQuickLinks";
-import { db } from "@/lib/db";
 import {
   searchPublicBuildsWithFilters,
   type SerializedBuild,
 } from "@/lib/builds/search";
 import {
+  getPublicPostCount,
   getPopularTags,
   getTrendingPosts,
   getRecentPosts,
   getRecommendedPosts,
   type SerializedPost,
 } from "@/lib/posts";
+
+export const revalidate = 60;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -105,7 +107,7 @@ export default async function Home({ searchParams }: Props) {
 
   const [popularTags, totalPosts, trendingPosts, recentPosts, recommendedPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
     getPopularTags(12),
-    db.post.count({ where: { isDeleted: false } }),
+    getPublicPostCount(),
     getTrendingPosts(HOME_SECTION_LIMIT),
     getRecentPosts(HOME_SECTION_LIMIT),
     getRecommendedPosts({ searchTerm: q, limit: HOME_SECTION_LIMIT }),

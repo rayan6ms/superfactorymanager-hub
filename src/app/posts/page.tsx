@@ -5,17 +5,14 @@ import PostsFilterBar from "@/components/posts/PostsFilterBar";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
 import { getCategoryOptions } from "@/lib/categories";
-import { db } from "@/lib/db";
 import {
-  POST_CARD_SELECT,
   searchPostsWithFilters,
-  serializePost,
-  type PostWithRelations,
   type PostsFilterOptions,
 } from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import { getSfmMatrix } from "@/lib/sfm";
-import { searchPostsHybrid } from "@/lib/search-db";
+
+export const revalidate = 60;
 
 const ORDER_VALUES: PostsFilterOptions["order"][] = [
   "best",
@@ -68,34 +65,7 @@ export default async function PostsPage({ searchParams }: Props) {
     getSfmMatrix(false),
   ]);
 
-  const fetchSearchPage = async (pageNumber: number) => {
-    const { results, total } = await searchPostsHybrid({
-      q: trimmedQuery,
-      limit: PAGE_SIZE,
-      offset: (pageNumber - 1) * PAGE_SIZE,
-      order,
-      filters: {
-        minRating: minRatingNumber,
-        categoryKey: category || undefined,
-        gameVersion: gameVersion || undefined,
-        sfmVersion: sfmVersion || undefined,
-      },
-    });
-
-    const ids = results.map(result => result.id);
-    const posts = ids.length
-      ? await db.post.findMany({ where: { id: { in: ids } }, select: POST_CARD_SELECT })
-      : [];
-    const map = new Map(posts.map(post => [post.id, post]));
-    const ordered = ids
-      .map(id => map.get(id))
-      .filter((post): post is PostWithRelations => Boolean(post))
-      .map(serializePost);
-
-    return { posts: ordered, total };
-  };
-
-  const fetchFilteredPage = (pageNumber: number) =>
+  const fetchPage = (pageNumber: number) =>
     searchPostsWithFilters({
       q: hasQuery ? trimmedQuery : undefined,
       order,
@@ -107,15 +77,13 @@ export default async function PostsPage({ searchParams }: Props) {
       page: pageNumber,
     });
 
-  const initialResult = hasQuery ? await fetchSearchPage(requestedPage) : await fetchFilteredPage(requestedPage);
+  const initialResult = await fetchPage(requestedPage);
 
   const totalPages = getTotalPages(initialResult.total, PAGE_SIZE);
   const activePage = Math.min(requestedPage, totalPages);
   const needsRefetch = activePage !== requestedPage;
   const finalResult = needsRefetch
-    ? hasQuery
-      ? await fetchSearchPage(activePage)
-      : await fetchFilteredPage(activePage)
+    ? await fetchPage(activePage)
     : initialResult;
 
   const posts = finalResult.posts;

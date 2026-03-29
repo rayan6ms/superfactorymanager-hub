@@ -77,36 +77,14 @@ export default function HeaderNotifications({
     [],
   );
 
-  const refreshPreview = useCallback(async () => {
-    try {
-      const params = new URLSearchParams({
-        limit: String(NOTIFICATION_PREVIEW_LIMIT),
-        unreadOnly: "1",
-      });
-      const res = await fetch(`/api/notifications?${params.toString()}`, {
-        cache: "no-store",
-        credentials: "include",
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as ApiResponse;
-      if (Array.isArray(data.notifications)) {
-        setNotifications(data.notifications.filter(notification => !notification.readAt));
-      }
-      if (typeof data.unreadCount === "number") {
-        updateUnreadCount(data.unreadCount);
-      }
-      dispatchNotificationSync({
-        unreadCount: data.unreadCount,
-        preview: data.notifications?.filter(notification => !notification.readAt),
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  }, [updateUnreadCount]);
-
   const markAsRead = useCallback(
     async (id: string) => {
       if (pendingIds.has(id)) return;
+
+      const existingIndex = notifications.findIndex(item => item.id === id);
+      const existingItem = existingIndex >= 0 ? notifications[existingIndex] : null;
+      const nextNotifications = notifications.filter(item => item.id !== id);
+      const timestamp = new Date().toISOString();
 
       setPendingIds(prev => {
         const next = new Set(prev);
@@ -115,12 +93,7 @@ export default function HeaderNotifications({
       });
       setError(null);
 
-      const timestamp = new Date().toISOString();
-
-      // optimistic update
-      setNotifications(prev =>
-        prev.map(item => (item.id === id ? { ...item, readAt: timestamp } : item)),
-      );
+      setNotifications(nextNotifications);
 
       try {
         const res = await fetch("/api/notifications", {
@@ -132,19 +105,31 @@ export default function HeaderNotifications({
         if (!res.ok) throw new Error("Request failed");
 
         const data = (await res.json()) as ApiResponse;
+        const nextUnreadCount = typeof data.unreadCount === "number"
+          ? data.unreadCount
+          : Math.max(0, unreadCount - 1);
+
         if (typeof data.unreadCount === "number") {
           updateUnreadCount(data.unreadCount);
         } else {
           updateUnreadCount(prev => Math.max(0, prev - 1));
         }
-        await refreshPreview();
         dispatchNotificationSync({
-          unreadCount: typeof data.unreadCount === "number" ? data.unreadCount : undefined,
+          unreadCount: nextUnreadCount,
           updates: [{ id, readAt: timestamp }],
+          preview: nextNotifications.slice(0, NOTIFICATION_PREVIEW_LIMIT),
         });
       } catch (err) {
         console.error(err);
         setError("We couldn’t update that notification. Please try again.");
+        if (existingItem) {
+          setNotifications(prev => {
+            if (prev.some(item => item.id === existingItem.id)) return prev;
+            const restored = [...prev];
+            restored.splice(existingIndex, 0, existingItem);
+            return restored;
+          });
+        }
 
       } finally {
         setPendingIds(prev => {
@@ -154,7 +139,7 @@ export default function HeaderNotifications({
         });
       }
     },
-    [pendingIds, refreshPreview, updateUnreadCount],
+    [notifications, pendingIds, unreadCount, updateUnreadCount],
   );
 
   const derivedUnread = notifications.filter(n => !n.readAt).length;

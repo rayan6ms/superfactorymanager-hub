@@ -1,4 +1,6 @@
+import "server-only";
 import { Prisma } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import type { BuildVisibility } from "@/lib/builds/profile-list-shared";
 
@@ -31,6 +33,27 @@ export type SerializedBuild = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+type CachedSerializedBuild = Omit<SerializedBuild, "createdAt" | "updatedAt"> & {
+  createdAt: string;
+  updatedAt: string;
+};
+
+function toCachedSerializedBuild(build: SerializedBuild): CachedSerializedBuild {
+  return {
+    ...build,
+    createdAt: build.createdAt.toISOString(),
+    updatedAt: build.updatedAt.toISOString(),
+  };
+}
+
+function fromCachedSerializedBuild(build: CachedSerializedBuild): SerializedBuild {
+  return {
+    ...build,
+    createdAt: new Date(build.createdAt),
+    updatedAt: new Date(build.updatedAt),
+  };
+}
 
 export type BuildFilterOptions = {
   q?: string;
@@ -232,7 +255,7 @@ async function searchPublicBuildsByRelevance(options: {
   };
 }
 
-export async function searchPublicBuildsWithFilters(opts: BuildFilterOptions) {
+async function searchPublicBuildsWithFiltersUncached(opts: BuildFilterOptions) {
   const {
     q,
     order = "best",
@@ -279,6 +302,49 @@ export async function searchPublicBuildsWithFilters(opts: BuildFilterOptions) {
       .map(serializeBuild)
       .filter((build): build is SerializedBuild => Boolean(build)),
     total,
+  };
+}
+
+type CachedBuildFilterOptions = {
+  q: string | null;
+  order: NonNullable<BuildFilterOptions["order"]>;
+  username: string | null;
+  limit: number;
+  page: number;
+};
+
+const getCachedPublicBuildsWithFilters = unstable_cache(
+  async (opts: CachedBuildFilterOptions) => {
+    const result = await searchPublicBuildsWithFiltersUncached({
+      q: opts.q ?? undefined,
+      order: opts.order,
+      username: opts.username ?? undefined,
+      limit: opts.limit,
+      page: opts.page,
+    });
+
+    return {
+      builds: result.builds.map(toCachedSerializedBuild),
+      total: result.total,
+    };
+  },
+  ["public-builds-with-filters"],
+  { revalidate: 60 },
+);
+
+export async function searchPublicBuildsWithFilters(opts: BuildFilterOptions) {
+  const normalized: CachedBuildFilterOptions = {
+    q: opts.q?.trim() || null,
+    order: opts.order ?? "best",
+    username: opts.username?.trim() || null,
+    limit: Math.max(1, Math.min(opts.limit ?? 24, 100)),
+    page: Math.max(1, Math.floor(opts.page ?? 1)),
+  };
+
+  const result = await getCachedPublicBuildsWithFilters(normalized);
+  return {
+    builds: result.builds.map(fromCachedSerializedBuild),
+    total: result.total,
   };
 }
 

@@ -5,15 +5,8 @@ import { buildNameSchema, normalizeBuildName } from "@/lib/builds/validation";
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const user = await db.user.findUnique({
-    where: { email: session.user.email },
-    select: { id: true },
-  });
-  if (!user) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -31,7 +24,7 @@ export async function GET(request: Request) {
 
   const { nameLower } = normalizeBuildName(parsed.data);
   const existing = await db.build.findUnique({
-    where: { userId_nameLower: { userId: user.id, nameLower } },
+    where: { userId_nameLower: { userId, nameLower } },
     select: { id: true },
   });
 

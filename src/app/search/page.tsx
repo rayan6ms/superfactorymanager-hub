@@ -7,6 +7,8 @@ import Card from "@/components/ui/Card";
 import { searchPublicBuildsWithFilters } from "@/lib/builds/search";
 import { searchPostsWithFilters } from "@/lib/posts";
 
+export const revalidate = 60;
+
 const DEFAULT_SECTION_LIMIT = 12;
 const MAX_SECTION_LIMIT = 60;
 const LIMIT_STEP = 12;

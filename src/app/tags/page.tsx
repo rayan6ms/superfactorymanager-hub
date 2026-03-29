@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { POST_CARD_SELECT, serializePost } from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
+export const revalidate = 60;
+
 function parseTagsParam(value: string) {
   return value
     .split(",")

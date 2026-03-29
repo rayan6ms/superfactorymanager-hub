@@ -83,19 +83,19 @@ export default function NotificationPreviewList({
       }));
 
       try {
-        const res = await fetch("/api/notifications", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ ids: [id], read: makeRead }),
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to update notification");
-        }
-
-        if (onMarkRead) {
+        if (onMarkRead && makeRead) {
           await onMarkRead(id);
+        } else {
+          const res = await fetch("/api/notifications", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ ids: [id], read: makeRead }),
+          });
+
+          if (!res.ok) {
+            throw new Error("Failed to update notification");
+          }
         }
       } catch (error) {
         console.error(error);

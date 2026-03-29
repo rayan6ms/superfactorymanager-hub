@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
 import {
   NOTIFICATION_PAGE_SIZE,
   getNotifications,
@@ -20,16 +19,12 @@ type NotificationData = {
 
 export default async function NotificationsPage() {
   const session = await auth();
-  if (!session?.user?.email) {
+  const userId = session?.user?.id;
+  if (!userId) {
     redirect(`/login?next=${encodeURIComponent("/notifications")}`);
   }
 
-  const user = await db.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
-  if (!user) {
-    redirect(`/login?next=${encodeURIComponent("/notifications")}`);
-  }
-
-  const data: NotificationData = await getNotifications(user.id, { take: NOTIFICATION_PAGE_SIZE });
+  const data: NotificationData = await getNotifications(userId, { take: NOTIFICATION_PAGE_SIZE });
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
