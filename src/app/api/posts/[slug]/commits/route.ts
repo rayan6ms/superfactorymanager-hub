@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { NotificationOrigin } from "@prisma/client";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
+import { getCurrentUserFromSession } from "@/lib/current-user";
 
 const contributionSchema = z.object({
   code: z.string().min(3, { message: "Code is required." }),
@@ -20,11 +21,14 @@ const contributionSchema = z.object({
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
   const session = await auth();
-  if (!session?.user?.email) {
+  if (!session?.user?.id && !session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await db.user.findUnique({ where: { email: session.user.email } });
+  const user = await getCurrentUserFromSession(session.user, {
+    id: true,
+    name: true,
+  });
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let payload: unknown;

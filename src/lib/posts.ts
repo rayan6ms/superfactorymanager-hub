@@ -11,6 +11,7 @@ export const POST_CARD_SELECT = {
   slug: true,
   title: true,
   description: true,
+  uploadDate: true,
   modVersion: true,
   views: true,
   rating: true,
@@ -110,6 +111,36 @@ export async function recordPostContributor(
     },
     create: { postId, userId, mergedCommits: 1 },
   });
+}
+
+export async function generateUniquePostSlug(baseSlug: string) {
+  const candidates = await db.post.findMany({
+    where: {
+      OR: [
+        { slug: baseSlug },
+        { slug: { startsWith: `${baseSlug}-` } },
+      ],
+    },
+    select: { slug: true },
+  });
+
+  const taken = new Set(candidates.map(candidate => candidate.slug));
+  if (!taken.has(baseSlug)) {
+    return baseSlug;
+  }
+
+  let nextSuffix = 1;
+  const suffixPattern = new RegExp(`^${baseSlug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-([0-9]+)$`);
+  for (const slug of taken) {
+    const match = suffixPattern.exec(slug);
+    if (!match) continue;
+    const suffix = Number.parseInt(match[1] ?? "", 10);
+    if (Number.isFinite(suffix) && suffix >= nextSuffix) {
+      nextSuffix = suffix + 1;
+    }
+  }
+
+  return `${baseSlug}-${nextSuffix}`;
 }
 
 export const serializePost = (post: PostWithRelations): SerializedPost => ({

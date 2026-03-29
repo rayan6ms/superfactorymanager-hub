@@ -9,12 +9,13 @@ import { MAX_POST_IMAGES, normalizeImages } from "@/lib/images";
 import { parseDependency, type ParsedDep } from "@/lib/deps";
 import { getSfmMatrix } from "@/lib/sfm";
 import { normalizeTags } from "@/lib/tags";
-import { recordPostContributor } from "@/lib/posts";
+import { generateUniquePostSlug, recordPostContributor } from "@/lib/posts";
 import { interactionBlockReason } from "@/lib/moderation";
 import { ZodError } from "zod";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 import { searchPostsHybrid } from "@/lib/search-db";
 import { revalidateSeoPaths } from "@/lib/seo-revalidate";
+import { getCurrentUserFromSession } from "@/lib/current-user";
 
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
@@ -105,7 +106,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user?.email) {
+  if (!session?.user?.id && !session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -127,18 +128,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Add more distinct tags to describe your post." }, { status: 400 });
     }
 
-    const user = await db.user.findUnique({
-      where: { email: session.user.email },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        canCreatePosts: true,
-        canCreateComments: true,
-        canVotePosts: true,
-        canVoteComments: true,
-        interactionBanUntil: true,
-      },
+    const user = await getCurrentUserFromSession(session.user, {
+      id: true,
+      name: true,
+      email: true,
+      canCreatePosts: true,
+      canCreateComments: true,
+      canVotePosts: true,
+      canVoteComments: true,
+      interactionBanUntil: true,
     });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 401 });
@@ -178,18 +176,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const category = await db.category.findUnique({ where: { key: parsed.categoryKey } });
+    const category = await db.category.findUnique({
+      where: { key: parsed.categoryKey },
+      select: { id: true },
+    });
     if (!category) {
       return NextResponse.json({ error: "INVALID_CATEGORY" }, { status: 400 });
     }
 
     const slugBase = makeSlug(parsed.title);
-    let slug = slugBase;
-    for (let i = 1; i < 10_000; i++) {
-      const exists = await db.post.findUnique({ where: { slug } });
-      if (!exists) break;
-      slug = `${slugBase}-${i}`;
-    }
+    const slug = await generateUniquePostSlug(slugBase);
 
     const depObjs = parsed.dependencies
       .map(parseDependency)

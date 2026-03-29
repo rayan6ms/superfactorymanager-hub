@@ -4,7 +4,6 @@ import { hash } from "bcrypt";
 import { z } from "zod";
 import { generateInitialAvatar } from "@/lib/avatar";
 import { validateUsernameInput } from "@/lib/usernames";
-import { isUsernameTaken } from "@/lib/usernames.server";
 import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
 import { sendVerificationEmailForUser } from "@/lib/email-verification";
 
@@ -63,9 +62,6 @@ export async function POST(req: Request) {
     }
 
     const normalizedName = usernameValidation.normalized;
-    if (await isUsernameTaken(normalizedName)) {
-      return NextResponse.json({ error: "NAME_TAKEN" }, { status: 409 });
-    }
     const emailKey = hashRateLimitIdentifier(parsed.email, "auth:signup:email");
     const emailLimit = await checkRateLimit(`auth:signup:email:${emailKey}`, {
       windowMs: SIGNUP_WINDOW_MS,
@@ -78,11 +74,20 @@ export async function POST(req: Request) {
       );
     }
 
-    const existing = await db.user.findUnique({
-      where: { email: parsed.email },
+    const existing = await db.user.findFirst({
+      where: {
+        OR: [
+          { email: parsed.email },
+          { name: normalizedName },
+        ],
+      },
       select: { id: true, email: true, name: true, emailVerified: true },
     });
     if (existing) {
+      if (existing.name === normalizedName && existing.email !== parsed.email) {
+        return NextResponse.json({ error: "NAME_TAKEN" }, { status: 409 });
+      }
+
       let verificationEmailSent = true;
       if (!existing.emailVerified) {
         try {

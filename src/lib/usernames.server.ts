@@ -19,13 +19,16 @@ function normalizeBase(base: string | null | undefined): string {
 export async function isUsernameTaken(name: string, excludeUserId?: string): Promise<boolean> {
   const normalized = name.trim().toLowerCase();
   if (!normalized) return false;
-  const existing = await db.user.findFirst({
-    where: {
-      name: normalized,
-      ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
-    },
+  const existing = await db.user.findUnique({
+    where: { name: normalized },
     select: { id: true },
   });
+  if (!existing) {
+    return false;
+  }
+  if (excludeUserId && existing.id === excludeUserId) {
+    return false;
+  }
   return Boolean(existing);
 }
 

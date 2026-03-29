@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 import { AUTO_DELETE_REPORT_THRESHOLD, flagAsDeleted } from "@/lib/deletions";
+import { getCurrentUserFromSession } from "@/lib/current-user";
 
 const reasonOptions = [
   { value: "spam", reason: ReportReason.SPAM },
@@ -34,11 +35,11 @@ const reportSchema = z
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.email) {
+  if (!session?.user?.id && !session?.user?.email) {
     return NextResponse.json({ error: "Log in to report content." }, { status: 401 });
   }
 
-  const user = await db.user.findUnique({ where: { email: session.user.email } });
+  const user = await getCurrentUserFromSession(session.user, { id: true });
   if (!user) {
     return NextResponse.json({ error: "Log in to report content." }, { status: 401 });
   }

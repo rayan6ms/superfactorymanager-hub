@@ -77,12 +77,19 @@ const providers: NextAuthConfig["providers"] = [
         throw new Error("TOO_MANY_ATTEMPTS");
       }
 
-      const user = await db.user.findFirst({
-        where: {
-          OR: [
-            { email: normalizedIdentifier },
-            { name: normalizedIdentifier },
-          ],
+      const userLookup = normalizedIdentifier.includes("@")
+        ? { email: normalizedIdentifier }
+        : { name: normalizedIdentifier };
+
+      const user = await db.user.findUnique({
+        where: userLookup,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          image: true,
+          passwordHash: true,
+          emailVerified: true,
         },
       });
 

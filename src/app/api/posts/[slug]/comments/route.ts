@@ -8,28 +8,36 @@ import { COMMENT_MAX_DEPTH, COMMENT_PAGE_SIZE } from "@/lib/comment-constants";
 import { createNotification } from "@/lib/notifications";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 import { interactionBlockReason } from "@/lib/moderation";
+import { getCurrentUserFromSession } from "@/lib/current-user";
 
 function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
 }
 
 async function getCommentDepth(commentId: string): Promise<number | null> {
-  let depth = 0;
-  let currentId: string | null = commentId;
+  const rows = await db.$queryRaw<Array<{ depth: number | bigint | null }>>(Prisma.sql`
+    WITH RECURSIVE ancestors AS (
+      SELECT id, "parentId", 0::int AS depth
+      FROM "Comment"
+      WHERE id = ${commentId}
 
-  while (currentId) {
-    const comment: { parentId: string | null } | null = await db.comment.findUnique({
-      where: { id: currentId },
-      select: { parentId: true },
-    });
-    if (!comment) return null;
-    if (!comment.parentId) break;
-    depth += 1;
-    currentId = comment.parentId;
-    if (depth > COMMENT_MAX_DEPTH + 2) break;
+      UNION ALL
+
+      SELECT c.id, c."parentId", ancestors.depth + 1
+      FROM "Comment" AS c
+      INNER JOIN ancestors ON c.id = ancestors."parentId"
+      WHERE ancestors.depth < ${COMMENT_MAX_DEPTH + 2}
+    )
+    SELECT MAX(depth) AS depth
+    FROM ancestors
+  `);
+
+  const depth = rows[0]?.depth;
+  if (depth === null || typeof depth === "undefined") {
+    return null;
   }
 
-  return depth;
+  return typeof depth === "bigint" ? Number(depth) : depth;
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
@@ -77,7 +85,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
   const session = await auth();
-  if (!session?.user?.email) {
+  if (!session?.user?.id && !session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -100,18 +108,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   }
 
   const [user, post] = await Promise.all([
-    db.user.findUnique({
-      where: { email: session.user.email },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        canCreatePosts: true,
-        canCreateComments: true,
-        canVotePosts: true,
-        canVoteComments: true,
-        interactionBanUntil: true,
-      },
+    getCurrentUserFromSession(session.user, {
+      id: true,
+      name: true,
+      image: true,
+      canCreatePosts: true,
+      canCreateComments: true,
+      canVotePosts: true,
+      canVoteComments: true,
+      interactionBanUntil: true,
     }),
     db.post.findFirst({
       where: { slug, isDeleted: false },
@@ -162,22 +167,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     }
   }
 
-  const comment = await db.$transaction(async tx => {
-    const created = await tx.comment.create({
-      data: {
-        content,
-        postId: post.id,
-        authorId: user.id,
-        parentId,
-        score: 0,
-        voteCount: 0,
-      },
-      include: {
-        author: { select: { id: true, name: true, image: true } },
-      },
-    });
-
-    return created;
+  const comment = await db.comment.create({
+    data: {
+      content,
+      postId: post.id,
+      authorId: user.id,
+      parentId,
+      score: 0,
+      voteCount: 0,
+    },
+    include: {
+      author: { select: { id: true, name: true, image: true } },
+    },
   });
 
   const serialized = {
