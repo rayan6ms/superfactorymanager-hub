@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "postinstall": "node scripts/prisma-generate.mjs",
-    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:deploy": "node scripts/require-direct-db-url.mjs && prisma migrate deploy",
     "lint": "eslint",
     "sitemap:generate": "node scripts/generate-sitemap.mjs"
   },
