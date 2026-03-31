@@ -6,7 +6,7 @@
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
     "start": "next start",
-    "postinstall": "node scripts/prisma-generate.mjs",
+    "postinstall": "echo skipping prisma generate on vercel",
     "db:migrate:deploy": "prisma migrate deploy",
     "lint": "eslint",
     "sitemap:generate": "node scripts/generate-sitemap.mjs"
