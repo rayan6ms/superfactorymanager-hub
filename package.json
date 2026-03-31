@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
+    "prebuild": "node scripts/prisma-generate.mjs",
     "build": "next build",
     "start": "next start",
-    "postinstall": "echo skipping prisma generate on vercel",
+    "postinstall": "node scripts/prisma-generate.mjs",
     "db:migrate:deploy": "prisma migrate deploy",
     "lint": "eslint",
     "sitemap:generate": "node scripts/generate-sitemap.mjs"

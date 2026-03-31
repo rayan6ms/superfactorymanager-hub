@@ -8,6 +8,15 @@ import { db } from "@/lib/db";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import CategoryManager from "./CategoryManager";
 
+type CategoryRow = {
+  id: string;
+  key: string;
+  name: string;
+  _count: {
+    posts: number;
+  };
+};
+
 export default async function AdminCategoriesPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const params = searchParams ? await searchParams : undefined;
   const pageParam = params?.page;
@@ -55,7 +64,7 @@ export default async function AdminCategoriesPage({ searchParams }: { searchPara
       </Card>
 
       <CategoryManager
-        initialCategories={categories.map(category => ({
+        initialCategories={categories.map((category: CategoryRow) => ({
           id: category.id,
           key: category.key,
           name: category.name,
