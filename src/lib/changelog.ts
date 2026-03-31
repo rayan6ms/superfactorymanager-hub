@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { withDatabaseFallback } from "@/lib/db-availability";
 
 const COOLDOWN_MS = 15 * 60 * 1000;
 let lastFetchAt = 0;
@@ -24,6 +25,24 @@ function normalizeVersion(release: GithubRelease) {
   return (release.tag_name || release.name || "").trim();
 }
 
+function releaseToChangelogEntry(release: GithubRelease, index: number): ChangelogEntry | null {
+  const versionCode = normalizeVersion(release);
+  if (!versionCode) {
+    return null;
+  }
+
+  const publishedAt = release.published_at ? new Date(release.published_at) : null;
+  return {
+    id: `github-release-${versionCode}-${index}`,
+    versionCode,
+    title: versionCode,
+    body: (release.body || "").trim(),
+    isLatest: index === 0,
+    publishedAt,
+    createdAt: publishedAt ?? new Date(0),
+  };
+}
+
 async function fetchGithubReleases(page: number, perPage = 20): Promise<GithubRelease[]> {
   const url = `https://api.github.com/repos/TeamDman/SuperFactoryManager/releases?page=${page}&per_page=${perPage}`;
   const res = await fetch(url, {
@@ -38,6 +57,30 @@ async function fetchGithubReleases(page: number, perPage = 20): Promise<GithubRe
 
   const data = await res.json().catch(() => []);
   return Array.isArray(data) ? data : [];
+}
+
+async function getGithubReleaseFallbackEntries(count: number) {
+  const releases: GithubRelease[] = [];
+  let page = 1;
+  const perPage = Math.max(20, Math.min(count, 100));
+
+  while (releases.length < count) {
+    const batch = await fetchGithubReleases(page, perPage);
+    if (!batch.length) {
+      break;
+    }
+
+    releases.push(...batch);
+    if (batch.length < perPage) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return releases
+    .map(releaseToChangelogEntry)
+    .filter((entry): entry is ChangelogEntry => Boolean(entry));
 }
 
 async function markLatestFlag() {
@@ -60,52 +103,57 @@ export async function refreshChangelog(opts?: { ignoreCooldown?: boolean }) {
     return { inserted: 0 };
   }
 
-  const existing = await db.changelogEntry.findMany({ select: { versionCode: true } });
-  const knownVersions = new Set(existing.map(v => v.versionCode));
+  return withDatabaseFallback(
+    async () => {
+      const existing = await db.changelogEntry.findMany({ select: { versionCode: true } });
+      const knownVersions = new Set(existing.map(v => v.versionCode));
 
-  const newEntries: {
-    versionCode: string;
-    title: string;
-    body: string;
-    publishedAt: Date | null;
-  }[] = [];
+      const newEntries: {
+        versionCode: string;
+        title: string;
+        body: string;
+        publishedAt: Date | null;
+      }[] = [];
 
-  let page = 1;
-  let hitKnown = false;
+      let page = 1;
+      let hitKnown = false;
 
-  while (!hitKnown) {
-    const releases = await fetchGithubReleases(page);
-    if (!releases.length) break;
+      while (!hitKnown) {
+        const releases = await fetchGithubReleases(page);
+        if (!releases.length) break;
 
-    for (const release of releases) {
-      const versionCode = normalizeVersion(release);
-      if (!versionCode) continue;
+        for (const release of releases) {
+          const versionCode = normalizeVersion(release);
+          if (!versionCode) continue;
 
-      if (knownVersions.has(versionCode)) {
-        hitKnown = true;
-        break;
+          if (knownVersions.has(versionCode)) {
+            hitKnown = true;
+            break;
+          }
+
+          knownVersions.add(versionCode);
+          newEntries.push({
+            versionCode,
+            title: versionCode,
+            body: (release.body || "").trim(),
+            publishedAt: release.published_at ? new Date(release.published_at) : null,
+          });
+        }
+
+        if (hitKnown) break;
+        page += 1;
       }
 
-      knownVersions.add(versionCode);
-      newEntries.push({
-        versionCode,
-        title: versionCode,
-        body: (release.body || "").trim(),
-        publishedAt: release.published_at ? new Date(release.published_at) : null,
-      });
-    }
+      if (newEntries.length) {
+        await db.changelogEntry.createMany({ data: newEntries });
+        await markLatestFlag();
+      }
 
-    if (hitKnown) break;
-    page += 1;
-  }
-
-  if (newEntries.length) {
-    await db.changelogEntry.createMany({ data: newEntries });
-    await markLatestFlag();
-  }
-
-  lastFetchAt = Date.now();
-  return { inserted: newEntries.length };
+      lastFetchAt = Date.now();
+      return { inserted: newEntries.length };
+    },
+    { inserted: 0 },
+  );
 }
 
 export async function getChangelogEntries(opts?: { page?: number; limit?: number }): Promise<{ entries: ChangelogEntry[]; total: number }> {
@@ -113,32 +161,44 @@ export async function getChangelogEntries(opts?: { page?: number; limit?: number
   const currentPage = Math.max(1, Math.floor(opts?.page ?? 1));
   const skip = (currentPage - 1) * pageSize;
 
-  let [rows, total] = await Promise.all([
-    db.changelogEntry.findMany({
-      orderBy: [
-        { publishedAt: "desc" },
-        { createdAt: "desc" },
-      ],
-      skip,
-      take: pageSize,
-    }),
-    db.changelogEntry.count(),
-  ]);
+  return withDatabaseFallback(
+    async () => {
+      let [rows, total] = await Promise.all([
+        db.changelogEntry.findMany({
+          orderBy: [
+            { publishedAt: "desc" },
+            { createdAt: "desc" },
+          ],
+          skip,
+          take: pageSize,
+        }),
+        db.changelogEntry.count(),
+      ]);
 
-  if (!total) {
-    await refreshChangelog({ ignoreCooldown: true });
-    [rows, total] = await Promise.all([
-      db.changelogEntry.findMany({
-        orderBy: [
-          { publishedAt: "desc" },
-          { createdAt: "desc" },
-        ],
-        skip,
-        take: pageSize,
-      }),
-      db.changelogEntry.count(),
-    ]);
-  }
+      if (!total) {
+        await refreshChangelog({ ignoreCooldown: true });
+        [rows, total] = await Promise.all([
+          db.changelogEntry.findMany({
+            orderBy: [
+              { publishedAt: "desc" },
+              { createdAt: "desc" },
+            ],
+            skip,
+            take: pageSize,
+          }),
+          db.changelogEntry.count(),
+        ]);
+      }
 
-  return { entries: rows, total };
+      return { entries: rows, total };
+    },
+    async () => {
+      const entries = await getGithubReleaseFallbackEntries(skip + pageSize);
+
+      return {
+        entries: entries.slice(skip, skip + pageSize),
+        total: entries.length,
+      };
+    },
+  );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
 import HideHeaderSearch from "@/components/layout/HideHeaderSearch";
 import BuildCard from "@/components/builds/BuildCard";
 import BuildsFilterBar from "@/components/builds/BuildsFilterBar";
@@ -6,6 +7,7 @@ import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
 import { parseBuildPageSize } from "@/lib/builds/profile-list-shared";
 import { searchPublicBuildsWithFilters, type BuildFilterOptions } from "@/lib/builds/search";
+import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { getTotalPages, parsePageParam } from "@/lib/pagination";
 
 export const revalidate = 60;
@@ -61,6 +63,7 @@ export default async function BuildsPage({ searchParams }: Props) {
     });
 
   const initialResult = await fetchPage(requestedPage);
+  const isDegraded = hasRecentDatabaseFallback();
   const totalPages = getTotalPages(initialResult.total, pageSize);
   const activePage = Math.min(requestedPage, totalPages);
   const finalResult = activePage === requestedPage ? initialResult : await fetchPage(activePage);
@@ -81,6 +84,7 @@ export default async function BuildsPage({ searchParams }: Props) {
   return (
     <div className="space-y-8">
       <HideHeaderSearch />
+      {isDegraded ? <DatabaseUnavailableNotice /> : null}
 
       <div className="space-y-3">
         <p className="eyebrow">Builds</p>

@@ -48,6 +48,8 @@ const prismaClientOptions: Prisma.PrismaClientOptions = isAccelerateUrl && prism
   : {
     adapter: new PrismaPg({
       connectionString: directDatabaseUrl || prismaUrl || fallbackDatabaseUrl,
+      connectionTimeoutMillis: 5_000,
+      idleTimeoutMillis: 300_000,
     }),
   };
 

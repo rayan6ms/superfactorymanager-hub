@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
 
 const COOLDOWN_MS = 15 * 60 * 1000;
@@ -367,8 +368,13 @@ async function repairKnownSfmVersionRows() {
 
 export async function getSfmMatrix(force = false) {
   if (force) {
-    const { matrix } = await refreshSfm({ source: "both", ignoreCooldown: true });
-    return matrix;
+    return withDatabaseFallback(
+      async () => {
+        const { matrix } = await refreshSfm({ source: "both", ignoreCooldown: true });
+        return matrix;
+      },
+      () => memoMatrix ?? { byGame: {}, gameVersions: [] },
+    );
   }
 
   if (memoMatrix) {
@@ -378,22 +384,33 @@ export async function getSfmMatrix(force = false) {
     }
   }
 
-  const cached = await getCachedSfmMatrix();
+  const cached = await withDatabaseFallback(
+    () => getCachedSfmMatrix(),
+    () => memoMatrix ?? { byGame: {}, gameVersions: [] },
+  );
   if (cached.gameVersions.length) {
     memoMatrix = cached;
     return cached;
   }
 
   // If the persistent cache is stale/empty but DB has rows, prefer DB over a network refresh.
-  const fromDb = await matrixFromDB();
+  const fromDb = await withDatabaseFallback(
+    () => matrixFromDB(),
+    () => memoMatrix ?? { byGame: {}, gameVersions: [] },
+  );
   if (fromDb.gameVersions.length) {
     memoMatrix = fromDb;
     return fromDb;
   }
 
   // Fresh DB bootstrap: seed matrix automatically instead of waiting for an internal refresh job.
-  const { matrix } = await refreshSfm({ source: "both" });
-  return matrix;
+  return withDatabaseFallback(
+    async () => {
+      const { matrix } = await refreshSfm({ source: "both" });
+      return matrix;
+    },
+    () => memoMatrix ?? { byGame: {}, gameVersions: [] },
+  );
 }
 
 export async function refreshSfm(opts: { source: "cf" | "mr" | "both"; ignoreCooldown?: boolean }) {

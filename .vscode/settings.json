@@ -1,5 +1,5 @@
 {
-  "prisma.pinToPrisma6": true,
+  "prisma.pinToPrisma6": false,
   "cSpell.words": [
     "curseforge",
     "downvotes",

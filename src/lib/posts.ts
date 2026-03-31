@@ -1,6 +1,7 @@
 import "server-only";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { unstable_cache } from "next/cache";
+import { withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
 import { searchPostsHybrid } from "@/lib/search-db";
 import { wilsonScore, WILSON_Z_80 } from "@/lib/wilson-score";
@@ -259,21 +260,21 @@ const getCachedPublicPostCount = unstable_cache(
 );
 
 export async function getPopularTags(limit = 12) {
-  return getCachedPopularTags(limit);
+  return withDatabaseFallback(() => getCachedPopularTags(limit), []);
 }
 
 export async function getRecentPosts(limit = 6) {
-  const posts = await getCachedRecentPosts(limit);
+  const posts = await withDatabaseFallback(() => getCachedRecentPosts(limit), []);
   return posts.map(fromCachedSerializedPost);
 }
 
 export async function getTrendingPosts(limit = 6) {
-  const posts = await getCachedTrendingPosts(limit);
+  const posts = await withDatabaseFallback(() => getCachedTrendingPosts(limit), []);
   return posts.map(fromCachedSerializedPost);
 }
 
 export async function getPublicPostCount() {
-  return getCachedPublicPostCount();
+  return withDatabaseFallback(() => getCachedPublicPostCount(), 0);
 }
 
 function keywordSet(...terms: (string | null | undefined)[]) {
@@ -376,7 +377,7 @@ export async function getRecommendedPosts(opts: {
     limit: Math.max(1, Math.min(opts.limit ?? 6, 24)),
   };
 
-  const posts = await getCachedRecommendedPosts(normalized);
+  const posts = await withDatabaseFallback(() => getCachedRecommendedPosts(normalized), []);
   return posts.map(fromCachedSerializedPost);
 }
 
@@ -537,7 +538,10 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
     page: Math.max(1, Math.floor(opts.page ?? 1)),
   };
 
-  const result = await getCachedSearchPostsWithFilters(normalized);
+  const result = await withDatabaseFallback(
+    () => getCachedSearchPostsWithFilters(normalized),
+    { posts: [], total: 0 },
+  );
   return {
     posts: result.posts.map(fromCachedSerializedPost),
     total: result.total,

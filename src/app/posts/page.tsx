@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
 import HideHeaderSearch from "@/components/layout/HideHeaderSearch";
 import PostCard from "@/components/posts/PostCard";
 import PostsFilterBar from "@/components/posts/PostsFilterBar";
@@ -10,6 +11,7 @@ import {
   type PostsFilterOptions,
 } from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
+import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { getSfmMatrix } from "@/lib/sfm";
 
 export const revalidate = 60;
@@ -64,6 +66,7 @@ export default async function PostsPage({ searchParams }: Props) {
     getCategoryOptions(),
     getSfmMatrix(false),
   ]);
+  const isDegraded = hasRecentDatabaseFallback();
 
   const fetchPage = (pageNumber: number) =>
     searchPostsWithFilters({
@@ -103,6 +106,7 @@ export default async function PostsPage({ searchParams }: Props) {
   return (
     <div className="space-y-8">
       <HideHeaderSearch />
+      {isDegraded ? <DatabaseUnavailableNotice /> : null}
       <div className="space-y-3">
         <p className="eyebrow">Posts</p>
         <h1 className="text-3xl font-semibold text-white">Explore posts</h1>

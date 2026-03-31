@@ -1,5 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
 
 export type CategoryOption = {
@@ -20,5 +21,5 @@ const getCachedCategoryOptions = unstable_cache(
 );
 
 export async function getCategoryOptions() {
-  return getCachedCategoryOptions();
+  return withDatabaseFallback(() => getCachedCategoryOptions(), []);
 }

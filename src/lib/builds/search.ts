@@ -1,6 +1,7 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { unstable_cache } from "next/cache";
+import { withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
 import type { BuildVisibility } from "@/lib/builds/profile-list-shared";
 
@@ -341,7 +342,10 @@ export async function searchPublicBuildsWithFilters(opts: BuildFilterOptions) {
     page: Math.max(1, Math.floor(opts.page ?? 1)),
   };
 
-  const result = await getCachedPublicBuildsWithFilters(normalized);
+  const result = await withDatabaseFallback(
+    () => getCachedPublicBuildsWithFilters(normalized),
+    { builds: [], total: 0 },
+  );
   return {
     builds: result.builds.map(fromCachedSerializedBuild),
     total: result.total,

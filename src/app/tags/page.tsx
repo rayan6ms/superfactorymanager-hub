@@ -1,7 +1,9 @@
 import Link from "next/link";
+import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
 import PostCard from "@/components/posts/PostCard";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
+import { hasRecentDatabaseFallback, withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
 import { POST_CARD_SELECT, serializePost } from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
@@ -34,45 +36,52 @@ export default async function TagsPage({ searchParams }: Props) {
   const requestedPage = parsePageParam(pageParam, 1);
   const PAGE_SIZE = 30;
 
-  const totalTags = await db.tag.count();
+  const totalTags = await withDatabaseFallback(() => db.tag.count(), 0);
   const totalPages = getTotalPages(totalTags, PAGE_SIZE);
   const currentPage = Math.min(requestedPage, totalPages);
   const skip = (currentPage - 1) * PAGE_SIZE;
 
-  const tags = await db.tag.findMany({
-    orderBy: { posts: { _count: "desc" } },
-    include: { _count: { select: { posts: true } } },
-    skip,
-    take: PAGE_SIZE,
-  });
+  const tags = await withDatabaseFallback(
+    () => db.tag.findMany({
+      orderBy: { posts: { _count: "desc" } },
+      include: { _count: { select: { posts: true } } },
+      skip,
+      take: PAGE_SIZE,
+    }),
+    [],
+  );
 
   const selectedSet = new Set(selectedSlugs);
   const sortedSelection = [...selectedSet].sort();
 
   const posts = selectedSlugs.length
-    ? await db.post
-      .findMany({
-        where: {
-          OR: selectedSlugs.map(slug => ({
-            tags: {
-              some: {
-                tag: {
-                  OR: [
-                    { slug },
-                    { slug: { contains: slug } },
-                    { name: { contains: slug } },
-                  ],
+    ? await withDatabaseFallback(
+      () => db.post
+        .findMany({
+          where: {
+            OR: selectedSlugs.map(slug => ({
+              tags: {
+                some: {
+                  tag: {
+                    OR: [
+                      { slug },
+                      { slug: { contains: slug } },
+                      { name: { contains: slug } },
+                    ],
+                  },
                 },
               },
-            },
-          })),
-        },
-        orderBy: { uploadDate: "desc" },
-        select: POST_CARD_SELECT,
-        take: 30,
-      })
-      .then(items => items.map(serializePost))
+            })),
+          },
+          orderBy: { uploadDate: "desc" },
+          select: POST_CARD_SELECT,
+          take: 30,
+        })
+        .then(items => items.map(serializePost)),
+      [],
+    )
     : [];
+  const isDegraded = hasRecentDatabaseFallback();
 
   const buildHref = (slug: string) => {
     const next = selectedSet.has(slug)
@@ -94,6 +103,7 @@ export default async function TagsPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
+      {isDegraded ? <DatabaseUnavailableNotice /> : null}
       <div className="space-y-3">
         <p className="eyebrow">Tags</p>
         <h1 className="text-3xl font-semibold text-white">

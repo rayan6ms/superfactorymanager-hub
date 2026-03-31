@@ -3,10 +3,12 @@ import Card from "@/components/ui/Card";
 import PostCard from "@/components/posts/PostCard";
 import BuildCard from "@/components/builds/BuildCard";
 import HomeQuickLinks from "@/components/home/HomeQuickLinks";
+import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
 import {
   searchPublicBuildsWithFilters,
   type SerializedBuild,
 } from "@/lib/builds/search";
+import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import {
   getPublicPostCount,
   getPopularTags,
@@ -114,10 +116,12 @@ export default async function Home({ searchParams }: Props) {
     searchPublicBuildsWithFilters({ order: "newest", limit: HOME_SECTION_LIMIT, page: 1 }),
     searchPublicBuildsWithFilters({ order: "recently-updated", limit: HOME_SECTION_LIMIT, page: 1 }),
   ]);
+  const isDegraded = hasRecentDatabaseFallback();
 
   return (
     <div className="space-y-12">
       <HomeQuickLinks />
+      {isDegraded ? <DatabaseUnavailableNotice /> : null}
 
       <section className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">

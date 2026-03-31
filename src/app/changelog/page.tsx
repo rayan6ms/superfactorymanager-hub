@@ -1,6 +1,8 @@
+import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
 import ChangelogList from "@/components/changelog/ChangelogList";
 import Pagination from "@/components/ui/Pagination";
 import { getChangelogEntries, refreshChangelog } from "@/lib/changelog";
+import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -17,6 +19,7 @@ export default async function ChangelogPage({ searchParams }: Props) {
 
   await refreshChangelog();
   const initial = await getChangelogEntries({ page: requestedPage, limit: PAGE_SIZE });
+  const isDegraded = hasRecentDatabaseFallback();
   const totalPages = getTotalPages(initial.total, PAGE_SIZE);
   const currentPage = Math.min(requestedPage, totalPages);
   const result = currentPage === requestedPage
@@ -32,6 +35,7 @@ export default async function ChangelogPage({ searchParams }: Props) {
 
   return (
     <main className="space-y-6 px-2">
+      {isDegraded ? <DatabaseUnavailableNotice /> : null}
       <div className="space-y-2 text-center">
         <p className="text-xs uppercase tracking-[0.3em] text-white/50">Releases</p>
         <h1 className="text-3xl font-semibold text-white">Changelog</h1>

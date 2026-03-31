@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import Image from "next/image";
+import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
 import { db } from "@/lib/db";
+import { hasRecentDatabaseFallback, withDatabaseFallback } from "@/lib/db-availability";
 import ViewBeacon from "@/components/ViewBeacon";
 import { Card } from "@/components/ui";
 import ImageGallery from "@/components/ImageGallery";
@@ -71,10 +73,13 @@ function buildDescriptionCopy(body: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await db.post.findUnique({
-    where: { slug },
-    include: { images: { orderBy: { position: "asc" } }, author: true },
-  });
+  const post = await withDatabaseFallback(
+    () => db.post.findUnique({
+      where: { slug },
+      include: { images: { orderBy: { position: "asc" } }, author: true },
+    }),
+    null,
+  );
 
   if (!post || post.isDeleted) {
     return {
@@ -114,18 +119,36 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function PostPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
 
-  const post = await db.post.findUnique({
-    where: { slug },
-    include: {
-      category: true,
-      images: { orderBy: { position: "asc" } },
-      dependencies: true,
-      author: true,
-      tags: { include: { tag: true } },
-    },
-  });
+  const post = await withDatabaseFallback(
+    () => db.post.findUnique({
+      where: { slug },
+      include: {
+        category: true,
+        images: { orderBy: { position: "asc" } },
+        dependencies: true,
+        author: true,
+        tags: { include: { tag: true } },
+      },
+    }),
+    null,
+  );
+  const isDegraded = hasRecentDatabaseFallback();
 
   if (!post) {
+    if (isDegraded) {
+      return (
+        <Card className="space-y-4 p-6">
+          <h1 className="text-2xl font-semibold text-white">Post temporarily unavailable</h1>
+          <p className="text-white/70">
+            This page needs the database and Prisma is currently unavailable. Try again after service is restored.
+          </p>
+          <Link href="/posts" className="text-brand-200 hover:text-brand-100 hover:underline">
+            Return to posts
+          </Link>
+        </Card>
+      );
+    }
+
     return <div className="opacity-70">Not found</div>;
   }
 
@@ -143,11 +166,14 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
     );
   }
 
-  const groups = await db.rating.groupBy({
-    where: { postId: post.id },
-    by: ["value"],
-    _count: { value: true },
-  });
+  const groups = await withDatabaseFallback(
+    () => db.rating.groupBy({
+      where: { postId: post.id },
+      by: ["value"],
+      _count: { value: true },
+    }),
+    [],
+  );
 
   const verification = buildVerificationSummary(groups, null, false);
 
@@ -162,11 +188,15 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   const authorProfile = post.author?.name ? `/profile/${post.author.name}` : null;
   const authorBio = post.author?.bio?.trim() ?? null;
 
-  const commentData = await getPostComments(post.id, { viewerId: null });
+  const commentData = await withDatabaseFallback(
+    () => getPostComments(post.id, { viewerId: null }),
+    { comments: [], nextCursor: null, total: 0, pinnedComment: null },
+  );
   const postDescription = normalizePostDescription(post.description);
 
   return (
     <div className="space-y-8">
+      {isDegraded ? <DatabaseUnavailableNotice /> : null}
       <ViewBeacon slug={slug} />
       <Link
         href="/posts"

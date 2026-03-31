@@ -1,10 +1,12 @@
 import Link from "next/link";
+import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
 import HideHeaderSearch from "@/components/layout/HideHeaderSearch";
 import BuildCard from "@/components/builds/BuildCard";
 import PostCard from "@/components/posts/PostCard";
 import SearchBar from "@/components/ui/Search";
 import Card from "@/components/ui/Card";
 import { searchPublicBuildsWithFilters } from "@/lib/builds/search";
+import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { searchPostsWithFilters } from "@/lib/posts";
 
 export const revalidate = 60;
@@ -48,6 +50,7 @@ export default async function SearchPage({ searchParams }: Props) {
       searchPublicBuildsWithFilters({ q: trimmedQuery, order: "best", limit: buildsLimit, page: 1 }),
     ])
     : [{ posts: [], total: 0 }, { builds: [], total: 0 }];
+  const isDegraded = hasRecentDatabaseFallback();
 
   const buildSearchHref = (opts?: {
     postsLimit?: number;
@@ -92,6 +95,7 @@ export default async function SearchPage({ searchParams }: Props) {
   return (
     <div className="space-y-8">
       <HideHeaderSearch />
+      {isDegraded ? <DatabaseUnavailableNotice /> : null}
 
       <div className="space-y-3">
         <p className="eyebrow">Search</p>
