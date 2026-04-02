@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import clsx from "clsx";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,7 @@ import {
 import { supportedAvatarHostLabels } from "@/lib/avatar-hosts";
 
 const BIO_MAX_LENGTH = 300;
+const MAX_IMAGE_VALUE_LENGTH = 4096;
 
 type ProfileSettingsProps = {
   initialUser: {
@@ -54,9 +55,11 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
   const [emailNotifyReport, setEmailNotifyReport] = useState(initialUser.emailNotifyReport);
   const [status, setStatus] = useState<Status>("idle");
   const [resetStatus, setResetStatus] = useState<ResetStatus>("idle");
+  const [avatarUploadStatus, setAvatarUploadStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<FormErrors>({});
   const statusResetTimeoutRef = useRef<number | null>(null);
   const resetBlinkTimeoutRef = useRef<number | null>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
   const { update: updateSession } = useSession();
 
@@ -64,6 +67,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
 
   const isLoading = status === "loading";
   const resetLoading = resetStatus === "loading";
+  const avatarUploadLoading = avatarUploadStatus === "loading";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -115,6 +119,19 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     }
 
     const normalizedName = validation.normalized;
+    const trimmedImage = image.trim();
+
+    if (!regenerateAvatar) {
+      if (/^data:image\//i.test(trimmedImage) || /^blob:/i.test(trimmedImage)) {
+        setErrors({ image: "Upload the image file first, then save your profile." });
+        return;
+      }
+
+      if (trimmedImage.length > MAX_IMAGE_VALUE_LENGTH) {
+        setErrors({ image: "Image URL is too long. Upload the file instead." });
+        return;
+      }
+    }
 
     setErrors({});
     setStatus("loading");
@@ -133,7 +150,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     if (regenerateAvatar) {
       payload.regenerateAvatar = true;
     } else {
-      payload.image = image;
+      payload.image = trimmedImage;
     }
 
     try {
@@ -204,6 +221,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
         },
       });
       setStatus("success");
+      setAvatarUploadStatus("idle");
       router.refresh();
 
       if (statusResetTimeoutRef.current !== null) {
@@ -241,6 +259,50 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     }
   }
 
+  async function handleAvatarFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setAvatarUploadStatus("loading");
+    setErrors(prev => ({ ...prev, image: undefined, form: undefined }));
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/profile/avatar", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const errorMessage =
+          typeof data?.error === "string" ? data.error : "We couldn’t upload your avatar.";
+        setErrors({ image: errorMessage });
+        setAvatarUploadStatus("error");
+        return;
+      }
+
+      const nextUrl = typeof data?.url === "string" ? data.url : "";
+      if (!nextUrl) {
+        setErrors({ image: "We couldn’t upload your avatar." });
+        setAvatarUploadStatus("error");
+        return;
+      }
+
+      setImage(nextUrl);
+      setPreview(nextUrl);
+      setAvatarUploadStatus("success");
+    } catch (error) {
+      console.error("Failed to upload avatar", error);
+      setErrors({ image: "We couldn’t upload your avatar. Please try again." });
+      setAvatarUploadStatus("error");
+    }
+  }
+
   const avatarImageControls = (
     <div>
       <label className="text-sm font-semibold text-white">Avatar image URL</label>
@@ -249,6 +311,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
         onChange={event => {
           setImage(event.target.value);
           setPreview(event.target.value);
+          setAvatarUploadStatus("idle");
           setErrors(prev => ({ ...prev, image: undefined, form: undefined }));
         }}
         placeholder="https://avatars.githubusercontent.com/u/123456"
@@ -258,6 +321,29 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       <p className="mt-1 text-xs text-white/60">
         Supported hosts: {supportedAvatarHostLabels.join(", ")}.
       </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <input
+          ref={avatarFileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleAvatarFileChange}
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="gap-2"
+          onClick={() => avatarFileInputRef.current?.click()}
+          disabled={isLoading || avatarUploadLoading}
+        >
+          {avatarUploadLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+          Upload image
+        </Button>
+        {avatarUploadStatus === "success" && (
+          <span className="text-xs text-emerald-300">Upload complete. Save changes to apply it.</span>
+        )}
+      </div>
       {errors.image && <p className="mt-1 text-sm text-error">{errors.image}</p>}
       <div className="mt-2 flex flex-wrap gap-2 text-sm text-white/70">
         <Button
@@ -266,7 +352,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           variant="ghost"
           className="gap-2"
           onClick={() => submitProfile(true)}
-          disabled={isLoading}
+          disabled={isLoading || avatarUploadLoading}
         >
           <RefreshCw className="h-4 w-4" aria-hidden />
           Use letter avatar
@@ -444,7 +530,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           {resetStatus === "error" && <span className="text-error">Couldn’t send email.</span>}
         </div>
 
-        <Button onClick={() => submitProfile(false)} disabled={isLoading} className="gap-2">
+        <Button onClick={() => submitProfile(false)} disabled={isLoading || avatarUploadLoading} className="gap-2">
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           Save changes
         </Button>

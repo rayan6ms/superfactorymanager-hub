@@ -1,6 +1,5 @@
 "use client";
 
-import Script from "next/script";
 import { usePathname } from "next/navigation";
 import AdsShell from "@/components/ads/AdsShell";
 
@@ -34,12 +33,6 @@ export default function RouteAds() {
 
   return (
     <>
-      <Script
-        async
-        strategy="afterInteractive"
-        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsClient}`}
-        crossOrigin="anonymous"
-      />
       <AdsShell placement="desktop-rails" />
       <AdsShell placement="mobile-top" />
       <AdsShell placement="mobile-bottom" />

@@ -44,3 +44,14 @@ export async function deleteBlobs(urls: Array<string | null | undefined>) {
     }),
   );
 }
+
+export function isManagedBlobUrl(url: string | null | undefined) {
+  if (!url) return false;
+
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && parsed.hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}

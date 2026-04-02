@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { isAllowedAvatarRemoteUrl } from "@/lib/avatar-hosts";
 import { db } from "@/lib/db";
+import { deleteBlobs, isManagedBlobUrl } from "@/lib/blob";
 import { generateInitialAvatar, resolveProfileImage } from "@/lib/avatar";
 import { validateUsernameInput } from "@/lib/usernames";
 import { isUsernameTaken } from "@/lib/usernames.server";
@@ -145,6 +146,10 @@ export async function PATCH(request: Request) {
 
     return updatedUser;
   });
+
+  if (user.image !== updated.image && isManagedBlobUrl(user.image)) {
+    await deleteBlobs([user.image]);
+  }
 
   return NextResponse.json({ user: updated });
 }

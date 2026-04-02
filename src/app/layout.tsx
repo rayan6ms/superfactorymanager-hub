@@ -64,9 +64,19 @@ const sans = Space_Grotesk({
 });
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const adsClient = process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT;
+
   return (
     <html lang="en" className={clsx(sans.variable)}>
-      <head />
+      <head>
+        {adsClient ? (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsClient}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
+      </head>
       <body className="app-shell">
         <Providers>
           <RouteInstrumentation />
