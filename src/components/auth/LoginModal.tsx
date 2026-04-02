@@ -1,6 +1,18 @@
 "use client";
-import { signIn } from "next-auth/react";
 import Button from "@/components/ui/Button";
+
+function getLoginHref() {
+  if (typeof window === "undefined") {
+    return "/login";
+  }
+
+  const next = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (!next.startsWith("/") || next.startsWith("//")) {
+    return "/login";
+  }
+
+  return `/login?next=${encodeURIComponent(next)}`;
+}
 
 export default function LoginModal({ open, onClose, message = "You need to log in to continue.", }: { open: boolean; onClose: () => void; message?: string }) {
   if (!open) return null;
@@ -13,11 +25,9 @@ export default function LoginModal({ open, onClose, message = "You need to log i
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button
             variant="outline"
-            onClick={() =>
-              signIn(undefined, {
-                callbackUrl: typeof window !== "undefined" ? window.location.href : "/",
-              })
-            }
+            onClick={() => {
+              window.location.assign(getLoginHref());
+            }}
           >
             Log in
           </Button>

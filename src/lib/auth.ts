@@ -35,6 +35,17 @@ const sessionProfileUpdateSchema = z.object({
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const LOGIN_LIMIT_PER_IP = 60;
 const LOGIN_LIMIT_PER_IDENTIFIER = 12;
+const SESSION_IMAGE_MAX_LENGTH = 1024;
+const DATA_IMAGE_URL_PATTERN = /^data:image\//i;
+
+function canStoreImageInSessionToken(image: unknown): image is string {
+  return (
+    typeof image === "string" &&
+    image.length > 0 &&
+    image.length <= SESSION_IMAGE_MAX_LENGTH &&
+    !DATA_IMAGE_URL_PATTERN.test(image)
+  );
+}
 
 const providers: NextAuthConfig["providers"] = [
   Credentials({
@@ -261,8 +272,10 @@ export const authOptions: NextAuthConfig = {
         session.user.isAdmin = token.isAdmin;
       }
       const tokenWithImage = token as JWT & { image?: string | null };
-      if (typeof tokenWithImage.image === "string" || tokenWithImage.image === null) {
+      if (canStoreImageInSessionToken(tokenWithImage.image) || tokenWithImage.image === null) {
         session.user.image = tokenWithImage.image;
+      } else if (typeof session.user.image !== "undefined") {
+        session.user.image = null;
       }
 
       return session;
@@ -277,7 +290,10 @@ export const authOptions: NextAuthConfig = {
             token.name = nextUser.name;
           }
           if (nextUser && "image" in nextUser) {
-            (token as JWT & { image?: string | null }).image = nextUser.image ?? null;
+            const tokenWithImage = token as JWT & { image?: string | null };
+            tokenWithImage.image = canStoreImageInSessionToken(nextUser.image)
+              ? nextUser.image
+              : null;
           }
         }
       }
@@ -290,9 +306,8 @@ export const authOptions: NextAuthConfig = {
           token.email = user.email;
         }
         token.isAdmin = isAdminEmail(user.email);
-        if (typeof user.image === "string") {
-          (token as JWT & { image?: string | null }).image = user.image;
-        }
+        const tokenWithImage = token as JWT & { image?: string | null };
+        tokenWithImage.image = canStoreImageInSessionToken(user.image) ? user.image : null;
       }
 
       const tokenWithPicture = token as JWT & { picture?: string | null };
