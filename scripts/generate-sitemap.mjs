@@ -100,15 +100,11 @@ async function generateSitemap() {
   const urlMap = new Map();
 
   try {
-    const [posts, tags, users, builds] = await Promise.all([
+    const [posts, users, builds] = await Promise.all([
       prisma.post.findMany({
         where: { isDeleted: false },
         select: { slug: true, updatedAt: true, uploadDate: true },
         orderBy: { updatedAt: "desc" },
-      }),
-      prisma.tag.findMany({
-        select: { slug: true },
-        orderBy: { slug: "asc" },
       }),
       prisma.user.findMany({
         where: {
@@ -160,16 +156,6 @@ async function generateSitemap() {
         lastmod: normalizeLastmod(post.updatedAt || post.uploadDate),
         changefreq: "weekly",
         priority: 0.9,
-      });
-    }
-
-    for (const tag of tags) {
-      const url = new URL("/tags", `${baseUrl}/`);
-      url.searchParams.set("tags", tag.slug);
-      addOrMergeUrl(urlMap, {
-        loc: url.toString(),
-        changefreq: "weekly",
-        priority: 0.6,
       });
     }
 
