@@ -64,6 +64,18 @@ export default function ContactPage() {
         <p className="text-sm text-white/70">
           Share feedback, questions, or issues. Moderator suggestions will appear in the admin dashboard for review.
         </p>
+        <p className="text-sm text-white/60">
+          If you want a more direct contact, you can find me at{" "}
+          <a
+            href="https://github.com/rayan6ms"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-white/80 transition hover:text-brand-300"
+          >
+            github.com/rayan6ms
+          </a>
+          .
+        </p>
       </div>
 
       <Card className="w-full max-w-3xl space-y-6 p-6">
