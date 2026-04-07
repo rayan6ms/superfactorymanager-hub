@@ -2,8 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Image from "next/image";
 import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
-import { db } from "@/lib/db";
-import { hasRecentDatabaseFallback, withDatabaseFallback } from "@/lib/db-availability";
+import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import ViewBeacon from "@/components/ViewBeacon";
 import { Card } from "@/components/ui";
 import ImageGallery from "@/components/ImageGallery";
@@ -22,6 +21,9 @@ import { getBaseUrl } from "@/lib/urls";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { normalizePostDescription } from "@/lib/post-description";
+import { getPublicPostDetail } from "@/lib/posts";
+
+export const revalidate = 60;
 
 type VoteValue = "up" | "down" | null;
 
@@ -73,13 +75,7 @@ function buildDescriptionCopy(body: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await withDatabaseFallback(
-    () => db.post.findUnique({
-      where: { slug },
-      include: { images: { orderBy: { position: "asc" } }, author: true },
-    }),
-    null,
-  );
+  const post = await getPublicPostDetail(slug);
 
   if (!post || post.isDeleted) {
     return {
@@ -119,19 +115,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function PostPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
 
-  const post = await withDatabaseFallback(
-    () => db.post.findUnique({
-      where: { slug },
-      include: {
-        category: true,
-        images: { orderBy: { position: "asc" } },
-        dependencies: true,
-        author: true,
-        tags: { include: { tag: true } },
-      },
-    }),
-    null,
-  );
+  const post = await getPublicPostDetail(slug);
   const isDegraded = hasRecentDatabaseFallback();
 
   if (!post) {
@@ -166,16 +150,10 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
     );
   }
 
-  const groups = await withDatabaseFallback(
-    () => db.rating.groupBy({
-      where: { postId: post.id },
-      by: ["value"],
-      _count: { value: true },
-    }),
-    [],
-  );
-
-  const verification = buildVerificationSummary(groups, null, false);
+  const verification = buildVerificationSummary([
+    { value: 1, _count: { value: post.workedCount } },
+    { value: -1, _count: { value: post.brokenCount } },
+  ], null, false);
 
   const views = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(post.views ?? 0);
   const uploadDate = formatUploadDate(post.uploadDate);
@@ -188,10 +166,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
   const authorProfile = post.author?.name ? `/profile/${post.author.name}` : null;
   const authorBio = post.author?.bio?.trim() ?? null;
 
-  const commentData = await withDatabaseFallback(
-    () => getPostComments(post.id, { viewerId: null }),
-    { comments: [], nextCursor: null, total: 0, pinnedComment: null },
-  );
+  const commentData = await getPostComments(post.id, { viewerId: null });
   const postDescription = normalizePostDescription(post.description);
 
   return (

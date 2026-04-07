@@ -1,5 +1,6 @@
 import "server-only";
 import type { BuildVisibility } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import type { BuildDetailPayload } from "@/lib/builds/types";
 
@@ -17,35 +18,31 @@ export type BuildDetailQueryResult =
     visibility: BuildVisibility;
   };
 
-export async function getBuildDetail(
-  options: {
-    username: string;
-    slug: string;
-    commitId?: string | null;
-    viewerEmail?: string | null;
-  },
-): Promise<BuildDetailQueryResult> {
-  const normalizedUsername = options.username.trim().toLowerCase();
-  const normalizedSlug = options.slug.trim();
-  if (!normalizedUsername || !normalizedSlug) {
-    return { status: 404, payload: null, visibility: null };
-  }
+type BuildDetailLookupOptions = {
+  username: string;
+  slug: string;
+  commitId?: string | null;
+  viewerId?: string | null;
+};
 
-  const viewer = options.viewerEmail
-    ? await db.user.findUnique({
-      where: { email: options.viewerEmail },
-      select: { id: true },
-    })
-    : null;
+type CachedPublicBuildDetailInput = {
+  username: string;
+  slug: string;
+  commitId: string | null;
+};
+
+async function getBuildDetailUncached(
+  options: BuildDetailLookupOptions,
+): Promise<BuildDetailQueryResult> {
+  const visibilityFilters = options.viewerId
+    ? [{ visibility: "PUBLIC" as const }, { userId: options.viewerId }]
+    : [{ visibility: "PUBLIC" as const }];
 
   const build = await db.build.findFirst({
     where: {
-      slug: normalizedSlug,
-      user: { name: normalizedUsername },
-      OR: [
-        { visibility: "PUBLIC" },
-        ...(viewer?.id ? [{ userId: viewer.id }] : []),
-      ],
+      slug: options.slug,
+      user: { name: options.username },
+      OR: visibilityFilters,
     },
     select: {
       id: true,
@@ -160,4 +157,50 @@ export async function getBuildDetail(
       selectedCommitId,
     },
   };
+}
+
+const getCachedPublicBuildDetail = unstable_cache(
+  async (options: CachedPublicBuildDetailInput) => getBuildDetailUncached({
+    username: options.username,
+    slug: options.slug,
+    commitId: options.commitId,
+    viewerId: null,
+  }),
+  ["public-build-detail"],
+  { revalidate: 60 },
+);
+
+export async function getBuildDetail(
+  options: {
+    username: string;
+    slug: string;
+    commitId?: string | null;
+    viewerEmail?: string | null;
+  },
+): Promise<BuildDetailQueryResult> {
+  const normalizedUsername = options.username.trim().toLowerCase();
+  const normalizedSlug = options.slug.trim();
+  if (!normalizedUsername || !normalizedSlug) {
+    return { status: 404, payload: null, visibility: null };
+  }
+
+  if (!options.viewerEmail) {
+    return getCachedPublicBuildDetail({
+      username: normalizedUsername,
+      slug: normalizedSlug,
+      commitId: options.commitId?.trim() || null,
+    });
+  }
+
+  const viewer = await db.user.findUnique({
+    where: { email: options.viewerEmail },
+    select: { id: true },
+  });
+
+  return getBuildDetailUncached({
+    username: normalizedUsername,
+    slug: normalizedSlug,
+    commitId: options.commitId?.trim() || null,
+    viewerId: viewer?.id ?? null,
+  });
 }

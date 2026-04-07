@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import {
   type BuildVisibility,
@@ -10,6 +11,12 @@ export { formatBuildDate, parseBuildPageSize } from "./profile-list-shared";
 type ProfileBuildListResult = {
   status: number;
   data: ProfileBuildListResponse | null;
+};
+
+type CachedPublicProfileBuildListInput = {
+  username: string;
+  page: number;
+  pageSize: number;
 };
 
 function isBuildVisibility(value: unknown): value is BuildVisibility {
@@ -48,6 +55,59 @@ function asBuildListResponse(payload: unknown): ProfileBuildListResponse | null 
   };
 }
 
+const getCachedPublicProfileBuildList = unstable_cache(
+  async (options: CachedPublicProfileBuildListInput): Promise<ProfileBuildListResponse | null> => {
+    const profile = await db.user.findUnique({
+      where: { name: options.username },
+      select: { id: true, name: true },
+    });
+
+    if (!profile?.name) {
+      return null;
+    }
+
+    const where = {
+      userId: profile.id,
+      visibility: "PUBLIC" as const,
+    };
+
+    const [items, total] = await Promise.all([
+      db.build.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (options.page - 1) * options.pageSize,
+        take: options.pageSize,
+        select: {
+          slug: true,
+          nameOriginal: true,
+          tag: true,
+          visibility: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      db.build.count({ where }),
+    ]);
+
+    return asBuildListResponse({
+      items: items.map((item) => ({
+        username: profile.name,
+        slug: item.slug,
+        nameOriginal: item.nameOriginal,
+        tag: item.tag,
+        visibility: item.visibility,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+      })),
+      page: options.page,
+      pageSize: options.pageSize,
+      total,
+    });
+  },
+  ["public-profile-build-list"],
+  { revalidate: 60 },
+);
+
 export async function getProfileBuildList(
   username: string,
   options: { page: number; pageSize: number; viewerEmail?: string | null },
@@ -55,6 +115,18 @@ export async function getProfileBuildList(
   const normalizedUsername = username.trim().toLowerCase();
   if (!normalizedUsername) {
     return { status: 404, data: null };
+  }
+
+  if (!options.viewerEmail) {
+    const data = await getCachedPublicProfileBuildList({
+      username: normalizedUsername,
+      page: options.page,
+      pageSize: options.pageSize,
+    });
+
+    return data
+      ? { status: 200, data }
+      : { status: 404, data: null };
   }
 
   const profile = await db.user.findUnique({

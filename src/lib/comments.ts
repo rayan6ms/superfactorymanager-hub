@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import {
   COMMENT_PAGE_SIZE,
@@ -184,7 +185,7 @@ function attachReplies(
   return serializeComment(comment, replies, voteMap, replyCount);
 }
 
-export async function getPostComments(
+async function getPostCommentsUncached(
   postId: string,
   options: {
     take?: number;
@@ -282,6 +283,62 @@ export async function getPostComments(
     ...(typeof total === "number" ? { total } : {}),
     ...(typeof pinnedComment !== "undefined" ? { pinnedComment } : {}),
   };
+}
+
+const getCachedInitialPostComments = unstable_cache(
+  async (postId: string, sort: "recent" | "top") => getPostCommentsUncached(postId, {
+    take: COMMENT_PAGE_SIZE,
+    cursor: null,
+    sort,
+    viewerId: null,
+    includeTotal: true,
+    includePinnedComment: true,
+  }),
+  ["post-comments-initial"],
+  { revalidate: 60 },
+);
+
+export async function getPostComments(
+  postId: string,
+  options: {
+    take?: number;
+    cursor?: string | null;
+    sort?: "recent" | "top";
+    viewerId?: string | null;
+    includeTotal?: boolean;
+    includePinnedComment?: boolean;
+  } = {},
+): Promise<{
+  comments: SerializedComment[];
+  nextCursor: string | null;
+  total?: number;
+  pinnedComment?: SerializedComment | null;
+}> {
+  const take = Math.min(Math.max(options.take ?? COMMENT_PAGE_SIZE, 1), 50);
+  const cursor = options.cursor ?? null;
+  const sort = options.sort ?? "recent";
+  const viewerId = options.viewerId ?? null;
+  const includeTotal = options.includeTotal ?? true;
+  const includePinnedComment = options.includePinnedComment ?? true;
+
+  if (
+    !viewerId
+    && !cursor
+    && take === COMMENT_PAGE_SIZE
+    && includeTotal
+    && includePinnedComment
+  ) {
+    return getCachedInitialPostComments(postId, sort);
+  }
+
+  return getPostCommentsUncached(postId, {
+    take,
+    cursor,
+    sort,
+    viewerId,
+    includeTotal,
+    includePinnedComment,
+  });
 }
 
 export async function getCommentThread(

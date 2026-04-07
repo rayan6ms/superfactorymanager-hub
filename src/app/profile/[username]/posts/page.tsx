@@ -5,10 +5,12 @@ import PostsFilterBar from "@/components/posts/PostsFilterBar";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
 import { getCategoryOptions } from "@/lib/categories";
-import { db } from "@/lib/db";
 import { searchPostsWithFilters, type PostsFilterOptions } from "@/lib/posts";
 import { parsePageParam } from "@/lib/pagination";
+import { getPublicProfileIdentity } from "@/lib/public-profile";
 import { getSfmMatrix } from "@/lib/sfm";
+
+export const revalidate = 60;
 
 const ORDER_VALUES: PostsFilterOptions["order"][] = [
   "best",
@@ -63,10 +65,7 @@ export default async function UserPostsPage({ params, searchParams }: Props) {
   const requestedPage = parsePageParam(pageParam, 1);
   const pageSize = parsePageSizeParam(pageSizeParam);
 
-  const user = await db.user.findUnique({
-    where: { name: username.trim().toLowerCase() },
-    select: { id: true, name: true },
-  });
+  const user = await getPublicProfileIdentity(username);
 
   if (!user?.name) {
     notFound();

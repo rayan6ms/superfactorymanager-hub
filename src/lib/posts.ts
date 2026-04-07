@@ -50,6 +50,68 @@ export type SerializedPost = Omit<PostWithRelations, "tags"> & {
   tags: { id: string; name: string; slug: string }[];
 };
 
+const PUBLIC_POST_DETAIL_SELECT = {
+  id: true,
+  slug: true,
+  title: true,
+  description: true,
+  uploadDate: true,
+  moderationEditedAt: true,
+  moderationEditedNote: true,
+  modVersion: true,
+  gameVersion: true,
+  views: true,
+  code: true,
+  codeStatus: true,
+  codeNote: true,
+  openForImprovement: true,
+  youtubeUrl: true,
+  isDeleted: true,
+  authorId: true,
+  authorName: true,
+  workedCount: true,
+  brokenCount: true,
+  category: { select: { name: true } },
+  images: {
+    orderBy: { position: "asc" },
+    select: {
+      id: true,
+      original: true,
+      thumbSm: true,
+      thumbMd: true,
+      thumbLg: true,
+      position: true,
+    },
+  },
+  dependencies: {
+    select: {
+      id: true,
+      name: true,
+      url: true,
+    },
+  },
+  author: {
+    select: {
+      name: true,
+      image: true,
+      bio: true,
+    },
+  },
+  tags: {
+    select: {
+      tag: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.PostSelect;
+
+type PublicPostDetail = Prisma.PostGetPayload<{ select: typeof PUBLIC_POST_DETAIL_SELECT }>;
+
 export type PrismaClientOrTransaction = Pick<
   PrismaClient,
   "rating" | "post" | "postContributor"
@@ -155,6 +217,11 @@ type CachedSerializedPost = Omit<SerializedPost, "uploadDate"> & {
   uploadDate: string;
 };
 
+type CachedPublicPostDetail = Omit<PublicPostDetail, "uploadDate" | "moderationEditedAt"> & {
+  uploadDate: string;
+  moderationEditedAt: string | null;
+};
+
 function toCachedSerializedPost(post: SerializedPost): CachedSerializedPost {
   return {
     ...post,
@@ -166,6 +233,22 @@ function fromCachedSerializedPost(post: CachedSerializedPost): SerializedPost {
   return {
     ...post,
     uploadDate: new Date(post.uploadDate),
+  };
+}
+
+function toCachedPublicPostDetail(post: PublicPostDetail): CachedPublicPostDetail {
+  return {
+    ...post,
+    uploadDate: post.uploadDate.toISOString(),
+    moderationEditedAt: post.moderationEditedAt?.toISOString() ?? null,
+  };
+}
+
+function fromCachedPublicPostDetail(post: CachedPublicPostDetail): PublicPostDetail {
+  return {
+    ...post,
+    uploadDate: new Date(post.uploadDate),
+    moderationEditedAt: post.moderationEditedAt ? new Date(post.moderationEditedAt) : null,
   };
 }
 
@@ -259,6 +342,19 @@ const getCachedPublicPostCount = unstable_cache(
   { revalidate: 60 },
 );
 
+const getCachedPublicPostDetail = unstable_cache(
+  async (slug: string) => {
+    const post = await db.post.findUnique({
+      where: { slug },
+      select: PUBLIC_POST_DETAIL_SELECT,
+    });
+
+    return post ? toCachedPublicPostDetail(post) : null;
+  },
+  ["public-post-detail"],
+  { revalidate: 60 },
+);
+
 export async function getPopularTags(limit = 12) {
   return withDatabaseFallback(() => getCachedPopularTags(limit), []);
 }
@@ -275,6 +371,18 @@ export async function getTrendingPosts(limit = 6) {
 
 export async function getPublicPostCount() {
   return withDatabaseFallback(() => getCachedPublicPostCount(), 0);
+}
+
+export async function getPublicPostDetail(slug: string) {
+  const normalizedSlug = slug.trim();
+  if (!normalizedSlug) return null;
+
+  const post = await withDatabaseFallback(
+    () => getCachedPublicPostDetail(normalizedSlug),
+    null,
+  );
+
+  return post ? fromCachedPublicPostDetail(post) : null;
 }
 
 function keywordSet(...terms: (string | null | undefined)[]) {

@@ -1,14 +1,23 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { shouldCountViewAndMark } from "@/lib/views";
-import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
+import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
 
 const VIEW_WINDOW_MS = 10 * 1000;
 const VIEW_LIMIT_PER_IP_PER_POST = 6;
+const UNIQUE_VIEW_WINDOW_MS = 6 * 60 * 60 * 1000;
+
+function getViewClientKey(headers: Headers) {
+  const clientKey = getClientRateLimitKey(headers);
+  const userAgent = headers.get("user-agent")?.trim().toLowerCase() ?? "";
+  const language = headers.get("accept-language")?.trim().toLowerCase() ?? "";
+  return hashRateLimitIdentifier(`${clientKey}|${userAgent}|${language}`, "post-view");
+}
 
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
   const clientKey = getClientRateLimitKey(req.headers);
+  const viewClientKey = getViewClientKey(req.headers);
   const viewLimit = await checkRateLimit(`view:${slug}:${clientKey}`, {
     windowMs: VIEW_WINDOW_MS,
     limit: VIEW_LIMIT_PER_IP_PER_POST,
@@ -18,6 +27,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       { ok: true, counted: false },
       { status: 429, headers: { "Retry-After": String(viewLimit.retryAfterSeconds) } },
     );
+  }
+
+  const uniqueViewLimit = await checkRateLimit(`view-unique:${slug}:${viewClientKey}`, {
+    windowMs: UNIQUE_VIEW_WINDOW_MS,
+    limit: 1,
+  });
+  if (!uniqueViewLimit.allowed) {
+    return NextResponse.json({ ok: true, counted: false });
   }
 
   const post = await db.post.findFirst({ where: { slug, isDeleted: false } });

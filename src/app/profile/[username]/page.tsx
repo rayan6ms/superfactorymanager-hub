@@ -6,6 +6,7 @@ import PostCard from "@/components/posts/PostCard";
 import BuildCard from "@/components/builds/BuildCard";
 import { db } from "@/lib/db";
 import { POST_CARD_SELECT, serializePost, type SerializedPost } from "@/lib/posts";
+import { getPublicProfileOverview } from "@/lib/public-profile";
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -25,62 +26,92 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   const PREVIEW_LIMIT = 4;
   const normalized = username.toLowerCase();
 
-  const user = await db.user.findUnique({
-    where: { name: normalized },
-    select: {
-      id: true,
-      name: true,
-      image: true,
-      bio: true,
-      createdAt: true,
-    },
-  });
+  const session = await auth();
+  const publicOverview = await getPublicProfileOverview(normalized);
+  const ownerId = publicOverview?.user.id
+    ?? (await db.user.findUnique({
+      where: { name: normalized },
+      select: { id: true },
+    }))?.id
+    ?? null;
+
+  if (!ownerId) {
+    notFound();
+  }
+
+  const isOwnerView = session?.user?.id === ownerId;
+
+  let user = publicOverview?.user ?? null;
+  let recentBuilds = publicOverview?.recentBuilds ?? [];
+  let totalBuilds = publicOverview?.totalBuilds ?? 0;
+  let totalPosts = publicOverview?.totalPosts ?? 0;
+  let serializedPosts: SerializedPost[] = publicOverview?.recentPosts ?? [];
+
+  if (isOwnerView) {
+    const [ownerViewData, totalBuildCount, totalPostCount] = await Promise.all([
+      db.user.findUnique({
+        where: { id: ownerId },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          bio: true,
+          createdAt: true,
+          builds: {
+            orderBy: { createdAt: "desc" },
+            take: PREVIEW_LIMIT,
+            select: {
+              slug: true,
+              nameOriginal: true,
+              tag: true,
+              visibility: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+          posts: {
+            where: { isDeleted: false },
+            orderBy: { uploadDate: "desc" },
+            select: POST_CARD_SELECT,
+            take: PREVIEW_LIMIT,
+          },
+        },
+      }),
+      db.build.count({ where: { userId: ownerId } }),
+      db.post.count({ where: { authorId: ownerId, isDeleted: false } }),
+    ]);
+
+    if (!ownerViewData?.name) {
+      notFound();
+    }
+    const ownerName = ownerViewData.name;
+
+    user = {
+      id: ownerViewData.id,
+      name: ownerName,
+      image: ownerViewData.image,
+      bio: ownerViewData.bio,
+      createdAt: ownerViewData.createdAt,
+    };
+    recentBuilds = ownerViewData.builds.map((build) => ({
+      username: ownerName,
+      slug: build.slug,
+      nameOriginal: build.nameOriginal,
+      tag: build.tag,
+      visibility: build.visibility,
+      createdAt: build.createdAt,
+      updatedAt: build.updatedAt,
+    }));
+    totalBuilds = totalBuildCount;
+    totalPosts = totalPostCount;
+    serializedPosts = ownerViewData.posts.map(serializePost);
+  }
 
   if (!user) {
     notFound();
   }
-  if (!user.name) {
-    notFound();
-  }
+
   const profileUsername = user.name;
-
-  const session = await auth();
-  const isOwnerView = session?.user?.id === user.id;
-  const buildVisibilityFilter = isOwnerView ? {} : { visibility: "PUBLIC" as const };
-
-  const [recentBuilds, totalBuilds, totalPosts, posts] = await Promise.all([
-    db.build.findMany({
-      where: {
-        userId: user.id,
-        ...buildVisibilityFilter,
-      },
-      orderBy: { createdAt: "desc" },
-      take: PREVIEW_LIMIT,
-      select: {
-        slug: true,
-        nameOriginal: true,
-        tag: true,
-        visibility: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    }),
-    db.build.count({
-      where: {
-        userId: user.id,
-        ...buildVisibilityFilter,
-      },
-    }),
-    db.post.count({ where: { authorId: user.id, isDeleted: false } }),
-    db.post.findMany({
-      where: { authorId: user.id, isDeleted: false },
-      orderBy: { uploadDate: "desc" },
-      select: POST_CARD_SELECT,
-      take: PREVIEW_LIMIT,
-    }),
-  ]);
-
-  const serializedPosts: SerializedPost[] = posts.map(serializePost);
   const joined = formatDate(user.createdAt);
   const bio = user.bio?.trim();
   const buildsSectionTitle = isOwnerView ? "Your builds" : "Shared builds";
