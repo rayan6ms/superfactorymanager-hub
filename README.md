@@ -65,6 +65,12 @@ EMAIL_FROM="SFMHub <no-reply@yourdomain.tld>"
 # Optional Vercel Blob (image uploads)
 BLOB_READ_WRITE_TOKEN=""
 
+# Production rate limiting
+# Vercel deployments default to x-forwarded-for automatically.
+# Other production hosts must set one of: cf-connecting-ip, x-forwarded-for, x-real-ip.
+TRUSTED_PROXY_IP_HEADER=""
+RATE_LIMIT_HASH_SECRET="a-long-random-secret"
+
 # Optional debug
 DEBUG_SFM="0"
 ```
@@ -97,6 +103,7 @@ Notes:
 - If you use the Vercel Prisma integration, it commonly injects `DATABASE_URL`. This project does not read that name by default, so copy the value into `PRISMA_DATABASE_URL` as well.
 - If `PRISMA_DATABASE_URL` points at `*.prisma-data.net` over `postgres://` or `postgresql://`, include `sslmode=require`.
 - `POSTGRES_URL` is still required even when runtime traffic goes through Accelerate, because Prisma CLI operations use `directUrl`.
+- Production rate limiting needs the real client IP from a trusted edge proxy. On Vercel this app uses `x-forwarded-for` automatically. On other hosts, set `TRUSTED_PROXY_IP_HEADER` to the trusted header your proxy controls.
 
 ### 3) Run migrations
 

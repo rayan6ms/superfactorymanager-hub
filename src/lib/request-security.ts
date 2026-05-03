@@ -28,6 +28,7 @@ const TRUSTED_PROXY_IP_HEADERS = new Set([
   "x-forwarded-for",
   "x-real-ip",
 ]);
+const VERCEL_TRUSTED_PROXY_IP_HEADER = "x-forwarded-for";
 
 let lastDatabaseCleanupAt = 0;
 let didWarnAboutDatabaseFallback = false;
@@ -92,6 +93,11 @@ function getConfiguredTrustedProxyHeader(): string | null {
 
   const configured = process.env.TRUSTED_PROXY_IP_HEADER?.trim().toLowerCase();
   if (!configured) {
+    if (process.env.VERCEL === "1") {
+      trustedProxyHeaderCache = VERCEL_TRUSTED_PROXY_IP_HEADER;
+      return trustedProxyHeaderCache;
+    }
+
     if (process.env.NODE_ENV === "production") {
       throw new TrustedProxyConfigurationError(
         "TRUSTED_PROXY_IP_HEADER must be configured for production rate limiting.",
