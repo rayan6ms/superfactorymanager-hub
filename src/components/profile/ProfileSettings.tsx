@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button, Input, Card } from "@/components/ui";
-import { Loader2, Pencil, RefreshCw, ShieldCheck } from "lucide-react";
+import { Loader2, Pencil, RefreshCw, ShieldCheck, UploadCloud } from "lucide-react";
 import {
   USERNAME_HELP_TEXT,
   USERNAME_MAX_LENGTH,
@@ -14,7 +14,6 @@ import {
   validateUsernameInput,
   type UsernameValidationCode,
 } from "@/lib/usernames";
-import { supportedAvatarHostLabels } from "@/lib/avatar-hosts";
 
 const BIO_MAX_LENGTH = 300;
 const MAX_IMAGE_VALUE_LENGTH = 4096;
@@ -187,7 +186,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           });
         } else if (errorMessage === "UNSUPPORTED_IMAGE_HOST") {
           setErrors({
-            image: `Supported avatar hosts: ${supportedAvatarHostLabels.join(", ")}.`,
+            image: "That avatar image URL is not supported. Upload the image file instead.",
           });
         } else {
           console.error("Unexpected profile update error", errorMessage);
@@ -305,23 +304,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
 
   const avatarImageControls = (
     <div>
-      <label className="text-sm font-semibold text-white">Avatar image URL</label>
-      <Input
-        value={image}
-        onChange={event => {
-          setImage(event.target.value);
-          setPreview(event.target.value);
-          setAvatarUploadStatus("idle");
-          setErrors(prev => ({ ...prev, image: undefined, form: undefined }));
-        }}
-        placeholder="https://avatars.githubusercontent.com/u/123456"
-        className="mt-1"
-        aria-invalid={Boolean(errors.image)}
-      />
-      <p className="mt-1 text-xs text-white/60">
-        Supported hosts: {supportedAvatarHostLabels.join(", ")}.
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
           size="sm"
@@ -330,15 +313,13 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           onClick={() => avatarFileInputRef.current?.click()}
           disabled={isLoading || avatarUploadLoading}
         >
-          {avatarUploadLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+          {avatarUploadLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <UploadCloud className="h-4 w-4" aria-hidden />
+          )}
           Upload image
         </Button>
-        {avatarUploadStatus === "success" && (
-          <span className="text-xs text-emerald-300">Upload complete. Save changes to apply it.</span>
-        )}
-      </div>
-      {errors.image && <p className="mt-1 text-sm text-error">{errors.image}</p>}
-      <div className="mt-2 flex flex-wrap gap-2 text-sm text-white/70">
         <Button
           type="button"
           size="sm"
@@ -351,6 +332,10 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           Use letter avatar
         </Button>
       </div>
+      {avatarUploadStatus === "success" && (
+        <p className="mt-2 text-xs text-emerald-300">Upload complete. Save changes to apply it.</p>
+      )}
+      {errors.image && <p className="mt-1 text-sm text-error">{errors.image}</p>}
     </div>
   );
 
