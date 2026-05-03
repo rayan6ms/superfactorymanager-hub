@@ -478,12 +478,14 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
               {(name || initialUser.email).charAt(0).toUpperCase()}
             </div>
           )}
-          <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/45 group-focus-visible:bg-black/45" />
+          <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/50 group-focus-visible:bg-black/45" />
           <span className="absolute inset-0 inline-flex items-center justify-center drop-shadow-lg">
             {avatarUploadLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
-              <Pencil className="h-4 w-4" aria-hidden />
+              <div className="group-hover:bg-transparent hover:cursor-pointer transition bg-black/60 p-2 rounded-full">
+                <Pencil className="h-4 w-4" aria-hidden />
+              </div>
             )}
           </span>
         </button>
