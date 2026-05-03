@@ -456,7 +456,14 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
         onChange={handleAvatarFileChange}
       />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="relative h-24 w-24 self-center overflow-hidden rounded-full border border-white/15 bg-white/5 sm:self-auto">
+        <button
+          type="button"
+          onClick={() => avatarFileInputRef.current?.click()}
+          disabled={isLoading || avatarUploadLoading}
+          className="group relative h-24 w-24 self-center overflow-hidden rounded-full border border-white/15 bg-white/5 text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0b14] disabled:cursor-not-allowed disabled:opacity-70 sm:self-auto"
+          aria-label="Upload profile picture"
+          title="Upload profile picture"
+        >
           {preview ? (
             <Image
               src={preview}
@@ -471,21 +478,15 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
               {(name || initialUser.email).charAt(0).toUpperCase()}
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => avatarFileInputRef.current?.click()}
-            disabled={isLoading || avatarUploadLoading}
-            className="absolute bottom-1 right-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-neutral-950/85 text-white shadow-lg transition hover:border-white/40 hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
-            aria-label="Upload profile picture"
-            title="Upload profile picture"
-          >
+          <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/45 group-focus-visible:bg-black/45" />
+          <span className="absolute inset-0 inline-flex items-center justify-center drop-shadow-lg">
             {avatarUploadLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
               <Pencil className="h-4 w-4" aria-hidden />
             )}
-          </button>
-        </div>
+          </span>
+        </button>
 
         <div className="flex-1 space-y-3">
           <div>

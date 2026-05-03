@@ -16,6 +16,7 @@ export const BUILD_CARD_SELECT = {
   user: {
     select: {
       name: true,
+      image: true,
     },
   },
 } satisfies Prisma.BuildSelect;
@@ -27,6 +28,7 @@ type CountRow = { count: number };
 
 export type SerializedBuild = {
   username: string;
+  authorImage: string | null;
   slug: string;
   nameOriginal: string;
   tag: string;
@@ -77,6 +79,7 @@ function serializeBuild(build: BuildWithUser): SerializedBuild | null {
 
   return {
     username,
+    authorImage: build.user.image,
     slug: build.slug,
     nameOriginal: build.nameOriginal,
     tag: build.tag,

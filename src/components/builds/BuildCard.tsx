@@ -1,12 +1,10 @@
-"use client";
-
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { Badge, Card } from "@/components/ui";
 import { formatBuildDate, type BuildVisibility } from "@/lib/builds/profile-list-shared";
 
 type BuildCardProps = {
   username: string;
+  authorImage?: string | null;
   slug: string;
   name: string;
   tag: string;
@@ -20,6 +18,7 @@ type BuildCardProps = {
 
 export default function BuildCard({
   username,
+  authorImage,
   slug,
   name,
   tag,
@@ -30,7 +29,6 @@ export default function BuildCard({
   backTo,
   backHref,
 }: BuildCardProps) {
-  const { data: session } = useSession();
   const baseHref = `/profile/${encodeURIComponent(username)}/builds/${encodeURIComponent(slug)}`;
   const query = new URLSearchParams();
   if (backTo) query.set("from", backTo);
@@ -39,8 +37,6 @@ export default function BuildCard({
   const href = suffix ? `${baseHref}?${suffix}` : baseHref;
   const createdDate = formatBuildDate(createdAt);
   const updatedDate = formatBuildDate(updatedAt);
-  const viewerUsername = session?.user?.name?.trim().toLowerCase() ?? null;
-  const effectiveShowVisibility = showVisibility ?? viewerUsername === username.trim().toLowerCase();
   const createdTs = new Date(createdAt).getTime();
   const updatedTs = new Date(updatedAt).getTime();
   const showUpdated = Number.isFinite(createdTs) && Number.isFinite(updatedTs) && Math.abs(updatedTs - createdTs) > 1000;
@@ -57,7 +53,7 @@ export default function BuildCard({
             <Badge className="max-w-[11rem] truncate border-sky-400/30 bg-sky-500/10 text-sky-100">
               {tag}
             </Badge>
-            {effectiveShowVisibility ? (
+            {showVisibility ? (
               <Badge
                 className={visibility === "PRIVATE"
                   ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
@@ -69,8 +65,20 @@ export default function BuildCard({
           </div>
         </div>
         <div className="flex items-end justify-between gap-3">
-          <p className="min-w-0 truncate text-xs text-white/60">
-            By <span className="font-medium text-white/80">{username}</span>
+          <p className="flex min-w-0 items-center gap-1.5 truncate text-xs text-white/60">
+            <span>By</span>
+            {authorImage ? (
+              <span
+                className="h-5 w-5 shrink-0 rounded-md bg-white/10 bg-cover bg-center"
+                style={{ backgroundImage: `url(${authorImage})` }}
+                aria-hidden="true"
+              />
+            ) : (
+              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white/10 text-[0.65rem] font-semibold text-white/70">
+                {username.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <span className="min-w-0 truncate font-medium text-white/80">{username}</span>
           </p>
           <div className="shrink-0 text-right text-xs text-white/55">
             <p>Created {createdDate}</p>

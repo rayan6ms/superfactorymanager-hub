@@ -64,6 +64,7 @@ function serializeBuild(build: BuildWithUser): SerializedBuild | null {
 
   return {
     username,
+    authorImage: build.user.image,
     slug: build.slug,
     nameOriginal: build.nameOriginal,
     tag: build.tag,

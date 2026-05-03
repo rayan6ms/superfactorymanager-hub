@@ -95,6 +95,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
     };
     recentBuilds = ownerViewData.builds.map((build) => ({
       username: ownerName,
+      authorImage: ownerViewData.image,
       slug: build.slug,
       nameOriginal: build.nameOriginal,
       tag: build.tag,
@@ -159,6 +160,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
               <li key={`${profileUsername}:${build.slug}`}>
                 <BuildCard
                   username={profileUsername}
+                  authorImage={user.image}
                   slug={build.slug}
                   name={build.nameOriginal ?? build.slug}
                   tag={build.tag}

@@ -4,6 +4,7 @@ export type BuildVisibility = "PUBLIC" | "PRIVATE";
 
 export type ProfileBuildItem = {
   username: string;
+  authorImage: string | null;
   slug: string;
   nameOriginal: string;
   tag: string;

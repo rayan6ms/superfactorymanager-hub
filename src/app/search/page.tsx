@@ -158,6 +158,7 @@ export default async function SearchPage({ searchParams }: Props) {
                     <li key={`${build.username}:${build.slug}`}>
                       <BuildCard
                         username={build.username}
+                        authorImage={build.authorImage}
                         slug={build.slug}
                         name={build.nameOriginal}
                         tag={build.tag}

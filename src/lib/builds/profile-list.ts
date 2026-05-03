@@ -38,6 +38,7 @@ function asBuildListResponse(payload: unknown): ProfileBuildListResponse | null 
       const candidate = item as Partial<ProfileBuildItem>;
       return (
         typeof candidate.username === "string"
+        && (typeof candidate.authorImage === "string" || candidate.authorImage === null || typeof candidate.authorImage === "undefined")
         && typeof candidate.slug === "string"
         && typeof candidate.nameOriginal === "string"
         && typeof candidate.tag === "string"
@@ -45,7 +46,11 @@ function asBuildListResponse(payload: unknown): ProfileBuildListResponse | null 
         && typeof candidate.createdAt === "string"
         && typeof candidate.updatedAt === "string"
       );
-    });
+    })
+    .map((item) => ({
+      ...item,
+      authorImage: item.authorImage ?? null,
+    }));
 
   return {
     items,
@@ -59,7 +64,7 @@ const getCachedPublicProfileBuildList = unstable_cache(
   async (options: CachedPublicProfileBuildListInput): Promise<ProfileBuildListResponse | null> => {
     const profile = await db.user.findUnique({
       where: { name: options.username },
-      select: { id: true, name: true },
+      select: { id: true, name: true, image: true },
     });
 
     if (!profile?.name) {
@@ -92,6 +97,7 @@ const getCachedPublicProfileBuildList = unstable_cache(
     return asBuildListResponse({
       items: items.map((item) => ({
         username: profile.name,
+        authorImage: profile.image,
         slug: item.slug,
         nameOriginal: item.nameOriginal,
         tag: item.tag,
@@ -131,7 +137,7 @@ export async function getProfileBuildList(
 
   const profile = await db.user.findUnique({
     where: { name: normalizedUsername },
-    select: { id: true, name: true },
+    select: { id: true, name: true, image: true },
   });
 
   if (!profile?.name) {
@@ -173,6 +179,7 @@ export async function getProfileBuildList(
   const payload: ProfileBuildListResponse = {
     items: items.map((item) => ({
       username: profileName,
+      authorImage: profile.image,
       slug: item.slug,
       nameOriginal: item.nameOriginal,
       tag: item.tag,
