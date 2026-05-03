@@ -14,7 +14,6 @@ export const runtime = "nodejs";
 const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 const UPLOAD_LIMIT_PER_USER = 40;
 const MAX_FILE_PROCESSING_CONCURRENCY = 2;
-const MAX_VARIANT_PROCESSING_CONCURRENCY = 2;
 
 function getOriginalUploadExtension(contentType: string) {
   switch (contentType) {
@@ -139,26 +138,7 @@ export async function POST(req: Request) {
           );
           uploadedUrls.push(original);
 
-          const variants = await mapWithConcurrency(
-            [
-              { width: 320, prefix: "sm" },
-              { width: 640, prefix: "md" },
-              { width: 1024, prefix: "lg" },
-            ],
-            MAX_VARIANT_PROCESSING_CONCURRENCY,
-            async ({ width, prefix }) => {
-              const resized = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })
-                .resize({ width })
-                .jpeg({ quality: 80 })
-                .toBuffer();
-              const variantUrl = await uploadImageVariant(`uploads/${prefix}`, resized, "image/jpeg");
-              uploadedUrls.push(variantUrl);
-              return variantUrl;
-            },
-          );
-
-          const [thumbSm, thumbMd, thumbLg] = variants;
-          return { original, thumbSm, thumbMd, thumbLg };
+          return { original, thumbSm: original, thumbMd: original, thumbLg: original };
         } catch (error) {
           await deleteBlobs(uploadedUrls);
           throw error;

@@ -33,9 +33,9 @@ export async function deleteBlobs(urls: Array<string | null | undefined>) {
     return;
   }
 
+  const uniqueUrls = Array.from(new Set(urls.filter((url): url is string => Boolean(url))));
   await Promise.all(
-    urls.map(async url => {
-      if (!url) return;
+    uniqueUrls.map(async url => {
       try {
         await del(url, { token });
       } catch (error) {

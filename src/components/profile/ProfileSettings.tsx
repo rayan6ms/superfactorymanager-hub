@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button, Input, Card } from "@/components/ui";
-import { Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { Loader2, Pencil, RefreshCw, ShieldCheck } from "lucide-react";
 import {
   USERNAME_HELP_TEXT,
   USERNAME_MAX_LENGTH,
@@ -322,13 +322,6 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
         Supported hosts: {supportedAvatarHostLabels.join(", ")}.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <input
-          ref={avatarFileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={handleAvatarFileChange}
-        />
         <Button
           type="button"
           size="sm"
@@ -455,6 +448,13 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
 
   return (
     <Card className="space-y-6 p-6">
+      <input
+        ref={avatarFileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={handleAvatarFileChange}
+      />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="relative h-24 w-24 self-center overflow-hidden rounded-full border border-white/15 bg-white/5 sm:self-auto">
           {preview ? (
@@ -471,6 +471,20 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
               {(name || initialUser.email).charAt(0).toUpperCase()}
             </div>
           )}
+          <button
+            type="button"
+            onClick={() => avatarFileInputRef.current?.click()}
+            disabled={isLoading || avatarUploadLoading}
+            className="absolute bottom-1 right-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-neutral-950/85 text-white shadow-lg transition hover:border-white/40 hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Upload profile picture"
+            title="Upload profile picture"
+          >
+            {avatarUploadLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Pencil className="h-4 w-4" aria-hidden />
+            )}
+          </button>
         </div>
 
         <div className="flex-1 space-y-3">
