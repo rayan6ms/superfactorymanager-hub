@@ -35,6 +35,7 @@ import {
   Italic,
   Strikethrough,
   Code,
+  Link2,
   List,
   ListOrdered,
 } from "lucide-react";
@@ -52,7 +53,7 @@ const DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 
 const EMPTY_EXISTING_IMAGES: ExistingImage[] = [];
 
-type MarkdownFormat = "bold" | "italic" | "strike" | "code" | "ul" | "ol";
+type MarkdownFormat = "bold" | "italic" | "strike" | "code" | "link" | "ul" | "ol";
 
 type Matrix = { byGame: Record<string, string[]>; gameVersions: string[] };
 type CategoryOption = { key: string; name: string };
@@ -709,31 +710,28 @@ export default function PostComposer({
         return false;
       }
       const normalized = normalizeTag(parsed.data);
-      let error: string | null = null;
-      let added = false;
-      setTags(prev => {
-        if (prev.some(tag => tag.slug === normalized.slug)) {
-          error = "This tag is already added.";
-          return prev;
-        }
-        if (prev.length >= TAG_MAX_COUNT) {
-          error = `You can add up to ${TAG_MAX_COUNT} tags.`;
-          return prev;
-        }
-        added = true;
-        return [...prev, normalized];
-      });
-      if (error) {
-        setTagError(error);
+
+      if (tags.some(tag => tag.slug === normalized.slug)) {
+        setTagError("This tag is already added.");
         return false;
       }
-      if (added) {
-        setTagError(null);
-        markTouched("tags");
+
+      if (tags.length >= TAG_MAX_COUNT) {
+        setTagError(`You can add up to ${TAG_MAX_COUNT} tags.`);
+        return false;
       }
-      return added;
+
+      setTags(prev => {
+        if (prev.some(tag => tag.slug === normalized.slug) || prev.length >= TAG_MAX_COUNT) {
+          return prev;
+        }
+        return [...prev, normalized];
+      });
+      setTagError(null);
+      markTouched("tags");
+      return true;
     },
-    [markTouched]
+    [markTouched, tags]
   );
 
   const addTagsFromInput = useCallback(
@@ -922,15 +920,13 @@ export default function PostComposer({
       let nextSelectionStart = selectionStart;
       let nextSelectionEnd = selectionEnd;
 
-      if (format === "bold" || format === "italic" || format === "strike" || format === "code") {
+      if (format === "bold" || format === "italic" || format === "strike") {
         const markers =
           format === "bold"
             ? (["**"] as MarkdownInlineMarker[])
             : format === "italic"
               ? (["*"] as MarkdownInlineMarker[])
-              : format === "strike"
-                ? (["~~"] as MarkdownInlineMarker[])
-                : (["```", "`"] as MarkdownInlineMarker[]);
+              : (["~~"] as MarkdownInlineMarker[]);
         const toggled = toggleExactMarkdown(value, selectionStart, selectionEnd, markers);
 
         if (toggled.toggled) {
@@ -955,9 +951,10 @@ export default function PostComposer({
           replacement = `~~${text}~~`;
           break;
         case "code":
-          replacement = text.includes("\n")
-            ? `\`\`\`\n${text}\n\`\`\``
-            : `\`${text}\``;
+          replacement = `\`\`\`\n${selected || ""}\n\`\`\``;
+          break;
+        case "link":
+          replacement = `[${selected || "link text"}]()`;
           break;
         case "ul":
           replacement = text
@@ -985,14 +982,20 @@ export default function PostComposer({
 
       change("description", nextValue);
 
-      if (selected) {
+      if (format === "link") {
+        nextSelectionStart = before.length + replacement.length - 1;
+        nextSelectionEnd = nextSelectionStart;
+      } else if (selected) {
         nextSelectionStart = before.length;
         nextSelectionEnd = nextSelectionStart + replacement.length;
+      } else if (format === "code") {
+        nextSelectionStart = before.length + 4;
+        nextSelectionEnd = nextSelectionStart;
       } else {
         const markerWidth =
           format === "bold"
             ? 2
-            : format === "italic" || format === "code"
+            : format === "italic"
               ? 1
               : format === "strike"
                 ? 2
@@ -1636,9 +1639,17 @@ export default function PostComposer({
                   type="button"
                   onClick={() => applyMarkdown("code")}
                   className="rounded-full px-2 py-1 hover:bg-white/10"
-                  aria-label="Code"
+                  aria-label="Code block"
                 >
                   <Code className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyMarkdown("link")}
+                  className="rounded-full px-2 py-1 hover:bg-white/10"
+                  aria-label="Link"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
                 </button>
 
                 <span className="mx-1 h-4 w-px bg-white/15" aria-hidden="true" />
@@ -1719,7 +1730,7 @@ export default function PostComposer({
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
                   Markdown preview
                 </p>
-                <div className="prose prose-invert prose-sm max-w-none whitespace-pre-line prose-headings:text-white prose-strong:text-white prose-em:text-white/90 prose-p:text-white/85 prose-li:text-white/80">
+                <div className="prose prose-invert prose-sm max-w-none whitespace-pre-line prose-headings:text-white prose-strong:text-white prose-em:text-white/90 prose-p:text-white/85 prose-li:text-white/80 prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/40 prose-code:rounded prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:text-brand-100 prose-pre:whitespace-pre-wrap prose-pre:wrap-anywhere prose-pre:[&>code]:bg-transparent prose-pre:[&>code]:p-0">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {normalizedDescription}
                   </ReactMarkdown>
