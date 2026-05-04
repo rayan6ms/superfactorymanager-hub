@@ -1,5 +1,5 @@
 import "server-only";
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 import { withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
@@ -295,19 +295,34 @@ const getCachedPopularPosts = unstable_cache(
   { revalidate: 60 },
 );
 
+function isMissingPostViewDayTableError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2010") {
+    return false;
+  }
+
+  return error.message.includes("PostViewDay") || JSON.stringify(error.meta ?? {}).includes("PostViewDay");
+}
+
 const getCachedTrendingPosts = unstable_cache(
   async (limit: number) => {
     const since = subDays(new Date(), 30).toISOString().slice(0, 10);
-    const rows = await db.$queryRaw<{ postId: string; recentViews: number }[]>`
-      SELECT pvd."postId", SUM(pvd."views")::int AS "recentViews"
-      FROM "PostViewDay" pvd
-      INNER JOIN "Post" p ON p."id" = pvd."postId"
-      WHERE pvd."day" >= ${since}::date
-        AND p."isDeleted" = false
-      GROUP BY pvd."postId"
-      ORDER BY SUM(pvd."views") DESC, MAX(p."uploadDate") DESC
-      LIMIT ${limit * 3}
-    `;
+    let rows: { postId: string; recentViews: number }[] = [];
+    try {
+      rows = await db.$queryRaw<{ postId: string; recentViews: number }[]>`
+        SELECT pvd."postId", SUM(pvd."views")::int AS "recentViews"
+        FROM "PostViewDay" pvd
+        INNER JOIN "Post" p ON p."id" = pvd."postId"
+        WHERE pvd."day" >= ${since}::date
+          AND p."isDeleted" = false
+        GROUP BY pvd."postId"
+        ORDER BY SUM(pvd."views") DESC, MAX(p."uploadDate") DESC
+        LIMIT ${limit * 3}
+      `;
+    } catch (error) {
+      if (!isMissingPostViewDayTableError(error)) {
+        throw error;
+      }
+    }
 
     const ids = rows.map(row => row.postId);
 

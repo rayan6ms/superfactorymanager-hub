@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { shouldCountViewAndMark } from "@/lib/views";
 import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
@@ -16,6 +17,14 @@ function getViewClientKey(headers: Headers) {
 
 function getUtcDay(value = new Date()) {
   return value.toISOString().slice(0, 10);
+}
+
+function isMissingPostViewDayTableError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2010") {
+    return false;
+  }
+
+  return error.message.includes("PostViewDay") || JSON.stringify(error.meta ?? {}).includes("PostViewDay");
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
@@ -46,16 +55,22 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
   if (await shouldCountViewAndMark(post.id)) {
     const day = getUtcDay();
-    await db.$transaction([
-      db.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } }),
-      db.$executeRaw`
+    const updatedPost = await db.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } });
+
+    try {
+      await db.$executeRaw`
         INSERT INTO "PostViewDay" ("postId", "day", "views")
         VALUES (${post.id}, ${day}::date, 1)
         ON CONFLICT ("postId", "day")
         DO UPDATE SET "views" = "PostViewDay"."views" + 1
-      `,
-    ]);
-    return NextResponse.json({ ok: true, counted: true, views: post.views + 1 });
+      `;
+    } catch (error) {
+      if (!isMissingPostViewDayTableError(error)) {
+        throw error;
+      }
+    }
+
+    return NextResponse.json({ ok: true, counted: true, views: updatedPost.views });
   }
   return NextResponse.json({ ok: true, counted: false, views: post.views });
 }
