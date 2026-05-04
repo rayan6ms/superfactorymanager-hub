@@ -225,6 +225,7 @@ model Post {
   moderationEditedNote  String?
   ratings               Rating[]
   views                 Int                      @default(0)
+  viewDays              PostViewDay[]
   uploadDate            DateTime                 @default(now())
   updatedAt             DateTime                 @default(now()) @updatedAt
   code                  String
@@ -246,6 +247,16 @@ model Post {
   searchVector          Unsupported("tsvector")?
 
   @@index([searchVector], type: Gin)
+}
+
+model PostViewDay {
+  postId String
+  post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  day    DateTime @db.Date
+  views  Int      @default(0)
+
+  @@id([postId, day])
+  @@index([day, views])
 }
 
 enum PostCommitStatus {

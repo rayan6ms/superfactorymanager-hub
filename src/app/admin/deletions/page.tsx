@@ -113,6 +113,12 @@ export default async function AdminDeletionsPage({
         <p className="text-sm text-white/60">
           Review content that was flagged as deleted. You can reinstate posts or comments after verifying they are safe.
         </p>
+        <Link
+          href="/admin"
+          className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+        >
+          ← Back to admin
+        </Link>
       </div>
 
       <div className="flex flex-wrap gap-3">

@@ -339,6 +339,7 @@ export default function PostComposer({
   const [youtubePreviewMessage, setYoutubePreviewMessage] = useState<string | null>(null);
   const [youtubePreviewSource, setYoutubePreviewSource] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [depLoading, setDepLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [persistedImages, setPersistedImages] = useState<ExistingImage[]>(existingImages);
   const [newImages, setNewImages] = useState<NewImage[]>([]);
@@ -770,7 +771,7 @@ export default function PostComposer({
   }, [tagInput, tryAddTag]);
 
   const handleTagInputKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter") return;
+    if (event.key !== "Enter" && event.key !== ",") return;
 
     event.preventDefault();
 
@@ -1144,7 +1145,7 @@ export default function PostComposer({
   const addDep = async () => {
     const raw = depsInput.trim();
     setDepError(null);
-    if (!raw) return;
+    if (!raw || depLoading) return;
 
     let url: URL;
     try { url = new URL(raw); } catch { setDepError("Invalid URL"); return; }
@@ -1152,13 +1153,18 @@ export default function PostComposer({
       setDepError("Must be a CurseForge or Modrinth link");
       return;
     }
-    const res = await fetch(`/api/meta/dep/resolve?url=${encodeURIComponent(url.toString())}`);
-    const data = await res.json();
-    if (!res.ok) { setDepError(data.error || "Could not resolve"); return; }
+    try {
+      setDepLoading(true);
+      const res = await fetch(`/api/meta/dep/resolve?url=${encodeURIComponent(url.toString())}`);
+      const data = await res.json();
+      if (!res.ok) { setDepError(data.error || "Could not resolve"); return; }
 
-    if (deps.find(d => d.url === url.toString())) { setDepsInput(""); return; }
-    setDeps(d => [...d, { url: url.toString(), name: data.name }]);
-    setDepsInput("");
+      if (deps.find(d => d.url === url.toString())) { setDepsInput(""); return; }
+      setDeps(d => [...d, { url: url.toString(), name: data.name }]);
+      setDepsInput("");
+    } finally {
+      setDepLoading(false);
+    }
   };
 
   const removeDep = (u: string) => setDeps(ds => ds.filter(d => d.url !== u));
@@ -1542,6 +1548,7 @@ export default function PostComposer({
                   placeholder="Paste a CurseForge or Modrinth link"
                   value={depsInput}
                   onChange={e => setDepsInput(e.target.value)}
+                  disabled={depLoading}
                 />
               </div>
               <Button
@@ -1550,8 +1557,12 @@ export default function PostComposer({
                 size="lg"
                 className="w-full sm:w-auto"
                 onClick={addDep}
+                disabled={depLoading}
               >
-                Add
+                {depLoading ? (
+                  <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                ) : null}
+                {depLoading ? "Resolving..." : "Add"}
               </Button>
             </div>
             {depError && <p className="text-sm text-error">{depError}</p>}
@@ -1751,7 +1762,10 @@ export default function PostComposer({
                 </p>
               )}
               {youtubePreviewStatus === "loading" && (
-                <p className="text-xs text-white/60">Fetching video details…</p>
+                <p className="inline-flex items-center gap-2 text-xs text-white/60">
+                  <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+                  Fetching video details...
+                </p>
               )}
               {youtubePreviewStatus === "error" && youtubePreviewMessage && (
                 <p className="text-xs text-amber-300">{youtubePreviewMessage}</p>

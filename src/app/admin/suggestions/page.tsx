@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { Card, Badge } from "@/components/ui";
@@ -46,6 +47,12 @@ export default async function AdminSuggestionsPage({ searchParams }: { searchPar
         <p className="text-sm text-white/70">
           Messages submitted through the contact page appear here for moderators to review.
         </p>
+        <Link
+          href="/admin"
+          className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+        >
+          ← Back to admin
+        </Link>
       </div>
 
       <Card className="divide-y divide-white/10 p-0">

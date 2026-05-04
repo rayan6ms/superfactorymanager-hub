@@ -276,19 +276,40 @@ const getCachedRecentPosts = unstable_cache(
   { revalidate: 60 },
 );
 
+const getCachedPopularPosts = unstable_cache(
+  async (limit: number) => {
+    const posts = await db.post.findMany({
+      where: { isDeleted: false },
+      orderBy: [
+        { views: "desc" },
+        { ratingCount: "desc" },
+        { rating: "desc" },
+        { uploadDate: "desc" },
+      ],
+      select: POST_CARD_SELECT,
+      take: limit,
+    });
+    return posts.map(post => toCachedSerializedPost(serializePost(post)));
+  },
+  ["popular-posts"],
+  { revalidate: 60 },
+);
+
 const getCachedTrendingPosts = unstable_cache(
   async (limit: number) => {
-    const since = subDays(new Date(), 14);
+    const since = subDays(new Date(), 30).toISOString().slice(0, 10);
+    const rows = await db.$queryRaw<{ postId: string; recentViews: number }[]>`
+      SELECT pvd."postId", SUM(pvd."views")::int AS "recentViews"
+      FROM "PostViewDay" pvd
+      INNER JOIN "Post" p ON p."id" = pvd."postId"
+      WHERE pvd."day" >= ${since}::date
+        AND p."isDeleted" = false
+      GROUP BY pvd."postId"
+      ORDER BY SUM(pvd."views") DESC, MAX(p."uploadDate") DESC
+      LIMIT ${limit * 3}
+    `;
 
-    const ratingGroups = await db.rating.groupBy({
-      by: ["postId"],
-      where: { ratedAt: { gte: since } },
-      _count: { postId: true },
-      orderBy: { _count: { postId: "desc" } },
-      take: limit * 3,
-    });
-
-    const ids = ratingGroups.map(group => group.postId);
+    const ids = rows.map(row => row.postId);
 
     const posts = ids.length
       ? await db.post.findMany({
@@ -311,9 +332,10 @@ const getCachedTrendingPosts = unstable_cache(
     const fallback = await db.post.findMany({
       where: { isDeleted: false },
       orderBy: [
+        { views: "desc" },
         { ratingCount: "desc" },
         { rating: "desc" },
-        { views: "desc" },
+        { uploadDate: "desc" },
       ],
       select: POST_CARD_SELECT,
       take: limit * 2,
@@ -369,6 +391,11 @@ export async function getTrendingPosts(limit = 6) {
   return posts.map(fromCachedSerializedPost);
 }
 
+export async function getPopularPosts(limit = 6) {
+  const posts = await withDatabaseFallback(() => getCachedPopularPosts(limit), []);
+  return posts.map(fromCachedSerializedPost);
+}
+
 export async function getPublicPostCount() {
   return withDatabaseFallback(() => getCachedPublicPostCount(), 0);
 }
@@ -383,110 +410,6 @@ export async function getPublicPostDetail(slug: string) {
   );
 
   return post ? fromCachedPublicPostDetail(post) : null;
-}
-
-function keywordSet(...terms: (string | null | undefined)[]) {
-  const words = new Set<string>();
-  for (const term of terms) {
-    if (!term) continue;
-    const chunks = term
-      .split(/[^a-zA-Z0-9]+/g)
-      .map(chunk => chunk.trim())
-      .filter(chunk => chunk.length >= 3);
-    chunks.forEach(chunk => words.add(chunk));
-  }
-  return words;
-}
-
-async function getRecommendedPostsUncached(opts: {
-  userId?: string | null;
-  searchTerm?: string | null;
-  limit?: number;
-}) {
-  const { userId, searchTerm, limit = 6 } = opts;
-  const recentUserPosts = userId
-    ? await db.post.findMany({
-      where: { authorId: userId, isDeleted: false },
-      include: { tags: { include: { tag: true } } },
-      orderBy: { uploadDate: "desc" },
-      take: 5,
-    })
-    : [];
-
-  const categoryIds = new Set(recentUserPosts.map(post => post.categoryId));
-  const tagSlugs = new Set(
-    recentUserPosts
-      .flatMap(post => post.tags.map(tag => tag.tag?.slug).filter(Boolean))
-      .map(slug => slug!)
-  );
-  const titleKeywords = keywordSet(...recentUserPosts.map(post => post.title), searchTerm ?? undefined);
-
-  const orFilters: Prisma.PostWhereInput[] = [];
-  if (categoryIds.size) orFilters.push({ categoryId: { in: Array.from(categoryIds) } });
-  if (tagSlugs.size) {
-    orFilters.push({
-      tags: { some: { tag: { slug: { in: Array.from(tagSlugs) } } } },
-    });
-  }
-  if (titleKeywords.size) {
-    orFilters.push({
-      OR: Array.from(titleKeywords).map(word => ({
-        title: { contains: word },
-      })),
-    });
-  }
-
-  if (!orFilters.length) {
-    return getTrendingPosts(limit);
-  }
-
-  const where: Prisma.PostWhereInput = {
-    NOT: userId ? { authorId: userId } : undefined,
-    OR: orFilters,
-    isDeleted: false,
-  };
-
-  const posts = await db.post.findMany({
-    where,
-    orderBy: { uploadDate: "desc" },
-    select: POST_CARD_SELECT,
-    take: limit,
-  });
-
-  if (posts.length) return posts.map(serializePost);
-
-  const fallback = await getTrendingPosts(limit);
-  return fallback;
-}
-
-type CachedRecommendedPostsInput = {
-  userId: string | null;
-  searchTerm: string | null;
-  limit: number;
-};
-
-const getCachedRecommendedPosts = unstable_cache(
-  async (opts: CachedRecommendedPostsInput) => {
-    const posts = await getRecommendedPostsUncached(opts);
-    return posts.map(toCachedSerializedPost);
-  },
-  ["recommended-posts"],
-  { revalidate: 60 },
-);
-
-export async function getRecommendedPosts(opts: {
-  userId?: string | null;
-  searchTerm?: string | null;
-  limit?: number;
-}) {
-  const normalized: CachedRecommendedPostsInput = {
-    userId: opts.userId?.trim() || null,
-    searchTerm: opts.searchTerm?.trim() || null,
-    limit: Math.max(1, Math.min(opts.limit ?? 6, 24)),
-  };
-
-  const posts = await withDatabaseFallback(() => getCachedRecommendedPosts(normalized), []);
-  return posts.map(fromCachedSerializedPost);
 }
 
 export type PostsFilterOptions = {

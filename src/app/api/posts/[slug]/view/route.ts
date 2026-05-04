@@ -14,6 +14,10 @@ function getViewClientKey(headers: Headers) {
   return hashRateLimitIdentifier(`${clientKey}|${userAgent}|${language}`, "post-view");
 }
 
+function getUtcDay(value = new Date()) {
+  return value.toISOString().slice(0, 10);
+}
+
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
   const clientKey = getClientRateLimitKey(req.headers);
@@ -41,7 +45,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (await shouldCountViewAndMark(post.id)) {
-    await db.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } });
+    const day = getUtcDay();
+    await db.$transaction([
+      db.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } }),
+      db.$executeRaw`
+        INSERT INTO "PostViewDay" ("postId", "day", "views")
+        VALUES (${post.id}, ${day}::date, 1)
+        ON CONFLICT ("postId", "day")
+        DO UPDATE SET "views" = "PostViewDay"."views" + 1
+      `,
+    ]);
     return NextResponse.json({ ok: true, counted: true, views: post.views + 1 });
   }
   return NextResponse.json({ ok: true, counted: false, views: post.views });

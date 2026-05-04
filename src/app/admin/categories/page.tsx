@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlusCircle } from "lucide-react";
 import { Card } from "@/components/ui";
@@ -54,6 +55,12 @@ export default async function AdminCategoriesPage({ searchParams }: { searchPara
         <p className="text-sm text-white/60">
           Create and manage categories for new posts. Categories are maintained by moderators and cannot be edited by users.
         </p>
+        <Link
+          href="/admin"
+          className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+        >
+          ← Back to admin
+        </Link>
       </div>
 
       <Card className="flex items-center gap-3 border border-green-500/30 bg-green-500/10 p-4 text-sm text-white/80">

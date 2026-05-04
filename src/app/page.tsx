@@ -14,7 +14,7 @@ import {
   getPopularTags,
   getTrendingPosts,
   getRecentPosts,
-  getRecommendedPosts,
+  getPopularPosts,
   type SerializedPost,
 } from "@/lib/posts";
 
@@ -108,12 +108,12 @@ export default async function Home({ searchParams }: Props) {
     ? `/?${new URLSearchParams({ q: q.trim() }).toString()}`
     : "/";
 
-  const [popularTags, totalPosts, trendingPosts, recentPosts, recommendedPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
+  const [popularTags, totalPosts, trendingPosts, recentPosts, popularPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
     getPopularTags(12),
     getPublicPostCount(),
     getTrendingPosts(HOME_SECTION_LIMIT),
     getRecentPosts(HOME_SECTION_LIMIT),
-    getRecommendedPosts({ searchTerm: q, limit: HOME_SECTION_LIMIT }),
+    getPopularPosts(HOME_SECTION_LIMIT),
     searchPublicBuildsWithFilters({ order: "newest", limit: HOME_SECTION_LIMIT, page: 1 }),
     searchPublicBuildsWithFilters({ order: "recently-updated", limit: HOME_SECTION_LIMIT, page: 1 }),
   ]);
@@ -160,7 +160,7 @@ export default async function Home({ searchParams }: Props) {
           <div>
             <p className="eyebrow">Posts</p>
             <h2 className="text-3xl font-semibold text-white">What builders are sharing</h2>
-            <p className="text-white/70">Browse trending, recent and recommended posts.</p>
+            <p className="text-white/70">Browse recent posts, the past month&apos;s most-viewed posts, and all-time favorites.</p>
           </div>
           <Link href="/posts" className="text-sm font-semibold text-brand-300">
             View all posts →
@@ -168,9 +168,9 @@ export default async function Home({ searchParams }: Props) {
         </div>
 
         <div className="space-y-10">
-          <PostSection title="Trending posts" posts={trendingPosts} total={totalPosts} />
+          <PostSection title="Trending posts this month" posts={trendingPosts} total={totalPosts} />
           <PostSection title="Recent posts" posts={recentPosts} total={totalPosts} />
-          <PostSection title="Recommended posts" posts={recommendedPosts} total={totalPosts} />
+          <PostSection title="Popular posts" posts={popularPosts} total={totalPosts} />
         </div>
       </section>
 

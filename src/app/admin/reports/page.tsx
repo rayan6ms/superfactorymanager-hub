@@ -229,6 +229,12 @@ export default async function AdminReportsPage({
           Review the latest abuse reports. Each entry highlights the reporter, their history, and the exact content
           location.
         </p>
+        <Link
+          href="/admin"
+          className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+        >
+          ← Back to admin
+        </Link>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
