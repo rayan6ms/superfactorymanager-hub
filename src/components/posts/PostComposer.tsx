@@ -920,13 +920,15 @@ export default function PostComposer({
       let nextSelectionStart = selectionStart;
       let nextSelectionEnd = selectionEnd;
 
-      if (format === "bold" || format === "italic" || format === "strike") {
+      if (format === "bold" || format === "italic" || format === "strike" || format === "code") {
         const markers =
           format === "bold"
             ? (["**"] as MarkdownInlineMarker[])
             : format === "italic"
               ? (["*"] as MarkdownInlineMarker[])
-              : (["~~"] as MarkdownInlineMarker[]);
+              : format === "strike"
+                ? (["~~"] as MarkdownInlineMarker[])
+                : (["`"] as MarkdownInlineMarker[]);
         const toggled = toggleExactMarkdown(value, selectionStart, selectionEnd, markers);
 
         if (toggled.toggled) {
@@ -951,7 +953,7 @@ export default function PostComposer({
           replacement = `~~${text}~~`;
           break;
         case "code":
-          replacement = `\`\`\`\n${selected || ""}\n\`\`\``;
+          replacement = `\`${text}\``;
           break;
         case "link":
           replacement = `[${selected || "link text"}]()`;
@@ -988,14 +990,11 @@ export default function PostComposer({
       } else if (selected) {
         nextSelectionStart = before.length;
         nextSelectionEnd = nextSelectionStart + replacement.length;
-      } else if (format === "code") {
-        nextSelectionStart = before.length + 4;
-        nextSelectionEnd = nextSelectionStart;
       } else {
         const markerWidth =
           format === "bold"
             ? 2
-            : format === "italic"
+            : format === "italic" || format === "code"
               ? 1
               : format === "strike"
                 ? 2
@@ -1639,7 +1638,7 @@ export default function PostComposer({
                   type="button"
                   onClick={() => applyMarkdown("code")}
                   className="rounded-full px-2 py-1 hover:bg-white/10"
-                  aria-label="Code block"
+                  aria-label="Code"
                 >
                   <Code className="h-3.5 w-3.5" />
                 </button>
@@ -1730,7 +1729,7 @@ export default function PostComposer({
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
                   Markdown preview
                 </p>
-                <div className="prose prose-invert prose-sm max-w-none whitespace-pre-line prose-headings:text-white prose-strong:text-white prose-em:text-white/90 prose-p:text-white/85 prose-li:text-white/80 prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/40 prose-code:rounded prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:text-brand-100 prose-pre:whitespace-pre-wrap prose-pre:wrap-anywhere prose-pre:[&>code]:bg-transparent prose-pre:[&>code]:p-0">
+                <div className="prose prose-invert prose-sm max-w-none whitespace-pre-line prose-headings:text-white prose-strong:text-white prose-em:text-white/90 prose-p:text-white/85 prose-li:text-white/80 prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/40 prose-code:rounded prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:text-brand-100 prose-code:before:content-none prose-code:after:content-none prose-pre:whitespace-pre-wrap prose-pre:wrap-anywhere prose-pre:[&>code]:bg-transparent prose-pre:[&>code]:p-0">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {normalizedDescription}
                   </ReactMarkdown>

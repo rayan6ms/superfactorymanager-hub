@@ -254,7 +254,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
             </div>
           </div>
 
-          <div className="prose prose-invert max-w-none whitespace-pre-line prose-headings:text-white prose-p:text-white/85 prose-li:text-white/80 prose-strong:text-white prose-em:text-white/90 prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/40 prose-code:rounded prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:text-brand-100 prose-pre:whitespace-pre-wrap prose-pre:wrap-anywhere prose-pre:[&>code]:bg-transparent prose-pre:[&>code]:p-0">
+          <div className="prose prose-invert max-w-none whitespace-pre-line prose-headings:text-white prose-p:text-white/85 prose-li:text-white/80 prose-strong:text-white prose-em:text-white/90 prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/40 prose-code:rounded prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:text-brand-100 prose-code:before:content-none prose-code:after:content-none prose-pre:whitespace-pre-wrap prose-pre:wrap-anywhere prose-pre:[&>code]:bg-transparent prose-pre:[&>code]:p-0">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {postDescription}
             </ReactMarkdown>

@@ -340,34 +340,7 @@ const getCachedTrendingPosts = unstable_cache(
       .filter((post): post is PostWithRelations => Boolean(post))
       .map(serializePost);
 
-    if (ordered.length >= limit) {
-      return ordered.slice(0, limit).map(toCachedSerializedPost);
-    }
-
-    const fallback = await db.post.findMany({
-      where: { isDeleted: false },
-      orderBy: [
-        { views: "desc" },
-        { ratingCount: "desc" },
-        { rating: "desc" },
-        { uploadDate: "desc" },
-      ],
-      select: POST_CARD_SELECT,
-      take: limit * 2,
-    });
-
-    const combined: SerializedPost[] = [];
-    const seen = new Set(ordered.map(post => post.id));
-    combined.push(...ordered);
-
-    for (const post of fallback) {
-      if (seen.has(post.id)) continue;
-      combined.push(serializePost(post));
-      seen.add(post.id);
-      if (combined.length >= limit) break;
-    }
-
-    return combined.slice(0, limit).map(toCachedSerializedPost);
+    return ordered.slice(0, limit).map(toCachedSerializedPost);
   },
   ["trending-posts"],
   { revalidate: 60 },

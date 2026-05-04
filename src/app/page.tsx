@@ -108,22 +108,15 @@ export default async function Home({ searchParams }: Props) {
     ? `/?${new URLSearchParams({ q: q.trim() }).toString()}`
     : "/";
 
-  const [popularTags, totalPosts, trendingPosts, recentPosts, allTimePopularPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
+  const [popularTags, totalPosts, trendingPosts, recentPosts, popularPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
     getPopularTags(12),
     getPublicPostCount(),
     getTrendingPosts(HOME_SECTION_LIMIT),
     getRecentPosts(HOME_SECTION_LIMIT),
-    getPopularPosts(HOME_SECTION_LIMIT * 2),
+    getPopularPosts(HOME_SECTION_LIMIT),
     searchPublicBuildsWithFilters({ order: "newest", limit: HOME_SECTION_LIMIT, page: 1 }),
     searchPublicBuildsWithFilters({ order: "recently-updated", limit: HOME_SECTION_LIMIT, page: 1 }),
   ]);
-  const trendingPostIds = new Set(trendingPosts.map(post => post.id));
-  const distinctPopularPosts = allTimePopularPosts
-    .filter(post => !trendingPostIds.has(post.id))
-    .slice(0, HOME_SECTION_LIMIT);
-  const popularPosts = distinctPopularPosts.length
-    ? distinctPopularPosts
-    : allTimePopularPosts.slice(0, HOME_SECTION_LIMIT);
   const isDegraded = hasRecentDatabaseFallback();
 
   return (
