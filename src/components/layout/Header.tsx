@@ -87,7 +87,7 @@ export default function Header() {
               href="/"
               className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/20 bg-(--surface-2) px-3 py-2 text-sm decoration-brand-400 transition hover:bg-(--surface-2)"
             >
-              <Image className="bg-white/30 px-0.5 rounded-full" src="/disk.png" alt="logo" width={20} height={20} loading="eager" />
+              <Image className="bg-white/30 px-0.5 rounded-full" src="/disk.webp" alt="logo" width={20} height={20} loading="eager" />
               <span className="bg-linear-to-b from-red-400 to-brand-500 bg-clip-text text-transparent font-extrabold">
                 SFMHub
               </span>
