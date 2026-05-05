@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AdsShell from "@/components/ads/AdsShell";
 
@@ -26,8 +27,14 @@ function shouldMountAds(pathname: string) {
 export default function RouteAds() {
   const pathname = usePathname() || "/";
   const adsClient = process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT;
+  const [mounted, setMounted] = useState(false);
 
-  if (!adsClient || !shouldMountAds(pathname)) {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (!mounted || !adsClient || !shouldMountAds(pathname)) {
     return null;
   }
 

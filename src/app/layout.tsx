@@ -1,6 +1,7 @@
 import "./globals.css";
 import Providers from "./providers";
 import { Space_Grotesk } from "next/font/google";
+import Script from "next/script";
 import clsx from "clsx";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -70,8 +71,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className={clsx(sans.variable)}>
       <head>
         {adsClient ? (
-          <script
-            async
+          <Script
+            id="google-adsense"
+            strategy="afterInteractive"
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsClient}`}
             crossOrigin="anonymous"
           />

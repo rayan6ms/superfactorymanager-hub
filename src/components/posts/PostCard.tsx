@@ -15,6 +15,12 @@ const viewsFormatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 1,
 });
 
+const previewMarkdownComponents = {
+  a({ children }: { children?: ReactNode }) {
+    return <>{children}</>;
+  },
+};
+
 type Props = {
   post: SerializedPost;
   compact?: boolean;
@@ -118,11 +124,12 @@ export default function PostCard({ post, compact = false }: Props) {
   const authorName = post.author?.name ?? post.authorName ?? "Unknown creator";
   const authorImage = post.author?.image ?? null;
   const description = normalizePostDescription(post.description);
+  const postHref = `/posts/${post.slug}`;
 
   if (compact) {
     return (
       <li>
-        <Link href={`/posts/${post.slug}`} className="block">
+        <Link href={postHref} className="block">
           <Card className="space-y-3 p-4 backdrop-blur-none sm:backdrop-blur-sm" hoverable>
             <div className="flex flex-col gap-3 sm:flex-row">
               {imageSrc ? (
@@ -151,7 +158,7 @@ export default function PostCard({ post, compact = false }: Props) {
                   ) : null}
                 </h3>
                 <div className="prose prose-invert prose-sm max-w-none line-clamp-2 whitespace-pre-line prose-p:my-0 prose-strong:text-white prose-em:text-white/90 prose-li:text-white/80 text-white/70">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={previewMarkdownComponents}>
                     {description}
                   </ReactMarkdown>
                 </div>
@@ -193,7 +200,7 @@ export default function PostCard({ post, compact = false }: Props) {
 
   return (
     <li>
-      <Link href={`/posts/${post.slug}`} className="block">
+      <Link href={postHref} className="block">
         <Card className="p-5" hoverable>
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="w-full sm:w-40 flex flex-col justify-between gap-3">
@@ -247,7 +254,7 @@ export default function PostCard({ post, compact = false }: Props) {
                 ) : null}
               </h3>
               <div className="prose prose-invert prose-sm max-w-none line-clamp-2 whitespace-pre-line prose-p:my-0 prose-strong:text-white prose-em:text-white/90 prose-li:text-white/80 text-white/70">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={previewMarkdownComponents}>
                   {description}
                 </ReactMarkdown>
               </div>
