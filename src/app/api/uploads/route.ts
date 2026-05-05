@@ -14,18 +14,9 @@ export const runtime = "nodejs";
 const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 const UPLOAD_LIMIT_PER_USER = 40;
 const MAX_FILE_PROCESSING_CONCURRENCY = 2;
-
-function getOriginalUploadExtension(contentType: string) {
-  switch (contentType) {
-    case "image/png":
-      return ".png";
-    case "image/webp":
-      return ".webp";
-    case "image/jpeg":
-    default:
-      return ".jpg";
-  }
-}
+const WEBP_CONTENT_TYPE = "image/webp";
+const WEBP_EXTENSION = ".webp";
+const ORIGINAL_WEBP_QUALITY = 86;
 
 function mapUploadFailure(error: unknown): { status: number; message: string } {
   const lowered = error instanceof Error ? error.message.toLowerCase() : "";
@@ -53,7 +44,7 @@ function mapUploadFailure(error: unknown): { status: number; message: string } {
 }
 
 async function mapWithConcurrency<TInput, TOutput>(
-  values: TInput[],
+  values: readonly TInput[],
   maxConcurrency: number,
   mapper: (value: TInput, index: number) => Promise<TOutput>,
 ): Promise<TOutput[]> {
@@ -130,11 +121,14 @@ export async function POST(req: Request) {
             throw new Error("Unsupported image format.");
           }
 
+          const originalBuffer = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })
+            .webp({ quality: ORIGINAL_WEBP_QUALITY })
+            .toBuffer();
           const original = await uploadImageVariant(
             "uploads/original",
-            buffer,
-            file.type || "image/jpeg",
-            getOriginalUploadExtension(file.type),
+            originalBuffer,
+            WEBP_CONTENT_TYPE,
+            WEBP_EXTENSION,
           );
           uploadedUrls.push(original);
 

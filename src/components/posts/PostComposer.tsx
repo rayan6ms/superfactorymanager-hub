@@ -1867,7 +1867,7 @@ export default function PostComposer({
                   <span className="font-semibold text-white/80">Selected:</span> {fileSummary}. The first image becomes your thumbnail.
                 </p>
                 <p className="text-xs text-white/60">
-                  JPG, PNG, and WEBP are supported. Uploaded images are stored as JPEG variants.
+                  JPG, PNG, and WEBP are supported. Uploaded images are stored as WEBP variants.
                 </p>
               </div>
               {shouldShowError("images") && errors.images && (
