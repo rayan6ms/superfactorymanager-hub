@@ -15,6 +15,13 @@ type Pair = {
   source: "curseforge" | "modrinth";
 };
 
+type ModrinthVersion = {
+  id?: string;
+  version_number?: string;
+  game_versions?: string[];
+  date_published?: string;
+};
+
 const FULL_VERSION_RE = /(?<![\d.])(\d+\.\d+(?:\.\d+)?)(?![\d.])/g;
 const GAME_VERSION_RE = /(?<![\d.])(1\.\d+(?:\.\d+)?)(?![\d.])/g;
 const KNOWN_MOD_VERSION_FIXUPS: Record<string, string> = {
@@ -229,22 +236,52 @@ async function fetchFromCurseForgeIncremental(): Promise<{ added: number; pairs:
 }
 
 async function fetchFromModrinthFallback(): Promise<Pair[]> {
-  const url = "https://modrinth.com/mod/super-factory-manager/versions";
-  const res = await fetch(url, { cache: "no-store" }).catch(() => null);
+  const url = "https://api.modrinth.com/v2/project/super-factory-manager/version";
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      "accept": "application/json",
+      "user-agent": "superfactorymanager-hub/1.0",
+    },
+  }).catch(() => null);
   if (!res) { log("MR fetch failed"); return []; }
-  const html = await res.text();
+
+  let versions: ModrinthVersion[];
+  try {
+    versions = await res.json();
+  } catch {
+    log("MR response was not JSON");
+    return [];
+  }
+
+  if (!Array.isArray(versions)) {
+    log("MR response was not a version list");
+    return [];
+  }
 
   const out: Pair[] = [];
-  const linkRe = /<a[^>]+href="\/mod\/super-factory-manager\/version\/[^"]+"[^>]*>([\s\S]*?)<\/a>/gi;
-  for (const m of html.matchAll(linkRe)) {
-    const text = m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-    const modMatch = text.match(/Super\s+Factory\s+Manager\s+(\d+\.\d+(?:\.\d+)?)/i) || text.match(/\s(\d+\.\d+(?:\.\d+)?)(?:\s|$)/);
-    if (!modMatch) continue;
-    const mod = normalizeKnownSfmModVersion(modMatch[1]);
-    const games = [...text.matchAll(/(1\.[0-9]+(?:\.[0-9]+)?)/g)].map(x => x[1]);
-    const uniqueGames = [...new Set(games)];
-    for (const g of uniqueGames) out.push({ game: g, mod, source: "modrinth" });
+  for (const version of versions) {
+    const mod = version.version_number ? normalizeKnownSfmModVersion(version.version_number) : "";
+    if (!mod) continue;
+
+    const games = version.game_versions?.filter(game => /^1\.\d+(?:\.\d+)?$/.test(game)) ?? [];
+    const uploadedAt = version.date_published ? parseDateMaybe(version.date_published) : null;
+    const fileUrl = version.id
+      ? `https://modrinth.com/mod/super-factory-manager/version/${version.id}`
+      : null;
+
+    for (const game of [...new Set(games)]) {
+      out.push({
+        game,
+        mod,
+        fileId: version.id ?? null,
+        fileUrl,
+        uploadedAt,
+        source: "modrinth",
+      });
+    }
   }
+
   const uniq = uniqPairs(out);
   if (!uniq.length) {
     return [];
@@ -428,8 +465,8 @@ export async function refreshSfm(opts: { source: "cf" | "mr" | "both"; ignoreCoo
     if (opts.source === "cf" || opts.source === "both") {
       const cf = await fetchFromCurseForgeIncremental();
       insertedCf = cf.added;
-      if (cf.blocked) log("CF blocked; consider using Modrinth fallback now.");
-      if ((cf.blocked || cf.added === 0) && (opts.source === "both")) {
+      if (cf.blocked) log("CF blocked; using Modrinth fallback now.");
+      if (opts.source === "both") {
         const before = await db.sfmVersion.count();
         await fetchFromModrinthFallback();
         const after = await db.sfmVersion.count();
