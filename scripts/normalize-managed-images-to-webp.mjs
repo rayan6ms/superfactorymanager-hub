@@ -6,9 +6,6 @@ import { del, put } from "@vercel/blob";
 import sharp from "sharp";
 
 const WEBP_CONTENT_TYPE = "image/webp";
-const POST_WEBP_QUALITY = 86;
-const AVATAR_WEBP_QUALITY = 82;
-const AVATAR_SIZE = 256;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 24_000_000;
 const CONCURRENCY = 2;
@@ -130,7 +127,7 @@ async function normalizePostImage(image) {
     if (!isWebpUrl(original)) {
       const input = await downloadImage(original);
       const webp = await sharp(input, { limitInputPixels: MAX_IMAGE_PIXELS })
-        .webp({ quality: POST_WEBP_QUALITY })
+        .webp({ lossless: true })
         .toBuffer();
       original = await uploadWebp("uploads/original", webp);
       uploadedUrls.push(original);
@@ -163,8 +160,7 @@ async function normalizeUserAvatar(user) {
   const input = await downloadImage(user.image);
   const webp = await sharp(input, { limitInputPixels: MAX_IMAGE_PIXELS })
     .rotate()
-    .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: "cover", position: "attention" })
-    .webp({ quality: AVATAR_WEBP_QUALITY })
+    .webp({ lossless: true })
     .toBuffer();
   const image = await uploadWebp("avatars", webp);
 

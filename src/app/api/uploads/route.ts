@@ -16,7 +16,6 @@ const UPLOAD_LIMIT_PER_USER = 40;
 const MAX_FILE_PROCESSING_CONCURRENCY = 2;
 const WEBP_CONTENT_TYPE = "image/webp";
 const WEBP_EXTENSION = ".webp";
-const ORIGINAL_WEBP_QUALITY = 86;
 
 function mapUploadFailure(error: unknown): { status: number; message: string } {
   const lowered = error instanceof Error ? error.message.toLowerCase() : "";
@@ -122,7 +121,7 @@ export async function POST(req: Request) {
           }
 
           const originalBuffer = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })
-            .webp({ quality: ORIGINAL_WEBP_QUALITY })
+            .webp({ lossless: true })
             .toBuffer();
           const original = await uploadImageVariant(
             "uploads/original",

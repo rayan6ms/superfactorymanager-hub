@@ -12,7 +12,6 @@ export const runtime = "nodejs";
 
 const AVATAR_UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 const AVATAR_UPLOAD_LIMIT_PER_USER = 10;
-const AVATAR_SIZE = 256;
 
 function mapAvatarUploadFailure(error: unknown): { status: number; message: string } {
   const lowered = error instanceof Error ? error.message.toLowerCase() : "";
@@ -81,8 +80,7 @@ export async function POST(request: Request) {
 
     const avatarBuffer = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })
       .rotate()
-      .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: "cover", position: "attention" })
-      .webp({ quality: 82 })
+      .webp({ lossless: true })
       .toBuffer();
 
     const url = await uploadImageVariant("avatars", avatarBuffer, "image/webp", ".webp");

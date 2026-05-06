@@ -16,7 +16,6 @@ const REMOTE_TIMEOUT_MS = 5000;
 const MAX_REMOTE_REDIRECTS = 3;
 const MAX_REMOTE_AVATAR_BYTES = 8 * 1024 * 1024;
 const MAX_REMOTE_AVATAR_PIXELS = 24_000_000;
-const AVATAR_SIZE = 256;
 
 const BLOCKED_HOSTNAMES = new Set(["localhost"]);
 
@@ -428,8 +427,7 @@ async function storeRemoteAvatarAsWebp(url: string): Promise<string | null> {
 
   const avatarBuffer = await sharp(bytes, { limitInputPixels: MAX_REMOTE_AVATAR_PIXELS })
     .rotate()
-    .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: "cover", position: "attention" })
-    .webp({ quality: 82 })
+    .webp({ lossless: true })
     .toBuffer();
 
   return uploadImageVariant("avatars", avatarBuffer, "image/webp", ".webp");
