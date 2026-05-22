@@ -5,10 +5,12 @@ import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNo
 import PostCard from "@/components/posts/PostCard";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
+import TagSelector from "@/app/tags/TagSelector";
 import { hasRecentDatabaseFallback, withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
 import { POST_CARD_SELECT, serializePost } from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
+import { redirect } from "next/navigation";
 
 export const revalidate = 60;
 const PAGE_SIZE = 30;
@@ -111,6 +113,18 @@ export default async function TagsPage({ searchParams }: Props) {
   const pageParam = Array.isArray(params.page) ? params.page[0] : params.page;
   const requestedPage = parsePageParam(pageParam, 1);
 
+  if (typeof tagsParam === "string" && tagsParam !== selectedSlugs.join(",")) {
+    const query = new URLSearchParams();
+    if (selectedSlugs.length) {
+      query.set("tags", selectedSlugs.join(","));
+    }
+    if (requestedPage > 1) {
+      query.set("page", String(requestedPage));
+    }
+    const suffix = query.toString();
+    redirect(suffix ? `/tags?${suffix}` : "/tags");
+  }
+
   const totalTags = await withDatabaseFallback(() => getCachedTagCount(), 0);
   const totalPages = getTotalPages(totalTags, PAGE_SIZE);
   const currentPage = Math.min(requestedPage, totalPages);
@@ -131,16 +145,6 @@ export default async function TagsPage({ searchParams }: Props) {
     )
     : [];
   const isDegraded = hasRecentDatabaseFallback();
-
-  const buildHref = (slug: string) => {
-    const next = selectedSet.has(slug)
-      ? sortedSelection.filter(item => item !== slug)
-      : selectedSet.size >= MAX_SELECTED_TAGS
-        ? sortedSelection
-        : [...sortedSelection, slug].sort();
-    const query = next.length ? `?tags=${next.join(",")}` : "";
-    return `/tags${query}`;
-  };
 
   const buildPageHref = (page: number) => {
     const query = new URLSearchParams();
@@ -179,35 +183,13 @@ export default async function TagsPage({ searchParams }: Props) {
       </div>
 
       <Card className="p-5">
-        <div className="flex flex-wrap gap-2">
-          {tags.map(tag => {
-            const isActive = selectedSet.has(tag.slug);
-            const isDisabled = !isActive && selectedSet.size >= MAX_SELECTED_TAGS;
-            return (
-              <Link
-                key={tag.id}
-                href={buildHref(tag.slug)}
-                aria-disabled={isDisabled || undefined}
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition ${isActive
-                  ? "border-brand-400 bg-brand-600/30 text-white"
-                  : isDisabled
-                    ? "border-white/10 bg-white/5 text-white/40"
-                    : "border-white/15 bg-white/5 text-white/80 hover:border-white/25 hover:bg-white/10"
-                  }`}
-              >
-                <span>#{tag.name}</span>
-                <span className="text-xs text-white/60">
-                  {tag._count.posts}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+        <TagSelector selectedSlugs={sortedSelection} tags={tags} />
         <Pagination
           currentPage={currentPage}
           pageSize={PAGE_SIZE}
           total={totalTags}
           buildHref={buildPageHref}
+          linkRel={selectedSlugs.length ? "nofollow" : undefined}
           className="mt-4"
         />
         {selectedSlugs.length > 1 && (

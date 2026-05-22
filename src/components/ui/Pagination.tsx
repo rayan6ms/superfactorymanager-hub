@@ -18,6 +18,7 @@ type PaginationProps = {
   total: number;
   buildHref: (page: number) => string;
   className?: string;
+  linkRel?: string;
   onPageChange?: (page: number) => void;
 };
 
@@ -27,6 +28,7 @@ export default function Pagination({
   total,
   buildHref,
   className,
+  linkRel,
   onPageChange,
 }: PaginationProps) {
   const totalPages = getTotalPages(total, pageSize);
@@ -56,6 +58,7 @@ export default function Pagination({
       <div className="flex items-center gap-2">
         <Link
           href={buildHref(prevPage)}
+          rel={linkRel}
           aria-disabled={isPrevDisabled}
           tabIndex={isPrevDisabled ? -1 : 0}
           onClick={onPageChange && !isPrevDisabled ? handleNavigate(prevPage) : undefined}
@@ -66,6 +69,7 @@ export default function Pagination({
 
         <Link
           href={buildHref(nextPage)}
+          rel={linkRel}
           aria-disabled={isNextDisabled}
           tabIndex={isNextDisabled ? -1 : 0}
           onClick={onPageChange && !isNextDisabled ? handleNavigate(nextPage) : undefined}

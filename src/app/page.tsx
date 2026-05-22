@@ -142,6 +142,7 @@ export default async function Home({ searchParams }: Props) {
                 <Link
                   key={tag.id}
                   href={`/tags?tags=${encodeURIComponent(tag.slug)}`}
+                  rel="nofollow"
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/80 transition hover:border-white/20 hover:bg-white/10"
                 >
                   <span className="font-medium">#{tag.name}</span>

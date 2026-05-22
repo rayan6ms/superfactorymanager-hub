@@ -266,6 +266,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 <Link
                   key={tag.slug}
                   href={`/tags?tags=${encodeURIComponent(tag.slug)}`}
+                  rel="nofollow"
                   className="rounded-full border border-white/15 px-3 py-1 text-xs uppercase tracking-wide text-white/70 transition hover:border-white/30 hover:text-white"
                 >
                   #{tag.name}
