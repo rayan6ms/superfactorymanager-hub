@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import AdsShell from "@/components/ads/AdsShell";
 
+type RouteAdsPlacement = "desktop-rails" | "mobile-top" | "mobile-bottom";
+
 const ADS_ROUTE_PREFIXES = [
   "/",
   "/posts",
@@ -25,6 +27,10 @@ function shouldMountAds(pathname: string) {
 }
 
 export default function RouteAds() {
+  return <RouteAdSlot placement="desktop-rails" />;
+}
+
+export function RouteAdSlot({ placement }: { placement: RouteAdsPlacement }) {
   const pathname = usePathname() || "/";
   const adsClient = process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT;
   const [mounted, setMounted] = useState(false);
@@ -38,11 +44,5 @@ export default function RouteAds() {
     return null;
   }
 
-  return (
-    <>
-      <AdsShell placement="desktop-rails" />
-      <AdsShell placement="mobile-top" />
-      <AdsShell placement="mobile-bottom" />
-    </>
-  );
+  return <AdsShell placement={placement} />;
 }

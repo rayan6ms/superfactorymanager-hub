@@ -8,7 +8,7 @@ import Footer from "@/components/layout/Footer";
 import ExternalLinkGuard from "@/components/layout/ExternalLinkGuard";
 import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/urls";
-import RouteAds from "@/components/ads/RouteAds";
+import RouteAds, { RouteAdSlot } from "@/components/ads/RouteAds";
 import RouteInstrumentation from "@/components/layout/RouteInstrumentation";
 
 const appUrl = getBaseUrl();
@@ -87,12 +87,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <main className="relative flex-1">
             <div className="container-max relative py-8 sm:py-12">
               <RouteAds />
+              <RouteAdSlot placement="mobile-top" />
 
               <ExternalLinkGuard />
 
               <div className="space-y-6 lg:space-y-10">
                 <div className="space-y-12">{children}</div>
               </div>
+
+              <RouteAdSlot placement="mobile-bottom" />
             </div>
           </main>
 
