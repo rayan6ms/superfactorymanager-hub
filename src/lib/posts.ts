@@ -56,6 +56,7 @@ const PUBLIC_POST_DETAIL_SELECT = {
   title: true,
   description: true,
   uploadDate: true,
+  updatedAt: true,
   moderationEditedAt: true,
   moderationEditedNote: true,
   modVersion: true,
@@ -87,6 +88,7 @@ const PUBLIC_POST_DETAIL_SELECT = {
     select: {
       id: true,
       name: true,
+      slug: true,
       url: true,
     },
   },
@@ -217,8 +219,9 @@ type CachedSerializedPost = Omit<SerializedPost, "uploadDate"> & {
   uploadDate: string;
 };
 
-type CachedPublicPostDetail = Omit<PublicPostDetail, "uploadDate" | "moderationEditedAt"> & {
+type CachedPublicPostDetail = Omit<PublicPostDetail, "uploadDate" | "updatedAt" | "moderationEditedAt"> & {
   uploadDate: string;
+  updatedAt: string;
   moderationEditedAt: string | null;
 };
 
@@ -240,6 +243,7 @@ function toCachedPublicPostDetail(post: PublicPostDetail): CachedPublicPostDetai
   return {
     ...post,
     uploadDate: post.uploadDate.toISOString(),
+    updatedAt: post.updatedAt.toISOString(),
     moderationEditedAt: post.moderationEditedAt?.toISOString() ?? null,
   };
 }
@@ -248,6 +252,7 @@ function fromCachedPublicPostDetail(post: CachedPublicPostDetail): PublicPostDet
   return {
     ...post,
     uploadDate: new Date(post.uploadDate),
+    updatedAt: new Date(post.updatedAt),
     moderationEditedAt: post.moderationEditedAt ? new Date(post.moderationEditedAt) : null,
   };
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
 import HideHeaderSearch from "@/components/layout/HideHeaderSearch";
 import PostCard from "@/components/posts/PostCard";
@@ -13,6 +14,7 @@ import {
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { getSfmMatrix } from "@/lib/sfm";
+import { CORE_SEO_KEYWORDS, uniqueKeywords } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -31,6 +33,42 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 type Props = {
   searchParams?: SearchParams;
 };
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const params = searchParams ? await searchParams : undefined;
+  const q = getParam(params, "q").trim();
+  const category = getParam(params, "category");
+  const gameVersion = getParam(params, "gameVersion");
+  const sfmVersion = getParam(params, "sfmVersion");
+  const page = parsePageParam(getParam(params, "page"), 1);
+  const hasFilters = Boolean(q || category || gameVersion || sfmVersion || page > 1);
+
+  const title = q
+    ? `${q} Super Factory Manager Posts`
+    : "Super Factory Manager Code Posts";
+  const description = q
+    ? `Browse SFMHub posts matching ${q}: Super Factory Manager code, Minecraft automation builds, SFML examples, and community troubleshooting.`
+    : "Browse Super Factory Manager code posts, SFM automation examples, Minecraft builds, Mekanism setups, AE2 automation, and tested SFML snippets.";
+
+  return {
+    title,
+    description,
+    keywords: uniqueKeywords([
+      ...CORE_SEO_KEYWORDS,
+      q,
+      category,
+      gameVersion ? `Minecraft ${gameVersion}` : null,
+      sfmVersion ? `SFM ${sfmVersion}` : null,
+    ]),
+    alternates: {
+      canonical: "/posts",
+    },
+    robots: {
+      index: !hasFilters,
+      follow: true,
+    },
+  };
+}
 
 function getParam(
   params: Record<string, string | string[] | undefined> | undefined,

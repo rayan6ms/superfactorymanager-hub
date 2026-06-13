@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const MAX_SELECTED_TAGS = 3;
 
@@ -30,7 +30,6 @@ function buildHref(selectedSlugs: string[], slug: string) {
 }
 
 export default function TagSelector({ selectedSlugs, tags }: Props) {
-  const router = useRouter();
   const selectedSet = new Set(selectedSlugs);
 
   return (
@@ -39,25 +38,38 @@ export default function TagSelector({ selectedSlugs, tags }: Props) {
         const isActive = selectedSet.has(tag.slug);
         const isDisabled = !isActive && selectedSet.size >= MAX_SELECTED_TAGS;
 
-        return (
-          <button
-            key={tag.id}
-            type="button"
-            aria-pressed={isActive}
-            disabled={isDisabled}
-            onClick={() => router.push(buildHref(selectedSlugs, tag.slug))}
-            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition ${isActive
-              ? "border-brand-400 bg-brand-600/30 text-white"
-              : isDisabled
-                ? "cursor-not-allowed border-white/10 bg-white/5 text-white/40"
-                : "border-white/15 bg-white/5 text-white/80 hover:border-white/25 hover:bg-white/10"
-              }`}
-          >
+        const className = `inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition ${isActive
+          ? "border-brand-400 bg-brand-600/30 text-white"
+          : isDisabled
+            ? "cursor-not-allowed border-white/10 bg-white/5 text-white/40"
+            : "border-white/15 bg-white/5 text-white/80 hover:border-white/25 hover:bg-white/10"
+          }`;
+        const content = (
+          <>
             <span>#{tag.name}</span>
             <span className="text-xs text-white/60">
               {tag._count.posts}
             </span>
-          </button>
+          </>
+        );
+
+        if (isDisabled) {
+          return (
+            <span key={tag.id} aria-disabled="true" className={className}>
+              {content}
+            </span>
+          );
+        }
+
+        return (
+          <Link
+            key={tag.id}
+            href={buildHref(selectedSlugs, tag.slug)}
+            aria-current={isActive ? "page" : undefined}
+            className={className}
+          >
+            {content}
+          </Link>
         );
       })}
     </div>

@@ -100,7 +100,7 @@ async function generateSitemap() {
   const urlMap = new Map();
 
   try {
-    const [posts, users, builds] = await Promise.all([
+    const [posts, users, builds, tags] = await Promise.all([
       prisma.post.findMany({
         where: { isDeleted: false },
         select: { slug: true, updatedAt: true, uploadDate: true },
@@ -134,12 +134,28 @@ async function generateSitemap() {
         },
         orderBy: { updatedAt: "desc" },
       }),
+      prisma.tag.findMany({
+        where: {
+          posts: {
+            some: {
+              post: {
+                isDeleted: false,
+              },
+            },
+          },
+        },
+        select: {
+          slug: true,
+        },
+        orderBy: { slug: "asc" },
+      }),
     ]);
 
     const staticRoutes = [
       { loc: `${baseUrl}/`, changefreq: "weekly", priority: 1 },
       { loc: `${baseUrl}/guide`, changefreq: "weekly", priority: 0.8 },
       { loc: `${baseUrl}/posts`, changefreq: "daily", priority: 0.8 },
+      { loc: `${baseUrl}/builds`, changefreq: "daily", priority: 0.8 },
       { loc: `${baseUrl}/tags`, changefreq: "weekly", priority: 0.7 },
       { loc: `${baseUrl}/code-editor`, changefreq: "monthly", priority: 0.6 },
       { loc: `${baseUrl}/contact`, changefreq: "monthly", priority: 0.5 },
@@ -156,6 +172,14 @@ async function generateSitemap() {
         lastmod: normalizeLastmod(post.updatedAt || post.uploadDate),
         changefreq: "weekly",
         priority: 0.9,
+      });
+    }
+
+    for (const tag of tags) {
+      addOrMergeUrl(urlMap, {
+        loc: `${baseUrl}/tags?tags=${encodeURIComponent(tag.slug)}`,
+        changefreq: "weekly",
+        priority: 0.7,
       });
     }
 

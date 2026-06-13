@@ -11,6 +11,7 @@ import { db } from "@/lib/db";
 import { POST_CARD_SELECT, serializePost } from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import { redirect } from "next/navigation";
+import { CORE_SEO_KEYWORDS, uniqueKeywords } from "@/lib/seo";
 
 export const revalidate = 60;
 const PAGE_SIZE = 30;
@@ -73,6 +74,17 @@ const getCachedTaggedPosts = unstable_cache(
   { revalidate },
 );
 
+const getCachedTagsBySlug = unstable_cache(
+  async (slugs: string[]) => db.tag.findMany({
+    where: {
+      slug: { in: slugs },
+    },
+    include: { _count: { select: { posts: true } } },
+  }),
+  ["tags-by-slug"],
+  { revalidate },
+);
+
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 type Props = {
@@ -86,17 +98,37 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const selectedSlugs = typeof tagsParam === "string" ? getSelectedSlugs(tagsParam) : [];
   const pageParam = Array.isArray(params.page) ? params.page[0] : params.page;
   const requestedPage = parsePageParam(pageParam, 1);
-  const shouldIndex = selectedSlugs.length === 0 && requestedPage <= 1;
+  const selectedTags = selectedSlugs.length
+    ? await withDatabaseFallback(() => getCachedTagsBySlug(selectedSlugs), [])
+    : [];
+  const selectedTag = selectedSlugs.length === 1
+    ? selectedTags.find(tag => tag.slug === selectedSlugs[0])
+    : null;
+  const shouldIndex = requestedPage <= 1 && (selectedSlugs.length === 0 || Boolean(selectedTag));
+  const tagName = selectedTag?.name ?? selectedSlugs[0];
+  const title = selectedTag
+    ? `${tagName} Super Factory Manager Posts`
+    : "Super Factory Manager Tags";
+  const description = selectedTag
+    ? `Browse SFMHub posts tagged ${tagName}: Super Factory Manager code, Minecraft automation builds, SFML examples, and community troubleshooting.`
+    : "Browse SFMHub tags for Super Factory Manager code, SFM builds, Minecraft automation topics, Mekanism setups, AE2 automation, and SFML examples.";
 
   return {
-    title: "Tags",
-    description: "Browse the tag directory and jump into tagged SFMHub posts.",
+    title,
+    description,
+    keywords: uniqueKeywords([
+      ...CORE_SEO_KEYWORDS,
+      tagName,
+      selectedTag ? `Super Factory Manager ${tagName}` : null,
+      selectedTag ? `SFM ${tagName}` : null,
+      selectedTag ? `${tagName} Minecraft automation` : null,
+    ]),
     alternates: {
-      canonical: "/tags",
+      canonical: selectedTag ? `/tags?tags=${encodeURIComponent(selectedTag.slug)}` : "/tags",
     },
     robots: {
       index: shouldIndex,
-      follow: shouldIndex,
+      follow: true,
     },
   };
 }
@@ -189,13 +221,12 @@ export default async function TagsPage({ searchParams }: Props) {
           pageSize={PAGE_SIZE}
           total={totalTags}
           buildHref={buildPageHref}
-          linkRel={selectedSlugs.length ? "nofollow" : undefined}
           className="mt-4"
         />
         {selectedSlugs.length > 1 && (
           <p className="mt-3 text-xs text-white/60">
             Multiple tags are separated by commas in the URL so you
-            can share the filtered view. Filtered tag views are not indexed.
+            can share the filtered view. Single-tag pages are the indexed topic pages.
           </p>
         )}
         {selectedSlugs.length >= MAX_SELECTED_TAGS && (

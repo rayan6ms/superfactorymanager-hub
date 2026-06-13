@@ -22,6 +22,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { normalizePostDescription } from "@/lib/post-description";
 import { getPublicPostDetail } from "@/lib/posts";
+import { CORE_SEO_KEYWORDS, SITE_NAME, safeJsonLd, truncateMetaDescription, uniqueKeywords } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -69,8 +70,7 @@ function getInitial(name: string | null | undefined) {
 }
 
 function buildDescriptionCopy(body: string) {
-  const compact = body.replace(/\s+/g, " ").trim();
-  return compact.slice(0, 155) || undefined;
+  return truncateMetaDescription(body) || undefined;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -90,16 +90,29 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const heroImage = post.images?.[0] ?? null;
   const heroSrc = heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
   const canonical = `${baseUrl}/posts/${post.slug}`;
+  const tagNames = post.tags?.map(item => item.tag?.name).filter((name): name is string => Boolean(name)) ?? [];
+  const dependencyNames = post.dependencies?.map(item => item.name || item.slug).filter(Boolean) ?? [];
 
   return {
-    title: `${post.title} | SFMHub`,
+    title: `${post.title} - Super Factory Manager Code`,
     description,
+    keywords: uniqueKeywords([
+      ...CORE_SEO_KEYWORDS,
+      post.title,
+      post.category?.name,
+      `Super Factory Manager ${post.title}`,
+      `SFM ${post.title}`,
+      `Minecraft ${post.gameVersion}`,
+      `SFM ${post.modVersion}`,
+      ...tagNames,
+      ...dependencyNames,
+    ]),
     alternates: { canonical },
     openGraph: {
-      title: post.title,
+      title: `${post.title} - Super Factory Manager Code`,
       description,
       url: canonical,
-      siteName: "SFMHub",
+      siteName: SITE_NAME,
       type: "article",
       images: heroSrc ? [{ url: heroSrc, alt: post.title }] : undefined,
     },
@@ -168,9 +181,50 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
 
   const commentData = await getPostComments(post.id, { viewerId: null });
   const postDescription = normalizePostDescription(post.description);
+  const postUrl = `${baseUrl}/posts/${post.slug}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: post.title,
+    description: buildDescriptionCopy(postDescription) ?? `Super Factory Manager code for ${post.title}.`,
+    url: postUrl,
+    datePublished: post.uploadDate.toISOString(),
+    dateModified: (post.updatedAt ?? post.uploadDate).toISOString(),
+    author: {
+      "@type": "Person",
+      name: authorDisplayName,
+      url: authorProfile ? `${baseUrl}${authorProfile}` : undefined,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: baseUrl,
+    },
+    image: heroSrc ? [heroSrc] : undefined,
+    keywords: uniqueKeywords([
+      "Super Factory Manager",
+      "SuperFactoryManager",
+      "SFM code",
+      "SFML",
+      post.category?.name,
+      ...tags.map(tag => tag.name),
+      ...post.dependencies.map(dep => dep.name || dep.slug),
+    ]).join(", "),
+    programmingLanguage: "SFML",
+    about: [
+      "Super Factory Manager",
+      "Minecraft automation",
+      post.category?.name,
+      ...tags.map(tag => tag.name),
+    ].filter(Boolean),
+  };
 
   return (
     <div className="space-y-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
+      />
       {isDegraded ? <DatabaseUnavailableNotice /> : null}
       <ViewBeacon slug={slug} />
       <Link
@@ -266,7 +320,6 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 <Link
                   key={tag.slug}
                   href={`/tags?tags=${encodeURIComponent(tag.slug)}`}
-                  rel="nofollow"
                   className="rounded-full border border-white/15 px-3 py-1 text-xs uppercase tracking-wide text-white/70 transition hover:border-white/30 hover:text-white"
                 >
                   #{tag.name}

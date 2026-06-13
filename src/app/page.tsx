@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import Card from "@/components/ui/Card";
 import PostCard from "@/components/posts/PostCard";
 import BuildCard from "@/components/builds/BuildCard";
@@ -17,8 +18,16 @@ import {
   getPopularPosts,
   type SerializedPost,
 } from "@/lib/posts";
+import { CORE_SEO_KEYWORDS } from "@/lib/seo";
 
 export const revalidate = 60;
+export const metadata: Metadata = {
+  title: "Super Factory Manager Code, Builds, and Guides",
+  description:
+    "Search SFMHub for Super Factory Manager code, SFM builds, Minecraft automation examples, Mekanism setups, AE2 automation, and community-tested SFML posts.",
+  keywords: CORE_SEO_KEYWORDS,
+  alternates: { canonical: "/" },
+};
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -129,7 +138,9 @@ export default async function Home({ searchParams }: Props) {
           <div>
             <p className="eyebrow">Tags</p>
             <h2 className="text-3xl font-semibold text-white">Popular tags</h2>
-            <p className="text-white/70">Jump into the topics builders are exploring right now.</p>
+            <p className="text-white/70">
+              Jump into Super Factory Manager topics like Mekanism, AE2, item movement, fluids, and SFML code patterns.
+            </p>
           </div>
           <Link href="/tags" className="text-sm font-semibold text-brand-300">
             Browse all tags →
@@ -142,7 +153,6 @@ export default async function Home({ searchParams }: Props) {
                 <Link
                   key={tag.id}
                   href={`/tags?tags=${encodeURIComponent(tag.slug)}`}
-                  rel="nofollow"
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/80 transition hover:border-white/20 hover:bg-white/10"
                 >
                   <span className="font-medium">#{tag.name}</span>

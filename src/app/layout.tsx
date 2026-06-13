@@ -10,43 +10,33 @@ import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/urls";
 import RouteAds, { RouteAdSlot } from "@/components/ads/RouteAds";
 import RouteInstrumentation from "@/components/layout/RouteInstrumentation";
+import { CORE_SEO_KEYWORDS, SITE_NAME, SITE_TAGLINE, safeJsonLd } from "@/lib/seo";
 
 const appUrl = getBaseUrl();
+const siteDescription =
+  "Find Super Factory Manager code, SFM builds, Minecraft automation guides, and community posts for Mekanism, AE2, and other modded factories.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "SFMHub",
-    template: "%s | SFMHub",
+    default: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Community hub for SuperFactoryManager players to share builds, troubleshoot setups, and stay current with mod updates.",
-  applicationName: "SFMHub",
-  keywords: [
-    "SuperFactoryManager",
-    "Minecraft",
-    "factory",
-    "automation",
-    "builds",
-    "guides",
-    "blueprints",
-    "mods",
-    "community",
-  ],
+  description: siteDescription,
+  applicationName: SITE_NAME,
+  keywords: CORE_SEO_KEYWORDS,
   openGraph: {
-    title: "SFMHub",
-    description:
-      "Discover curated SuperFactoryManager builds, guides, and troubleshooting tips from the community.",
+    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    description: siteDescription,
     url: appUrl,
-    siteName: "SFMHub",
+    siteName: SITE_NAME,
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SFMHub",
-    description:
-      "Discover curated SuperFactoryManager builds, guides, and troubleshooting tips from the community.",
+    title: `${SITE_NAME} - ${SITE_TAGLINE}`,
+    description: siteDescription,
     creator: "@SFMHub",
   },
   alternates: {
@@ -66,10 +56,28 @@ const sans = Space_Grotesk({
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const adsClient = process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT;
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    alternateName: ["Super Factory Manager Hub", "SuperFactoryManager Hub", "SFM Hub"],
+    url: appUrl,
+    description: siteDescription,
+    inLanguage: "en-US",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${appUrl}/posts?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
 
   return (
     <html lang="en" className={clsx(sans.variable)}>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd) }}
+        />
         {adsClient ? (
           <Script
             id="google-adsense"

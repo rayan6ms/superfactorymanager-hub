@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
 import HideHeaderSearch from "@/components/layout/HideHeaderSearch";
 import BuildCard from "@/components/builds/BuildCard";
@@ -9,6 +10,7 @@ import { parseBuildPageSize } from "@/lib/builds/profile-list-shared";
 import { searchPublicBuildsWithFilters, type BuildFilterOptions } from "@/lib/builds/search";
 import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { getTotalPages, parsePageParam } from "@/lib/pagination";
+import { CORE_SEO_KEYWORDS, uniqueKeywords } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -27,6 +29,27 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 type Props = {
   searchParams?: SearchParams;
 };
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const params = searchParams ? await searchParams : undefined;
+  const q = getParam(params, "q").trim();
+  const username = getParam(params, "username").trim();
+  const page = parsePageParam(getParam(params, "page"), 1);
+  const hasFilters = Boolean(q || username || page > 1);
+
+  return {
+    title: q ? `${q} SFM Builds` : "Super Factory Manager Builds",
+    description: q
+      ? `Explore public SFM builds matching ${q}: Super Factory Manager code snapshots, SFML examples, and Minecraft automation ideas.`
+      : "Explore public Super Factory Manager builds, SFM code snapshots, SFML examples, and Minecraft automation ideas from the SFMHub community.",
+    keywords: uniqueKeywords([...CORE_SEO_KEYWORDS, q, username, "Super Factory Manager builds", "SFM build code"]),
+    alternates: { canonical: "/builds" },
+    robots: {
+      index: !hasFilters,
+      follow: true,
+    },
+  };
+}
 
 function getParam(
   params: Record<string, string | string[] | undefined> | undefined,
