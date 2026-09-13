@@ -28,7 +28,8 @@ import {
   POST_REDIRECT_TOAST_STORAGE_KEY,
 } from "@/lib/builds/links";
 import type { BuildWriteResponse } from "@/lib/builds/types";
-import { analyzeSfmlCode, getSfmlAnalyzeDebounceMs, type CodeFeedback } from "@/lib/sfml/analysis";
+import { type CodeFeedback } from "@/lib/sfml/analysis";
+import { scheduleSfmlAnalysis } from "@/lib/sfml/analysis-worker-client";
 
 const DEFAULT_CODE = `name " "
 
@@ -98,17 +99,11 @@ export default function CodeEditorPageClient({
   const [shareFallbackLink, setShareFallbackLink] = useState<string | null>(null);
   const [lastSavedBuild, setLastSavedBuild] = useState<SavedBuild | null>(null);
   const [lastSavedTrimmedCode, setLastSavedTrimmedCode] = useState<string | null>(null);
-  const analyzeDebounceMs = useMemo(() => getSfmlAnalyzeDebounceMs(code), [code]);
 
   const nameRequestRef = useRef(0);
   const draftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCodeFeedback(analyzeSfmlCode(code, { required: false }));
-    }, analyzeDebounceMs);
-    return () => clearTimeout(timer);
-  }, [analyzeDebounceMs, code]);
+  useEffect(() => scheduleSfmlAnalysis(code, { required: false }, setCodeFeedback), [code]);
 
   const errorMarkers = useMemo(
     () =>

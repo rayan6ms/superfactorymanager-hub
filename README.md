@@ -25,10 +25,16 @@ Built with Next.js (App Router), Prisma/PostgreSQL, and NextAuth.
 
 ## Local development
 
+Use Node 24.15+ (24 LTS) and Bun 1.4+. Dependencies are locked in `bun.lock`.
+The project uses TypeScript 7 for the `tsc` CLI and Next.js builds. ESLint's
+TypeScript parser still needs the TypeScript 6 compatibility API, so the lockfile
+installs that API under the `typescript` package alias while `@typescript/native`
+provides the TypeScript 7 CLI.
+
 ### 1) Install dependencies
 
 ```bash
-npm install
+bun install
 ```
 
 ### 2) Configure environment variables
@@ -108,13 +114,13 @@ Notes:
 ### 3) Run migrations
 
 ```bash
-npx prisma migrate dev
+bunx prisma migrate dev
 ```
 
 ### 4) Start the dev server
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 ---
@@ -124,37 +130,22 @@ npm run dev
 - `src/app/*` — routes, pages, API endpoints
 - `src/components/*` — UI components (posts, editor, notifications, etc.)
 - `src/lib/*` — server utilities (auth, db, posts, comments, notifications, sfm version fetchers, etc.)
-- `src/generated/*` — generated SFML parser/lexer files used for editor diagnostics
+- `src/lib/sfml/*` — handwritten SFML lexer/parser, linter, and analysis worker used for editor diagnostics
 - `prisma/schema.prisma` — database schema
 
----
+## SFML tooling
 
-## Third-party licenses / attribution
+`src/lib/sfml` contains the browser-native lexer/parser and warning analysis. Live diagnostics run in a cancellable worker; Monaco keeps the existing syntax colors. No database migration is required.
 
-### SuperFactoryManager (TeamDman) — MPL-2.0
+```bash
+bun test
+bun run typecheck
+bun run lint
+bun run build
+bun run benchmark:sfml
+```
 
-This project includes **generated SFML language tooling** derived from the upstream SuperFactoryManager project:
-
-- Source: TeamDman/SuperFactoryManager (Minecraft mod + SFML language tooling)
-- License: **Mozilla Public License 2.0 (MPL-2.0)**
-
-The following paths in this repo are covered by MPL-2.0 (and remain under MPL-2.0):
-
-- `src/generated/**` (ANTLR-generated lexer/parser/visitor/listener artifacts for SFML)
-- `src/lib/syntax/sfml.tmLanguage.json` (SFML TextMate grammar, if derived from upstream)
-
-If we modify any MPL-covered files above, the modified versions are also provided in source form in this repository under MPL-2.0, as required by the license.
-
-See:
-
-- `LICENSES/MPL-2.0.txt`
-- `src/generated/NOTICE.md`
-
-Upstream repository:
-
-- [https://github.com/TeamDman/SuperFactoryManager](https://github.com/TeamDman/SuperFactoryManager)
-
-> Note: The main SFMHub project is still licensed under the GPL-3.0 license.
+The parser tests include legacy grammar results and all published guide examples. The preserved GitHub sign-in icon is licensed under ISC/MIT; see `src/components/icons/LICENSE.lucide`. SFML is the language of [TeamDman/SuperFactoryManager](https://github.com/TeamDman/SuperFactoryManager).
 
 ---
 
@@ -167,10 +158,7 @@ Upstream repository:
 
 ## Contributing
 
-Issues and PRs are welcome. Please keep licensing boundaries in mind:
-
-- Do not copy MPL-covered code into non-MPL files unless you intend those files to become MPL-licensed.
-- If you change files under `src/generated/**`, keep the MPL headers/notices intact and update `src/generated/NOTICE.md` if needed.
+Issues and PRs are welcome.
 
 ---
 

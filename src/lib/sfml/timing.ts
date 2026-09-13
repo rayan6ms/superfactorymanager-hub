@@ -1,0 +1,11 @@
+const ANALYZE_DEBOUNCE_BASE_MS = 120;
+const ANALYZE_DEBOUNCE_MEDIUM_MS = 180;
+const ANALYZE_DEBOUNCE_LARGE_MS = 250;
+const ANALYZE_MEDIUM_LENGTH = 6000;
+const ANALYZE_LARGE_LENGTH = 12000;
+
+export function getSfmlAnalyzeDebounceMs(code: string): number {
+  if (code.length >= ANALYZE_LARGE_LENGTH) return ANALYZE_DEBOUNCE_LARGE_MS;
+  if (code.length >= ANALYZE_MEDIUM_LENGTH) return ANALYZE_DEBOUNCE_MEDIUM_MS;
+  return ANALYZE_DEBOUNCE_BASE_MS;
+}

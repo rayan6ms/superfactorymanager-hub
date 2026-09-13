@@ -2,9 +2,10 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { Github } from "@/components/icons/Github";
 import { useRouter } from "next/navigation";
 import { Button, Card, Input } from "@/components/ui/index";
-import { Eye, EyeOff, Github, MailCheck } from "lucide-react";
+import { Eye, EyeOff, MailCheck } from "lucide-react";
 import ResendVerificationButton from "@/components/auth/ResendVerificationButton";
 import {
   USERNAME_HELP_TEXT,

@@ -1,0 +1,149 @@
+[
+  {
+    "path": "public/guide/examples/a_simple_program.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/ae2_inscribers.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/empty_slots.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/filtering.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/fluids_and_other_resource_types.sfml",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 5,
+        "lineEnd": 5
+      },
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 7,
+        "lineEnd": 7
+      },
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 18,
+        "lineEnd": 18
+      },
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 19,
+        "lineEnd": 19
+      },
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 22,
+        "lineEnd": 22
+      },
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 23,
+        "lineEnd": 23
+      },
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 26,
+        "lineEnd": 26
+      },
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 32,
+        "lineEnd": 32
+      },
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 33,
+        "lineEnd": 33
+      },
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 34,
+        "lineEnd": 34
+      },
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 35,
+        "lineEnd": 35
+      }
+    ]
+  },
+  {
+    "path": "public/guide/examples/forget.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/furnace_manager.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/if_statements.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/known_issues.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/limits.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/redstone_item_movement.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/redstone_signals.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/round_robin.sfml",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 7,
+        "lineEnd": 7
+      },
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 8,
+        "lineEnd": 8
+      }
+    ]
+  },
+  {
+    "path": "public/guide/examples/slots_and_sides.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/tag_matching.sfml",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "path": "public/guide/examples/time_triggers.sfml",
+    "status": "ok",
+    "warnings": []
+  }
+]

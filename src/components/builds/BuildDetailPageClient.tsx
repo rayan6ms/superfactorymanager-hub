@@ -27,7 +27,8 @@ import {
   POST_COMPOSER_PREFILL_CODE_KEY,
 } from "@/lib/builds/links";
 import type { BuildDetailPayload, BuildWriteResponse } from "@/lib/builds/types";
-import { analyzeSfmlCode, getSfmlAnalyzeDebounceMs, type CodeFeedback } from "@/lib/sfml/analysis";
+import { type CodeFeedback } from "@/lib/sfml/analysis";
+import { scheduleSfmlAnalysis } from "@/lib/sfml/analysis-worker-client";
 
 const DRAFT_SAVE_DEBOUNCE = 600;
 const NAME_CHECK_DEBOUNCE = 300;
@@ -133,7 +134,6 @@ export default function BuildDetailPageClient({
   const draftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedDraftRef = useRef(false);
   const forkNameRequestRef = useRef(0);
-  const analyzeDebounceMs = useMemo(() => getSfmlAnalyzeDebounceMs(code), [code]);
 
   const codeStats = useMemo(() => getCodeContentStats(code), [code]);
   const hasValidCodeLength = codeStats.nonWhitespaceCount >= BUILD_CODE_MIN_NON_WHITESPACE;
@@ -168,12 +168,7 @@ export default function BuildDetailPageClient({
 
   const draftKey = useMemo(() => buildDraftKey(buildMeta.username, buildMeta.slug), [buildMeta.slug, buildMeta.username]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCodeFeedback(analyzeSfmlCode(code, { required: false }));
-    }, analyzeDebounceMs);
-    return () => clearTimeout(timer);
-  }, [analyzeDebounceMs, code]);
+  useEffect(() => scheduleSfmlAnalysis(code, { required: false }, setCodeFeedback), [code]);
 
   const errorMarkers = useMemo(
     () => codeFeedback.syntaxErrors.map((err) => ({ line: err.lineStart, message: err.message })),

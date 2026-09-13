@@ -6,7 +6,8 @@ import Link from "next/link";
 import { clsx } from "clsx";
 import { Card, Button } from "@/components/ui";
 import { CodeBox } from "@/components/CodeBox";
-import { analyzeSfmlCode, getSfmlAnalyzeDebounceMs, type CodeFeedback } from "@/lib/sfml/analysis";
+import { type CodeFeedback } from "@/lib/sfml/analysis";
+import { scheduleSfmlAnalysis } from "@/lib/sfml/analysis-worker-client";
 import CopyCodeButton from "@/components/CopyCodeButton";
 import { Maximize2, Minimize2 } from "lucide-react";
 
@@ -221,7 +222,6 @@ export default function GuidePage() {
   const isLoaded = currentExample?.loaded;
   const isLoading = currentExample?.loading;
   const currentError = currentExample?.error;
-  const analyzeDebounceMs = useMemo(() => getSfmlAnalyzeDebounceMs(currentCode), [currentCode]);
 
   useEffect(() => {
     if (!activeExample) return;
@@ -270,18 +270,7 @@ export default function GuidePage() {
     })();
   }, [activeExample, examplesState]);
 
-  useEffect(() => {
-    if (!isLoaded) {
-      setFeedback({ status: "idle", message: null, syntaxErrors: [], warnings: [] });
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setFeedback(analyzeSfmlCode(currentCode));
-    }, analyzeDebounceMs);
-
-    return () => window.clearTimeout(timer);
-  }, [analyzeDebounceMs, currentCode, isLoaded]);
+  useEffect(() => scheduleSfmlAnalysis(isLoaded ? currentCode : "", {}, setFeedback), [currentCode, isLoaded]);
 
   const errorMarkers = useMemo(
     () => feedback.syntaxErrors.map(err => ({ line: err.lineStart, message: err.message })),

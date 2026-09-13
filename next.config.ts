@@ -62,6 +62,9 @@ function buildCsp() {
 const nextConfig: NextConfig = {
   reactCompiler: true,
 
+  // Keep static generation within the shared workstation/server CPU budget.
+  experimental: { cpus: 2 },
+
   turbopack: {},
 
   serverExternalPackages: [

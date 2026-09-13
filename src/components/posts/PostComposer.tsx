@@ -18,7 +18,8 @@ import {
   POST_DESCRIPTION_MAX_LENGTH,
 } from "@/lib/validation";
 import { analyzeYoutubeUrl } from "@/lib/youtube";
-import { analyzeSfmlCode, getSfmlAnalyzeDebounceMs, type CodeFeedback } from "@/lib/sfml/analysis";
+import type { CodeFeedback } from "@/lib/sfml/analysis";
+import { scheduleSfmlAnalysis } from "@/lib/sfml/analysis-worker-client";
 import { normalizeTag, type NormalizedTag } from "@/lib/tags";
 import { normalizePostDescription } from "@/lib/post-description";
 import { POST_COMPOSER_PREFILL_CODE_KEY } from "@/lib/builds/links";
@@ -352,7 +353,6 @@ export default function PostComposer({
   const [wrapLines, setWrapLines] = useState(true);
   const [imagePage, setImagePage] = useState(0)
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
-  const analyzeDebounceMs = useMemo(() => getSfmlAnalyzeDebounceMs(form.code), [form.code]);
   const [draftCleared, setDraftCleared] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const [descriptionMaxHeight, setDescriptionMaxHeight] = useState<number | null>(null);
@@ -1076,12 +1076,7 @@ export default function PostComposer({
     };
   }, [form, tags, deps, draftKey, hasLoadedDraft]);
 
-  useEffect(() => {
-    const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
-      setCodeFeedback(analyzeSfmlCode(form.code, { required: true }));
-    }, analyzeDebounceMs);
-    return () => clearTimeout(timer);
-  }, [analyzeDebounceMs, form.code]);
+  useEffect(() => scheduleSfmlAnalysis(form.code, { required: true }, setCodeFeedback), [form.code]);
 
   useEffect(() => {
     setErrors(prev => {
@@ -1176,6 +1171,7 @@ export default function PostComposer({
     touchAll();
     setSubmitError(null);
 
+    const { analyzeSfmlCode } = await import("@/lib/sfml/analysis");
     const codeAnalysis = analyzeSfmlCode(form.code, { required: true });
     setCodeFeedback(codeAnalysis);
 

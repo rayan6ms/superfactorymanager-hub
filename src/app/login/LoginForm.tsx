@@ -1,10 +1,11 @@
 "use client";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { Github } from "@/components/icons/Github";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Input } from "@/components/ui/index";
-import { Eye, EyeOff, Github, MailWarning } from "lucide-react";
+import { Eye, EyeOff, MailWarning } from "lucide-react";
 import ResendVerificationButton from "@/components/auth/ResendVerificationButton";
 
 type FieldErrors = {

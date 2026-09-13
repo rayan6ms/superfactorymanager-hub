@@ -24,22 +24,11 @@ export type AnalyzeOptions = {
   emptyMessage?: string;
 };
 
-const ANALYZE_DEBOUNCE_BASE_MS = 350;
-const ANALYZE_DEBOUNCE_MEDIUM_MS = 700;
-const ANALYZE_DEBOUNCE_LARGE_MS = 1200;
-const ANALYZE_MEDIUM_LENGTH = 6000;
-const ANALYZE_LARGE_LENGTH = 12000;
-
-export function getSfmlAnalyzeDebounceMs(code: string): number {
-  const length = code.length;
-  if (length >= ANALYZE_LARGE_LENGTH) return ANALYZE_DEBOUNCE_LARGE_MS;
-  if (length >= ANALYZE_MEDIUM_LENGTH) return ANALYZE_DEBOUNCE_MEDIUM_MS;
-  return ANALYZE_DEBOUNCE_BASE_MS;
-}
+export { getSfmlAnalyzeDebounceMs } from "./timing";
 
 export function analyzeSfmlCode(
   code: string,
-  opts: AnalyzeOptions = {}
+  opts: AnalyzeOptions = {},
 ): CodeFeedback {
   const { required = false, minLength = 3, emptyMessage } = opts;
   const trimmed = code.trim();
@@ -80,14 +69,15 @@ export function analyzeSfmlCode(
     };
   }
 
-  const parsed = parseSfmlSyntax(trimmed);
+  const parsed = parseSfmlSyntax(code);
   if (!parsed.ok) {
     const first = parsed.errors[0];
     const location = first
-      ? `line ${first.lineStart}${typeof first.columnStart === "number"
-        ? `, column ${first.columnStart + 1}`
-        : ""
-      }`
+      ? `line ${first.lineStart}${
+          typeof first.columnStart === "number"
+            ? `, column ${first.columnStart + 1}`
+            : ""
+        }`
       : "the script";
 
     return {

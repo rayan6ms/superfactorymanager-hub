@@ -1,0 +1,3961 @@
+[
+  {
+    "code": "every ticks do end",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "every 20 ticks do end",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "every g ticks do end",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "every 20g ticks do end",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "every 20 g + 1 ticks do end",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "every 20 global plus 4 seconds do end",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "every + 4 ticks do end",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "every redstone pulse do end",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO input  from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output  to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input  from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output  to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input  from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output  to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input  from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output  to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input  from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output  to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input  from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output  to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output  END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output 20 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input retain 3 from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output retain 3 to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input retain 3 from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output retain 3 to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input retain 3 from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output retain 3 to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input retain 3 from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output retain 3 to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input retain 3 from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output retain 3 to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input retain 3 from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output retain 3 to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output retain 3 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each retain 5 each from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each retain 5 each to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each retain 5 each from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each retain 5 each to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each retain 5 each from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each retain 5 each to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each retain 5 each from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each retain 5 each to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each retain 5 each from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each retain 5 each to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each retain 5 each from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each retain 5 each to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output 20 each retain 5 each END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each stone from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each stone to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each stone from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each stone to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each stone from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each stone to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each stone from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each stone to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each stone from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each stone to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 each stone from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 each stone to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output 20 each stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input fluid:: from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output fluid:: to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input fluid:: from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output fluid:: to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input fluid:: from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output fluid:: to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input fluid:: from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output fluid:: to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input fluid:: from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output fluid:: to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input fluid:: from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input fluid:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output fluid:: to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input item:minecraft:stone from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output item:minecraft:stone to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input item:minecraft:stone from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output item:minecraft:stone to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input item:minecraft:stone from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output item:minecraft:stone to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input item:minecraft:stone from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output item:minecraft:stone to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input item:minecraft:stone from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output item:minecraft:stone to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input item:minecraft:stone from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output item:minecraft:stone to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output item:minecraft:stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input a:::b from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output a:::b to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input a:::b from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output a:::b to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input a:::b from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output a:::b to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input a:::b from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output a:::b to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input a:::b from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output a:::b to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input a:::b from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output a:::b to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output a:::b END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone or dirt or from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone or dirt or to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone or dirt or from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone or dirt or to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone or dirt or from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone or dirt or to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone or dirt or from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone or dirt or to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone or dirt or from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone or dirt or to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone or dirt or from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone or dirt or to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output stone or dirt or END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone, dirt, from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone, dirt, to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone, dirt, from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone, dirt, to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone, dirt, from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone, dirt, to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone, dirt, from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone, dirt, to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone, dirt, from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone, dirt, to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input stone, dirt, from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output stone, dirt, to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output stone, dirt, END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input with #a:b/c from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output with #a:b/c to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input with #a:b/c from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output with #a:b/c to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input with #a:b/c from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output with #a:b/c to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input with #a:b/c from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output with #a:b/c to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input with #a:b/c from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output with #a:b/c to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input with #a:b/c from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output with #a:b/c to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output with #a:b/c END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 with not (#a and #b or #c) from chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from chest input 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 with not (#a and #b or #c) to chest END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to chest output 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 with not (#a and #b or #c) from redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from redstone input 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 with not (#a and #b or #c) to redstone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to redstone output 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 with not (#a and #b or #c) from \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from \"my chest\" input 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 with not (#a and #b or #c) to \"my chest\" END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to \"my chest\" output 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 with not (#a and #b or #c) from a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,b round robin by label top,bottom side slots 0-3,5 input 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 with not (#a and #b or #c) to a,b round robin by label top,bottom side slots 0-3,5 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,b round robin by label top,bottom side slots 0-3,5 output 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 with not (#a and #b or #c) from a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a each side slot 0 input 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 with not (#a and #b or #c) to a each side slot 0 END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a each side slot 0 output 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO input 20 with not (#a and #b or #c) from a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO from a,top input 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO output 20 with not (#a and #b or #c) to a,top END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO to a,top output 20 with not (#a and #b or #c) END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output item:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (true and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (true or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (true and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (true or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (true and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (false and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (false or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (false and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (false or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (false and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone gt 3) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone gt 3 and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone gt 3 or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone gt 3 and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone gt 3 or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone gt 3 and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone has eq 3) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone has eq 3 and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone has eq 3 or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone has eq 3 and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone has eq 3 or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone has eq 3 and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone top side has > 3) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone top side has > 3 and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone top side has > 3 or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone top side has > 3 and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone top side has > 3 or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (redstone top side has > 3 and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone or dirt) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone or dirt and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone or dirt or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone or dirt and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone or dirt or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone or dirt and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 with #a) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 with #a and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 with #a or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 with #a and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 with #a or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 with #a and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone with #a except dirt) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone with #a except dirt and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone with #a except dirt or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone with #a except dirt and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone with #a except dirt or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (a has > 3 stone with #a except dirt and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (each a,b has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (each a,b has > 3 stone and true) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (each a,b has > 3 stone or redstone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (each a,b has > 3 stone and not false) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (each a,b has > 3 stone or (true and false)) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO if (each a,b has > 3 stone and a has > 3 stone) then input from a else if true then output to b else forget a, end END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO FROM a INPUT 20 RETAIN 3 stone END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Input item:: without corresponding output.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO TO a OUTPUT fluid:: END",
+    "status": "ok",
+    "warnings": [
+      {
+        "message": "Warning: Output fluid:: without corresponding input.",
+        "lineStart": 1,
+        "lineEnd": 1
+      }
+    ]
+  },
+  {
+    "code": "EVERY 20 TICKS DO FORGET , a, END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO FORGET ,, END",
+    "status": "error",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO IF TRUE THEN ELSE ELSE END END",
+    "status": "error",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO IF REDSTONE THEN END END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO INPUT stone OR TRUE FROM a END",
+    "status": "error",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO INPUT WITH #a:b:c FROM a END",
+    "status": "error",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO INPUT FROM a, END",
+    "status": "error",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO INPUT FROM a SLOTS 0, END",
+    "status": "error",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO IF a HAS > 3 stone OR redstone THEN END END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO IF a HAS > 3 stone OR redstone > 2 THEN END END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO IF a HAS > 3 stone OR a HAS > 2 THEN END END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO IF a HAS > 3 WITH #a AND NOT FALSE THEN END END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO IF a HAS > 3 WITH #a AND (TRUE) THEN END END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO IF a HAS > 3 WITH #a AND (#b OR #c) THEN END END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "EVERY 20 TICKS DO IF a HAS > 3 WITH #a AND (a HAS > 2) THEN END END",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "name \"hello\"",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "name \"hello\\\"",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "name \"a\\\"b\"",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "name \"a\nb\"",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "name \"a\\\\\"b\"",
+    "status": "ok",
+    "warnings": []
+  },
+  {
+    "code": "name \"unterminated",
+    "status": "error",
+    "warnings": []
+  }
+]

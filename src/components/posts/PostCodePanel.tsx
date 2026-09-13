@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { clsx } from "clsx";
 import { CodeBox } from "@/components/CodeBox";
 import CopyCodeButton from "@/components/CopyCodeButton";
-import { analyzeSfmlCode, getSfmlAnalyzeDebounceMs, type CodeFeedback } from "@/lib/sfml/analysis";
+import type { CodeFeedback } from "@/lib/sfml/analysis";
+import { scheduleSfmlAnalysis } from "@/lib/sfml/analysis-worker-client";
 
 type PostCodePanelProps = {
   initialCode: string;
@@ -13,19 +14,10 @@ type PostCodePanelProps = {
 export default function PostCodePanel({ initialCode }: PostCodePanelProps) {
   const [code, setCode] = useState(initialCode);
   const [wrapLines, setWrapLines] = useState(true);
-  const analyzeDebounceMs = useMemo(() => getSfmlAnalyzeDebounceMs(code), [code]);
 
-  const [codeFeedback, setCodeFeedback] = useState<CodeFeedback>(() =>
-    analyzeSfmlCode(initialCode)
-  );
+  const [codeFeedback, setCodeFeedback] = useState<CodeFeedback>({ status: "idle", message: null, syntaxErrors: [], warnings: [] });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCodeFeedback(analyzeSfmlCode(code));
-    }, analyzeDebounceMs);
-
-    return () => clearTimeout(timer);
-  }, [analyzeDebounceMs, code]);
+  useEffect(() => scheduleSfmlAnalysis(code, { required: false }, setCodeFeedback), [code]);
 
   const errorMarkers = useMemo(
     () =>
