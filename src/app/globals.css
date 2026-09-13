@@ -39,8 +39,8 @@
   --text-muted: 240 6% 62%;
   --accent: var(--color-brand-700);
   --accent-2: var(--color-brand-400);
-  --glow-1: rgba(141, 46, 46, 0.28);
-  --glow-2: rgba(7, 3, 24, 0.04);
+  --glow-1: rgba(84, 23, 23, 0.527);
+  --glow-2: rgba(7, 3, 24, 0.717);
   --codebox-highlight-bg: #120a0a;
 }
 
@@ -178,13 +178,11 @@ textarea::-webkit-scrollbar-thumb {
 }
 
 textarea::-webkit-resizer {
-  background: linear-gradient(
-    135deg,
-    transparent 45%,
-    rgba(255, 255, 255, 0.28) 45%,
-    rgba(255, 255, 255, 0.28) 55%,
-    transparent 55%
-  );
+  background: linear-gradient(135deg,
+      transparent 45%,
+      rgba(255, 255, 255, 0.28) 45%,
+      rgba(255, 255, 255, 0.28) 55%,
+      transparent 55%);
   border-radius: 0.75rem;
   opacity: 0.5;
 }
