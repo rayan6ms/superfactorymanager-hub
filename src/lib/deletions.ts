@@ -25,19 +25,19 @@ export async function flagManyAsDeleted(
   client: DeletionWriteClient,
   type: "post",
   where: Prisma.PostWhereInput,
-  options: { auto: boolean; now?: Date }
+  options: { auto: boolean; now?: Date },
 ): Promise<number>;
 export async function flagManyAsDeleted(
   client: DeletionWriteClient,
   type: "comment",
   where: Prisma.CommentWhereInput,
-  options: { auto: boolean; now?: Date }
+  options: { auto: boolean; now?: Date },
 ): Promise<number>;
 export async function flagManyAsDeleted(
   client: DeletionWriteClient,
   type: "post" | "comment",
   where: Prisma.PostWhereInput | Prisma.CommentWhereInput,
-  options: { auto: boolean; now?: Date }
+  options: { auto: boolean; now?: Date },
 ) {
   const data = buildDeletionFlagData(options);
 
@@ -57,7 +57,9 @@ export async function flagManyAsDeleted(
 }
 
 export async function resolveUniqueSlug(postId: string, desired: string, fallbackTitle: string) {
-  const base = makeSlug(fallbackTitle || desired || `post-${postId.slice(0, 6)}`) || `post-${postId.slice(0, 8)}`;
+  const base =
+    makeSlug(fallbackTitle || desired || `post-${postId.slice(0, 6)}`) ||
+    `post-${postId.slice(0, 8)}`;
   let candidate = base || desired || `post-${postId.slice(0, 8)}`;
   let attempt = 1;
 
@@ -73,7 +75,7 @@ export async function resolveUniqueSlug(postId: string, desired: string, fallbac
 export async function flagAsDeleted(
   type: "post" | "comment",
   targetId: string,
-  { auto }: { auto: boolean }
+  { auto }: { auto: boolean },
 ) {
   const data = buildDeletionFlagData({ auto });
 
@@ -144,7 +146,12 @@ export async function restoreDeletion(type: "post" | "comment", targetId: string
   return { id: comment.id };
 }
 
-type ImageUrls = { original: string | null; thumbSm: string | null; thumbMd: string | null; thumbLg: string | null };
+type ImageUrls = {
+  original: string | null;
+  thumbSm: string | null;
+  thumbMd: string | null;
+  thumbLg: string | null;
+};
 
 async function removePostUploads(postId: string, knownImages?: ImageUrls[]) {
   const images =
@@ -153,7 +160,7 @@ async function removePostUploads(postId: string, knownImages?: ImageUrls[]) {
       where: { postId },
       select: { original: true, thumbSm: true, thumbMd: true, thumbLg: true },
     }));
-  const urls = images.flatMap(img => [img.original, img.thumbSm, img.thumbMd, img.thumbLg]);
+  const urls = images.flatMap((img) => [img.original, img.thumbSm, img.thumbMd, img.thumbLg]);
   await deleteBlobs(urls);
 }
 
@@ -177,8 +184,8 @@ export async function purgeExpiredDeletions(now = new Date()) {
     }),
   ]);
 
-  const deletedPostIds = expiredPosts.map(p => p.id);
-  const deletedCommentIds = expiredComments.map(c => c.id);
+  const deletedPostIds = expiredPosts.map((p) => p.id);
+  const deletedCommentIds = expiredComments.map((c) => c.id);
   const imagesByPost: Record<string, ImageUrls[] | undefined> = {};
 
   if (deletedPostIds.length) {
@@ -200,7 +207,7 @@ export async function purgeExpiredDeletions(now = new Date()) {
   }
 
   if (deletedPostIds.length || deletedCommentIds.length) {
-    await db.$transaction(async tx => {
+    await db.$transaction(async (tx) => {
       if (deletedCommentIds.length) {
         await tx.comment.deleteMany({ where: { id: { in: deletedCommentIds } } });
       }
@@ -208,7 +215,7 @@ export async function purgeExpiredDeletions(now = new Date()) {
         await tx.post.deleteMany({ where: { id: { in: deletedPostIds } } });
       }
     });
-    await Promise.all(deletedPostIds.map(id => removePostUploads(id, imagesByPost[id])));
+    await Promise.all(deletedPostIds.map((id) => removePostUploads(id, imagesByPost[id])));
   }
 
   return { deletedPosts: deletedPostIds.length, deletedComments: deletedCommentIds.length };

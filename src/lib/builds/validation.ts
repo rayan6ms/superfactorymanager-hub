@@ -12,7 +12,7 @@ export const buildNameSchema = z
   .trim()
   .min(BUILD_NAME_MIN_LENGTH, `Name must be at least ${BUILD_NAME_MIN_LENGTH} characters.`)
   .max(BUILD_NAME_MAX_LENGTH, `Name must be at most ${BUILD_NAME_MAX_LENGTH} characters.`)
-  .refine((value) => !(/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value)), {
+  .refine((value) => !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), {
     message: "Name contains invalid control characters.",
   });
 
@@ -23,7 +23,7 @@ export const buildTagSchema = z
   .trim()
   .min(BUILD_TAG_MIN_LENGTH, `Tag must be at least ${BUILD_TAG_MIN_LENGTH} characters.`)
   .max(BUILD_TAG_MAX_LENGTH, `Tag must be at most ${BUILD_TAG_MAX_LENGTH} characters.`)
-  .refine((value) => !(/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value)), {
+  .refine((value) => !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), {
     message: "Tag contains invalid control characters.",
   });
 

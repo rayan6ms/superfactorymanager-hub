@@ -36,7 +36,9 @@ function isWebpUrl(url) {
 function isManagedBlobUrl(url) {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "https:" && parsed.hostname.endsWith(".public.blob.vercel-storage.com");
+    return (
+      parsed.protocol === "https:" && parsed.hostname.endsWith(".public.blob.vercel-storage.com")
+    );
   } catch {
     return false;
   }
@@ -46,7 +48,9 @@ function isAllowedAvatarRemoteUrl(url) {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") return false;
-    return ALLOWED_AVATAR_HOSTS.some(host => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`));
+    return ALLOWED_AVATAR_HOSTS.some(
+      (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`),
+    );
   } catch {
     return false;
   }
@@ -103,7 +107,7 @@ async function mapWithConcurrency(values, maxConcurrency, mapper) {
 async function deleteManagedBlobs(urls) {
   const uniqueUrls = Array.from(new Set(urls.filter(isManagedBlobUrl)));
   await Promise.all(
-    uniqueUrls.map(async url => {
+    uniqueUrls.map(async (url) => {
       try {
         await del(url, { token });
       } catch (error) {
@@ -116,7 +120,7 @@ async function deleteManagedBlobs(urls) {
 async function normalizePostImage(image) {
   const urls = [image.original, image.thumbSm, image.thumbMd, image.thumbLg];
 
-  if (isWebpUrl(image.original) && urls.every(url => url === image.original)) {
+  if (isWebpUrl(image.original) && urls.every((url) => url === image.original)) {
     return { changed: false, id: image.id };
   }
 
@@ -138,7 +142,7 @@ async function normalizePostImage(image) {
       data: { original, thumbSm: original, thumbMd: original, thumbLg: original },
     });
 
-    await deleteManagedBlobs(urls.filter(url => url !== original));
+    await deleteManagedBlobs(urls.filter((url) => url !== original));
     return { changed: true, id: image.id };
   } catch (error) {
     await deleteManagedBlobs(uploadedUrls);
@@ -182,13 +186,13 @@ try {
     select: { id: true, original: true, thumbSm: true, thumbMd: true, thumbLg: true },
     orderBy: { id: "asc" },
   });
-  const postCandidates = postImages.filter(image => {
+  const postCandidates = postImages.filter((image) => {
     const urls = [image.original, image.thumbSm, image.thumbMd, image.thumbLg];
-    return !isWebpUrl(image.original) || urls.some(url => url !== image.original);
+    return !isWebpUrl(image.original) || urls.some((url) => url !== image.original);
   });
   console.log(`Found ${postImages.length} post images, normalizing ${postCandidates.length}.`);
   let normalizedPosts = 0;
-  await mapWithConcurrency(postCandidates, CONCURRENCY, async image => {
+  await mapWithConcurrency(postCandidates, CONCURRENCY, async (image) => {
     const result = await normalizePostImage(image);
     if (result.changed) normalizedPosts += 1;
     console.log(`${result.changed ? "Normalized" : "Skipped"} post image ${image.id}`);
@@ -198,14 +202,14 @@ try {
     select: { id: true, image: true },
     orderBy: { id: "asc" },
   });
-  const userCandidates = users.filter(user => {
+  const userCandidates = users.filter((user) => {
     if (!user.image || user.image.startsWith("data:")) return false;
     if (isManagedBlobUrl(user.image)) return !isWebpUrl(user.image);
     return isAllowedAvatarRemoteUrl(user.image);
   });
   console.log(`Found ${users.length} users, normalizing ${userCandidates.length} avatars.`);
   let normalizedUsers = 0;
-  await mapWithConcurrency(userCandidates, CONCURRENCY, async user => {
+  await mapWithConcurrency(userCandidates, CONCURRENCY, async (user) => {
     const result = await normalizeUserAvatar(user);
     if (result.changed) normalizedUsers += 1;
     console.log(`${result.changed ? "Normalized" : "Skipped"} avatar ${user.id}`);

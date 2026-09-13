@@ -4,7 +4,11 @@ import { hash } from "bcrypt";
 import { z } from "zod";
 import { generateInitialAvatar } from "@/lib/avatar";
 import { validateUsernameInput } from "@/lib/usernames";
-import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
+import {
+  checkRateLimit,
+  getClientRateLimitKey,
+  hashRateLimitIdentifier,
+} from "@/lib/request-security";
 import { sendVerificationEmailForUser } from "@/lib/email-verification";
 
 const schema = z.object({
@@ -12,18 +16,10 @@ const schema = z.object({
     .string()
     .trim()
     .min(1, "EMAIL_REQUIRED")
-    .pipe(
-      z.email({ message: "INVALID_EMAIL" }),
-    )
+    .pipe(z.email({ message: "INVALID_EMAIL" }))
     .transform((value) => value.toLowerCase()),
-  name: z
-    .string()
-    .trim()
-    .min(1, "NAME_REQUIRED"),
-  password: z
-    .string()
-    .min(1, "PASSWORD_REQUIRED")
-    .min(8, "PASSWORD_TOO_SHORT"),
+  name: z.string().trim().min(1, "NAME_REQUIRED"),
+  password: z.string().min(1, "PASSWORD_REQUIRED").min(8, "PASSWORD_TOO_SHORT"),
 });
 
 const SIGNUP_WINDOW_MS = 10 * 60 * 1000;
@@ -76,10 +72,7 @@ export async function POST(req: Request) {
 
     const existing = await db.user.findFirst({
       where: {
-        OR: [
-          { email: parsed.email },
-          { name: normalizedName },
-        ],
+        OR: [{ email: parsed.email }, { name: normalizedName }],
       },
       select: { id: true, email: true, name: true, emailVerified: true },
     });

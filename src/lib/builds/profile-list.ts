@@ -28,7 +28,11 @@ function asBuildListResponse(payload: unknown): ProfileBuildListResponse | null 
 
   const raw = payload as Partial<ProfileBuildListResponse>;
   if (!Array.isArray(raw.items)) return null;
-  if (typeof raw.page !== "number" || typeof raw.pageSize !== "number" || typeof raw.total !== "number") {
+  if (
+    typeof raw.page !== "number" ||
+    typeof raw.pageSize !== "number" ||
+    typeof raw.total !== "number"
+  ) {
     return null;
   }
 
@@ -37,14 +41,16 @@ function asBuildListResponse(payload: unknown): ProfileBuildListResponse | null 
       if (!item || typeof item !== "object") return false;
       const candidate = item as Partial<ProfileBuildItem>;
       return (
-        typeof candidate.username === "string"
-        && (typeof candidate.authorImage === "string" || candidate.authorImage === null || typeof candidate.authorImage === "undefined")
-        && typeof candidate.slug === "string"
-        && typeof candidate.nameOriginal === "string"
-        && typeof candidate.tag === "string"
-        && isBuildVisibility(candidate.visibility)
-        && typeof candidate.createdAt === "string"
-        && typeof candidate.updatedAt === "string"
+        typeof candidate.username === "string" &&
+        (typeof candidate.authorImage === "string" ||
+          candidate.authorImage === null ||
+          typeof candidate.authorImage === "undefined") &&
+        typeof candidate.slug === "string" &&
+        typeof candidate.nameOriginal === "string" &&
+        typeof candidate.tag === "string" &&
+        isBuildVisibility(candidate.visibility) &&
+        typeof candidate.createdAt === "string" &&
+        typeof candidate.updatedAt === "string"
       );
     })
     .map((item) => ({
@@ -130,9 +136,7 @@ export async function getProfileBuildList(
       pageSize: options.pageSize,
     });
 
-    return data
-      ? { status: 200, data }
-      : { status: 404, data: null };
+    return data ? { status: 200, data } : { status: 404, data: null };
   }
 
   const profile = await db.user.findUnique({
@@ -147,9 +151,9 @@ export async function getProfileBuildList(
 
   const viewer = options.viewerEmail
     ? await db.user.findUnique({
-      where: { email: options.viewerEmail },
-      select: { id: true },
-    })
+        where: { email: options.viewerEmail },
+        select: { id: true },
+      })
     : null;
   const isOwner = viewer?.id === profile.id;
 

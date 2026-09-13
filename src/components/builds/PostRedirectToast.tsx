@@ -48,7 +48,11 @@ export default function PostRedirectToast() {
         <div className="space-y-3 rounded-md border border-amber-300/60 bg-amber-700 p-3 text-sm text-amber-50 shadow-soft">
           <p>Clipboard permission is unavailable. Copy this canonical build link manually.</p>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Input readOnly value={shareLink} className="border-amber-200/50 bg-amber-950/50 font-mono text-xs text-amber-50" />
+            <Input
+              readOnly
+              value={shareLink}
+              className="border-amber-200/50 bg-amber-950/50 font-mono text-xs text-amber-50"
+            />
             <Button
               type="button"
               className="border-amber-200/40 bg-amber-500 text-white hover:bg-amber-400 sm:shrink-0"

@@ -8,7 +8,7 @@ type Ctx = {
   apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   apiFetchJson: <T = unknown>(
     input: RequestInfo | URL,
-    init?: RequestInit
+    init?: RequestInit,
   ) => Promise<{ res: Response; data: T | ApiErrorShape | null }>;
   withAuth: <R>(fn: () => Promise<R>) => Promise<R | null>;
   openLogin: (msg?: string) => void;
@@ -25,46 +25,63 @@ export default function AuthRequiredProvider({ children }: { children: React.Rea
     setOpen(true);
   }, []);
 
-  const apiFetch = useCallback(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const nextInit: RequestInit = {
-      ...init,
-      credentials: init?.credentials ?? "include",
-    };
-    const res = await fetch(input, nextInit);
-    if (res.status === 401) openLogin();
-    return res;
-  }, [openLogin]);
+  const apiFetch = useCallback(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const nextInit: RequestInit = {
+        ...init,
+        credentials: init?.credentials ?? "include",
+      };
+      const res = await fetch(input, nextInit);
+      if (res.status === 401) openLogin();
+      return res;
+    },
+    [openLogin],
+  );
 
-  const apiFetchJson = useCallback(async <T,>(input: RequestInfo | URL, init?: RequestInit) => {
-    const res = await apiFetch(input, init);
-    let data: T | ApiErrorShape | null = null;
-    try { data = await res.json(); } catch { /* no body */ }
-    return { res, data };
-  }, [apiFetch]);
-
-  const withAuth = useCallback(async <R,>(fn: () => Promise<R>): Promise<R | null> => {
-    try {
-      return await fn();
-    } catch (error: unknown) {
-      if (typeof error === "object" && error !== null) {
-        const maybeStatus = "status" in error ? (error as { status?: unknown }).status : undefined;
-        const maybeCode = "code" in error ? (error as { code?: unknown }).code : undefined;
-
-        const status = typeof maybeStatus === "number" ? maybeStatus : undefined;
-        const code = typeof maybeCode === "string" ? maybeCode : undefined;
-
-        if (status === 401 || code === "UNAUTHORIZED") {
-          openLogin();
-          return null;
-        }
+  const apiFetchJson = useCallback(
+    async <T,>(input: RequestInfo | URL, init?: RequestInit) => {
+      const res = await apiFetch(input, init);
+      let data: T | ApiErrorShape | null = null;
+      try {
+        data = await res.json();
+      } catch {
+        /* no body */
       }
+      return { res, data };
+    },
+    [apiFetch],
+  );
 
-      console.error("withAuth caught non-auth error:", error);
-      throw error;
-    }
-  }, [openLogin]);
+  const withAuth = useCallback(
+    async <R,>(fn: () => Promise<R>): Promise<R | null> => {
+      try {
+        return await fn();
+      } catch (error: unknown) {
+        if (typeof error === "object" && error !== null) {
+          const maybeStatus =
+            "status" in error ? (error as { status?: unknown }).status : undefined;
+          const maybeCode = "code" in error ? (error as { code?: unknown }).code : undefined;
 
-  const value = useMemo<Ctx>(() => ({ apiFetch, apiFetchJson, withAuth, openLogin }), [apiFetch, apiFetchJson, withAuth, openLogin]);
+          const status = typeof maybeStatus === "number" ? maybeStatus : undefined;
+          const code = typeof maybeCode === "string" ? maybeCode : undefined;
+
+          if (status === 401 || code === "UNAUTHORIZED") {
+            openLogin();
+            return null;
+          }
+        }
+
+        console.error("withAuth caught non-auth error:", error);
+        throw error;
+      }
+    },
+    [openLogin],
+  );
+
+  const value = useMemo<Ctx>(
+    () => ({ apiFetch, apiFetchJson, withAuth, openLogin }),
+    [apiFetch, apiFetchJson, withAuth, openLogin],
+  );
 
   return (
     <AuthCtx.Provider value={value}>

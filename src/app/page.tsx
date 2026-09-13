@@ -5,10 +5,7 @@ import PostCard from "@/components/posts/PostCard";
 import BuildCard from "@/components/builds/BuildCard";
 import HomeQuickLinks from "@/components/home/HomeQuickLinks";
 import DatabaseUnavailableNotice from "@/components/layout/DatabaseUnavailableNotice";
-import {
-  searchPublicBuildsWithFilters,
-  type SerializedBuild,
-} from "@/lib/builds/search";
+import { searchPublicBuildsWithFilters, type SerializedBuild } from "@/lib/builds/search";
 import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import {
   getPublicPostCount,
@@ -54,7 +51,7 @@ function PostSection({
       </div>
       {posts.length ? (
         <ul className="grid gap-5 md:grid-cols-2">
-          {posts.map(post => (
+          {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
         </ul>
@@ -113,18 +110,28 @@ export default async function Home({ searchParams }: Props) {
   const rawQ = params?.q;
   const q = Array.isArray(rawQ) ? rawQ[0] : rawQ;
 
-  const currentHomeHref = q?.trim()
-    ? `/?${new URLSearchParams({ q: q.trim() }).toString()}`
-    : "/";
+  const currentHomeHref = q?.trim() ? `/?${new URLSearchParams({ q: q.trim() }).toString()}` : "/";
 
-  const [popularTags, totalPosts, trendingPosts, recentPosts, popularPosts, recentBuildsResult, updatedBuildsResult] = await Promise.all([
+  const [
+    popularTags,
+    totalPosts,
+    trendingPosts,
+    recentPosts,
+    popularPosts,
+    recentBuildsResult,
+    updatedBuildsResult,
+  ] = await Promise.all([
     getPopularTags(12),
     getPublicPostCount(),
     getTrendingPosts(HOME_SECTION_LIMIT),
     getRecentPosts(HOME_SECTION_LIMIT),
     getPopularPosts(HOME_SECTION_LIMIT),
     searchPublicBuildsWithFilters({ order: "newest", limit: HOME_SECTION_LIMIT, page: 1 }),
-    searchPublicBuildsWithFilters({ order: "recently-updated", limit: HOME_SECTION_LIMIT, page: 1 }),
+    searchPublicBuildsWithFilters({
+      order: "recently-updated",
+      limit: HOME_SECTION_LIMIT,
+      page: 1,
+    }),
   ]);
   const isDegraded = hasRecentDatabaseFallback();
 
@@ -139,7 +146,8 @@ export default async function Home({ searchParams }: Props) {
             <p className="eyebrow">Tags</p>
             <h2 className="text-3xl font-semibold text-white">Popular tags</h2>
             <p className="text-white/70">
-              Jump into Super Factory Manager topics like Mekanism, AE2, item movement, fluids, and SFML code patterns.
+              Jump into Super Factory Manager topics like Mekanism, AE2, item movement, fluids, and
+              SFML code patterns.
             </p>
           </div>
           <Link href="/tags" className="text-sm font-semibold text-brand-300">
@@ -149,7 +157,7 @@ export default async function Home({ searchParams }: Props) {
         <Card className="p-6">
           {popularTags.length ? (
             <div className="flex flex-wrap gap-2">
-              {popularTags.map(tag => (
+              {popularTags.map((tag) => (
                 <Link
                   key={tag.id}
                   href={`/tags?tags=${encodeURIComponent(tag.slug)}`}
@@ -171,7 +179,9 @@ export default async function Home({ searchParams }: Props) {
           <div>
             <p className="eyebrow">Posts</p>
             <h2 className="text-3xl font-semibold text-white">What builders are sharing</h2>
-            <p className="text-white/70">Browse recent posts, the past month&apos;s most-viewed posts, and all-time favorites.</p>
+            <p className="text-white/70">
+              Browse recent posts, the past month&apos;s most-viewed posts, and all-time favorites.
+            </p>
           </div>
           <Link href="/posts" className="text-sm font-semibold text-brand-300">
             View all posts →

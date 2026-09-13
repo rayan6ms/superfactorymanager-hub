@@ -13,14 +13,18 @@ export async function GET(req: Request) {
   const limitParam = url.searchParams.get("limit");
   const cursor = url.searchParams.get("cursor") ?? undefined;
   const takeCandidate = limitParam ? Number.parseInt(limitParam, 10) : undefined;
-  const take = typeof takeCandidate === "number" && Number.isFinite(takeCandidate) ? takeCandidate : undefined;
+  const take =
+    typeof takeCandidate === "number" && Number.isFinite(takeCandidate) ? takeCandidate : undefined;
   const unreadOnly = url.searchParams.get("unreadOnly") === "1";
   const includeUnreadCount = url.searchParams.get("includeUnreadCount") !== "0";
   const unreadCountHintRaw = url.searchParams.get("unreadCountHint");
-  const unreadCountHintCandidate = unreadCountHintRaw ? Number.parseInt(unreadCountHintRaw, 10) : undefined;
-  const unreadCountHint = typeof unreadCountHintCandidate === "number" && Number.isFinite(unreadCountHintCandidate)
-    ? unreadCountHintCandidate
+  const unreadCountHintCandidate = unreadCountHintRaw
+    ? Number.parseInt(unreadCountHintRaw, 10)
     : undefined;
+  const unreadCountHint =
+    typeof unreadCountHintCandidate === "number" && Number.isFinite(unreadCountHintCandidate)
+      ? unreadCountHintCandidate
+      : undefined;
 
   const data = await getNotifications(userId, {
     take,

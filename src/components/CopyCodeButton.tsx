@@ -22,13 +22,7 @@ export default function CopyCodeButton({ value, className }: CopyCodeButtonProps
   };
 
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      className={className}
-      onClick={handleCopy}
-    >
+    <Button type="button" size="sm" variant="outline" className={className} onClick={handleCopy}>
       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       {copied ? "Copied" : "Copy code"}
     </Button>

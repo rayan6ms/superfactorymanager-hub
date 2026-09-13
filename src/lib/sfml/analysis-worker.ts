@@ -1,12 +1,7 @@
-import {
-  analyzeSfmlCode,
-  type AnalyzeOptions,
-  type CodeFeedback,
-} from "./analysis";
+import { analyzeSfmlCode, type AnalyzeOptions, type CodeFeedback } from "./analysis";
 
 type Request = { id: number; code: string; options?: AnalyzeOptions };
-type Response =
-  { id: number; result: CodeFeedback } | { id: number; error: string };
+type Response = { id: number; result: CodeFeedback } | { id: number; error: string };
 const scope = globalThis as unknown as {
   postMessage: (value: Response) => void;
   onmessage: (event: MessageEvent<Request>) => void;

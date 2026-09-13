@@ -1,4 +1,9 @@
-export type ParsedDep = { url: string; source: "curseforge" | "modrinth"; slug: string; name: string };
+export type ParsedDep = {
+  url: string;
+  source: "curseforge" | "modrinth";
+  slug: string;
+  name: string;
+};
 export type ParsedDepTarget = Omit<ParsedDep, "url"> & { url: URL };
 
 function isAllowedHost(hostname: string, domain: string) {
@@ -9,13 +14,17 @@ function isAllowedHost(hostname: string, domain: string) {
 function buildDependencyName(slug: string) {
   return slug
     .split("-")
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
 
 export function parseDependencyTarget(input: string | URL): ParsedDepTarget | null {
   const s = (input instanceof URL ? input.toString() : input).trim();
-  try { new URL(s); } catch { return null; }
+  try {
+    new URL(s);
+  } catch {
+    return null;
+  }
 
   const u = new URL(s);
   if (u.protocol !== "https:") {

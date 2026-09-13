@@ -85,10 +85,7 @@ async function getGithubReleaseFallbackEntries(count: number) {
 
 async function markLatestFlag() {
   const latest = await db.changelogEntry.findFirst({
-    orderBy: [
-      { publishedAt: "desc" },
-      { createdAt: "desc" },
-    ],
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
   });
 
   await db.changelogEntry.updateMany({ data: { isLatest: false }, where: { isLatest: true } });
@@ -106,7 +103,7 @@ export async function refreshChangelog(opts?: { ignoreCooldown?: boolean }) {
   return withDatabaseFallback(
     async () => {
       const existing = await db.changelogEntry.findMany({ select: { versionCode: true } });
-      const knownVersions = new Set(existing.map(v => v.versionCode));
+      const knownVersions = new Set(existing.map((v) => v.versionCode));
 
       const newEntries: {
         versionCode: string;
@@ -156,7 +153,10 @@ export async function refreshChangelog(opts?: { ignoreCooldown?: boolean }) {
   );
 }
 
-export async function getChangelogEntries(opts?: { page?: number; limit?: number }): Promise<{ entries: ChangelogEntry[]; total: number }> {
+export async function getChangelogEntries(opts?: {
+  page?: number;
+  limit?: number;
+}): Promise<{ entries: ChangelogEntry[]; total: number }> {
   const pageSize = Math.max(1, Math.min(opts?.limit ?? 10, 50));
   const currentPage = Math.max(1, Math.floor(opts?.page ?? 1));
   const skip = (currentPage - 1) * pageSize;
@@ -165,10 +165,7 @@ export async function getChangelogEntries(opts?: { page?: number; limit?: number
     async () => {
       let [rows, total] = await Promise.all([
         db.changelogEntry.findMany({
-          orderBy: [
-            { publishedAt: "desc" },
-            { createdAt: "desc" },
-          ],
+          orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
           skip,
           take: pageSize,
         }),
@@ -179,10 +176,7 @@ export async function getChangelogEntries(opts?: { page?: number; limit?: number
         await refreshChangelog({ ignoreCooldown: true });
         [rows, total] = await Promise.all([
           db.changelogEntry.findMany({
-            orderBy: [
-              { publishedAt: "desc" },
-              { createdAt: "desc" },
-            ],
+            orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
             skip,
             take: pageSize,
           }),

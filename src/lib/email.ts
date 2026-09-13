@@ -24,7 +24,7 @@ function getTransporter() {
       port,
       secure,
       auth: user && pass ? { user, pass } : undefined,
-    })
+    }),
   );
 
   return transporterPromise;
@@ -102,7 +102,8 @@ export async function sendPasswordResetEmail({
     from,
     subject: "Reset your SFMHub password",
     text: `Hi ${displayName},\n\nWe received a request to reset your SFMHub password.\n\nIf you made this request, you can set a new password using the link below:\n${resetLink}\n\nIf you didn't request a password reset, you can ignore this email.\n\nThis link will expire in one hour.\n\nThanks,\nSFMHub Team`,
-    html: `<!DOCTYPE html><html><body style="font-family: sans-serif; color: #0f172a;">` +
+    html:
+      `<!DOCTYPE html><html><body style="font-family: sans-serif; color: #0f172a;">` +
       `<p>Hi ${displayName},</p>` +
       `<p>We received a request to reset your SFMHub password.</p>` +
       `<p>If you made this request, click the button below to choose a new password.</p>` +
@@ -142,7 +143,7 @@ export async function sendEmailVerificationEmail({
     subject: "Verify your SFMHub email",
     text: `Hi ${displayName},\n\nThanks for signing up for SFMHub!\n\nPlease confirm that this email address belongs to you by clicking the link below:\n${verifyLink}\n\nIf you did not create an account, you can safely ignore this message.\n\nThis link will expire in one hour.\n\nThanks,\nSFMHub Team`,
     html:
-      "<!DOCTYPE html><html><body style=\"font-family: sans-serif; color: #0f172a;\">" +
+      '<!DOCTYPE html><html><body style="font-family: sans-serif; color: #0f172a;">' +
       `<p>Hi ${displayName},</p>` +
       `<p>Thanks for signing up for SFMHub!</p>` +
       `<p>Please confirm that this email address belongs to you by clicking the button below.</p>` +
@@ -196,7 +197,7 @@ export async function sendNotificationEmail({
   ].filter((part): part is string => Boolean(part));
 
   const htmlParts = [
-    "<!DOCTYPE html><html><body style=\"font-family: sans-serif; color: #0f172a;\">",
+    '<!DOCTYPE html><html><body style="font-family: sans-serif; color: #0f172a;">',
     `<p>Hi ${escapeHtml(displayName)},</p>`,
     `<h2 style=\"margin: 0 0 8px;\">${safeTitle}</h2>`,
     `<p style=\"margin: 0 0 16px;\">${safeMessage}</p>`,
@@ -204,7 +205,7 @@ export async function sendNotificationEmail({
       ? `<p style=\"margin: 24px 0;\"><a href=\"${escapeHtml(ctaLink)}\" style=\"display: inline-block; background: #6366f1; color: #fff; padding: 12px 20px; border-radius: 9999px; text-decoration: none;\">View notification</a></p>`
       : "",
     "<p>You can change email notification preferences in your profile.</p>",
-    "<p style=\"margin-top: 24px;\">Thanks,<br/>SFMHub Team</p>",
+    '<p style="margin-top: 24px;">Thanks,<br/>SFMHub Team</p>',
     "</body></html>",
   ];
 

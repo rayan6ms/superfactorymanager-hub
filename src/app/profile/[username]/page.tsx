@@ -28,12 +28,15 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
   const session = await auth();
   const publicOverview = await getPublicProfileOverview(normalized);
-  const ownerId = publicOverview?.user.id
-    ?? (await db.user.findUnique({
-      where: { name: normalized },
-      select: { id: true },
-    }))?.id
-    ?? null;
+  const ownerId =
+    publicOverview?.user.id ??
+    (
+      await db.user.findUnique({
+        where: { name: normalized },
+        select: { id: true },
+      })
+    )?.id ??
+    null;
 
   if (!ownerId) {
     notFound();
@@ -116,7 +119,9 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   const joined = formatDate(user.createdAt);
   const bio = user.bio?.trim();
   const buildsSectionTitle = isOwnerView ? "Your builds" : "Shared builds";
-  const emptyBuildsMessage = isOwnerView ? "You haven't saved any builds yet." : "No builds published yet.";
+  const emptyBuildsMessage = isOwnerView
+    ? "You haven't saved any builds yet."
+    : "No builds published yet.";
 
   return (
     <div className="space-y-5">
@@ -135,9 +140,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         <div className="min-w-0 space-y-1">
           <h1 className="text-2xl font-semibold text-white">{user.name}</h1>
           <p className="text-sm text-white/60">Joined {joined}</p>
-          {bio ? (
-            <p className="text-sm italic text-white/70">“{bio}”</p>
-          ) : null}
+          {bio ? <p className="text-sm italic text-white/70">“{bio}”</p> : null}
         </div>
       </Card>
 
@@ -145,7 +148,9 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">{buildsSectionTitle}</h2>
           <div className="flex items-center gap-4">
-            <span className="text-xs uppercase tracking-[0.3em] text-white/40">{totalBuilds} builds</span>
+            <span className="text-xs uppercase tracking-[0.3em] text-white/40">
+              {totalBuilds} builds
+            </span>
             <Link
               href={`/profile/${encodeURIComponent(user.name)}/builds`}
               className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
@@ -180,9 +185,13 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
       <Card className="space-y-4 p-6 backdrop-blur-none sm:backdrop-blur-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">{isOwnerView ? "Your posts" : "Shared posts"}</h2>
+          <h2 className="text-lg font-semibold text-white">
+            {isOwnerView ? "Your posts" : "Shared posts"}
+          </h2>
           <div className="flex items-center gap-4">
-            <span className="text-xs uppercase tracking-[0.3em] text-white/40">{totalPosts} posts</span>
+            <span className="text-xs uppercase tracking-[0.3em] text-white/40">
+              {totalPosts} posts
+            </span>
             <Link
               href={`/profile/${encodeURIComponent(profileUsername)}/posts`}
               className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
@@ -193,7 +202,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         </div>
         {serializedPosts.length ? (
           <ul className="grid gap-5 md:grid-cols-2">
-            {serializedPosts.map(post => (
+            {serializedPosts.map((post) => (
               <PostCard key={post.id} post={post} compact />
             ))}
           </ul>

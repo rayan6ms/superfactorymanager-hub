@@ -13,8 +13,8 @@ const INSTRUMENTATION_EXCLUDED_ROUTE_PREFIXES = [
 ];
 
 function shouldMountInstrumentation(pathname: string) {
-  return !INSTRUMENTATION_EXCLUDED_ROUTE_PREFIXES.some((prefix) =>
-    pathname === prefix || pathname.startsWith(`${prefix}/`)
+  return !INSTRUMENTATION_EXCLUDED_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }
 

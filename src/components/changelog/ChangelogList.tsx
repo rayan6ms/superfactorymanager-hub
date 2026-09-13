@@ -46,7 +46,7 @@ export default function ChangelogList({ entries }: { entries: ChangelogEntry[] }
 
   const handleBodyChange = (entryId: string | number, next: string) => {
     const key = String(entryId);
-    setBodies(prev => ({
+    setBodies((prev) => ({
       ...prev,
       [key]: next,
     }));
@@ -54,15 +54,13 @@ export default function ChangelogList({ entries }: { entries: ChangelogEntry[] }
 
   if (!entries.length) {
     return (
-      <Card className="p-6 text-center text-white/70">
-        No changelog entries available yet.
-      </Card>
+      <Card className="p-6 text-center text-white/70">No changelog entries available yet.</Card>
     );
   }
 
   return (
     <div className="space-y-4">
-      {entries.map(entry => {
+      {entries.map((entry) => {
         const key = String(entry.id);
         const codeValue = getBodyForEntry(entry);
 
@@ -89,10 +87,7 @@ export default function ChangelogList({ entries }: { entries: ChangelogEntry[] }
               )}
             </div>
 
-            <CodeBox
-              value={codeValue}
-              onChange={next => handleBodyChange(entry.id, next)}
-            />
+            <CodeBox value={codeValue} onChange={(next) => handleBodyChange(entry.id, next)} />
           </Card>
         );
       })}

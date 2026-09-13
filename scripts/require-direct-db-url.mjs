@@ -4,8 +4,8 @@ const prismaDatabaseUrl = process.env.PRISMA_DATABASE_URL?.trim();
 const directDatabaseUrl = process.env.POSTGRES_URL?.trim() || process.env.DATABASE_URL?.trim();
 
 const isAccelerateUrl = Boolean(
-  prismaDatabaseUrl
-  && (prismaDatabaseUrl.startsWith("prisma://") || prismaDatabaseUrl.startsWith("prisma+postgres://")),
+  prismaDatabaseUrl &&
+  (prismaDatabaseUrl.startsWith("prisma://") || prismaDatabaseUrl.startsWith("prisma+postgres://")),
 );
 
 const migrationUrl = directDatabaseUrl || (!isAccelerateUrl ? prismaDatabaseUrl : undefined);

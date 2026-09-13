@@ -1,10 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
-import {
-  COMMENT_PAGE_SIZE,
-  type SerializedComment,
-} from "@/lib/comment-constants";
+import { COMMENT_PAGE_SIZE, type SerializedComment } from "@/lib/comment-constants";
 
 const INITIAL_EAGER_REPLY_DEPTH = 2;
 
@@ -79,14 +76,14 @@ async function fetchRepliesForParents(
   }
 
   const maxDepth =
-    typeof options.maxDepth === "number" && Number.isFinite(options.maxDepth) && options.maxDepth > 0
+    typeof options.maxDepth === "number" &&
+    Number.isFinite(options.maxDepth) &&
+    options.maxDepth > 0
       ? Math.floor(options.maxDepth)
       : null;
 
   const depthGuard =
-    typeof maxDepth === "number"
-      ? Prisma.sql`WHERE tree."depth" < ${maxDepth}`
-      : Prisma.empty;
+    typeof maxDepth === "number" ? Prisma.sql`WHERE tree."depth" < ${maxDepth}` : Prisma.empty;
 
   const descendantIds = await db.$queryRaw<{ id: string }[]>(Prisma.sql`
     WITH RECURSIVE "CommentTree" AS (
@@ -111,7 +108,7 @@ async function fetchRepliesForParents(
 
   return db.comment.findMany({
     where: {
-      id: { in: descendantIds.map(comment => comment.id) },
+      id: { in: descendantIds.map((comment) => comment.id) },
     },
     include: { author: { select: authorSelect } },
   });
@@ -155,7 +152,7 @@ async function fetchVoteMap(
     where: { userId: viewerId, commentId: { in: commentIds } },
     select: { commentId: true, value: true },
   });
-  return new Map(votes.map(vote => [vote.commentId, vote.value > 0 ? "up" : "down"]));
+  return new Map(votes.map((vote) => [vote.commentId, vote.value > 0 ? "up" : "down"]));
 }
 
 function buildChildrenMap(comments: CommentWithAuthor[]) {
@@ -180,7 +177,7 @@ function attachReplies(
   const children = childrenMap.get(comment.id) ?? [];
   const replies = children
     .sort((a, b) => compareComments(a, b, sort, depth))
-    .map(child => attachReplies(child, childrenMap, replyCountMap, sort, voteMap, depth + 1));
+    .map((child) => attachReplies(child, childrenMap, replyCountMap, sort, voteMap, depth + 1));
   const replyCount = replyCountMap.get(comment.id) ?? children.length;
   return serializeComment(comment, replies, voteMap, replyCount);
 }
@@ -212,12 +209,7 @@ async function getPostCommentsUncached(
     db.comment.findMany({
       where: { postId, parentId: null },
       orderBy:
-        sort === "top"
-          ? [
-              { score: "desc" },
-              { createdAt: "desc" },
-            ]
-          : [{ createdAt: "desc" }],
+        sort === "top" ? [{ score: "desc" }, { createdAt: "desc" }] : [{ createdAt: "desc" }],
       take: take + 1,
       include: { author: { select: authorSelect } },
       ...(cursor && {
@@ -236,9 +228,7 @@ async function getPostCommentsUncached(
           include: { author: { select: authorSelect } },
         })
       : Promise.resolve(null),
-    includeTotal
-      ? db.comment.count({ where: { postId } })
-      : Promise.resolve(null),
+    includeTotal ? db.comment.count({ where: { postId } }) : Promise.resolve(null),
   ]);
 
   let nextCursor: string | null = null;
@@ -249,32 +239,33 @@ async function getPostCommentsUncached(
 
   const visibleRoots = roots;
   const descendants = await fetchRepliesForParents(
-    visibleRoots.map(comment => comment.id),
+    visibleRoots.map((comment) => comment.id),
     { maxDepth: INITIAL_EAGER_REPLY_DEPTH },
   );
   const childrenMap = buildChildrenMap(descendants);
 
-  const loadedCommentIds = Array.from(new Set([
-    ...visibleRoots.map(item => item.id),
-    ...descendants.map(item => item.id),
-  ]));
-  const idsNeedingReplyCounts = Array.from(new Set([
-    ...loadedCommentIds,
-    ...(pinned ? [pinned.id] : []),
-  ]));
-  const idsNeedingVotes = Array.from(new Set([
-    ...loadedCommentIds,
-    ...(pinned ? [pinned.id] : []),
-  ]));
+  const loadedCommentIds = Array.from(
+    new Set([...visibleRoots.map((item) => item.id), ...descendants.map((item) => item.id)]),
+  );
+  const idsNeedingReplyCounts = Array.from(
+    new Set([...loadedCommentIds, ...(pinned ? [pinned.id] : [])]),
+  );
+  const idsNeedingVotes = Array.from(
+    new Set([...loadedCommentIds, ...(pinned ? [pinned.id] : [])]),
+  );
 
   const [replyCountMap, voteMap] = await Promise.all([
     fetchReplyCountMap(idsNeedingReplyCounts),
     fetchVoteMap(viewerId, idsNeedingVotes),
   ]);
 
-  const serialized = visibleRoots.map(comment => attachReplies(comment, childrenMap, replyCountMap, sort, voteMap));
+  const serialized = visibleRoots.map((comment) =>
+    attachReplies(comment, childrenMap, replyCountMap, sort, voteMap),
+  );
   const pinnedComment = includePinnedComment
-    ? (pinned ? serializeComment(pinned, [], voteMap, replyCountMap.get(pinned.id) ?? 0) : null)
+    ? pinned
+      ? serializeComment(pinned, [], voteMap, replyCountMap.get(pinned.id) ?? 0)
+      : null
     : undefined;
 
   return {
@@ -286,14 +277,15 @@ async function getPostCommentsUncached(
 }
 
 const getCachedInitialPostComments = unstable_cache(
-  async (postId: string, sort: "recent" | "top") => getPostCommentsUncached(postId, {
-    take: COMMENT_PAGE_SIZE,
-    cursor: null,
-    sort,
-    viewerId: null,
-    includeTotal: true,
-    includePinnedComment: true,
-  }),
+  async (postId: string, sort: "recent" | "top") =>
+    getPostCommentsUncached(postId, {
+      take: COMMENT_PAGE_SIZE,
+      cursor: null,
+      sort,
+      viewerId: null,
+      includeTotal: true,
+      includePinnedComment: true,
+    }),
   ["post-comments-initial"],
   { revalidate: 60 },
 );
@@ -321,13 +313,7 @@ export async function getPostComments(
   const includeTotal = options.includeTotal ?? true;
   const includePinnedComment = options.includePinnedComment ?? true;
 
-  if (
-    !viewerId
-    && !cursor
-    && take === COMMENT_PAGE_SIZE
-    && includeTotal
-    && includePinnedComment
-  ) {
+  if (!viewerId && !cursor && take === COMMENT_PAGE_SIZE && includeTotal && includePinnedComment) {
     return getCachedInitialPostComments(postId, sort);
   }
 
@@ -362,7 +348,7 @@ export async function getCommentThread(
   const descendants = await fetchRepliesForParents([rootComment.id]);
   const childrenMap = buildChildrenMap(descendants);
 
-  const allCommentIds = [rootComment.id, ...descendants.map(item => item.id)];
+  const allCommentIds = [rootComment.id, ...descendants.map((item) => item.id)];
   const [replyCountMap, voteMap] = await Promise.all([
     fetchReplyCountMap(allCommentIds),
     fetchVoteMap(options.viewerId, allCommentIds),
@@ -371,7 +357,11 @@ export async function getCommentThread(
   return attachReplies(rootComment, childrenMap, replyCountMap, sort, voteMap);
 }
 
-export async function getCommentById(commentId: string, postId?: string | null, viewerId?: string | null) {
+export async function getCommentById(
+  commentId: string,
+  postId?: string | null,
+  viewerId?: string | null,
+) {
   if (!commentId) return null;
   const comment = await db.comment.findUnique({
     where: { id: commentId },

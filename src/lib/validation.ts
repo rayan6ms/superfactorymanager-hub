@@ -18,15 +18,12 @@ function isAllowedHost(hostname: string, domain: string) {
   return host === domain || host.endsWith(`.${domain}`);
 }
 
-const TRUSTED_POST_IMAGE_HOST_SUFFIXES = [
-  "public.blob.vercel-storage.com",
-];
+const TRUSTED_POST_IMAGE_HOST_SUFFIXES = ["public.blob.vercel-storage.com"];
 
 function toConfiguredHost(value: string | undefined): string | null {
   if (!value) return null;
-  const withProtocol = value.startsWith("http://") || value.startsWith("https://")
-    ? value
-    : `https://${value}`;
+  const withProtocol =
+    value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
   try {
     return new URL(withProtocol).hostname.toLowerCase();
   } catch {
@@ -71,7 +68,7 @@ function isTrustedPostImageUrl(value: string): boolean {
   }
 
   const host = url.hostname.toLowerCase();
-  if (TRUSTED_POST_IMAGE_HOST_SUFFIXES.some(domain => isAllowedHost(host, domain))) {
+  if (TRUSTED_POST_IMAGE_HOST_SUFFIXES.some((domain) => isAllowedHost(host, domain))) {
     return true;
   }
 
@@ -95,9 +92,12 @@ export const tagSchema = z
     message: "Tags may include letters, numbers, spaces, hyphens, underscores, and slashes.",
   });
 
-export const dependencyUrl = z.string().trim().refine((value) => Boolean(parseDependency(value)), {
-  message: "Must be an HTTPS CurseForge or Modrinth mod URL.",
-});
+export const dependencyUrl = z
+  .string()
+  .trim()
+  .refine((value) => Boolean(parseDependency(value)), {
+    message: "Must be an HTTPS CurseForge or Modrinth mod URL.",
+  });
 
 export const postSchema = z.object({
   title: z.string().min(1),
@@ -107,42 +107,46 @@ export const postSchema = z.object({
   tags: z
     .array(tagSchema)
     .max(TAG_MAX_COUNT, { message: `Use up to ${TAG_MAX_COUNT} tags.` })
-    .transform(values => {
+    .transform((values) => {
       const seen = new Set<string>();
       return values
-        .map(value => value.trim().replace(/\s+/g, " "))
-        .filter(value => {
+        .map((value) => value.trim().replace(/\s+/g, " "))
+        .filter((value) => {
           const lower = value.toLowerCase();
           if (seen.has(lower)) return false;
           seen.add(lower);
           return true;
         });
     })
-    .refine(values => values.length >= TAG_MIN_COUNT, {
+    .refine((values) => values.length >= TAG_MIN_COUNT, {
       message: `Add at least ${TAG_MIN_COUNT} tags.`,
     }),
 
-  images: z.array(
-    z.union([
-      postImageUrlSchema,
-      z.object({
-        original: postImageUrlSchema,
-        thumbSm: postImageUrlSchema.optional(),
-        thumbMd: postImageUrlSchema.optional(),
-        thumbLg: postImageUrlSchema.optional(),
-      }),
-    ]),
-  )
+  images: z
+    .array(
+      z.union([
+        postImageUrlSchema,
+        z.object({
+          original: postImageUrlSchema,
+          thumbSm: postImageUrlSchema.optional(),
+          thumbMd: postImageUrlSchema.optional(),
+          thumbLg: postImageUrlSchema.optional(),
+        }),
+      ]),
+    )
     .max(MAX_POST_IMAGES, { message: `You can upload up to ${MAX_POST_IMAGES} images.` })
     .default([]),
 
   keepImageIds: z.array(z.string().min(1)).optional().default([]),
-  imageOrder: z.array(
-    z.union([
-      z.object({ existingId: z.string().min(1) }),
-      z.object({ uploadIndex: z.number().int().min(0) }),
-    ]),
-  ).optional().default([]),
+  imageOrder: z
+    .array(
+      z.union([
+        z.object({ existingId: z.string().min(1) }),
+        z.object({ uploadIndex: z.number().int().min(0) }),
+      ]),
+    )
+    .optional()
+    .default([]),
 
   dependencies: z.array(dependencyUrl).optional().default([]),
 
@@ -176,7 +180,11 @@ export const commentSchema = z.object({
   content: z
     .string()
     .trim()
-    .min(COMMENT_MIN_LENGTH, { message: `Comments must be at least ${COMMENT_MIN_LENGTH} characters long.` })
-    .max(COMMENT_MAX_LENGTH, { message: `Comments must be ${COMMENT_MAX_LENGTH} characters or fewer.` }),
+    .min(COMMENT_MIN_LENGTH, {
+      message: `Comments must be at least ${COMMENT_MIN_LENGTH} characters long.`,
+    })
+    .max(COMMENT_MAX_LENGTH, {
+      message: `Comments must be ${COMMENT_MAX_LENGTH} characters or fewer.`,
+    }),
   parentId: z.string().cuid().optional().nullable(),
 });

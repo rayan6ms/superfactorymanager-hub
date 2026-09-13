@@ -2,14 +2,18 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { sendVerificationEmailForUser } from "@/lib/email-verification";
-import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
+import {
+  checkRateLimit,
+  getClientRateLimitKey,
+  hashRateLimitIdentifier,
+} from "@/lib/request-security";
 
 const schema = z.object({
   identifier: z
     .string()
     .trim()
     .min(1, "IDENTIFIER_REQUIRED")
-    .transform(value => value.toLowerCase()),
+    .transform((value) => value.toLowerCase()),
 });
 
 const RESEND_WINDOW_MS = 10 * 60 * 1000;
@@ -38,10 +42,13 @@ export async function POST(request: Request) {
 
   const identifier = parsed.data.identifier;
   const identifierKey = hashRateLimitIdentifier(identifier, "auth:verification-resend:identifier");
-  const identifierLimit = await checkRateLimit(`auth:verification-resend:identifier:${identifierKey}`, {
-    windowMs: RESEND_WINDOW_MS,
-    limit: RESEND_LIMIT_PER_IDENTIFIER,
-  });
+  const identifierLimit = await checkRateLimit(
+    `auth:verification-resend:identifier:${identifierKey}`,
+    {
+      windowMs: RESEND_WINDOW_MS,
+      limit: RESEND_LIMIT_PER_IDENTIFIER,
+    },
+  );
   if (!identifierLimit.allowed) {
     return NextResponse.json(
       { error: "Too many verification email requests. Please try again shortly." },
@@ -52,10 +59,7 @@ export async function POST(request: Request) {
   const user = await db.user.findFirst({
     where: {
       emailVerified: null,
-      OR: [
-        { email: identifier },
-        { name: identifier },
-      ],
+      OR: [{ email: identifier }, { name: identifier }],
     },
     select: {
       id: true,

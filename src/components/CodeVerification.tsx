@@ -57,7 +57,7 @@ export default function CodeVerification({
   const [brokenCount, setBrokenCount] = useState(broken);
   const [busy, setBusy] = useState(false);
   const isAuthor = session?.user?.id === authorId;
-  const activeVote = isAuthor ? null : (sessionStatus === "authenticated" ? myVote : initialVote);
+  const activeVote = isAuthor ? null : sessionStatus === "authenticated" ? myVote : initialVote;
 
   useEffect(() => {
     if (sessionStatus !== "authenticated" || isAuthor) return;
@@ -138,7 +138,7 @@ export default function CodeVerification({
 
   const sendVote = async (vote: "up" | "down") => {
     if (isAuthor || busy) return;
-      if (activeVote === vote) {
+    if (activeVote === vote) {
       await clearVote();
       return;
     }
@@ -181,13 +181,14 @@ export default function CodeVerification({
     setBrokenCount(payload.broken ?? brokenCount);
   };
 
-  const voteButton = (
-    vote: "up" | "down",
-    label: string,
-    count: number,
-  ) => {
+  const voteButton = (vote: "up" | "down", label: string, count: number) => {
     const active = activeVote === vote;
-    const icon = vote === "up" ? <ThumbsUp className="h-4 w-4" aria-hidden /> : <ThumbsDown className="h-4 w-4" aria-hidden />;
+    const icon =
+      vote === "up" ? (
+        <ThumbsUp className="h-4 w-4" aria-hidden />
+      ) : (
+        <ThumbsDown className="h-4 w-4" aria-hidden />
+      );
     return (
       <button
         type="button"
@@ -199,7 +200,7 @@ export default function CodeVerification({
           vote === "up"
             ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100 hover:border-emerald-400/60 hover:bg-emerald-500/15"
             : "border-red-500/40 bg-red-500/10 text-error hover:border-red-400/70 hover:bg-red-500/15",
-          (busy || isAuthor) && "opacity-60"
+          (busy || isAuthor) && "opacity-60",
         )}
       >
         {icon}
@@ -218,7 +219,11 @@ export default function CodeVerification({
         </div>
         <div className="flex items-center gap-2 text-xs text-white/50">
           {busy && <Loader2 className="h-4 w-4 animate-spin text-white/70" aria-hidden />}
-          {isAuthor && <span className="rounded-full bg-white/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide">Author view</span>}
+          {isAuthor && (
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide">
+              Author view
+            </span>
+          )}
         </div>
       </div>
 

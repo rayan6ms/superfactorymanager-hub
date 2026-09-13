@@ -11,9 +11,8 @@ async function handle(req: Request) {
 
   const url = new URL(req.url);
   const rawSource = url.searchParams.get("source");
-  const source = rawSource === "cf" || rawSource === "mr" || rawSource === "both"
-    ? rawSource
-    : "both";
+  const source =
+    rawSource === "cf" || rawSource === "mr" || rawSource === "both" ? rawSource : "both";
   const ignoreCooldown = url.searchParams.get("ignoreCooldown") === "1";
 
   const [{ insertedCf, insertedMr, matrix }, changelog] = await Promise.all([

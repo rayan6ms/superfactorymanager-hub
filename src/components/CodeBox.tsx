@@ -20,7 +20,7 @@ const theme: monacoNs.editor.IStandaloneThemeData = {
     "editorCursor.foreground": "#a78bfa",
     "editorIndentGuide.background": "#374151",
     "editorIndentGuide.activeBackground": "#6b7280",
-    "editorLineHighlightBackground": "#111827",
+    editorLineHighlightBackground: "#111827",
     "editorGutter.background": "#13131A",
     "editor.selectionBackground": "#5b21b6",
   },
@@ -111,10 +111,9 @@ function ensureMonacoEnvironment() {
         );
       }
 
-      return new Worker(
-        new URL("monaco-editor/editor/editor.worker.js", import.meta.url),
-        { type: "module" },
-      );
+      return new Worker(new URL("monaco-editor/editor/editor.worker.js", import.meta.url), {
+        type: "module",
+      });
     },
   };
 }
@@ -125,7 +124,7 @@ function normalizeMarkers(
 ): MarkerInput[] {
   const markers: MarkerInput[] = [];
 
-  errorMarkers?.forEach(err => {
+  errorMarkers?.forEach((err) => {
     if (Number.isFinite(err.line) && err.line > 0) {
       markers.push({
         severity: "error",
@@ -136,7 +135,7 @@ function normalizeMarkers(
     }
   });
 
-  warningRanges?.forEach(range => {
+  warningRanges?.forEach((range) => {
     if (!Number.isFinite(range.startLine) || range.startLine <= 0) return;
     const start = Math.floor(range.startLine);
     const end =
@@ -155,7 +154,7 @@ function normalizeMarkers(
 }
 
 function ensureLanguage(monaco: typeof monacoNs) {
-  const existing = monaco.languages.getLanguages().some(lang => lang.id === SFML_LANGUAGE_ID);
+  const existing = monaco.languages.getLanguages().some((lang) => lang.id === SFML_LANGUAGE_ID);
   if (existing) return;
 
   monaco.languages.register({ id: SFML_LANGUAGE_ID });
@@ -199,10 +198,7 @@ function ensureLanguage(monaco: typeof monacoNs) {
         [/\bround robin by label\b/i, "keyword.special"],
 
         // core keywords
-        [
-          /\b(name|every|do|if|end|has|then|forget|else|true|false)\b/i,
-          "keyword.core"
-        ],
+        [/\b(name|every|do|if|end|has|then|forget|else|true|false)\b/i, "keyword.core"],
 
         // IO
         [/\b(input|from|output|to)\b/i, "keyword.io"],
@@ -210,13 +206,13 @@ function ensureLanguage(monaco: typeof monacoNs) {
         // position
         [
           /\b(top|bottom|left|right|front|back|west|east|north|south|side|each)\b/i,
-          "keyword.position"
+          "keyword.position",
         ],
 
         // logic/timing/g
         [
           /\b(ticks|tick|some|retain|slots|except|second|overall|lone|one|in|empty|seconds|slot|and|not|or|global|g)\b/i,
-          "keyword.logic"
+          "keyword.logic",
         ],
 
         // operators / helpers
@@ -233,9 +229,9 @@ function ensureLanguage(monaco: typeof monacoNs) {
         [/\*/, "identifier"], // same green group
 
         // fallback identifiers
-        [/\w+/, "identifier"]
-      ]
-    }
+        [/\w+/, "identifier"],
+      ],
+    },
   });
 
   monaco.editor.defineTheme(SFML_THEME_ID, theme);
@@ -262,13 +258,13 @@ export function CodeBox({
     ensureMonacoEnvironment();
 
     import("monaco-editor")
-      .then(monaco => {
+      .then((monaco) => {
         loader.config({ monaco });
         if (!disposed) {
           setIsLoaderConfigured(true);
         }
       })
-      .catch(error => {
+      .catch((error) => {
         console.error("Monaco loader setup failed:", error);
       });
 
@@ -294,12 +290,9 @@ export function CodeBox({
     if (!editor) return;
 
     const contentHeight = editor.getContentHeight();
-    const next = Math.min(
-      MAX_HEIGHT,
-      Math.max(MIN_HEIGHT, Math.ceil(contentHeight + 24)),
-    );
+    const next = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.ceil(contentHeight + 24)));
 
-    setEditorHeight(prev => (prev === next ? prev : next));
+    setEditorHeight((prev) => (prev === next ? prev : next));
   }, []);
 
   const applyMarkers = useCallback(() => {
@@ -310,16 +303,14 @@ export function CodeBox({
     const model = editor.getModel();
     if (!model) return;
 
-    const markerData: monacoNs.editor.IMarkerData[] = markers.map(marker => ({
+    const markerData: monacoNs.editor.IMarkerData[] = markers.map((marker) => ({
       startLineNumber: marker.startLine,
       startColumn: 1,
       endLineNumber: marker.endLine,
       endColumn: 1,
       message: marker.message ?? (marker.severity === "error" ? "Error" : "Warning"),
       severity:
-        marker.severity === "error"
-          ? monaco.MarkerSeverity.Error
-          : monaco.MarkerSeverity.Warning,
+        marker.severity === "error" ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
     }));
 
     monaco.editor.setModelMarkers(model, SFML_LANGUAGE_ID, markerData);
@@ -372,10 +363,7 @@ export function CodeBox({
       aria-invalid={isInvalid || undefined}
       aria-describedby={describedBy}
     >
-      <div
-        className="relative"
-        style={{ backgroundColor: "rgba(0,0,0,0)", minHeight: MIN_HEIGHT }}
-      >
+      <div className="relative" style={{ backgroundColor: "rgba(0,0,0,0)", minHeight: MIN_HEIGHT }}>
         {isLoaderConfigured ? (
           <Editor
             height={editorHeight}

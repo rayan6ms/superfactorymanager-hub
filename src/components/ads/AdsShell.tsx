@@ -9,7 +9,10 @@ type AdsShellProps = {
   adsEnabled?: boolean;
 };
 
-export default function AdsShell({ placement = "desktop-rails", adsEnabled: adsEnabledProp }: AdsShellProps) {
+export default function AdsShell({
+  placement = "desktop-rails",
+  adsEnabled: adsEnabledProp,
+}: AdsShellProps) {
   const adsEnabled = adsEnabledProp ?? !!process.env.NEXT_PUBLIC_GOOGLE_ADS_CLIENT;
   if (!adsEnabled) return null;
 
@@ -68,7 +71,10 @@ export default function AdsShell({ placement = "desktop-rails", adsEnabled: adsE
   }
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-20 hidden min-[1512px]:block" aria-hidden="true">
+    <div
+      className="pointer-events-none fixed inset-0 z-20 hidden min-[1512px]:block"
+      aria-hidden="true"
+    >
       {/* Desktop side rails pinned to viewport so they stay visible while scrolling */}
       <div
         className="pointer-events-auto fixed top-[50vh] -translate-y-1/2"
@@ -88,7 +94,8 @@ export default function AdsShell({ placement = "desktop-rails", adsEnabled: adsE
       <div
         className="pointer-events-auto fixed top-[50vh] -translate-y-1/2"
         style={{
-          right: "max(0.5rem, calc((100vw - min(100vw, 72rem)) / 2 - 10rem - clamp(0.5rem, (100vw - 1512px) / 8, 2.5rem)))",
+          right:
+            "max(0.5rem, calc((100vw - min(100vw, 72rem)) / 2 - 10rem - clamp(0.5rem, (100vw - 1512px) / 8, 2.5rem)))",
         }}
       >
         <GoogleAdSlot

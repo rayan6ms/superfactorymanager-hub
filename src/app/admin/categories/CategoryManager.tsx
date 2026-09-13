@@ -18,7 +18,12 @@ type Props = {
   pageSize: number;
 };
 
-export default function CategoryManager({ initialCategories, totalCount, currentPage, pageSize }: Props) {
+export default function CategoryManager({
+  initialCategories,
+  totalCount,
+  currentPage,
+  pageSize,
+}: Props) {
   const [categories, setCategories] = useState<CategorySummary[]>(initialCategories);
   const [total, setTotal] = useState(totalCount);
   const [key, setKey] = useState("");
@@ -47,8 +52,8 @@ export default function CategoryManager({ initialCategories, totalCount, current
         setMessage(data?.error || "Could not create category.");
         return;
       }
-      setCategories(prev => [...prev, data.category]);
-      setTotal(prev => prev + 1);
+      setCategories((prev) => [...prev, data.category]);
+      setTotal((prev) => prev + 1);
       setKey("");
       setName("");
       setMessage("Category created.");
@@ -74,8 +79,8 @@ export default function CategoryManager({ initialCategories, totalCount, current
         setMessage(data?.error || "Could not delete category.");
         return;
       }
-      setCategories(prev => prev.filter(category => category.key !== categoryKey));
-      setTotal(prev => Math.max(0, prev - 1));
+      setCategories((prev) => prev.filter((category) => category.key !== categoryKey));
+      setTotal((prev) => Math.max(0, prev - 1));
       setMessage("Category deleted.");
     } catch (error) {
       console.error(error);
@@ -118,14 +123,16 @@ export default function CategoryManager({ initialCategories, totalCount, current
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">Create</p>
             <h2 className="text-lg font-semibold text-white">Add a category</h2>
-            <p className="text-sm text-white/60">Provide a unique key and a reader-friendly name.</p>
+            <p className="text-sm text-white/60">
+              Provide a unique key and a reader-friendly name.
+            </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1 text-sm text-white/80">
               Key
               <Input
                 value={key}
-                onChange={event => setKey(event.target.value)}
+                onChange={(event) => setKey(event.target.value)}
                 placeholder="automation"
                 required
                 disabled={busy}
@@ -136,7 +143,7 @@ export default function CategoryManager({ initialCategories, totalCount, current
               Name
               <Input
                 value={name}
-                onChange={event => setName(event.target.value)}
+                onChange={(event) => setName(event.target.value)}
                 placeholder="Automation"
                 required
                 disabled={busy}
@@ -170,8 +177,11 @@ export default function CategoryManager({ initialCategories, totalCount, current
         </div>
         {sorted.length ? (
           <ul className="divide-y divide-white/5">
-            {sorted.map(category => (
-              <li key={category.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm text-white/80">
+            {sorted.map((category) => (
+              <li
+                key={category.id}
+                className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm text-white/80"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-white">{category.name}</p>
                   <p className="text-xs text-white/60">key: {category.key}</p>

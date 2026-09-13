@@ -19,16 +19,18 @@ async function removeImageFiles(urls: Array<string | null | undefined>) {
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
-  const post = await db.post.findFirst({
-    where: { slug, isDeleted: false },
-    include: {
-      category: true,
-      images: { orderBy: { position: "asc" } },
-      dependencies: true,
-      author: { select: { id: true, name: true, image: true } },
-      tags: { include: { tag: true } },
-    },
-  }).catch(() => null);
+  const post = await db.post
+    .findFirst({
+      where: { slug, isDeleted: false },
+      include: {
+        category: true,
+        images: { orderBy: { position: "asc" } },
+        dependencies: true,
+        author: { select: { id: true, name: true, image: true } },
+        tags: { include: { tag: true } },
+      },
+    })
+    .catch(() => null);
 
   if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -81,14 +83,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
   const modsForGame = byGame[parsed.gameVersion] || [];
   if (!modsForGame.includes(parsed.modVersion)) {
     return NextResponse.json(
-      { error: `Mod version ${parsed.modVersion} is not available for Minecraft ${parsed.gameVersion}` },
+      {
+        error: `Mod version ${parsed.modVersion} is not available for Minecraft ${parsed.gameVersion}`,
+      },
       { status: 400 },
     );
   }
 
   const normalizedTags = normalizeTags(parsed.tags);
   if (normalizedTags.length < TAG_MIN_COUNT) {
-    return NextResponse.json({ error: "Add more distinct tags to describe your post." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Add more distinct tags to describe your post." },
+      { status: 400 },
+    );
   }
 
   const category = await db.category.findUnique({ where: { key: parsed.categoryKey } });
@@ -112,20 +119,26 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
   let codeStatus: "VERIFIED" | "UNVERIFIED" | "BROKEN" = "UNVERIFIED";
   let codeNote: string | null = null;
   const code = parsed.code.trim();
-  if (code.length < 3) { codeStatus = "BROKEN"; codeNote = "Code is too short."; }
-  if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(code)) { codeStatus = "BROKEN"; codeNote = "Invalid control characters found."; }
+  if (code.length < 3) {
+    codeStatus = "BROKEN";
+    codeNote = "Code is too short.";
+  }
+  if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(code)) {
+    codeStatus = "BROKEN";
+    codeNote = "Invalid control characters found.";
+  }
 
   const codeChanged = code !== post.code;
   const normalizedImages = normalizeImages(parsed.images);
-  const existingImageIds = new Set(post.images.map(img => img.id));
-  const keepImageIdList = (parsed.keepImageIds ?? []).filter(id => existingImageIds.has(id));
+  const existingImageIds = new Set(post.images.map((img) => img.id));
+  const keepImageIdList = (parsed.keepImageIds ?? []).filter((id) => existingImageIds.has(id));
   const keepImageIds = new Set(keepImageIdList);
   const preferredImageOrder = parsed.imageOrder.length
     ? parsed.imageOrder
     : [
-      ...keepImageIdList.map(id => ({ existingId: id })),
-      ...normalizedImages.map((_, uploadIndex) => ({ uploadIndex })),
-    ];
+        ...keepImageIdList.map((id) => ({ existingId: id })),
+        ...normalizedImages.map((_, uploadIndex) => ({ uploadIndex })),
+      ];
   const seenExisting = new Set<string>();
   const seenUploads = new Set<number>();
   const finalImagePlan: Array<
@@ -174,20 +187,25 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     );
   }
 
-  const imagesToRemove = post.images.filter(img => !keepImageIds.has(img.id));
+  const imagesToRemove = post.images.filter((img) => !keepImageIds.has(img.id));
   const moderationNote = !isAuthor && isAdmin ? "Edited by moderation" : null;
   const moderationTimestamp = moderationNote ? new Date() : null;
 
-  const updated = await db.$transaction(async tx => {
+  const updated = await db.$transaction(async (tx) => {
     if (imagesToRemove.length) {
-      await tx.postImage.deleteMany({ where: { postId: post.id, id: { in: imagesToRemove.map(img => img.id) } } });
+      await tx.postImage.deleteMany({
+        where: { postId: post.id, id: { in: imagesToRemove.map((img) => img.id) } },
+      });
     }
     await tx.postTag.deleteMany({ where: { postId: post.id } });
     await tx.dependency.deleteMany({ where: { postId: post.id } });
     await Promise.all(
       finalImagePlan
-        .filter((entry): entry is Extract<typeof finalImagePlan[number], { kind: "existing" }> => entry.kind === "existing")
-        .map(entry =>
+        .filter(
+          (entry): entry is Extract<(typeof finalImagePlan)[number], { kind: "existing" }> =>
+            entry.kind === "existing",
+        )
+        .map((entry) =>
           tx.postImage.update({
             where: { id: entry.imageId },
             data: { position: entry.position },
@@ -212,7 +230,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
         moderationEditedById: moderationNote ? user.id : null,
         moderationEditedNote: moderationNote,
         dependencies: {
-          create: depObjs.map(d => ({
+          create: depObjs.map((d) => ({
             name: d.name,
             slug: d.slug,
             source: d.source,
@@ -221,8 +239,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
         },
         images: {
           create: finalImagePlan
-            .filter((entry): entry is Extract<typeof finalImagePlan[number], { kind: "new" }> => entry.kind === "new")
-            .map(entry => ({
+            .filter(
+              (entry): entry is Extract<(typeof finalImagePlan)[number], { kind: "new" }> =>
+                entry.kind === "new",
+            )
+            .map((entry) => ({
               position: entry.position,
               original: entry.image.original,
               thumbSm: entry.image.thumbSm,
@@ -231,7 +252,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
             })),
         },
         tags: {
-          create: normalizedTags.map(tag => ({
+          create: normalizedTags.map((tag) => ({
             tag: {
               connectOrCreate: {
                 where: { slug: tag.slug },
@@ -241,12 +262,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
           })),
         },
       },
-        include: {
-          category: true,
-          images: { orderBy: { position: "asc" } },
-          dependencies: true,
-          author: { select: { id: true, name: true } },
-          tags: { include: { tag: true } },
+      include: {
+        category: true,
+        images: { orderBy: { position: "asc" } },
+        dependencies: true,
+        author: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
       },
     });
 
@@ -275,7 +296,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
 
   if (imagesToRemove.length) {
     await Promise.all(
-      imagesToRemove.map(img => removeImageFiles([img.original, img.thumbSm, img.thumbMd, img.thumbLg])),
+      imagesToRemove.map((img) =>
+        removeImageFiles([img.original, img.thumbSm, img.thumbMd, img.thumbLg]),
+      ),
     );
   }
 

@@ -68,9 +68,14 @@ export default function GoogleAdSlot({
       const insRect = ins.getBoundingClientRect();
       const wrapperStyle = window.getComputedStyle(wrapper);
       const isRendered = wrapper.getClientRects().length > 0 && ins.getClientRects().length > 0;
-      const isHidden = !isRendered || wrapperStyle.display === "none" || wrapperStyle.visibility === "hidden";
-      const availableWidth = Math.round(insRect.width || wrapperRect.width || (format === "fixed" ? width ?? 0 : 0));
-      const availableHeight = Math.round(insRect.height || wrapperRect.height || (format === "fixed" ? height ?? 0 : 0));
+      const isHidden =
+        !isRendered || wrapperStyle.display === "none" || wrapperStyle.visibility === "hidden";
+      const availableWidth = Math.round(
+        insRect.width || wrapperRect.width || (format === "fixed" ? (width ?? 0) : 0),
+      );
+      const availableHeight = Math.round(
+        insRect.height || wrapperRect.height || (format === "fixed" ? (height ?? 0) : 0),
+      );
 
       if (isHidden || availableWidth <= 0 || availableHeight <= 0) {
         if (isDev && !loggedZeroWidth) {
@@ -106,7 +111,9 @@ export default function GoogleAdSlot({
     const missingAdsByGoogleTimer = window.setTimeout(() => {
       if (!isDev || cancelled) return;
       if (typeof window.adsbygoogle === "undefined") {
-        console.warn(`[ads] window.adsbygoogle is undefined for slot ${slot}. Check AdSense script load or blockers.`);
+        console.warn(
+          `[ads] window.adsbygoogle is undefined for slot ${slot}. Check AdSense script load or blockers.`,
+        );
       }
     }, 4000);
     timers.push(missingAdsByGoogleTimer);

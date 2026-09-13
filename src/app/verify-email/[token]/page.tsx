@@ -25,7 +25,8 @@ function getStatusCopy(status: Status) {
     default:
       return {
         title: "Invalid verification link",
-        description: "We couldn’t verify your email address. Please request a new verification email.",
+        description:
+          "We couldn’t verify your email address. Please request a new verification email.",
       };
   }
 }

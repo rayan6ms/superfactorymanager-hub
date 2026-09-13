@@ -23,11 +23,7 @@ type DatabaseBucketRow = {
 const buckets = new Map<string, Bucket>();
 const MAX_BUCKETS = 20_000;
 const DATABASE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
-const TRUSTED_PROXY_IP_HEADERS = new Set([
-  "cf-connecting-ip",
-  "x-forwarded-for",
-  "x-real-ip",
-]);
+const TRUSTED_PROXY_IP_HEADERS = new Set(["cf-connecting-ip", "x-forwarded-for", "x-real-ip"]);
 const VERCEL_TRUSTED_PROXY_IP_HEADER = "x-forwarded-for";
 
 let lastDatabaseCleanupAt = 0;
@@ -128,13 +124,16 @@ function buildAnonymousFingerprint(headers: Headers): string {
     headers.get("sec-ch-ua-platform")?.trim().toLowerCase() ?? "",
   ].join("|");
 
-  return crypto.createHash("sha256").update(material || "anonymous").digest("hex").slice(0, 24);
+  return crypto
+    .createHash("sha256")
+    .update(material || "anonymous")
+    .digest("hex")
+    .slice(0, 24);
 }
 
 function getRateLimitHashSecret(): string | null {
-  const configuredSecret = process.env.RATE_LIMIT_HASH_SECRET
-    ?? process.env.AUTH_SECRET
-    ?? process.env.NEXTAUTH_SECRET;
+  const configuredSecret =
+    process.env.RATE_LIMIT_HASH_SECRET ?? process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
   if (configuredSecret && configuredSecret.trim().length > 0) {
     return configuredSecret;
@@ -171,9 +170,8 @@ export function getTrustedClientIpFromHeaders(headers: Headers): string | null {
     return null;
   }
 
-  const firstValue = trustedHeader === "x-forwarded-for"
-    ? rawValue.split(",")[0]?.trim()
-    : rawValue.trim();
+  const firstValue =
+    trustedHeader === "x-forwarded-for" ? rawValue.split(",")[0]?.trim() : rawValue.trim();
 
   return normalizeIp(firstValue);
 }

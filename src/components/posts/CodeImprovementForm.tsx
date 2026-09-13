@@ -13,7 +13,11 @@ type CodeImprovementFormProps = {
   initialCode: string;
 };
 
-export default function CodeImprovementForm({ slug, baseCommitId, initialCode }: CodeImprovementFormProps) {
+export default function CodeImprovementForm({
+  slug,
+  baseCommitId,
+  initialCode,
+}: CodeImprovementFormProps) {
   const router = useRouter();
   const [code, setCode] = useState(initialCode);
   const [title, setTitle] = useState("");
@@ -70,7 +74,8 @@ export default function CodeImprovementForm({ slug, baseCommitId, initialCode }:
       <div className="space-y-1">
         <h2 className="text-2xl font-semibold text-white">Suggest an improvement</h2>
         <p className="text-sm text-white/70">
-          Paste your updated code and describe what changed. The author will get a notification to review your pull request.
+          Paste your updated code and describe what changed. The author will get a notification to
+          review your pull request.
         </p>
       </div>
 
@@ -106,11 +111,13 @@ export default function CodeImprovementForm({ slug, baseCommitId, initialCode }:
         <Input
           id="title"
           value={title}
-          onChange={event => setTitle(event.target.value)}
+          onChange={(event) => setTitle(event.target.value)}
           placeholder="E.g. Optimize furnace timing"
           maxLength={80}
         />
-        <p className="text-xs text-white/50">Short summary (max 80 characters) that shows up in the code history list.</p>
+        <p className="text-xs text-white/50">
+          Short summary (max 80 characters) that shows up in the code history list.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -120,14 +127,20 @@ export default function CodeImprovementForm({ slug, baseCommitId, initialCode }:
         <Input
           id="message"
           value={message}
-          onChange={event => setMessage(event.target.value)}
+          onChange={(event) => setMessage(event.target.value)}
           placeholder="Describe the fixes, improvements, or reasoning"
           maxLength={280}
         />
-        <p className="text-xs text-white/50">Give context so the author knows what to test. Minimum 10 characters.</p>
+        <p className="text-xs text-white/50">
+          Give context so the author knows what to test. Minimum 10 characters.
+        </p>
       </div>
 
-      {error && <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm wrap-anywhere text-red-200">{error}</div>}
+      {error && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm wrap-anywhere text-red-200">
+          {error}
+        </div>
+      )}
       {result === "success" && (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
           Your contribution was sent! The author will be notified shortly.
@@ -135,7 +148,13 @@ export default function CodeImprovementForm({ slug, baseCommitId, initialCode }:
       )}
 
       <div className="flex justify-end">
-        <Button type="button" size="lg" className="w-full sm:w-auto" disabled={submitting} onClick={submit}>
+        <Button
+          type="button"
+          size="lg"
+          className="w-full sm:w-auto"
+          disabled={submitting}
+          onClick={submit}
+        >
           {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
           {submitting ? "Sending..." : "Send improvement"}
         </Button>

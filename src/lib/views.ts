@@ -75,7 +75,7 @@ export async function shouldCountViewAndMark(postId: string) {
   const now = Date.now();
   const map = pruneExpiredEntries(await readMap(), now);
   const last = map.get(postId);
-  const ok = !last || (now - last) > TTL_MS;
+  const ok = !last || now - last > TTL_MS;
 
   if (ok) {
     map.delete(postId);

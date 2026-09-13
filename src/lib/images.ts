@@ -1,8 +1,6 @@
 export const MAX_POST_IMAGES = 6;
 
-type InImage =
-  | string
-  | { original: string; thumbSm?: string; thumbMd?: string; thumbLg?: string };
+type InImage = string | { original: string; thumbSm?: string; thumbMd?: string; thumbLg?: string };
 
 export function normalizeImages(arr: InImage[]) {
   return (arr || []).slice(0, MAX_POST_IMAGES).map((item) => {

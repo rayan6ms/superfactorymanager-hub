@@ -43,7 +43,7 @@ export async function GET(request: Request) {
   ]);
 
   return NextResponse.json({
-    categories: categories.map(category => ({
+    categories: categories.map((category) => ({
       id: category.id,
       key: category.key,
       name: category.name,
@@ -68,7 +68,10 @@ export async function POST(request: Request) {
 
   const parsed = categorySchema.safeParse(payload);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Provide a key and name for the category." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Provide a key and name for the category." },
+      { status: 400 },
+    );
   }
 
   const key = parsed.data.key.trim().toLowerCase();
@@ -76,12 +79,17 @@ export async function POST(request: Request) {
 
   const existing = await db.category.findFirst({ where: { OR: [{ key }, { name }] } });
   if (existing) {
-    return NextResponse.json({ error: "A category with that key or name already exists." }, { status: 409 });
+    return NextResponse.json(
+      { error: "A category with that key or name already exists." },
+      { status: 409 },
+    );
   }
 
   const category = await db.category.create({ data: { key, name } });
 
-  return NextResponse.json({ category: { id: category.id, key: category.key, name: category.name, postCount: 0 } });
+  return NextResponse.json({
+    category: { id: category.id, key: category.key, name: category.name, postCount: 0 },
+  });
 }
 
 export async function DELETE(request: Request) {
@@ -113,7 +121,10 @@ export async function DELETE(request: Request) {
   }
 
   if (category._count.posts > 0) {
-    return NextResponse.json({ error: "Cannot delete a category that is assigned to existing posts." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Cannot delete a category that is assigned to existing posts." },
+      { status: 400 },
+    );
   }
 
   await db.category.delete({ where: { id: category.id } });

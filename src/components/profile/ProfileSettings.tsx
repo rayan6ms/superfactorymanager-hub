@@ -264,7 +264,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
     if (!file) return;
 
     setAvatarUploadStatus("loading");
-    setErrors(prev => ({ ...prev, image: undefined, form: undefined }));
+    setErrors((prev) => ({ ...prev, image: undefined, form: undefined }));
 
     try {
       const formData = new FormData();
@@ -344,10 +344,10 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       <label className="text-sm font-semibold text-white">Bio</label>
       <textarea
         value={bio}
-        onChange={event => {
+        onChange={(event) => {
           const nextBio = event.target.value.slice(0, BIO_MAX_LENGTH);
           setBio(nextBio);
-          setErrors(prev => ({ ...prev, bio: undefined, form: undefined }));
+          setErrors((prev) => ({ ...prev, bio: undefined, form: undefined }));
         }}
         placeholder="Tell the community about your play style, favorite builds, or goals."
         rows={4}
@@ -378,7 +378,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
         <input
           type="checkbox"
           checked={emailNotificationsEnabled}
-          onChange={event => setEmailNotificationsEnabled(event.target.checked)}
+          onChange={(event) => setEmailNotificationsEnabled(event.target.checked)}
           className="h-4 w-4 rounded border-white/30 bg-transparent text-brand-500 focus:ring-brand-400/60"
         />
       </label>
@@ -394,7 +394,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           <input
             type="checkbox"
             checked={emailNotifyPost}
-            onChange={event => setEmailNotifyPost(event.target.checked)}
+            onChange={(event) => setEmailNotifyPost(event.target.checked)}
             disabled={!emailNotificationsEnabled}
             className="h-4 w-4 rounded border-white/30 bg-transparent text-brand-500 focus:ring-brand-400/60 disabled:cursor-not-allowed"
           />
@@ -404,7 +404,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           <input
             type="checkbox"
             checked={emailNotifySystem}
-            onChange={event => setEmailNotifySystem(event.target.checked)}
+            onChange={(event) => setEmailNotifySystem(event.target.checked)}
             disabled={!emailNotificationsEnabled}
             className="h-4 w-4 rounded border-white/30 bg-transparent text-brand-500 focus:ring-brand-400/60 disabled:cursor-not-allowed"
           />
@@ -414,7 +414,7 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           <input
             type="checkbox"
             checked={emailNotifyReport}
-            onChange={event => setEmailNotifyReport(event.target.checked)}
+            onChange={(event) => setEmailNotifyReport(event.target.checked)}
             disabled={!emailNotificationsEnabled}
             className="h-4 w-4 rounded border-white/30 bg-transparent text-brand-500 focus:ring-brand-400/60 disabled:cursor-not-allowed"
           />
@@ -480,9 +480,9 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             <label className="text-sm font-semibold text-white">Username</label>
             <Input
               value={name}
-              onChange={event => {
+              onChange={(event) => {
                 setName(event.target.value);
-                setErrors(prev => ({ ...prev, name: undefined, form: undefined }));
+                setErrors((prev) => ({ ...prev, name: undefined, form: undefined }));
               }}
               placeholder="Your name"
               className="mt-1"
@@ -506,7 +506,9 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
       {emailNotificationControls}
 
       {errors.form && <p className="text-sm text-error">{errors.form}</p>}
-      {status === "success" && <p className="text-sm text-emerald-300">Profile updated successfully.</p>}
+      {status === "success" && (
+        <p className="text-sm text-emerald-300">Profile updated successfully.</p>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3 text-sm text-white/70">
@@ -516,7 +518,8 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
             size="sm"
             className={clsx(
               "gap-2 transition",
-              highlightReset && "animate-pulse ring-2 ring-brand-300 ring-offset-2 ring-offset-[#0f0b14]",
+              highlightReset &&
+                "animate-pulse ring-2 ring-brand-300 ring-offset-2 ring-offset-[#0f0b14]",
             )}
             onClick={handleResetPassword}
             disabled={resetLoading}
@@ -532,7 +535,11 @@ export default function ProfileSettings({ initialUser }: ProfileSettingsProps) {
           {resetStatus === "error" && <span className="text-error">Couldn’t send email.</span>}
         </div>
 
-        <Button onClick={() => submitProfile(false)} disabled={isLoading || avatarUploadLoading} className="gap-2">
+        <Button
+          onClick={() => submitProfile(false)}
+          disabled={isLoading || avatarUploadLoading}
+          className="gap-2"
+        >
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           Save changes
         </Button>

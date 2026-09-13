@@ -1,10 +1,6 @@
 import "server-only";
 
-export const ALLOWED_IMAGE_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
+export const ALLOWED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export const MAX_UPLOAD_BYTES_PER_FILE = 8 * 1024 * 1024; // 8 MB
 export const MAX_UPLOAD_TOTAL_BYTES = 24 * 1024 * 1024; // 24 MB

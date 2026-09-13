@@ -32,7 +32,9 @@ class ResponseBodyTooLargeError extends Error {
 }
 
 async function extractNameFromHtml(html: string) {
-  let m = html.match(/<div[^>]*class="[^"]*\bname-container\b[^"]*"[^>]*>[\s\S]*?<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  let m = html.match(
+    /<div[^>]*class="[^"]*\bname-container\b[^"]*"[^>]*>[\s\S]*?<h1[^>]*>([\s\S]*?)<\/h1>/i,
+  );
   if (m?.[1]) return clean(m[1]);
 
   m = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
@@ -175,7 +177,11 @@ export async function GET(req: Request) {
     }
 
     const contentType = res.headers.get("content-type")?.toLowerCase() ?? "";
-    if (contentType && !contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) {
+    if (
+      contentType &&
+      !contentType.includes("text/html") &&
+      !contentType.includes("application/xhtml+xml")
+    ) {
       throw new Error("Unsupported dependency response content type");
     }
 
@@ -187,8 +193,7 @@ export async function GET(req: Request) {
 
     const name = await extractNameFromHtml(html);
     if (name) return NextResponse.json({ name });
-  } catch {
-  }
+  } catch {}
 
   return NextResponse.json({ name: dependency.name });
 }

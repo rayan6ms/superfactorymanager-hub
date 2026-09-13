@@ -15,7 +15,9 @@ export async function GET(req: Request) {
     debug: {
       now: new Date().toISOString(),
       env_DEBUG_SFM: process.env.DEBUG_SFM ?? "unset",
-      byGameCounts: Object.fromEntries(Object.entries(data.byGame).map(([g, mods]) => [g, mods.length])),
-    }
+      byGameCounts: Object.fromEntries(
+        Object.entries(data.byGame).map(([g, mods]) => [g, mods.length]),
+      ),
+    },
   });
 }

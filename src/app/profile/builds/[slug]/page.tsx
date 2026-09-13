@@ -23,7 +23,10 @@ function buildQueryString(params: Record<string, string | string[] | undefined> 
 }
 
 export default async function CurrentUserBuildRedirectPage({ params, searchParams }: Props) {
-  const [{ slug }, resolved] = await Promise.all([params, searchParams ? searchParams : Promise.resolve(undefined)]);
+  const [{ slug }, resolved] = await Promise.all([
+    params,
+    searchParams ? searchParams : Promise.resolve(undefined),
+  ]);
   const query = buildQueryString(resolved);
   const requestedPath = query
     ? `/profile/builds/${encodeURIComponent(slug)}?${query}`

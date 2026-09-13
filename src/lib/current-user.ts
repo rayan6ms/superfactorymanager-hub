@@ -1,10 +1,13 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
 
-type SessionUser = {
-  id?: string | null;
-  email?: string | null;
-} | null | undefined;
+type SessionUser =
+  | {
+      id?: string | null;
+      email?: string | null;
+    }
+  | null
+  | undefined;
 
 export async function getCurrentUserFromSession<T extends Prisma.UserSelect>(
   sessionUser: SessionUser,

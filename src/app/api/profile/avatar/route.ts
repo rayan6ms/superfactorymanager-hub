@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { auth } from "@/lib/auth";
 import { uploadImageVariant } from "@/lib/blob";
-import {
-  MAX_UPLOAD_IMAGE_PIXELS,
-  validateUploadBatch,
-} from "@/lib/upload-security";
+import { MAX_UPLOAD_IMAGE_PIXELS, validateUploadBatch } from "@/lib/upload-security";
 import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 export const runtime = "nodejs";
@@ -32,7 +29,10 @@ function mapAvatarUploadFailure(error: unknown): { status: number; message: stri
     lowered.includes("network") ||
     lowered.includes("fetch failed")
   ) {
-    return { status: 503, message: "Avatar uploads are temporarily unavailable. Please try again." };
+    return {
+      status: 503,
+      message: "Avatar uploads are temporarily unavailable. Please try again.",
+    };
   }
 
   return { status: 500, message: "Failed to upload avatar." };

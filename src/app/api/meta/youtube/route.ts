@@ -41,7 +41,7 @@ export async function GET(req: Request) {
 
   const watchUrl = `https://www.youtube.com/watch?v=${analysis.id}`;
   const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(
-    watchUrl
+    watchUrl,
   )}&format=json`;
 
   try {
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     if (!res.ok) {
       return NextResponse.json(
         { error: "Could not load video details from YouTube." },
-        { status: 502 }
+        { status: 502 },
       );
     }
 

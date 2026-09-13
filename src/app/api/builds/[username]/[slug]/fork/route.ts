@@ -2,11 +2,19 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createForkBuild } from "@/lib/builds/fork";
-import { forkBuildSchema, getNextForkNameForUser, normalizeBuildName, normalizeBuildTag } from "@/lib/builds/validation";
+import {
+  forkBuildSchema,
+  getNextForkNameForUser,
+  normalizeBuildName,
+  normalizeBuildTag,
+} from "@/lib/builds/validation";
 import { assertBuildRateLimit, BuildRateLimitError } from "@/lib/builds/rate-limit";
 import { interactionBlockReason } from "@/lib/moderation";
 
-export async function POST(request: Request, ctx: { params: Promise<{ username: string; slug: string }> }) {
+export async function POST(
+  request: Request,
+  ctx: { params: Promise<{ username: string; slug: string }> },
+) {
   const { username, slug } = await ctx.params;
 
   const session = await auth();

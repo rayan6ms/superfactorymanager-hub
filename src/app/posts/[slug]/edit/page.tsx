@@ -56,11 +56,11 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
     code: post.code,
     youtubeUrl: post.youtubeUrl ?? "",
     tags: post.tags
-      .map(tag => tag.tag)
+      .map((tag) => tag.tag)
       .filter((tag): tag is TagModel => Boolean(tag?.slug))
-      .map(tag => ({ slug: tag.slug, name: tag.name })),
-    dependencies: post.dependencies.map(dep => ({ url: dep.url, name: dep.name })),
-    existingImages: post.images.map(image => ({
+      .map((tag) => ({ slug: tag.slug, name: tag.name })),
+    dependencies: post.dependencies.map((dep) => ({ url: dep.url, name: dep.name })),
+    existingImages: post.images.map((image) => ({
       id: image.id,
       original: image.original,
       thumbSm: image.thumbSm,
@@ -70,7 +70,7 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
     openForImprovement: post.openForImprovement,
   };
 
-  const commits: CommitForHistory[] = post.commits.map(commit => ({
+  const commits: CommitForHistory[] = post.commits.map((commit) => ({
     id: commit.id,
     title: commit.title ?? null,
     message: commit.message,
@@ -78,21 +78,21 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
     createdAt: commit.createdAt.toISOString(),
     mergedAt: commit.mergedAt ? commit.mergedAt.toISOString() : null,
     rejectedAt: commit.rejectedAt ? commit.rejectedAt.toISOString() : null,
-    author: { id: commit.authorId, name: commit.author?.name ?? commit.author?.email ?? "Anonymous" },
+    author: {
+      id: commit.authorId,
+      name: commit.author?.name ?? commit.author?.email ?? "Anonymous",
+    },
     code: commit.code,
     baseCommitId: commit.baseCommitId,
   }));
 
-  const contributors: ContributorSummary[] = post.contributors.map(contributor => ({
+  const contributors: ContributorSummary[] = post.contributors.map((contributor) => ({
     id: contributor.userId,
     name: contributor.user?.name ?? contributor.user?.email ?? "Contributor",
     mergedCommits: contributor.mergedCommits,
   }));
 
-  const [categories, matrix] = await Promise.all([
-    getCategoryOptions(),
-    getSfmMatrix(false),
-  ]);
+  const [categories, matrix] = await Promise.all([getCategoryOptions(), getSfmMatrix(false)]);
 
   return (
     <div className="space-y-10">
@@ -123,7 +123,11 @@ export default async function EditPostPage(props: { params: Promise<{ slug: stri
       />
 
       {!isAuthor && post.openForImprovement && (
-        <CodeImprovementForm slug={slug} baseCommitId={post.currentCommitId} initialCode={post.code} />
+        <CodeImprovementForm
+          slug={slug}
+          baseCommitId={post.currentCommitId}
+          initialCode={post.code}
+        />
       )}
     </div>
   );

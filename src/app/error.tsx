@@ -18,9 +18,12 @@ export default function GlobalError({
   return (
     <main className="space-y-6 py-8">
       <Card className="space-y-4 p-6">
-        <h1 className="text-2xl font-semibold text-white">Some live content is temporarily unavailable</h1>
+        <h1 className="text-2xl font-semibold text-white">
+          Some live content is temporarily unavailable
+        </h1>
         <p className="text-white/70">
-          The site is still up, but a server-side dependency failed while loading this page. Try again in a moment or return to a public page.
+          The site is still up, but a server-side dependency failed while loading this page. Try
+          again in a moment or return to a public page.
         </p>
         <div className="flex flex-wrap gap-3">
           <button

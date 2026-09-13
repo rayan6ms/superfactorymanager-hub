@@ -9,10 +9,7 @@ import {
   NOTIFICATION_SYNC_EVENT,
   type SerializedNotification,
 } from "@/lib/notifications-shared";
-import {
-  dispatchNotificationSync,
-  type NotificationSyncDetail,
-} from "@/lib/notification-events";
+import { dispatchNotificationSync, type NotificationSyncDetail } from "@/lib/notification-events";
 
 type HeaderNotificationsProps = {
   initialNotifications: SerializedNotification[];
@@ -31,7 +28,7 @@ export default function HeaderNotifications({
   scrollClassName,
 }: HeaderNotificationsProps) {
   const [notifications, setNotifications] = useState<SerializedNotification[]>(
-    initialNotifications.filter(notification => !notification.readAt),
+    initialNotifications.filter((notification) => !notification.readAt),
   );
   const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
@@ -51,18 +48,18 @@ export default function HeaderNotifications({
       }
 
       if (detail.updates?.length) {
-        setNotifications(prev =>
+        setNotifications((prev) =>
           prev
-            .map(item => {
-              const update = detail.updates!.find(change => change.id === item.id);
+            .map((item) => {
+              const update = detail.updates!.find((change) => change.id === item.id);
               return update ? { ...item, readAt: update.readAt } : item;
             })
-            .filter(item => !item.readAt),
+            .filter((item) => !item.readAt),
         );
       }
 
       if (detail.preview) {
-        setNotifications(detail.preview.filter(item => !item.readAt));
+        setNotifications(detail.preview.filter((item) => !item.readAt));
       }
     }
 
@@ -70,25 +67,22 @@ export default function HeaderNotifications({
     return () => window.removeEventListener(NOTIFICATION_SYNC_EVENT, handle as EventListener);
   }, []);
 
-  const updateUnreadCount = useCallback(
-    (next: number | ((prev: number) => number)) => {
-      setUnreadCount(prev =>
-        typeof next === "function" ? (next as (value: number) => number)(prev) : next,
-      );
-    },
-    [],
-  );
+  const updateUnreadCount = useCallback((next: number | ((prev: number) => number)) => {
+    setUnreadCount((prev) =>
+      typeof next === "function" ? (next as (value: number) => number)(prev) : next,
+    );
+  }, []);
 
   const markAsRead = useCallback(
     async (id: string) => {
       if (pendingIds.has(id)) return;
 
-      const existingIndex = notifications.findIndex(item => item.id === id);
+      const existingIndex = notifications.findIndex((item) => item.id === id);
       const existingItem = existingIndex >= 0 ? notifications[existingIndex] : null;
-      const nextNotifications = notifications.filter(item => item.id !== id);
+      const nextNotifications = notifications.filter((item) => item.id !== id);
       const timestamp = new Date().toISOString();
 
-      setPendingIds(prev => {
+      setPendingIds((prev) => {
         const next = new Set(prev);
         next.add(id);
         return next;
@@ -107,14 +101,13 @@ export default function HeaderNotifications({
         if (!res.ok) throw new Error("Request failed");
 
         const data = (await res.json()) as ApiResponse;
-        const nextUnreadCount = typeof data.unreadCount === "number"
-          ? data.unreadCount
-          : Math.max(0, unreadCount - 1);
+        const nextUnreadCount =
+          typeof data.unreadCount === "number" ? data.unreadCount : Math.max(0, unreadCount - 1);
 
         if (typeof data.unreadCount === "number") {
           updateUnreadCount(data.unreadCount);
         } else {
-          updateUnreadCount(prev => Math.max(0, prev - 1));
+          updateUnreadCount((prev) => Math.max(0, prev - 1));
         }
         dispatchNotificationSync({
           unreadCount: nextUnreadCount,
@@ -125,16 +118,15 @@ export default function HeaderNotifications({
         console.error(err);
         setError("We couldn’t update that notification. Please try again.");
         if (existingItem) {
-          setNotifications(prev => {
-            if (prev.some(item => item.id === existingItem.id)) return prev;
+          setNotifications((prev) => {
+            if (prev.some((item) => item.id === existingItem.id)) return prev;
             const restored = [...prev];
             restored.splice(existingIndex, 0, existingItem);
             return restored;
           });
         }
-
       } finally {
-        setPendingIds(prev => {
+        setPendingIds((prev) => {
           const next = new Set(prev);
           next.delete(id);
           return next;
@@ -144,7 +136,7 @@ export default function HeaderNotifications({
     [notifications, pendingIds, unreadCount, updateUnreadCount],
   );
 
-  const derivedUnread = notifications.filter(n => !n.readAt).length;
+  const derivedUnread = notifications.filter((n) => !n.readAt).length;
   const labelCount = unreadCount ?? derivedUnread;
   const visibleCount = Math.min(notifications.length, 1);
   const extraCount = Math.max(0, labelCount - visibleCount);

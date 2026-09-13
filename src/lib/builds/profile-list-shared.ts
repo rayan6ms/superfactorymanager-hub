@@ -24,7 +24,10 @@ function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export function parseBuildPageSize(value: string | string[] | undefined, fallback = DEFAULT_PAGE_SIZE) {
+export function parseBuildPageSize(
+  value: string | string[] | undefined,
+  fallback = DEFAULT_PAGE_SIZE,
+) {
   const raw = firstValue(value);
   const parsed = Number(raw);
   if (!Number.isFinite(parsed)) return fallback;

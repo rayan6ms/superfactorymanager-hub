@@ -10,10 +10,7 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
 const Input = forwardRef<HTMLInputElement, Props>(
   ({ className, leftIcon, rightIcon, rightInteractive = false, ...props }, ref) => {
     const padClass = useMemo(() => {
-      return clsx(
-        leftIcon && "pl-9",
-        rightIcon && "pr-9"
-      );
+      return clsx(leftIcon && "pl-9", rightIcon && "pr-9");
     }, [leftIcon, rightIcon]);
 
     return (
@@ -30,7 +27,7 @@ const Input = forwardRef<HTMLInputElement, Props>(
             "placeholder:text-white/40 transition focus:border-brand-400/80 focus:ring-2 focus:ring-brand-400 focus:ring-offset-0",
             "hover:border-white/20",
             padClass,
-            className
+            className,
           )}
           {...props}
         />
@@ -38,7 +35,7 @@ const Input = forwardRef<HTMLInputElement, Props>(
           <div
             className={clsx(
               "absolute inset-y-0 right-0 flex items-center pr-3 text-white/50 [&>svg]:h-4 [&>svg]:w-4",
-              !rightInteractive && "pointer-events-none"
+              !rightInteractive && "pointer-events-none",
             )}
           >
             {rightIcon}
@@ -46,7 +43,7 @@ const Input = forwardRef<HTMLInputElement, Props>(
         )}
       </div>
     );
-  }
+  },
 );
 Input.displayName = "Input";
 export default Input;

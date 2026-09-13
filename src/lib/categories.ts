@@ -9,10 +9,11 @@ export type CategoryOption = {
 };
 
 const getCachedCategoryOptions = unstable_cache(
-  async (): Promise<CategoryOption[]> => db.category.findMany({
-    orderBy: { name: "asc" },
-    select: { key: true, name: true },
-  }),
+  async (): Promise<CategoryOption[]> =>
+    db.category.findMany({
+      orderBy: { name: "asc" },
+      select: { key: true, name: true },
+    }),
   ["public-category-options"],
   {
     revalidate: 60 * 60,

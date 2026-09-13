@@ -1,6 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useId, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useId,
+  type KeyboardEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import Link from "next/link";
@@ -78,9 +87,7 @@ type NewImage = {
   file: File;
 };
 
-type ComposerImageOrderItem =
-  | { type: "existing"; id: string }
-  | { type: "new"; id: string };
+type ComposerImageOrderItem = { type: "existing"; id: string } | { type: "new"; id: string };
 
 type PreviewItem = {
   key: string;
@@ -197,7 +204,7 @@ function cleanupOldDrafts() {
         window.localStorage.removeItem(key);
       }
     }
-  } catch { }
+  } catch {}
 }
 
 function SectionTitle({ title, description }: { title: string; description?: string }) {
@@ -210,7 +217,7 @@ function SectionTitle({ title, description }: { title: string; description?: str
 }
 
 function isUniformMarker(marker: MarkdownInlineMarker) {
-  return marker.split("").every(char => char === marker[0]);
+  return marker.split("").every((char) => char === marker[0]);
 }
 
 function hasExactMarkerAt(value: string, start: number, marker: MarkdownInlineMarker) {
@@ -228,7 +235,10 @@ function hasExactMarkerAt(value: string, start: number, marker: MarkdownInlineMa
 function isExactlyWrapped(value: string, marker: MarkdownInlineMarker) {
   if (value.length <= marker.length * 2) return false;
   if (!value.startsWith(marker) || !value.endsWith(marker)) return false;
-  return hasExactMarkerAt(value, 0, marker) && hasExactMarkerAt(value, value.length - marker.length, marker);
+  return (
+    hasExactMarkerAt(value, 0, marker) &&
+    hasExactMarkerAt(value, value.length - marker.length, marker)
+  );
 }
 
 function toggleExactMarkdown(
@@ -256,8 +266,8 @@ function toggleExactMarkdown(
     const closingStart = selectionEnd;
 
     if (
-      hasExactMarkerAt(value, openingStart, marker)
-      && hasExactMarkerAt(value, closingStart, marker)
+      hasExactMarkerAt(value, openingStart, marker) &&
+      hasExactMarkerAt(value, closingStart, marker)
     ) {
       return {
         nextValue: `${value.slice(0, openingStart)}${selected}${value.slice(closingStart + marker.length)}`,
@@ -292,10 +302,7 @@ export default function PostComposer({
   );
   const postId = initialData?.id;
 
-  const draftKey = useMemo(
-    () => getDraftStorageKey(mode, slug, postId),
-    [mode, slug, postId]
-  );
+  const draftKey = useMemo(() => getDraftStorageKey(mode, slug, postId), [mode, slug, postId]);
 
   const initialFormState = useMemo(
     () => ({
@@ -308,7 +315,16 @@ export default function PostComposer({
       youtubeUrl: initialData?.youtubeUrl ?? "",
       openForImprovement: initialData?.openForImprovement ?? false,
     }),
-    [initialData?.categoryKey, initialData?.code, initialData?.description, initialData?.gameVersion, initialData?.modVersion, initialData?.openForImprovement, initialData?.title, initialData?.youtubeUrl],
+    [
+      initialData?.categoryKey,
+      initialData?.code,
+      initialData?.description,
+      initialData?.gameVersion,
+      initialData?.modVersion,
+      initialData?.openForImprovement,
+      initialData?.title,
+      initialData?.youtubeUrl,
+    ],
   );
   const initialTags = useMemo(() => initialData?.tags ?? [], [initialData?.tags]);
   const initialDependencies = useMemo(
@@ -337,7 +353,9 @@ export default function PostComposer({
     warnings: [],
   });
   const [youtubePreview, setYoutubePreview] = useState<YoutubePreview | null>(null);
-  const [youtubePreviewStatus, setYoutubePreviewStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [youtubePreviewStatus, setYoutubePreviewStatus] = useState<"idle" | "loading" | "error">(
+    "idle",
+  );
   const [youtubePreviewMessage, setYoutubePreviewMessage] = useState<string | null>(null);
   const [youtubePreviewSource, setYoutubePreviewSource] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -346,19 +364,19 @@ export default function PostComposer({
   const [persistedImages, setPersistedImages] = useState<ExistingImage[]>(existingImages);
   const [newImages, setNewImages] = useState<NewImage[]>([]);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
-  const [imageOrder, setImageOrder] = useState<ComposerImageOrderItem[]>(
-    () => existingImages.map(image => ({ type: "existing", id: image.id })),
+  const [imageOrder, setImageOrder] = useState<ComposerImageOrderItem[]>(() =>
+    existingImages.map((image) => ({ type: "existing", id: image.id })),
   );
   const [limitedByMax, setLimitedByMax] = useState(false);
   const [wrapLines, setWrapLines] = useState(true);
-  const [imagePage, setImagePage] = useState(0)
+  const [imagePage, setImagePage] = useState(0);
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
   const [draftCleared, setDraftCleared] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const [descriptionMaxHeight, setDescriptionMaxHeight] = useState<number | null>(null);
   const saveDraftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const newFiles = useMemo(() => newImages.map(image => image.file), [newImages]);
+  const newFiles = useMemo(() => newImages.map((image) => image.file), [newImages]);
   const newImageIndexById = useMemo(
     () => new Map(newImages.map((image, index) => [image.id, index])),
     [newImages],
@@ -418,63 +436,60 @@ export default function PostComposer({
     };
   }, []);
 
-  const previewItems = useMemo<PreviewItem[]>(
-    () => {
-      const existingById = new Map(persistedImages.map(image => [image.id, image]));
-      const newImagesById = new Map(newImages.map(image => [image.id, image]));
-      const items: PreviewItem[] = [];
+  const previewItems = useMemo<PreviewItem[]>(() => {
+    const existingById = new Map(persistedImages.map((image) => [image.id, image]));
+    const newImagesById = new Map(newImages.map((image) => [image.id, image]));
+    const items: PreviewItem[] = [];
 
-      imageOrder.forEach((item, orderIndex) => {
-        if (item.type === "existing") {
-          const image = existingById.get(item.id);
-          if (!image) return;
+    imageOrder.forEach((item, orderIndex) => {
+      if (item.type === "existing") {
+        const image = existingById.get(item.id);
+        if (!image) return;
 
-          const src = image.thumbMd || image.thumbLg || image.thumbSm || image.original;
-          items.push({
-            key: image.id,
-            type: "existing",
-            src,
-            labelIndex: orderIndex,
-            orderIndex,
-            galleryImage: {
-              id: image.id,
-              original: image.original,
-              thumbSm: image.thumbSm || image.original,
-              thumbMd: image.thumbMd || image.original,
-              thumbLg: image.thumbLg || image.original,
-            },
-          });
-          return;
-        }
-
-        const image = newImagesById.get(item.id);
-        const src = previewUrls[item.id];
-        if (!image || !src) return;
-
+        const src = image.thumbMd || image.thumbLg || image.thumbSm || image.original;
         items.push({
-          key: item.id,
-          type: "new",
+          key: image.id,
+          type: "existing",
           src,
           labelIndex: orderIndex,
           orderIndex,
-          fileName: image.file.name,
           galleryImage: {
-            id: item.id,
-            original: src,
-            thumbSm: src,
-            thumbMd: src,
-            thumbLg: src,
+            id: image.id,
+            original: image.original,
+            thumbSm: image.thumbSm || image.original,
+            thumbMd: image.thumbMd || image.original,
+            thumbLg: image.thumbLg || image.original,
           },
         });
-      });
+        return;
+      }
 
-      return items;
-    },
-    [imageOrder, newImages, persistedImages, previewUrls],
-  );
+      const image = newImagesById.get(item.id);
+      const src = previewUrls[item.id];
+      if (!image || !src) return;
+
+      items.push({
+        key: item.id,
+        type: "new",
+        src,
+        labelIndex: orderIndex,
+        orderIndex,
+        fileName: image.file.name,
+        galleryImage: {
+          id: item.id,
+          original: src,
+          thumbSm: src,
+          thumbMd: src,
+          thumbLg: src,
+        },
+      });
+    });
+
+    return items;
+  }, [imageOrder, newImages, persistedImages, previewUrls]);
 
   const galleryImages: GalleryImage[] = useMemo(
-    () => previewItems.map(item => item.galleryImage),
+    () => previewItems.map((item) => item.galleryImage),
     [previewItems],
   );
 
@@ -489,7 +504,7 @@ export default function PostComposer({
   const codeWarningsId = `${idPrefix}-code-warnings`;
   const errorMarkers = useMemo(
     () =>
-      codeFeedback.syntaxErrors.map(error => ({
+      codeFeedback.syntaxErrors.map((error) => ({
         line: error.lineStart,
         message: error.message,
       })),
@@ -498,7 +513,7 @@ export default function PostComposer({
 
   const warningRanges = useMemo(
     () =>
-      codeFeedback.warnings.map(warning => ({
+      codeFeedback.warnings.map((warning) => ({
         startLine: warning.lineStart,
         endLine: warning.lineEnd ?? warning.lineStart,
         message: warning.message,
@@ -513,7 +528,7 @@ export default function PostComposer({
     setPersistedImages(existingImages);
     setNewImages([]);
     setPreviewUrls({});
-    setImageOrder(existingImages.map(image => ({ type: "existing", id: image.id })));
+    setImageOrder(existingImages.map((image) => ({ type: "existing", id: image.id })));
     setErrors({ ...INITIAL_ERRORS });
     setTouched({ ...INITIAL_TOUCHED });
     setSubmitError(null);
@@ -523,7 +538,7 @@ export default function PostComposer({
     if (typeof window !== "undefined") {
       try {
         window.localStorage.removeItem(draftKey);
-      } catch { }
+      } catch {}
     }
 
     if (draftClearTimeoutRef.current) {
@@ -532,102 +547,116 @@ export default function PostComposer({
     draftClearTimeoutRef.current = setTimeout(() => setDraftCleared(false), 4000);
   }, [draftKey, existingImages, initialDependencies, initialFormState, initialTags]);
 
-  const computeImagesError = useCallback((list: File[], existing: ExistingImage[] = persistedImages) => {
-    const total = list.length + existing.length;
-    if (total === 0) return "Upload at least one image to showcase your build.";
-    if (total > MAX_IMAGE_COUNT) {
-      return `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`;
-    }
-    for (const file of list) {
-      const sizeMb = file.size / (1024 * 1024);
-      if (sizeMb > MAX_IMAGE_MB) {
-        return `"${file.name}" is ${sizeMb.toFixed(1)}MB. Each image must be ${MAX_IMAGE_MB}MB or smaller.`;
+  const computeImagesError = useCallback(
+    (list: File[], existing: ExistingImage[] = persistedImages) => {
+      const total = list.length + existing.length;
+      if (total === 0) return "Upload at least one image to showcase your build.";
+      if (total > MAX_IMAGE_COUNT) {
+        return `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`;
       }
-    }
-    return null;
-  }, [persistedImages]);
+      for (const file of list) {
+        const sizeMb = file.size / (1024 * 1024);
+        if (sizeMb > MAX_IMAGE_MB) {
+          return `"${file.name}" is ${sizeMb.toFixed(1)}MB. Each image must be ${MAX_IMAGE_MB}MB or smaller.`;
+        }
+      }
+      return null;
+    },
+    [persistedImages],
+  );
 
-  const validateField = useCallback((key: TextFieldKey, value: string, current: FormState): string | null => {
-    const trimmed = value.trim();
-    switch (key) {
-      case "title": {
-        if (!trimmed) return "Title is required.";
-        if (trimmed.length > MAX_TITLE_LENGTH) {
-          return `Title must be ${MAX_TITLE_LENGTH} characters or fewer (currently ${trimmed.length}).`;
+  const validateField = useCallback(
+    (key: TextFieldKey, value: string, current: FormState): string | null => {
+      const trimmed = value.trim();
+      switch (key) {
+        case "title": {
+          if (!trimmed) return "Title is required.";
+          if (trimmed.length > MAX_TITLE_LENGTH) {
+            return `Title must be ${MAX_TITLE_LENGTH} characters or fewer (currently ${trimmed.length}).`;
+          }
+          return null;
         }
-        return null;
+        case "gameVersion":
+          return trimmed ? null : "Choose a Minecraft version.";
+        case "modVersion": {
+          if (!current.gameVersion) return "Choose a Minecraft version first.";
+          if (!trimmed) return "Choose an SFM mod version.";
+          const allowed = matrix.byGame[current.gameVersion] || [];
+          if (!allowed.includes(trimmed)) {
+            return `SFM ${trimmed} is not available for Minecraft ${current.gameVersion}.`;
+          }
+          return null;
+        }
+        case "categoryKey": {
+          if (categoriesLoading) return null;
+          if (categoriesError && !categories.length) {
+            return "Categories failed to load. Try refreshing the page.";
+          }
+          if (!trimmed) return "Choose a category for your post.";
+          if (!categories.find((category) => category.key === trimmed)) {
+            return "Pick one of the available categories.";
+          }
+          return null;
+        }
+        case "description": {
+          const normalized = normalizePostDescription(value);
+          if (!normalized) return "Description is required.";
+          if (normalized.length < POST_DESCRIPTION_MIN_LENGTH) {
+            return `Description must be at least ${POST_DESCRIPTION_MIN_LENGTH} characters (currently ${normalized.length}).`;
+          }
+          if (normalized.length > POST_DESCRIPTION_MAX_LENGTH) {
+            return `Description must be at most ${POST_DESCRIPTION_MAX_LENGTH} characters (currently ${normalized.length}).`;
+          }
+          return null;
+        }
+        case "code":
+          return trimmed ? null : "Code is required.";
+        case "youtubeUrl": {
+          if (!trimmed) return null;
+          const analysis = analyzeYoutubeUrl(trimmed);
+          return analysis.ok ? null : analysis.message;
+        }
+        default:
+          return null;
       }
-      case "gameVersion":
-        return trimmed ? null : "Choose a Minecraft version.";
-      case "modVersion": {
-        if (!current.gameVersion) return "Choose a Minecraft version first.";
-        if (!trimmed) return "Choose an SFM mod version.";
-        const allowed = matrix.byGame[current.gameVersion] || [];
-        if (!allowed.includes(trimmed)) {
-          return `SFM ${trimmed} is not available for Minecraft ${current.gameVersion}.`;
-        }
-        return null;
-      }
-      case "categoryKey": {
-        if (categoriesLoading) return null;
-        if (categoriesError && !categories.length) {
-          return "Categories failed to load. Try refreshing the page.";
-        }
-        if (!trimmed) return "Choose a category for your post.";
-        if (!categories.find(category => category.key === trimmed)) {
-          return "Pick one of the available categories.";
-        }
-        return null;
-      }
-      case "description": {
-        const normalized = normalizePostDescription(value);
-        if (!normalized) return "Description is required.";
-        if (normalized.length < POST_DESCRIPTION_MIN_LENGTH) {
-          return `Description must be at least ${POST_DESCRIPTION_MIN_LENGTH} characters (currently ${normalized.length}).`;
-        }
-        if (normalized.length > POST_DESCRIPTION_MAX_LENGTH) {
-          return `Description must be at most ${POST_DESCRIPTION_MAX_LENGTH} characters (currently ${normalized.length}).`;
-        }
-        return null;
-      }
-      case "code":
-        return trimmed ? null : "Code is required.";
-      case "youtubeUrl": {
-        if (!trimmed) return null;
-        const analysis = analyzeYoutubeUrl(trimmed);
-        return analysis.ok ? null : analysis.message;
-      }
-      default:
-        return null;
-    }
-  }, [categories, categoriesError, categoriesLoading, matrix]);
+    },
+    [categories, categoriesError, categoriesLoading, matrix],
+  );
 
-  const change = useCallback(<K extends TextFieldKey>(key: K, value: FormState[K]) => {
-    if (key === "code") {
-      const nextValue = value as string;
-      setForm(state => ({ ...state, code: nextValue }));
-      const trimmed = nextValue.trim();
-      if (!trimmed) {
-        setCodeFeedback({ status: "error", message: "Code is required.", syntaxErrors: [], warnings: [] });
+  const change = useCallback(
+    <K extends TextFieldKey>(key: K, value: FormState[K]) => {
+      if (key === "code") {
+        const nextValue = value as string;
+        setForm((state) => ({ ...state, code: nextValue }));
+        const trimmed = nextValue.trim();
+        if (!trimmed) {
+          setCodeFeedback({
+            status: "error",
+            message: "Code is required.",
+            syntaxErrors: [],
+            warnings: [],
+          });
+        }
+        setErrors((prev) => {
+          const nextMessage = trimmed ? prev.code : "Code is required.";
+          if (prev.code === nextMessage) return prev;
+          return { ...prev, code: nextMessage };
+        });
+        return;
       }
-      setErrors(prev => {
-        const nextMessage = trimmed ? prev.code : "Code is required.";
-        if (prev.code === nextMessage) return prev;
-        return { ...prev, code: nextMessage };
+
+      setForm((state) => {
+        const next = { ...state, [key]: value };
+        const message = validateField(key, value as string, next);
+        setErrors((prev) => {
+          if (prev[key] === message) return prev;
+          return { ...prev, [key]: message };
+        });
+        return next;
       });
-      return;
-    }
-
-    setForm(state => {
-      const next = { ...state, [key]: value };
-      const message = validateField(key, value as string, next);
-      setErrors(prev => {
-        if (prev[key] === message) return prev;
-        return { ...prev, [key]: message };
-      });
-      return next;
-    });
-  }, [validateField]);
+    },
+    [validateField],
+  );
 
   const validateTags = useCallback((list: NormalizedTag[]): string | null => {
     if (list.length < TAG_MIN_COUNT) {
@@ -672,7 +701,7 @@ export default function PostComposer({
 
   const blockingMessages = useMemo(() => {
     const unique = new Set<string>();
-    Object.values(formEvaluations).forEach(message => {
+    Object.values(formEvaluations).forEach((message) => {
       if (message) unique.add(message);
     });
     return Array.from(unique);
@@ -685,13 +714,13 @@ export default function PostComposer({
   );
 
   const markTouched = useCallback((key: FormErrorKey) => {
-    setTouched(prev => (prev[key] ? prev : { ...prev, [key]: true }));
+    setTouched((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
   }, []);
 
   const touchAll = useCallback(() => {
-    setTouched(prev => {
+    setTouched((prev) => {
       const next: Record<FormErrorKey, boolean> = { ...prev };
-      (Object.keys(next) as FormErrorKey[]).forEach(k => {
+      (Object.keys(next) as FormErrorKey[]).forEach((k) => {
         next[k] = true;
       });
       return next;
@@ -711,7 +740,7 @@ export default function PostComposer({
       }
       const normalized = normalizeTag(parsed.data);
 
-      if (tags.some(tag => tag.slug === normalized.slug)) {
+      if (tags.some((tag) => tag.slug === normalized.slug)) {
         setTagError("This tag is already added.");
         return false;
       }
@@ -721,8 +750,8 @@ export default function PostComposer({
         return false;
       }
 
-      setTags(prev => {
-        if (prev.some(tag => tag.slug === normalized.slug) || prev.length >= TAG_MAX_COUNT) {
+      setTags((prev) => {
+        if (prev.some((tag) => tag.slug === normalized.slug) || prev.length >= TAG_MAX_COUNT) {
           return prev;
         }
         return [...prev, normalized];
@@ -731,16 +760,16 @@ export default function PostComposer({
       markTouched("tags");
       return true;
     },
-    [markTouched, tags]
+    [markTouched, tags],
   );
 
   const addTagsFromInput = useCallback(
     (values: string[]) => {
-      values.forEach(value => {
+      values.forEach((value) => {
         void tryAddTag(value);
       });
     },
-    [tryAddTag]
+    [tryAddTag],
   );
 
   const handleTagInputChange = useCallback(
@@ -755,7 +784,7 @@ export default function PostComposer({
       }
       setTagInput(value);
     },
-    [addTagsFromInput]
+    [addTagsFromInput],
   );
 
   const commitTagInput = useCallback(() => {
@@ -768,29 +797,32 @@ export default function PostComposer({
     }
   }, [tagInput, tryAddTag]);
 
-  const handleTagInputKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter" && event.key !== ",") return;
+  const handleTagInputKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== "Enter" && event.key !== ",") return;
 
-    event.preventDefault();
+      event.preventDefault();
 
-    const rawValue = event.currentTarget.value;
-    if (!rawValue.trim()) {
-      setTagInput("");
-      return;
-    }
+      const rawValue = event.currentTarget.value;
+      if (!rawValue.trim()) {
+        setTagInput("");
+        return;
+      }
 
-    if (tryAddTag(rawValue)) {
-      setTagInput("");
-    }
-  }, [tryAddTag]);
+      if (tryAddTag(rawValue)) {
+        setTagInput("");
+      }
+    },
+    [tryAddTag],
+  );
 
   const removeTag = useCallback(
     (slug: string) => {
-      setTags(prev => prev.filter(tag => tag.slug !== slug));
+      setTags((prev) => prev.filter((tag) => tag.slug !== slug));
       setTagError(null);
       markTouched("tags");
     },
-    [markTouched]
+    [markTouched],
   );
 
   useEffect(() => {
@@ -839,8 +871,8 @@ export default function PostComposer({
   }, [initialCategories]);
 
   const modOptions = useMemo(
-    () => (form.gameVersion ? (matrix.byGame[form.gameVersion] || []) : []),
-    [form.gameVersion, matrix]
+    () => (form.gameVersion ? matrix.byGame[form.gameVersion] || [] : []),
+    [form.gameVersion, matrix],
   );
 
   const previousGameVersionRef = useRef(form.gameVersion);
@@ -857,12 +889,12 @@ export default function PostComposer({
       return;
     }
     const maxPage = Math.max(0, Math.ceil(previewItems.length / IMAGES_PER_PAGE) - 1);
-    setImagePage(prev => (prev > maxPage ? maxPage : prev));
+    setImagePage((prev) => (prev > maxPage ? maxPage : prev));
   }, [previewItems.length]);
 
   useEffect(() => {
     const message = validateTags(tags);
-    setErrors(prev => (prev.tags === message ? prev : { ...prev, tags: message }));
+    setErrors((prev) => (prev.tags === message ? prev : { ...prev, tags: message }));
   }, [tags, validateTags]);
 
   useEffect(() => {
@@ -873,30 +905,30 @@ export default function PostComposer({
     const message = limitedByMax
       ? `You can upload up to ${MAX_IMAGE_COUNT} images. Remove one to add another.`
       : computeImagesError(newFiles, persistedImages);
-    setErrors(prev => (prev.images === message ? prev : { ...prev, images: message }));
+    setErrors((prev) => (prev.images === message ? prev : { ...prev, images: message }));
     if (!newImages.length) {
-      setPreviewUrls(prev => (Object.keys(prev).length ? {} : prev));
+      setPreviewUrls((prev) => (Object.keys(prev).length ? {} : prev));
       return;
     }
     const urls = Object.fromEntries(
-      newImages.map(image => [image.id, URL.createObjectURL(image.file)]),
+      newImages.map((image) => [image.id, URL.createObjectURL(image.file)]),
     );
     setPreviewUrls(urls);
-    return () => Object.values(urls).forEach(url => URL.revokeObjectURL(url));
+    return () => Object.values(urls).forEach((url) => URL.revokeObjectURL(url));
   }, [newFiles, newImages, computeImagesError, limitedByMax, persistedImages, totalImageSlots]);
 
   const removeNewImage = useCallback((id: string) => {
-    setNewImages(prev => prev.filter(image => image.id !== id));
-    setImageOrder(prev => prev.filter(item => !(item.type === "new" && item.id === id)));
+    setNewImages((prev) => prev.filter((image) => image.id !== id));
+    setImageOrder((prev) => prev.filter((item) => !(item.type === "new" && item.id === id)));
   }, []);
 
   const removeExistingImage = useCallback((id: string) => {
-    setPersistedImages(prev => prev.filter(image => image.id !== id));
-    setImageOrder(prev => prev.filter(item => !(item.type === "existing" && item.id === id)));
+    setPersistedImages((prev) => prev.filter((image) => image.id !== id));
+    setImageOrder((prev) => prev.filter((item) => !(item.type === "existing" && item.id === id)));
   }, []);
 
   const moveImage = useCallback((from: number, to: number) => {
-    setImageOrder(prev => {
+    setImageOrder((prev) => {
       if (to < 0 || to >= prev.length) return prev;
       const next = [...prev];
       const [item] = next.splice(from, 1);
@@ -961,18 +993,14 @@ export default function PostComposer({
         case "ul":
           replacement = text
             .split("\n")
-            .map(line =>
-              line
-                ? `- ${line.replace(/^\s*[-*]\s*/, "")}`
-                : "- "
-            )
+            .map((line) => (line ? `- ${line.replace(/^\s*[-*]\s*/, "")}` : "- "))
             .join("\n");
           break;
         case "ol":
           replacement = text
             .split("\n")
-            .map((line, index) =>
-              `${index + 1}. ${line.replace(/^\s*\d+\.\s*/, "") || "List item"}`
+            .map(
+              (line, index) => `${index + 1}. ${line.replace(/^\s*\d+\.\s*/, "") || "List item"}`,
             )
             .join("\n");
           break;
@@ -1024,7 +1052,7 @@ export default function PostComposer({
       if (raw) {
         const parsed = JSON.parse(raw) as DraftPayload;
         if (parsed.v === DRAFT_VERSION) {
-          setForm(prev => ({ ...prev, ...parsed.form }));
+          setForm((prev) => ({ ...prev, ...parsed.form }));
           setTags(parsed.tags ?? []);
           setDeps(parsed.deps ?? []);
         }
@@ -1042,9 +1070,9 @@ export default function PostComposer({
     try {
       const prefillCode = window.sessionStorage.getItem(POST_COMPOSER_PREFILL_CODE_KEY);
       if (!prefillCode) return;
-      setForm(prev => ({ ...prev, code: prefillCode }));
+      setForm((prev) => ({ ...prev, code: prefillCode }));
       window.sessionStorage.removeItem(POST_COMPOSER_PREFILL_CODE_KEY);
-    } catch { }
+    } catch {}
   }, [mode]);
 
   useEffect(() => {
@@ -1066,7 +1094,7 @@ export default function PostComposer({
 
       try {
         window.localStorage.setItem(draftKey, JSON.stringify(payload));
-      } catch { }
+      } catch {}
     }, 500);
 
     return () => {
@@ -1076,10 +1104,13 @@ export default function PostComposer({
     };
   }, [form, tags, deps, draftKey, hasLoadedDraft]);
 
-  useEffect(() => scheduleSfmlAnalysis(form.code, { required: true }, setCodeFeedback), [form.code]);
+  useEffect(
+    () => scheduleSfmlAnalysis(form.code, { required: true }, setCodeFeedback),
+    [form.code],
+  );
 
   useEffect(() => {
-    setErrors(prev => {
+    setErrors((prev) => {
       if (prev.code === codeFeedback.message) return prev;
       return { ...prev, code: codeFeedback.message };
     });
@@ -1145,7 +1176,12 @@ export default function PostComposer({
     if (!raw || depLoading) return;
 
     let url: URL;
-    try { url = new URL(raw); } catch { setDepError("Invalid URL"); return; }
+    try {
+      url = new URL(raw);
+    } catch {
+      setDepError("Invalid URL");
+      return;
+    }
     if (!(url.hostname.includes("curseforge.com") || url.hostname.includes("modrinth.com"))) {
       setDepError("Must be a CurseForge or Modrinth link");
       return;
@@ -1154,17 +1190,23 @@ export default function PostComposer({
       setDepLoading(true);
       const res = await fetch(`/api/meta/dep/resolve?url=${encodeURIComponent(url.toString())}`);
       const data = await res.json();
-      if (!res.ok) { setDepError(data.error || "Could not resolve"); return; }
+      if (!res.ok) {
+        setDepError(data.error || "Could not resolve");
+        return;
+      }
 
-      if (deps.find(d => d.url === url.toString())) { setDepsInput(""); return; }
-      setDeps(d => [...d, { url: url.toString(), name: data.name }]);
+      if (deps.find((d) => d.url === url.toString())) {
+        setDepsInput("");
+        return;
+      }
+      setDeps((d) => [...d, { url: url.toString(), name: data.name }]);
       setDepsInput("");
     } finally {
       setDepLoading(false);
     }
   };
 
-  const removeDep = (u: string) => setDeps(ds => ds.filter(d => d.url !== u));
+  const removeDep = (u: string) => setDeps((ds) => ds.filter((d) => d.url !== u));
 
   const submit = async () => {
     setSubmitted(true);
@@ -1226,7 +1268,7 @@ export default function PostComposer({
           return;
         }
 
-        uploadedImages = (uploadPayload as UploadedImage[]).map(img => ({
+        uploadedImages = (uploadPayload as UploadedImage[]).map((img) => ({
           original: img?.original,
           thumbSm: img?.thumbSm ?? undefined,
           thumbMd: img?.thumbMd ?? undefined,
@@ -1242,21 +1284,24 @@ export default function PostComposer({
         dependencies: deps.map((d) => d.url),
         tags: tags.map((tag) => tag.name),
         images: uploadedImages,
-        keepImageIds: persistedImages.map(image => image.id),
-        imageOrder: imageOrder.reduce<Array<{ existingId: string } | { uploadIndex: number }>>((ordered, item) => {
-          if (item.type === "existing") {
-            if (persistedImages.some(image => image.id === item.id)) {
-              ordered.push({ existingId: item.id });
+        keepImageIds: persistedImages.map((image) => image.id),
+        imageOrder: imageOrder.reduce<Array<{ existingId: string } | { uploadIndex: number }>>(
+          (ordered, item) => {
+            if (item.type === "existing") {
+              if (persistedImages.some((image) => image.id === item.id)) {
+                ordered.push({ existingId: item.id });
+              }
+              return ordered;
+            }
+
+            const uploadIndex = newImageIndexById.get(item.id);
+            if (uploadIndex !== undefined) {
+              ordered.push({ uploadIndex });
             }
             return ordered;
-          }
-
-          const uploadIndex = newImageIndexById.get(item.id);
-          if (uploadIndex !== undefined) {
-            ordered.push({ uploadIndex });
-          }
-          return ordered;
-        }, []),
+          },
+          [],
+        ),
         code: form.code,
         description: normalizedDescription,
         youtubeUrl: form.youtubeUrl.trim(),
@@ -1274,9 +1319,9 @@ export default function PostComposer({
       if (!res.ok) {
         setSubmitError(
           data.error ||
-          (isEditMode
-            ? "We couldn't save your changes. Double-check the details and try again."
-            : "We couldn't publish your post. Check the details and try again."),
+            (isEditMode
+              ? "We couldn't save your changes. Double-check the details and try again."
+              : "We couldn't publish your post. Check the details and try again."),
         );
         return;
       }
@@ -1284,7 +1329,7 @@ export default function PostComposer({
       if (typeof window !== "undefined") {
         try {
           window.localStorage.removeItem(draftKey);
-        } catch { }
+        } catch {}
       }
 
       if (isEditMode && slug) {
@@ -1294,9 +1339,7 @@ export default function PostComposer({
       }
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while publishing your post.";
+        error instanceof Error ? error.message : "Something went wrong while publishing your post.";
       setSubmitError(message);
     } finally {
       setLoading(false);
@@ -1307,9 +1350,12 @@ export default function PostComposer({
     <div className="space-y-8">
       {isEditMode && (
         <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
-          <p className="font-semibold text-amber-100">Editing this post will clear all verification votes.</p>
+          <p className="font-semibold text-amber-100">
+            Editing this post will clear all verification votes.
+          </p>
           <p className="text-amber-100/80">
-            Publish updates only when you are ready&mdash;the community will have to verify the new version again.
+            Publish updates only when you are ready&mdash;the community will have to verify the new
+            version again.
           </p>
         </div>
       )}
@@ -1326,13 +1372,14 @@ export default function PostComposer({
                 id="title"
                 placeholder="Give your post a clear, descriptive title"
                 value={form.title}
-                onChange={e => change("title", e.target.value)}
+                onChange={(e) => change("title", e.target.value)}
                 onBlur={() => markTouched("title")}
                 maxLength={MAX_TITLE_LENGTH}
                 aria-invalid={shouldShowError("title") || undefined}
                 aria-describedby={shouldShowError("title") ? errorId("title") : undefined}
                 className={clsx(
-                  shouldShowError("title") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
+                  shouldShowError("title") &&
+                    "border-red-500/60 focus:ring-red-400 focus:border-red-500/70",
                 )}
               />
               <div className="flex items-center justify-between text-xs text-white/45">
@@ -1359,16 +1406,18 @@ export default function PostComposer({
                     "h-12 w-full rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 text-sm font-medium text-white focus:ring-2",
                     shouldShowError("gameVersion")
                       ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
-                      : "focus:border-brand-400 focus:ring-brand-400"
+                      : "focus:border-brand-400 focus:ring-brand-400",
                   )}
                   value={form.gameVersion}
-                  onChange={e => change("gameVersion", e.target.value)}
+                  onChange={(e) => change("gameVersion", e.target.value)}
                   onBlur={() => markTouched("gameVersion")}
                   aria-invalid={shouldShowError("gameVersion") || undefined}
-                  aria-describedby={shouldShowError("gameVersion") ? errorId("gameVersion") : undefined}
+                  aria-describedby={
+                    shouldShowError("gameVersion") ? errorId("gameVersion") : undefined
+                  }
                 >
                   <option value="">Select a Minecraft version…</option>
-                  {matrix.gameVersions.map(v => (
+                  {matrix.gameVersions.map((v) => (
                     <option key={v} value={v}>
                       {v}
                     </option>
@@ -1392,19 +1441,19 @@ export default function PostComposer({
                       "h-12 w-full appearance-none rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 text-sm font-medium text-white focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
                       shouldShowError("modVersion")
                         ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
-                        : "focus:border-brand-400 focus:ring-brand-400"
+                        : "focus:border-brand-400 focus:ring-brand-400",
                     )}
                     value={form.modVersion}
                     disabled={!form.gameVersion}
-                    onChange={e => change("modVersion", e.target.value)}
+                    onChange={(e) => change("modVersion", e.target.value)}
                     onBlur={() => markTouched("modVersion")}
                     aria-invalid={shouldShowError("modVersion") || undefined}
-                    aria-describedby={shouldShowError("modVersion") ? errorId("modVersion") : undefined}
+                    aria-describedby={
+                      shouldShowError("modVersion") ? errorId("modVersion") : undefined
+                    }
                   >
-                    <option value="">
-                      {form.gameVersion ? "Select an SFM mod version…" : ""}
-                    </option>
-                    {modOptions.map(v => (
+                    <option value="">{form.gameVersion ? "Select an SFM mod version…" : ""}</option>
+                    {modOptions.map((v) => (
                       <option key={v} value={v}>
                         {v}
                       </option>
@@ -1434,19 +1483,21 @@ export default function PostComposer({
                   "h-12 w-full rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 text-sm font-medium text-white focus:ring-2",
                   shouldShowError("categoryKey")
                     ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
-                    : "focus:border-brand-400 focus:ring-brand-400"
+                    : "focus:border-brand-400 focus:ring-brand-400",
                 )}
                 value={form.categoryKey}
-                onChange={e => change("categoryKey", e.target.value)}
+                onChange={(e) => change("categoryKey", e.target.value)}
                 onBlur={() => markTouched("categoryKey")}
                 disabled={categoriesLoading && !categories.length}
                 aria-invalid={shouldShowError("categoryKey") || undefined}
-                aria-describedby={shouldShowError("categoryKey") ? errorId("categoryKey") : undefined}
+                aria-describedby={
+                  shouldShowError("categoryKey") ? errorId("categoryKey") : undefined
+                }
               >
                 <option value="">
                   {categoriesLoading ? "Loading categories…" : "Select a category…"}
                 </option>
-                {categories.map(category => (
+                {categories.map((category) => (
                   <option key={category.key} value={category.key}>
                     {category.name}
                   </option>
@@ -1462,7 +1513,10 @@ export default function PostComposer({
 
             <div className="space-y-3">
               <label htmlFor="tags" className="text-sm font-medium text-white/75">
-                Tags <span className="text-white/45">({TAG_MIN_COUNT}–{TAG_MAX_COUNT} required)</span>
+                Tags{" "}
+                <span className="text-white/45">
+                  ({TAG_MIN_COUNT}–{TAG_MAX_COUNT} required)
+                </span>
               </label>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex-1 space-y-2">
@@ -1470,7 +1524,7 @@ export default function PostComposer({
                     id="tags"
                     placeholder="Add tags like automation, redstone, megabase"
                     value={tagInput}
-                    onChange={e => handleTagInputChange(e.target.value)}
+                    onChange={(e) => handleTagInputChange(e.target.value)}
                     onBlur={() => markTouched("tags")}
                     onKeyDown={handleTagInputKeyDown}
                     maxLength={MAX_TAG_LENGTH}
@@ -1478,11 +1532,13 @@ export default function PostComposer({
                     aria-describedby={shouldShowError("tags") ? errorId("tags") : undefined}
                     disabled={tags.length >= TAG_MAX_COUNT}
                     className={clsx(
-                      shouldShowError("tags") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
+                      shouldShowError("tags") &&
+                        "border-red-500/60 focus:ring-red-400 focus:border-red-500/70",
                     )}
                   />
                   <p className="text-xs text-white/60">
-                    Separate tags with commas or use the add button. Each tag can be up to {MAX_TAG_LENGTH} characters.
+                    Separate tags with commas or use the add button. Each tag can be up to{" "}
+                    {MAX_TAG_LENGTH} characters.
                   </p>
                 </div>
                 <Button
@@ -1504,7 +1560,7 @@ export default function PostComposer({
               )}
               {!!tags.length && (
                 <div className="flex flex-wrap gap-2">
-                  {tags.map(tag => (
+                  {tags.map((tag) => (
                     <span
                       key={tag.slug}
                       className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-sm text-white/85"
@@ -1545,7 +1601,7 @@ export default function PostComposer({
                   id="dependency"
                   placeholder="Paste a CurseForge or Modrinth link"
                   value={depsInput}
-                  onChange={e => setDepsInput(e.target.value)}
+                  onChange={(e) => setDepsInput(e.target.value)}
                   disabled={depLoading}
                 />
               </div>
@@ -1566,7 +1622,7 @@ export default function PostComposer({
             {depError && <p className="text-sm text-error">{depError}</p>}
             {!!deps.length && (
               <div className="flex flex-wrap gap-2">
-                {deps.map(d => (
+                {deps.map((d) => (
                   <a
                     key={d.url}
                     href={d.url}
@@ -1574,10 +1630,12 @@ export default function PostComposer({
                     rel="noopener noreferrer"
                     className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm no-underline"
                   >
-                    <span className="font-medium text-white/85 group-hover:text-white">{d.name}</span>
+                    <span className="font-medium text-white/85 group-hover:text-white">
+                      {d.name}
+                    </span>
                     <button
                       type="button"
-                      onClick={e => {
+                      onClick={(e) => {
                         e.preventDefault();
                         removeDep(d.url);
                       }}
@@ -1675,12 +1733,12 @@ export default function PostComposer({
                 "min-h-40 w-full resize-y overflow-y-auto rounded-2xl border border-white/10 bg-(--surface-2)/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:ring-2",
                 shouldShowError("description")
                   ? "focus:ring-red-400 focus:border-red-500/70 border-red-500/60"
-                  : "focus:border-brand-400 focus:ring-brand-400"
+                  : "focus:border-brand-400 focus:ring-brand-400",
               )}
               style={descriptionMaxHeight ? { maxHeight: descriptionMaxHeight } : undefined}
               placeholder="Describe the goal, features, and any setup instructions"
               value={form.description}
-              onChange={e => change("description", e.target.value)}
+              onChange={(e) => change("description", e.target.value)}
               onBlur={() => markTouched("description")}
               aria-invalid={shouldShowError("description") || undefined}
               aria-describedby={shouldShowError("description") ? errorId("description") : undefined}
@@ -1694,12 +1752,11 @@ export default function PostComposer({
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <p className={clsx(tooLong ? "text-red-300" : "text-white/45")}>
                     {length}/{POST_DESCRIPTION_MAX_LENGTH} characters{" "}
-                    <span className="text-white/50">
-                      (minimum {POST_DESCRIPTION_MIN_LENGTH})
-                    </span>
+                    <span className="text-white/50">(minimum {POST_DESCRIPTION_MIN_LENGTH})</span>
                   </p>
                   <p className="text-white/45">
-                    Supports basic Markdown: **bold**, *italic*, ~~strike~~, `code`, lists, and more.
+                    Supports basic Markdown: **bold**, *italic*, ~~strike~~, `code`, lists, and
+                    more.
                   </p>
                 </div>
               );
@@ -1726,9 +1783,7 @@ export default function PostComposer({
                   Markdown preview
                 </p>
                 <div className="prose prose-invert prose-sm max-w-none whitespace-pre-line prose-headings:text-white prose-strong:text-white prose-em:text-white/90 prose-p:text-white/85 prose-li:text-white/80 prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/40 prose-code:rounded prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:text-brand-100 prose-code:before:content-none prose-code:after:content-none prose-pre:whitespace-pre-wrap prose-pre:wrap-anywhere prose-pre:[&>code]:bg-transparent prose-pre:[&>code]:p-0">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {normalizedDescription}
-                  </ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizedDescription}</ReactMarkdown>
                 </div>
               </div>
             ) : (
@@ -1754,12 +1809,13 @@ export default function PostComposer({
                 id="youtube"
                 placeholder="https://www.youtube.com/watch?v=..."
                 value={form.youtubeUrl}
-                onChange={e => change("youtubeUrl", e.target.value)}
+                onChange={(e) => change("youtubeUrl", e.target.value)}
                 onBlur={() => markTouched("youtubeUrl")}
                 aria-invalid={shouldShowError("youtubeUrl") || undefined}
                 aria-describedby={shouldShowError("youtubeUrl") ? errorId("youtubeUrl") : undefined}
                 className={clsx(
-                  shouldShowError("youtubeUrl") && "border-red-500/60 focus:ring-red-400 focus:border-red-500/70"
+                  shouldShowError("youtubeUrl") &&
+                    "border-red-500/60 focus:ring-red-400 focus:border-red-500/70",
                 )}
               />
               {shouldShowError("youtubeUrl") && errors.youtubeUrl && (
@@ -1811,14 +1867,19 @@ export default function PostComposer({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <label htmlFor="images" className="text-sm font-medium text-white/75">
                     Image gallery
-                    <span className="text-white/45"> (max {MAX_IMAGE_MB}MB each, up to {MAX_IMAGE_COUNT} images)</span>
+                    <span className="text-white/45">
+                      {" "}
+                      (max {MAX_IMAGE_MB}MB each, up to {MAX_IMAGE_COUNT} images)
+                    </span>
                   </label>
                   <label
                     htmlFor="images"
                     className={clsx(
                       "inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/10",
-                      shouldShowError("images") && "border-red-500/60 text-red-200 hover:border-red-400",
-                      totalImageSlots >= MAX_IMAGE_COUNT && "cursor-not-allowed opacity-60 hover:border-white/15 hover:bg-white/5"
+                      shouldShowError("images") &&
+                        "border-red-500/60 text-red-200 hover:border-red-400",
+                      totalImageSlots >= MAX_IMAGE_COUNT &&
+                        "cursor-not-allowed opacity-60 hover:border-white/15 hover:bg-white/5",
                     )}
                   >
                     <Images aria-hidden="true" className="h-4 w-4" />
@@ -1832,7 +1893,7 @@ export default function PostComposer({
                   accept="image/jpeg,image/png,image/webp"
                   className="sr-only"
                   disabled={totalImageSlots >= MAX_IMAGE_COUNT}
-                  onChange={e => {
+                  onChange={(e) => {
                     markTouched("images");
                     const incoming = e.target.files ? Array.from(e.target.files) : [];
                     if (incoming.length) {
@@ -1843,14 +1904,14 @@ export default function PostComposer({
 
                       const accepted = incoming.slice(0, remainingSlots);
                       if (accepted.length) {
-                        const additions = accepted.map(file => ({
+                        const additions = accepted.map((file) => ({
                           id: crypto.randomUUID(),
                           file,
                         }));
-                        setNewImages(prev => [...prev, ...additions]);
-                        setImageOrder(prev => [
+                        setNewImages((prev) => [...prev, ...additions]);
+                        setImageOrder((prev) => [
                           ...prev,
-                          ...additions.map(image => ({ type: "new" as const, id: image.id })),
+                          ...additions.map((image) => ({ type: "new" as const, id: image.id })),
                         ]);
                       }
                     }
@@ -1860,7 +1921,8 @@ export default function PostComposer({
                   aria-describedby={shouldShowError("images") ? errorId("images") : undefined}
                 />
                 <p className="text-xs text-white/60">
-                  <span className="font-semibold text-white/80">Selected:</span> {fileSummary}. The first image becomes your thumbnail.
+                  <span className="font-semibold text-white/80">Selected:</span> {fileSummary}. The
+                  first image becomes your thumbnail.
                 </p>
                 <p className="text-xs text-white/60">
                   JPG, PNG, and WEBP are supported. Uploaded images are stored as WEBP variants.
@@ -1884,43 +1946,33 @@ export default function PostComposer({
                         <span className="font-semibold text-white">
                           {startIndex + 1}–{endIndex}
                         </span>{" "}
-                        of{" "}
-                        <span className="font-semibold text-white">
-                          {previewItems.length}
-                        </span>{" "}
+                        of <span className="font-semibold text-white">{previewItems.length}</span>{" "}
                         images
                       </div>
                       <div className="inline-flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => setImagePage(p => Math.max(0, p - 1))}
+                          onClick={() => setImagePage((p) => Math.max(0, p - 1))}
                           disabled={currentPage === 0}
                           className={clsx(
                             "inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/40",
-                            currentPage === 0 && "opacity-60"
+                            currentPage === 0 && "opacity-60",
                           )}
                           aria-label="Previous images"
                         >
                           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                         </button>
                         <span className="text-white/75">
-                          Page{" "}
-                          <span className="font-semibold text-white">
-                            {currentPage + 1}
-                          </span>{" "}
-                          / {totalPages}
+                          Page <span className="font-semibold text-white">{currentPage + 1}</span> /{" "}
+                          {totalPages}
                         </span>
                         <button
                           type="button"
-                          onClick={() =>
-                            setImagePage(p =>
-                              Math.min(totalPages - 1, p + 1),
-                            )
-                          }
+                          onClick={() => setImagePage((p) => Math.min(totalPages - 1, p + 1))}
                           disabled={currentPage >= totalPages - 1}
                           className={clsx(
                             "inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/40",
-                            currentPage >= totalPages - 1 && "opacity-60"
+                            currentPage >= totalPages - 1 && "opacity-60",
                           )}
                           aria-label="Next images"
                         >
@@ -1931,7 +1983,7 @@ export default function PostComposer({
                   )}
 
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {currentPageItems.map(item => {
+                    {currentPageItems.map((item) => {
                       return (
                         <div
                           key={item.key}
@@ -1956,7 +2008,9 @@ export default function PostComposer({
                               type="button"
                               onClick={() => removeNewImage(item.key)}
                               className="absolute right-3 top-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-sm font-bold text-white transition hover:bg-black/80"
-                              aria-label={item.fileName ? `Remove ${item.fileName}` : "Remove image"}
+                              aria-label={
+                                item.fileName ? `Remove ${item.fileName}` : "Remove image"
+                              }
                             >
                               ×
                             </button>
@@ -1985,7 +2039,11 @@ export default function PostComposer({
                               onClick={() => moveImage(item.orderIndex, item.orderIndex - 1)}
                               disabled={item.orderIndex === 0}
                               className="rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                              aria-label={item.fileName ? `Move ${item.fileName} earlier` : "Move image earlier"}
+                              aria-label={
+                                item.fileName
+                                  ? `Move ${item.fileName} earlier`
+                                  : "Move image earlier"
+                              }
                             >
                               ←
                             </button>
@@ -1994,7 +2052,9 @@ export default function PostComposer({
                               onClick={() => moveImage(item.orderIndex, item.orderIndex + 1)}
                               disabled={item.orderIndex === previewItems.length - 1}
                               className="rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white/90 transition hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-black/30 disabled:text-white/40"
-                              aria-label={item.fileName ? `Move ${item.fileName} later` : "Move image later"}
+                              aria-label={
+                                item.fileName ? `Move ${item.fileName} later` : "Move image later"
+                              }
                             >
                               →
                             </button>
@@ -2027,9 +2087,15 @@ export default function PostComposer({
 
           <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/75 sm:flex-row sm:items-center sm:justify-between">
             <p className="max-w-3xl text-white/70">
-              Need inspiration or not sure how to structure your script? Click to open the official guide in a new tab.
+              Need inspiration or not sure how to structure your script? Click to open the official
+              guide in a new tab.
             </p>
-            <Link href="/guide" target="_blank" rel="noreferrer" className="inline-flex sm:shrink-0">
+            <Link
+              href="/guide"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex sm:shrink-0"
+            >
               <Button size="sm" variant="transparent" className="w-full justify-center gap-2">
                 <BookOpen className="h-4 w-4" aria-hidden="true" />
                 Open guide
@@ -2052,7 +2118,7 @@ export default function PostComposer({
                   "rounded-full px-3 py-1.5 transition",
                   wrapLines
                     ? "bg-brand-500 text-white shadow-soft"
-                    : "text-white/70 hover:text-white"
+                    : "text-white/70 hover:text-white",
                 )}
               >
                 Wrap lines
@@ -2065,7 +2131,7 @@ export default function PostComposer({
                   "rounded-full px-3 py-1.5 transition",
                   !wrapLines
                     ? "bg-brand-500 text-white shadow-soft"
-                    : "text-white/70 hover:text-white"
+                    : "text-white/70 hover:text-white",
                 )}
               >
                 Horizontal scroll
@@ -2077,18 +2143,22 @@ export default function PostComposer({
             <CodeBox
               key={hasLoadedDraft ? `${draftKey}-ready` : `${draftKey}-loading`}
               value={form.code}
-              onChange={v => change("code", v)}
+              onChange={(v) => change("code", v)}
               onBlur={() => markTouched("code")}
               isInvalid={shouldShowError("code")}
               errorMarkers={errorMarkers}
               warningRanges={warningRanges}
               wrapLines={wrapLines}
-              describedBy={[
-                shouldShowError("code") ? errorId("code") : null,
-                codeFeedback.status === "ok" && codeFeedback.warnings.length ? codeWarningsId : null,
-              ]
-                .filter(Boolean)
-                .join(" ") || undefined}
+              describedBy={
+                [
+                  shouldShowError("code") ? errorId("code") : null,
+                  codeFeedback.status === "ok" && codeFeedback.warnings.length
+                    ? codeWarningsId
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ") || undefined
+              }
             />
           )}
           {shouldShowError("code") && errors.code && (
@@ -2099,7 +2169,10 @@ export default function PostComposer({
                   {codeFeedback.syntaxErrors.map((err, idx) => (
                     <li key={`${err.lineStart}-${err.columnStart}-${idx}`}>
                       Line {err.lineStart}
-                      {typeof err.columnStart === "number" ? `, column ${err.columnStart + 1}` : ""} – {err.message}
+                      {typeof err.columnStart === "number"
+                        ? `, column ${err.columnStart + 1}`
+                        : ""}{" "}
+                      – {err.message}
                     </li>
                   ))}
                 </ul>
@@ -2113,7 +2186,8 @@ export default function PostComposer({
                 {codeFeedback.warnings.map((warning, idx) => (
                   <li key={`${warning.lineStart}-${warning.lineEnd}-${idx}`}>
                     Line {warning.lineStart}
-                    {warning.lineEnd !== warning.lineStart ? `-${warning.lineEnd}` : ""} – {warning.message}
+                    {warning.lineEnd !== warning.lineStart ? `-${warning.lineEnd}` : ""} –{" "}
+                    {warning.message}
                   </li>
                 ))}
               </ul>
@@ -2134,19 +2208,21 @@ export default function PostComposer({
             </p>
             <button
               type="button"
-              onClick={() => setForm(prev => ({ ...prev, openForImprovement: !prev.openForImprovement }))}
+              onClick={() =>
+                setForm((prev) => ({ ...prev, openForImprovement: !prev.openForImprovement }))
+              }
               className={clsx(
                 "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition",
                 form.openForImprovement
                   ? "bg-brand-500 text-white shadow-soft"
-                  : "border border-white/20 bg-white/5 text-white/80 hover:border-white/30 hover:text-white"
+                  : "border border-white/20 bg-white/5 text-white/80 hover:border-white/30 hover:text-white",
               )}
             >
               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-current">
                 <span
                   className={clsx(
                     "h-3 w-3 rounded-full bg-current transition",
-                    form.openForImprovement ? "opacity-100" : "opacity-0"
+                    form.openForImprovement ? "opacity-100" : "opacity-0",
                   )}
                 />
               </span>
@@ -2154,7 +2230,8 @@ export default function PostComposer({
             </button>
           </div>
           <p className="text-xs text-white/55">
-            When collaboration is enabled, contributors can edit only the code and must include a message explaining their changes.
+            When collaboration is enabled, contributors can edit only the code and must include a
+            message explaining their changes.
           </p>
         </Card>
       </div>
@@ -2166,7 +2243,8 @@ export default function PostComposer({
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-white">Reload published content</p>
                 <p className="text-white/60">
-                  Clear the saved draft so reloading this page restores the current published version of the post.
+                  Clear the saved draft so reloading this page restores the current published
+                  version of the post.
                 </p>
               </div>
               <Button
@@ -2193,7 +2271,7 @@ export default function PostComposer({
           <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm wrap-anywhere text-red-200">
             <p className="font-semibold text-red-100">Complete the following before publishing:</p>
             <ul className="mt-1 list-disc space-y-1 pl-4 marker:text-red-200">
-              {blockingMessages.map(message => (
+              {blockingMessages.map((message) => (
                 <li key={message}>{message}</li>
               ))}
             </ul>

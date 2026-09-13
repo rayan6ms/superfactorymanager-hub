@@ -4,7 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Link from "next/link";
 import clsx from "clsx";
 import { useSession } from "next-auth/react";
-import { ArrowBigDown, ArrowBigUp, ArrowLeft, CornerDownRight, Eye, Loader2, MessageCircle, Pin, PinOff } from "lucide-react";
+import {
+  ArrowBigDown,
+  ArrowBigUp,
+  ArrowLeft,
+  CornerDownRight,
+  Eye,
+  Loader2,
+  MessageCircle,
+  Pin,
+  PinOff,
+} from "lucide-react";
 import { Card } from "@/components/ui";
 import Button from "@/components/ui/Button";
 import ReportButton from "@/components/ReportButton";
@@ -104,7 +114,7 @@ const insertReply = (
 ): { updated: SerializedComment[]; inserted: boolean; replyCount?: number } => {
   let inserted = false;
   let replyCount: number | undefined;
-  const updated = items.map(item => {
+  const updated = items.map((item) => {
     if (inserted) return item;
     if (item.id === parentId) {
       inserted = true;
@@ -148,7 +158,7 @@ function updateCommentTree(
 ): UpdateCommentTreeResult {
   let updated = false;
 
-  const next = items.map(item => {
+  const next = items.map((item) => {
     if (item.id === id) {
       updated = true;
       return updater(item);
@@ -172,15 +182,19 @@ function mapCommentTree(
   items: SerializedComment[],
   mapper: (comment: SerializedComment) => SerializedComment,
 ): SerializedComment[] {
-  return items.map(item => ({
+  return items.map((item) => ({
     ...mapper(item),
     replies: mapCommentTree(item.replies, mapper),
   }));
 }
 
-function sortCommentTree(items: SerializedComment[], sort: SortOption, depth = 0): SerializedComment[] {
+function sortCommentTree(
+  items: SerializedComment[],
+  sort: SortOption,
+  depth = 0,
+): SerializedComment[] {
   return [...items]
-    .map(item => ({
+    .map((item) => ({
       ...item,
       replies: sortCommentTree(item.replies, sort, depth + 1),
     }))
@@ -201,12 +215,16 @@ export default function CommentsSection({
   postAuthorId,
 }: CommentsSectionProps) {
   const { data: session, status } = useSession();
-  const [comments, setComments] = useState<SerializedComment[]>(() => sortCommentTree(initialComments, "recent"));
+  const [comments, setComments] = useState<SerializedComment[]>(() =>
+    sortCommentTree(initialComments, "recent"),
+  );
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [total, setTotal] = useState<number>(initialTotal);
   const [sortOrder, setSortOrder] = useState<SortOption>("recent");
   const [sortLoading, setSortLoading] = useState(false);
-  const [pinnedComment, setPinnedComment] = useState<SerializedComment | null>(initialPinnedComment);
+  const [pinnedComment, setPinnedComment] = useState<SerializedComment | null>(
+    initialPinnedComment,
+  );
   const [commentText, setCommentText] = useState("");
   const [replyText, setReplyText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -215,9 +233,11 @@ export default function CommentsSection({
   const [error, setError] = useState<string | null>(null);
   const [targetCommentId, setTargetCommentId] = useState<string | null>(null);
   const [highlightedComment, setHighlightedComment] = useState<string | null>(null);
-  const [replyTarget, setReplyTarget] = useState<
-    { id: string; authorName: string; depth: number } | null
-  >(null);
+  const [replyTarget, setReplyTarget] = useState<{
+    id: string;
+    authorName: string;
+    depth: number;
+  } | null>(null);
   const [visibleRepliesMap, setVisibleRepliesMap] = useState<Record<string, number>>({});
   const [revealedHidden, setRevealedHidden] = useState<Record<string, boolean>>({});
   const [voting, setVoting] = useState<Record<string, boolean>>({});
@@ -237,10 +257,10 @@ export default function CommentsSection({
   const pulseTimeoutRef = useRef<number | null>(null);
   const currentUser: CurrentUser | null = session?.user?.id
     ? {
-      id: session.user.id,
-      name: session.user.name ?? null,
-      image: session.user.image ?? null,
-    }
+        id: session.user.id,
+        name: session.user.name ?? null,
+        image: session.user.image ?? null,
+      }
     : null;
   const isAdmin = session?.user?.isAdmin === true;
 
@@ -261,8 +281,8 @@ export default function CommentsSection({
     (id: string | null) => {
       if (!id) return false;
       return (
-        flatComments.some(comment => comment.id === id) ||
-        flatThreadComments.some(comment => comment.id === id)
+        flatComments.some((comment) => comment.id === id) ||
+        flatThreadComments.some((comment) => comment.id === id)
       );
     },
     [flatComments, flatThreadComments],
@@ -275,11 +295,15 @@ export default function CommentsSection({
   const threadRoot = threadRootComment ?? threadRootFromComments;
 
   const markCommentDeleted = (id: string) => {
-    setComments(prev => {
-      const updated = updateCommentTree(prev, id, comment => ({ ...comment, isDeleted: true, isPinned: false }));
+    setComments((prev) => {
+      const updated = updateCommentTree(prev, id, (comment) => ({
+        ...comment,
+        isDeleted: true,
+        isPinned: false,
+      }));
       return updated.updated ? updated.items : prev;
     });
-    setPinnedComment(prev => (prev?.id === id ? null : prev));
+    setPinnedComment((prev) => (prev?.id === id ? null : prev));
   };
 
   const sortComments = useCallback((items: SerializedComment[], sort: SortOption) => {
@@ -375,10 +399,13 @@ export default function CommentsSection({
     async (commentId: string, sortOverride?: SortOption): Promise<ThreadResponse> => {
       const params = new URLSearchParams();
       params.set("sort", sortOverride ?? sortOrder);
-      const res = await fetch(`/api/posts/${postSlug}/comments/${commentId}/thread?${params.toString()}`, {
-        credentials: "include",
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `/api/posts/${postSlug}/comments/${commentId}/thread?${params.toString()}`,
+        {
+          credentials: "include",
+          cache: "no-store",
+        },
+      );
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as ThreadResponse;
         return { error: data.error ?? "Failed to load thread" };
@@ -448,7 +475,7 @@ export default function CommentsSection({
       }
       if (voting[comment.id]) return;
 
-      setVoting(prev => ({ ...prev, [comment.id]: true }));
+      setVoting((prev) => ({ ...prev, [comment.id]: true }));
       setError(null);
       const method = comment.vote === direction ? "DELETE" : "POST";
       try {
@@ -458,12 +485,15 @@ export default function CommentsSection({
           credentials: "include",
           body: method === "POST" ? JSON.stringify({ vote: direction }) : undefined,
         });
-        const data = (await res.json().catch(() => ({}))) as { comment?: SerializedComment; error?: string };
+        const data = (await res.json().catch(() => ({}))) as {
+          comment?: SerializedComment;
+          error?: string;
+        };
         if (!res.ok || !data.comment) {
           throw new Error(data.error ?? "Failed to update vote");
         }
-        setComments(prev => {
-          const result = updateCommentTree(prev, comment.id, current => ({
+        setComments((prev) => {
+          const result = updateCommentTree(prev, comment.id, (current) => ({
             ...current,
             score: data.comment!.score,
             voteCount: data.comment!.voteCount,
@@ -476,7 +506,7 @@ export default function CommentsSection({
         const message = err instanceof Error ? err.message : "Failed to update vote";
         setError(message);
       } finally {
-        setVoting(prev => ({ ...prev, [comment.id]: false }));
+        setVoting((prev) => ({ ...prev, [comment.id]: false }));
       }
     },
     [canPost, loginRedirect, sortComments, sortOrder, voting],
@@ -500,9 +530,9 @@ export default function CommentsSection({
           throw new Error(data.error ?? "Failed to post comment");
         }
         const createdComment = data.comment;
-        setComments(prev => sortComments([createdComment, ...prev], sortOrder));
+        setComments((prev) => sortComments([createdComment, ...prev], sortOrder));
         setCommentText("");
-        setTotal(prev => (typeof data.total === "number" ? data.total : prev + 1));
+        setTotal((prev) => (typeof data.total === "number" ? data.total : prev + 1));
         setHighlightedComment(createdComment.id);
         requestAnimationFrame(() => {
           const element = document.getElementById(`comment-${createdComment.id}`);
@@ -523,7 +553,9 @@ export default function CommentsSection({
       event.preventDefault();
       if (!canPost || replySubmitting || !replyTargetId || !isReplyValid) return;
       if (replyTargetDepth !== null && replyTargetDepth >= COMMENT_MAX_DEPTH) {
-        setError("This thread reached the maximum reply depth. Please start a new top-level comment to continue.");
+        setError(
+          "This thread reached the maximum reply depth. Please start a new top-level comment to continue.",
+        );
         return;
       }
       setReplySubmitting(true);
@@ -541,7 +573,7 @@ export default function CommentsSection({
         }
         const createdComment = data.comment;
         let insertedReplyCount = 0;
-        setComments(prev => {
+        setComments((prev) => {
           const result = insertReply(prev, replyTargetId, createdComment);
           if (result.inserted && typeof result.replyCount === "number") {
             insertedReplyCount = result.replyCount;
@@ -549,7 +581,7 @@ export default function CommentsSection({
           return result.inserted ? result.updated : prev;
         });
         if (insertedReplyCount > 0) {
-          setVisibleRepliesMap(prev => {
+          setVisibleRepliesMap((prev) => {
             const current = prev[replyTargetId] ?? 0;
             const next = Math.min(insertedReplyCount, current + 1);
             if (next === current) return prev;
@@ -558,7 +590,7 @@ export default function CommentsSection({
         }
         setReplyText("");
         setReplyTarget(null);
-        setTotal(prev => (typeof data.total === "number" ? data.total : prev + 1));
+        setTotal((prev) => (typeof data.total === "number" ? data.total : prev + 1));
         setHighlightedComment(createdComment.id);
         requestAnimationFrame(() => {
           const element = document.getElementById(`comment-${createdComment.id}`);
@@ -571,15 +603,7 @@ export default function CommentsSection({
         setReplySubmitting(false);
       }
     },
-    [
-      canPost,
-      replySubmitting,
-      replyTargetId,
-      replyTargetDepth,
-      isReplyValid,
-      postSlug,
-      replyText,
-    ],
+    [canPost, replySubmitting, replyTargetId, replyTargetDepth, isReplyValid, postSlug, replyText],
   );
 
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -595,7 +619,7 @@ export default function CommentsSection({
   const toggleReply = useCallback((comment: SerializedComment, depth: number) => {
     if (depth >= COMMENT_MAX_DEPTH) return;
     setReplyText("");
-    setReplyTarget(prev => {
+    setReplyTarget((prev) => {
       if (prev?.id === comment.id) return null;
       return { id: comment.id, authorName: comment.author?.name ?? "Deleted user", depth };
     });
@@ -610,7 +634,7 @@ export default function CommentsSection({
     async (comment: SerializedComment) => {
       if (!canManagePins || pinning[comment.id] || comment.isDeleted) return;
 
-      setPinning(prev => ({ ...prev, [comment.id]: true }));
+      setPinning((prev) => ({ ...prev, [comment.id]: true }));
       setError(null);
 
       const method = comment.isPinned ? "DELETE" : "POST";
@@ -625,21 +649,23 @@ export default function CommentsSection({
           throw new Error(data.error ?? "Failed to update pinned comment");
         }
 
-        setComments(prev =>
+        setComments((prev) =>
           sortComments(
-            mapCommentTree(prev, current => ({
+            mapCommentTree(prev, (current) => ({
               ...current,
               isPinned: method === "POST" ? current.id === comment.id : false,
             })),
             sortOrder,
           ),
         );
-        setPinnedComment(method === "POST" ? (data.comment ?? { ...comment, isPinned: true, replies: [] }) : null);
+        setPinnedComment(
+          method === "POST" ? (data.comment ?? { ...comment, isPinned: true, replies: [] }) : null,
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to update pinned comment";
         setError(message);
       } finally {
-        setPinning(prev => ({ ...prev, [comment.id]: false }));
+        setPinning((prev) => ({ ...prev, [comment.id]: false }));
       }
     },
     [canManagePins, pinning, sortComments, sortOrder],
@@ -673,7 +699,7 @@ export default function CommentsSection({
     (commentId: string, depth: number, loadedReplies: number) => {
       if (loadedReplies <= 0) return;
 
-      setVisibleRepliesMap(prev => {
+      setVisibleRepliesMap((prev) => {
         const stored = prev[commentId];
         const initial = getInitialVisibleReplies(depth, loadedReplies);
         const current = typeof stored === "number" ? stored : initial;
@@ -716,7 +742,7 @@ export default function CommentsSection({
   );
 
   const revealHidden = useCallback((id: string) => {
-    setRevealedHidden(prev => ({ ...prev, [id]: true }));
+    setRevealedHidden((prev) => ({ ...prev, [id]: true }));
   }, []);
 
   const loadMore = useCallback(async () => {
@@ -729,7 +755,7 @@ export default function CommentsSection({
       if (data.error) throw new Error(data.error);
       const nextComments = data.comments ?? [];
       if (nextComments.length) {
-        setComments(prev => sortComments([...prev, ...nextComments], sortOrder));
+        setComments((prev) => sortComments([...prev, ...nextComments], sortOrder));
       }
       if (typeof data.total === "number") {
         setTotal(data.total);
@@ -838,25 +864,30 @@ export default function CommentsSection({
   const renderThread = (
     nodes: SerializedComment[],
     depth = 0,
-    options: { limitReplies?: boolean; depthOffset?: number; idPrefix?: string; maxDepthOverride?: number } = {},
+    options: {
+      limitReplies?: boolean;
+      depthOffset?: number;
+      idPrefix?: string;
+      maxDepthOverride?: number;
+    } = {},
   ): ReactNode => {
     if (!nodes.length) return null;
-    const { limitReplies = true, depthOffset = 0, idPrefix = "comment", maxDepthOverride } = options;
+    const {
+      limitReplies = true,
+      depthOffset = 0,
+      idPrefix = "comment",
+      maxDepthOverride,
+    } = options;
 
     return (
-      <div
-        className={clsx(
-          "relative space-y-4",
-          depth > 0 && "pl-4 sm:pl-6",
-        )}
-      >
+      <div className={clsx("relative space-y-4", depth > 0 && "pl-4 sm:pl-6")}>
         {depth > 0 && (
           <span
             aria-hidden="true"
             className="pointer-events-none absolute left-0 top-0 bottom-0 w-px bg-linear-to-b from-white/20 via-white/20 to-white/15"
           />
         )}
-        {nodes.map(comment => {
+        {nodes.map((comment) => {
           const authorName = comment.author?.name ?? "Deleted user";
           const avatarUrl = comment.author?.image ?? null;
           const isAuthor = comment.author?.id === postAuthorId;
@@ -864,7 +895,8 @@ export default function CommentsSection({
           const isReplyingHere = replyTargetId === comment.id;
 
           const relativeDepth = Math.max(0, depth - depthOffset);
-          const maxInlineDepth = typeof maxDepthOverride === "number" ? maxDepthOverride : replyDisplayLimit;
+          const maxInlineDepth =
+            typeof maxDepthOverride === "number" ? maxDepthOverride : replyDisplayLimit;
           const isAtDepthLimit = limitReplies && relativeDepth >= maxInlineDepth;
           const isReplyDepthCapped = depth >= COMMENT_MAX_DEPTH;
 
@@ -895,10 +927,14 @@ export default function CommentsSection({
             ? Math.max(countNestedReplies(hiddenReplies), remainingReplies)
             : 0;
 
-          const shouldOpenThread = limitReplies && remainingReplies > 0 && (isAtDepthLimit || unloadedReplies > 0);
+          const shouldOpenThread =
+            limitReplies && remainingReplies > 0 && (isAtDepthLimit || unloadedReplies > 0);
 
           const profileHref = comment.author?.name ? `/profile/${comment.author.name}` : null;
-          const { upvotes, downvotes, totalVotes } = splitVotesFromScore(comment.score, comment.voteCount);
+          const { upvotes, downvotes, totalVotes } = splitVotesFromScore(
+            comment.score,
+            comment.voteCount,
+          );
           const confidence = wilsonScore(upvotes, downvotes, WILSON_Z_80);
           const isScoreHidden =
             totalVotes > 0 && downvotes > upvotes && confidence < COMMENT_HIDE_THRESHOLD;
@@ -908,11 +944,7 @@ export default function CommentsSection({
 
           if (isHidden) {
             return (
-              <div
-                key={comment.id}
-                className="relative space-y-3"
-                id={`${idPrefix}-${comment.id}`}
-              >
+              <div key={comment.id} className="relative space-y-3" id={`${idPrefix}-${comment.id}`}>
                 {depth > 0 && (
                   <span
                     aria-hidden="true"
@@ -964,7 +996,8 @@ export default function CommentsSection({
                       Hidden comment
                     </span>
                     <span className="text-white/50">
-                      Hidden due to low rating ({Math.round(confidence * 100)}% score from {totalVotes} vote
+                      Hidden due to low rating ({Math.round(confidence * 100)}% score from{" "}
+                      {totalVotes} vote
                       {totalVotes === 1 ? "" : "s"})
                     </span>
                     <button
@@ -981,11 +1014,7 @@ export default function CommentsSection({
           }
 
           return (
-            <div
-              key={comment.id}
-              className="relative space-y-3"
-              id={`${idPrefix}-${comment.id}`}
-            >
+            <div key={comment.id} className="relative space-y-3" id={`${idPrefix}-${comment.id}`}>
               {depth > 0 && (
                 <span
                   aria-hidden="true"
@@ -999,9 +1028,9 @@ export default function CommentsSection({
                     ? "border-brand-400/60 bg-brand-500/10 shadow-[0_0_0_1px_rgba(120,200,255,0.12)]"
                     : "border-white/10",
                   isHighlighted &&
-                  (pulseHighlights
-                    ? "ring-4 ring-brand-400/80 animate-pulse"
-                    : "ring-2 ring-brand-400"),
+                    (pulseHighlights
+                      ? "ring-4 ring-brand-400/80 animate-pulse"
+                      : "ring-2 ring-brand-400"),
                 )}
               >
                 <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-2 sm:items-start">
@@ -1045,9 +1074,7 @@ export default function CommentsSection({
                       <span className="font-semibold text-white text-sm">{authorName}</span>
                     )}
                     <span>•</span>
-                    <time dateTime={comment.createdAt}>
-                      {formatTimestamp(comment.createdAt)}
-                    </time>
+                    <time dateTime={comment.createdAt}>{formatTimestamp(comment.createdAt)}</time>
                     {isAuthor && (
                       <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-emerald-100">
                         Author
@@ -1073,7 +1100,9 @@ export default function CommentsSection({
                         comment.isDeleted ? "text-white/50" : "text-white/80",
                       )}
                     >
-                      {comment.isDeleted ? "This comment was removed by moderators." : comment.content}
+                      {comment.isDeleted
+                        ? "This comment was removed by moderators."
+                        : comment.content}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -1192,16 +1221,9 @@ export default function CommentsSection({
                       {replyText.length} / {COMMENT_MAX_LENGTH} characters
                     </span>
                     <div className="flex items-center gap-2">
-                      <Button
-                        type="submit"
-                        size="sm"
-                        disabled={!isReplyValid || replySubmitting}
-                      >
+                      <Button type="submit" size="sm" disabled={!isReplyValid || replySubmitting}>
                         {replySubmitting && (
-                          <Loader2
-                            className="h-3.5 w-3.5 animate-spin"
-                            aria-hidden="true"
-                          />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                         )}{" "}
                         Submit reply
                       </Button>
@@ -1255,12 +1277,21 @@ export default function CommentsSection({
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
               Comments
             </div>
-            <p className="text-lg font-semibold text-white">{total} comment{total === 1 ? "" : "s"}</p>
-            <p className="text-sm text-white/60">Share your feedback, tips, or troubleshooting steps.</p>
+            <p className="text-lg font-semibold text-white">
+              {total} comment{total === 1 ? "" : "s"}
+            </p>
+            <p className="text-sm text-white/60">
+              Share your feedback, tips, or troubleshooting steps.
+            </p>
           </div>
           {canPost ? null : (
-            <Link href={`/login?next=${encodeURIComponent(`/posts/${postSlug}`)}`} className="inline-flex">
-              <Button variant="outline" size="sm">Log in to comment</Button>
+            <Link
+              href={`/login?next=${encodeURIComponent(`/posts/${postSlug}`)}`}
+              className="inline-flex"
+            >
+              <Button variant="outline" size="sm">
+                Log in to comment
+              </Button>
             </Link>
           )}
         </div>
@@ -1304,12 +1335,15 @@ export default function CommentsSection({
         </div>
 
         {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div>
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            {error}
+          </div>
         )}
 
         {targetMissing && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            We couldn’t find the comment linked in your notification. It may have been deleted or moved.
+            We couldn’t find the comment linked in your notification. It may have been deleted or
+            moved.
           </div>
         )}
 
@@ -1320,9 +1354,7 @@ export default function CommentsSection({
                 <Pin className="h-4 w-4" aria-hidden="true" />
                 Pinned comment
               </div>
-              <p className="text-xs text-brand-100/80">
-                Highlighted by the post author
-              </p>
+              <p className="text-xs text-brand-100/80">Highlighted by the post author</p>
             </div>
             {renderThread([{ ...pinnedComment, replies: [] }], 0, {
               idPrefix: "pinned-comment",
@@ -1346,7 +1378,8 @@ export default function CommentsSection({
                 {commentText.length} / {COMMENT_MAX_LENGTH} characters
               </span>
               <Button type="submit" size="sm" disabled={!isCommentValid || submitting}>
-                {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />} Submit comment
+                {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}{" "}
+                Submit comment
               </Button>
             </div>
           </form>
@@ -1359,7 +1392,8 @@ export default function CommentsSection({
                 <div className="space-y-1">
                   <p className="text-xs uppercase tracking-[0.3em] text-white/50">Thread view</p>
                   <p className="text-sm text-white/70">
-                    Showing the rest of the replies in this thread. Use the back button to return to the main comments.
+                    Showing the rest of the replies in this thread. Use the back button to return to
+                    the main comments.
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1410,7 +1444,11 @@ export default function CommentsSection({
               disabled={loadingMore}
               className="min-w-32"
             >
-              {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : "Load more"}
+              {loadingMore ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                "Load more"
+              )}
             </Button>
           </div>
         )}

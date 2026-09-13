@@ -50,15 +50,31 @@ export async function PATCH(
 
   if (parsed.data.action === "merge") {
     if (commit.status !== "PENDING") {
-      return NextResponse.json({ error: "Only pending contributions can be merged." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Only pending contributions can be merged." },
+        { status: 400 },
+      );
     }
-    if (commit.baseCommitId && post.currentCommitId && commit.baseCommitId !== post.currentCommitId) {
-      return NextResponse.json({ error: "This contribution is out of date. Ask the author to resubmit." }, { status: 409 });
+    if (
+      commit.baseCommitId &&
+      post.currentCommitId &&
+      commit.baseCommitId !== post.currentCommitId
+    ) {
+      return NextResponse.json(
+        { error: "This contribution is out of date. Ask the author to resubmit." },
+        { status: 409 },
+      );
     }
 
-    await db.$transaction(async tx => {
-      await tx.postCommit.update({ where: { id: commit.id }, data: { status: "MERGED", mergedAt: now } });
-      await tx.post.update({ where: { id: post.id }, data: { code: commit.code, currentCommitId: commit.id } });
+    await db.$transaction(async (tx) => {
+      await tx.postCommit.update({
+        where: { id: commit.id },
+        data: { status: "MERGED", mergedAt: now },
+      });
+      await tx.post.update({
+        where: { id: post.id },
+        data: { code: commit.code, currentCommitId: commit.id },
+      });
       await resetPostRatings(tx, post.id);
       await recordPostContributor(tx, post.id, commit.authorId);
     });
@@ -78,10 +94,16 @@ export async function PATCH(
 
   if (parsed.data.action === "reject") {
     if (commit.status !== "PENDING") {
-      return NextResponse.json({ error: "Only pending contributions can be rejected." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Only pending contributions can be rejected." },
+        { status: 400 },
+      );
     }
 
-    await db.postCommit.update({ where: { id: commit.id }, data: { status: "REJECTED", rejectedAt: now } });
+    await db.postCommit.update({
+      where: { id: commit.id },
+      data: { status: "REJECTED", rejectedAt: now },
+    });
 
     if (commit.authorId !== post.authorId) {
       await createNotification({
@@ -101,11 +123,16 @@ export async function PATCH(
     return NextResponse.json({ error: "You can only revert merged commits." }, { status: 400 });
   }
   if (!post.currentCommitId) {
-    return NextResponse.json({ error: "This post does not have a current commit." }, { status: 409 });
+    return NextResponse.json(
+      { error: "This post does not have a current commit." },
+      { status: 409 },
+    );
   }
 
-  await db.$transaction(async tx => {
-    const revertTitle = commit.title ? `Revert ${commit.title}` : `Revert to ${commit.id.slice(0, 6)}`;
+  await db.$transaction(async (tx) => {
+    const revertTitle = commit.title
+      ? `Revert ${commit.title}`
+      : `Revert to ${commit.id.slice(0, 6)}`;
     const revertCommit = await tx.postCommit.create({
       data: {
         postId: post.id,
@@ -118,7 +145,10 @@ export async function PATCH(
         baseCommitId: post.currentCommitId,
       },
     });
-    await tx.post.update({ where: { id: post.id }, data: { code: commit.code, currentCommitId: revertCommit.id } });
+    await tx.post.update({
+      where: { id: post.id },
+      data: { code: commit.code, currentCommitId: revertCommit.id },
+    });
     await resetPostRatings(tx, post.id);
     await recordPostContributor(tx, post.id, user.id);
   });

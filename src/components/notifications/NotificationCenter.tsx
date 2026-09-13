@@ -14,10 +14,7 @@ import {
   withNotificationSource,
   type SerializedNotification,
 } from "@/lib/notifications-shared";
-import {
-  dispatchNotificationSync,
-  type NotificationSyncDetail,
-} from "@/lib/notification-events";
+import { dispatchNotificationSync, type NotificationSyncDetail } from "@/lib/notification-events";
 
 const ORIGIN_LABEL: Record<SerializedNotification["origin"], string> = {
   SYSTEM: "System",
@@ -48,7 +45,8 @@ export default function NotificationCenter({
   initialUnreadCount,
   initialCursor,
 }: NotificationCenterProps) {
-  const [notifications, setNotifications] = useState<SerializedNotification[]>(initialNotifications);
+  const [notifications, setNotifications] =
+    useState<SerializedNotification[]>(initialNotifications);
   const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [loading, setLoading] = useState(false);
@@ -59,7 +57,7 @@ export default function NotificationCenter({
   const [page, setPage] = useState(1);
 
   const unreadIds = useMemo(
-    () => notifications.filter(item => !item.readAt).map(item => item.id),
+    () => notifications.filter((item) => !item.readAt).map((item) => item.id),
     [notifications],
   );
   const totalLoaded = notifications.length;
@@ -71,7 +69,7 @@ export default function NotificationCenter({
   }, [notifications, page]);
 
   const updatePending = useCallback((id: string, add: boolean) => {
-    setPendingIds(prev => {
+    setPendingIds((prev) => {
       const next = new Set(prev);
       if (add) next.add(id);
       else next.delete(id);
@@ -89,9 +87,9 @@ export default function NotificationCenter({
       }
 
       if (detail.updates?.length) {
-        setNotifications(prev =>
-          prev.map(item => {
-            const update = detail.updates!.find(change => change.id === item.id);
+        setNotifications((prev) =>
+          prev.map((item) => {
+            const update = detail.updates!.find((change) => change.id === item.id);
             return update ? { ...item, readAt: update.readAt } : item;
           }),
         );
@@ -127,12 +125,12 @@ export default function NotificationCenter({
       applyUpdates(data.notifications ?? [], data.unreadCount ?? 0, data.nextCursor ?? null);
       dispatchNotificationSync({
         unreadCount: data.unreadCount ?? 0,
-        updates: (data.notifications ?? []).map(notification => ({
+        updates: (data.notifications ?? []).map((notification) => ({
           id: notification.id,
           readAt: notification.readAt,
         })),
         preview: (data.notifications ?? [])
-          .filter(notification => !notification.readAt)
+          .filter((notification) => !notification.readAt)
           .slice(0, NOTIFICATION_PREVIEW_LIMIT),
       });
     } catch (err) {
@@ -160,7 +158,7 @@ export default function NotificationCenter({
       });
       if (!res.ok) throw new Error("Failed to load more");
       const data = (await res.json()) as ApiResponse;
-      setNotifications(prev => [...prev, ...(data.notifications ?? [])]);
+      setNotifications((prev) => [...prev, ...(data.notifications ?? [])]);
       setUnreadCount(data.unreadCount ?? unreadCount);
       setCursor(data.nextCursor ?? null);
       if (typeof data.unreadCount === "number") {
@@ -193,7 +191,7 @@ export default function NotificationCenter({
         const nextCount = data.unreadCount;
         const readAt = makeRead ? new Date().toISOString() : null;
 
-        const nextNotifications = notifications.map(item =>
+        const nextNotifications = notifications.map((item) =>
           item.id === notification.id ? { ...item, readAt } : item,
         );
 
@@ -201,7 +199,7 @@ export default function NotificationCenter({
         setUnreadCount(nextCount);
 
         const preview = nextNotifications
-          .filter(item => !item.readAt)
+          .filter((item) => !item.readAt)
           .slice(0, NOTIFICATION_PREVIEW_LIMIT);
 
         dispatchNotificationSync({
@@ -240,7 +238,7 @@ export default function NotificationCenter({
       const nextCount = data.unreadCount;
       const timestamp = new Date().toISOString();
 
-      const nextNotifications = notifications.map(item => ({
+      const nextNotifications = notifications.map((item) => ({
         ...item,
         readAt: item.readAt ?? timestamp,
       }));
@@ -249,12 +247,12 @@ export default function NotificationCenter({
       setUnreadCount(nextCount);
 
       const preview = nextNotifications
-        .filter(item => !item.readAt)
+        .filter((item) => !item.readAt)
         .slice(0, NOTIFICATION_PREVIEW_LIMIT);
 
       dispatchNotificationSync({
         unreadCount: nextCount,
-        updates: ids.map(id => ({ id, readAt: timestamp })),
+        updates: ids.map((id) => ({ id, readAt: timestamp })),
         preview,
       });
     } catch (err) {
@@ -327,7 +325,7 @@ export default function NotificationCenter({
       {hasNotifications && (
         <div className="space-y-4">
           <ul className="space-y-3">
-            {pageNotifications.map(item => {
+            {pageNotifications.map((item) => {
               const created = formatNotificationTimestamp(item.createdAt);
               const unread = !item.readAt;
               const pending = pendingIds.has(item.id);
@@ -424,7 +422,7 @@ export default function NotificationCenter({
             currentPage={page}
             pageSize={NOTIFICATION_PAGE_SIZE}
             total={totalLoaded}
-            buildHref={targetPage => `?page=${targetPage}`}
+            buildHref={(targetPage) => `?page=${targetPage}`}
             onPageChange={handlePageChange}
           />
 

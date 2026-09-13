@@ -1,9 +1,4 @@
-import {
-  lexSfml,
-  MAX_DIAGNOSTICS,
-  type SyntaxErrorItem,
-  type Token,
-} from "./lexer";
+import { lexSfml, MAX_DIAGNOSTICS, type SyntaxErrorItem, type Token } from "./lexer";
 
 /** Retain only the events needed by warnings instead of a full concrete parse tree. */
 export type SfmlEvent =
@@ -88,26 +83,19 @@ class Parser {
   private fail(expected: string): never {
     const t = this.token;
     if (this.errors.length < MAX_DIAGNOSTICS) {
-      const found =
-        t.kind === "eof"
-          ? "end of script"
-          : JSON.stringify(t.text.slice(0, 60));
+      const found = t.kind === "eof" ? "end of script" : JSON.stringify(t.text.slice(0, 60));
       this.errors.push({
         lineStart: t.line,
         columnStart: t.column,
         lineEnd: t.lineEnd,
-        columnEnd:
-          t.lineEnd === t.line
-            ? Math.max(t.columnEnd, t.column + 1)
-            : t.columnEnd,
+        columnEnd: t.lineEnd === t.line ? Math.max(t.columnEnd, t.column + 1) : t.columnEnd,
         message: `Expected ${expected}, found ${found}.`,
       });
     }
     throw syntaxFailure;
   }
   private expect(kind: string) {
-    if (!this.take(kind))
-      this.fail(kind === "string" ? "a quoted string" : kind);
+    if (!this.take(kind)) this.fail(kind === "string" ? "a quoted string" : kind);
   }
   private expectOne(kinds: Set<string>, description: string) {
     if (!kinds.has(this.kind)) this.fail(description);
@@ -139,10 +127,8 @@ class Parser {
   }
   private startsBoolean(index: number) {
     const kind = this.tokens[index]?.kind;
-    if (["(", "NOT", "TRUE", "FALSE"].includes(kind) || setOps.has(kind))
-      return true;
-    if (kind === "REDSTONE" && comparisons.has(this.tokens[index + 1]?.kind))
-      return true;
+    if (["(", "NOT", "TRUE", "FALSE"].includes(kind) || setOps.has(kind)) return true;
+    if (kind === "REDSTONE" && comparisons.has(this.tokens[index + 1]?.kind)) return true;
     // A label access may have commas, round robin, sides and slots before HAS.
     // Stop at a resource colon or an expression/statement boundary.
     const qualifierTokens = new Set([
@@ -163,11 +149,7 @@ class Parser {
     for (let i = index; i < this.tokens.length; i++) {
       const current = this.tokens[i].kind;
       if (current === "HAS") return true;
-      if (
-        !identifiers.has(current) &&
-        !sides.has(current) &&
-        !qualifierTokens.has(current)
-      )
+      if (!identifiers.has(current) && !sides.has(current) && !qualifierTokens.has(current))
         return false;
     }
     return false;
@@ -194,14 +176,12 @@ class Parser {
       limit = true;
     }
     if (this.isResource()) this.resourceList("OR");
-    else if (!limit && !this.at("WITH") && !this.at("WITHOUT"))
-      this.fail("a resource or quantity");
+    else if (!limit && !this.at("WITH") && !this.at("WITHOUT")) this.fail("a resource or quantity");
     this.withClause();
   }
   private resourceLimits() {
     const starts = () =>
-      this.isResource() ||
-      ["number", "RETAIN", "WITH", "WITHOUT"].includes(this.kind);
+      this.isResource() || ["number", "RETAIN", "WITH", "WITHOUT"].includes(this.kind);
     if (!starts()) return;
     this.resourceLimit();
     while (this.take(",")) {
@@ -261,9 +241,8 @@ class Parser {
     let text = "";
     for (let i = start; i < this.index; i++) text += this.tokens[i].text;
     const resourceType =
-      text
-        .match(/(fe|fluid|gas|item)(?:::[^:]*|:[^:*]*:\*|:[^:*]*)/i)?.[1]
-        ?.toLowerCase() ?? "item";
+      text.match(/(fe|fluid|gas|item)(?:::[^:]*|:[^:*]*:\*|:[^:*]*)/i)?.[1]?.toLowerCase() ??
+      "item";
     this.events.push({
       kind: output ? "output" : "input",
       resourceType,
@@ -410,8 +389,6 @@ class Parser {
 export function parseSfml(code: string): ParsedSfmlSyntax {
   const { tokens, errors } = lexSfml(code);
   const parsed = new Parser(tokens, errors).parse();
-  parsed.errors.sort(
-    (a, b) => a.lineStart - b.lineStart || a.columnStart - b.columnStart,
-  );
+  parsed.errors.sort((a, b) => a.lineStart - b.lineStart || a.columnStart - b.columnStart);
   return parsed;
 }

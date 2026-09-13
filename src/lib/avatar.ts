@@ -155,7 +155,7 @@ async function validateRemoteUrl(url: string | URL): Promise<ValidatedRemoteUrl 
     return null;
   }
 
-  if (addresses.some(address => isBlockedAddress(address))) {
+  if (addresses.some((address) => isBlockedAddress(address))) {
     return null;
   }
 
@@ -179,7 +179,10 @@ export function generateInitialAvatar({ name, seed }: { name: string; seed?: str
   const initial = getInitial(name);
   const color = COLORS[getColorIndex(seed ?? name)];
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'>\n  <defs>\n    <linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'>\n      <stop offset='0%' stop-color='${color}' stop-opacity='0.85'/>\n      <stop offset='100%' stop-color='${color}' stop-opacity='1'/>\n    </linearGradient>\n  </defs>\n  <circle cx='64' cy='64' r='60' fill='url(#grad)' stroke='white' stroke-width='4'/>\n  <text x='50%' y='50%' dy='0.35em' text-anchor='middle' fill='white' font-family='"Inter", "Segoe UI", sans-serif' font-size='64' font-weight='600'>${initial}</text>\n</svg>`;
-  const encoded = encodeURIComponent(svg).replace(/'/g, "%27").replace(/\(/g, "%28").replace(/\)/g, "%29");
+  const encoded = encodeURIComponent(svg)
+    .replace(/'/g, "%27")
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29");
   return `data:image/svg+xml,${encoded}`;
 }
 
@@ -272,15 +275,16 @@ function requestPinnedRemoteHeaders(
     };
 
     try {
-      request = url.protocol === "https:"
-        ? https.request(
-          {
-            ...baseOptions,
-            servername: net.isIP(url.hostname) ? undefined : url.hostname,
-          },
-          handleResponse,
-        )
-        : http.request(baseOptions, handleResponse);
+      request =
+        url.protocol === "https:"
+          ? https.request(
+              {
+                ...baseOptions,
+                servername: net.isIP(url.hostname) ? undefined : url.hostname,
+              },
+              handleResponse,
+            )
+          : http.request(baseOptions, handleResponse);
     } catch (error) {
       settled = true;
       clearTimeout(timer);
@@ -476,7 +480,7 @@ export async function resolveProfileImage({
   }
 
   try {
-    return await storeRemoteAvatarAsWebp(reachableUrl) ?? reachableUrl;
+    return (await storeRemoteAvatarAsWebp(reachableUrl)) ?? reachableUrl;
   } catch (error) {
     console.warn("Failed to store remote avatar as WEBP", { error });
     return reachableUrl;

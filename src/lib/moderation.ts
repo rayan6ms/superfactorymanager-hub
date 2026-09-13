@@ -11,7 +11,11 @@ export type InteractionAction =
 
 export type InteractionUser = Pick<
   User,
-  "canCreatePosts" | "canCreateComments" | "canVotePosts" | "canVoteComments" | "interactionBanUntil"
+  | "canCreatePosts"
+  | "canCreateComments"
+  | "canVotePosts"
+  | "canVoteComments"
+  | "interactionBanUntil"
 >;
 
 const actionMap: Record<InteractionAction, { flag: keyof InteractionUser; label: string }> = {
@@ -24,7 +28,10 @@ const actionMap: Record<InteractionAction, { flag: keyof InteractionUser; label:
   "fork-build": { flag: "canCreatePosts", label: "fork builds" },
 };
 
-export function interactionBlockReason(user: InteractionUser | null, action: InteractionAction): string | null {
+export function interactionBlockReason(
+  user: InteractionUser | null,
+  action: InteractionAction,
+): string | null {
   if (!user) return null;
   const now = new Date();
   if (user.interactionBanUntil && user.interactionBanUntil > now) {

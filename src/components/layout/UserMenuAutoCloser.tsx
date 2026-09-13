@@ -8,7 +8,7 @@ export default function UserMenuAutoCloser() {
 
   useEffect(() => {
     const menus = Array.from(
-      document.querySelectorAll<HTMLDetailsElement>("details[data-user-menu]")
+      document.querySelectorAll<HTMLDetailsElement>("details[data-user-menu]"),
     );
 
     if (!menus.length) return;
@@ -16,7 +16,7 @@ export default function UserMenuAutoCloser() {
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
 
-      menus.forEach(menu => {
+      menus.forEach((menu) => {
         if (!menu.open) return;
         if (!menu.contains(target)) {
           menu.removeAttribute("open");
@@ -30,9 +30,9 @@ export default function UserMenuAutoCloser() {
 
   useEffect(() => {
     const menus = Array.from(
-      document.querySelectorAll<HTMLDetailsElement>("details[data-user-menu]")
+      document.querySelectorAll<HTMLDetailsElement>("details[data-user-menu]"),
     );
-    menus.forEach(menu => {
+    menus.forEach((menu) => {
       if (menu.open) {
         menu.removeAttribute("open");
       }

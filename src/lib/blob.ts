@@ -35,7 +35,7 @@ export async function deleteBlobs(urls: Array<string | null | undefined>) {
 
   const uniqueUrls = Array.from(new Set(urls.filter((url): url is string => Boolean(url))));
   await Promise.all(
-    uniqueUrls.map(async url => {
+    uniqueUrls.map(async (url) => {
       try {
         await del(url, { token });
       } catch (error) {
@@ -50,7 +50,9 @@ export function isManagedBlobUrl(url: string | null | undefined) {
 
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "https:" && parsed.hostname.endsWith(".public.blob.vercel-storage.com");
+    return (
+      parsed.protocol === "https:" && parsed.hostname.endsWith(".public.blob.vercel-storage.com")
+    );
   } catch {
     return false;
   }

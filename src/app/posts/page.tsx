@@ -7,10 +7,7 @@ import PostsFilterBar from "@/components/posts/PostsFilterBar";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
 import { getCategoryOptions } from "@/lib/categories";
-import {
-  searchPostsWithFilters,
-  type PostsFilterOptions,
-} from "@/lib/posts";
+import { searchPostsWithFilters, type PostsFilterOptions } from "@/lib/posts";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { getSfmMatrix } from "@/lib/sfm";
@@ -43,9 +40,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const page = parsePageParam(getParam(params, "page"), 1);
   const hasFilters = Boolean(q || category || gameVersion || sfmVersion || page > 1);
 
-  const title = q
-    ? `${q} Super Factory Manager Posts`
-    : "Super Factory Manager Code Posts";
+  const title = q ? `${q} Super Factory Manager Posts` : "Super Factory Manager Code Posts";
   const description = q
     ? `Browse SFMHub posts matching ${q}: Super Factory Manager code, Minecraft automation builds, SFML examples, and community troubleshooting.`
     : "Browse Super Factory Manager code posts, SFM automation examples, Minecraft builds, Mekanism setups, AE2 automation, and tested SFML snippets.";
@@ -70,10 +65,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-function getParam(
-  params: Record<string, string | string[] | undefined> | undefined,
-  key: string
-) {
+function getParam(params: Record<string, string | string[] | undefined> | undefined, key: string) {
   const value = params?.[key];
   if (Array.isArray(value)) return value[0] ?? "";
   return typeof value === "string" ? value : "";
@@ -100,10 +92,7 @@ export default async function PostsPage({ searchParams }: Props) {
   const trimmedQuery = q.trim();
   const hasQuery = Boolean(trimmedQuery);
 
-  const [categories, sfmMatrix] = await Promise.all([
-    getCategoryOptions(),
-    getSfmMatrix(false),
-  ]);
+  const [categories, sfmMatrix] = await Promise.all([getCategoryOptions(), getSfmMatrix(false)]);
   const isDegraded = hasRecentDatabaseFallback();
 
   const fetchPage = (pageNumber: number) =>
@@ -123,9 +112,7 @@ export default async function PostsPage({ searchParams }: Props) {
   const totalPages = getTotalPages(initialResult.total, PAGE_SIZE);
   const activePage = Math.min(requestedPage, totalPages);
   const needsRefetch = activePage !== requestedPage;
-  const finalResult = needsRefetch
-    ? await fetchPage(activePage)
-    : initialResult;
+  const finalResult = needsRefetch ? await fetchPage(activePage) : initialResult;
 
   const posts = finalResult.posts;
   const buildPageHref = (page: number) => {
@@ -178,12 +165,14 @@ export default async function PostsPage({ searchParams }: Props) {
         </div>
         {posts.length ? (
           <ul className="grid gap-5 md:grid-cols-2">
-            {posts.map(post => (
+            {posts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </ul>
         ) : (
-          <Card className="p-8 text-center text-white/70">No posts match the selected filters.</Card>
+          <Card className="p-8 text-center text-white/70">
+            No posts match the selected filters.
+          </Card>
         )}
 
         <Pagination

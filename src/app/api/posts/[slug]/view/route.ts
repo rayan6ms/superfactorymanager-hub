@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { shouldCountViewAndMark } from "@/lib/views";
-import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
+import {
+  checkRateLimit,
+  getClientRateLimitKey,
+  hashRateLimitIdentifier,
+} from "@/lib/request-security";
 
 const VIEW_WINDOW_MS = 10 * 1000;
 const VIEW_LIMIT_PER_IP_PER_POST = 6;
@@ -24,7 +28,10 @@ function isMissingPostViewDayTableError(error: unknown) {
     return false;
   }
 
-  return error.message.includes("PostViewDay") || JSON.stringify(error.meta ?? {}).includes("PostViewDay");
+  return (
+    error.message.includes("PostViewDay") ||
+    JSON.stringify(error.meta ?? {}).includes("PostViewDay")
+  );
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
@@ -55,7 +62,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
   if (await shouldCountViewAndMark(post.id)) {
     const day = getUtcDay();
-    const updatedPost = await db.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } });
+    const updatedPost = await db.post.update({
+      where: { id: post.id },
+      data: { views: { increment: 1 } },
+    });
 
     try {
       await db.$executeRaw`

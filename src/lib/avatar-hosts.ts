@@ -23,7 +23,9 @@ export const avatarImageRemotePatterns = ALLOWED_AVATAR_HOSTNAME_PATTERNS.map((h
   hostname,
 }));
 
-export const avatarImageCspSources = ALLOWED_AVATAR_HOSTNAME_PATTERNS.map((hostname) => `https://${hostname}`);
+export const avatarImageCspSources = ALLOWED_AVATAR_HOSTNAME_PATTERNS.map(
+  (hostname) => `https://${hostname}`,
+);
 
 export const supportedAvatarHostLabels = [
   "avatars.githubusercontent.com",
@@ -44,5 +46,7 @@ export function isAllowedAvatarRemoteUrl(url: string | URL) {
   }
 
   const hostname = normalizeHostname(parsed.hostname);
-  return ALLOWED_AVATAR_HOSTNAME_PATTERNS.some((pattern) => matchesHostnamePattern(hostname, pattern));
+  return ALLOWED_AVATAR_HOSTNAME_PATTERNS.some((pattern) =>
+    matchesHostnamePattern(hostname, pattern),
+  );
 }

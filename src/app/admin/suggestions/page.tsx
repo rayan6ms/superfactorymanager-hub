@@ -9,7 +9,11 @@ import { db } from "@/lib/db";
 import { Inbox, Mail, User } from "lucide-react";
 import { parsePageParam, getTotalPages } from "@/lib/pagination";
 
-export default async function AdminSuggestionsPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function AdminSuggestionsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const params = searchParams ? await searchParams : undefined;
   const pageParam = params?.page;
   const requestedPage = parsePageParam(Array.isArray(pageParam) ? pageParam[0] : pageParam, 1);
@@ -73,12 +77,15 @@ export default async function AdminSuggestionsPage({ searchParams }: { searchPar
           </div>
         ) : (
           <ul className="divide-y divide-white/10">
-            {suggestions.map(suggestion => (
+            {suggestions.map((suggestion) => (
               <li key={suggestion.id} className="space-y-3 px-5 py-4">
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
                     <User className="h-4 w-4" />
-                    {suggestion.author?.name || suggestion.contactName || suggestion.author?.email || "Anonymous"}
+                    {suggestion.author?.name ||
+                      suggestion.contactName ||
+                      suggestion.author?.email ||
+                      "Anonymous"}
                   </div>
                   {suggestion.contactEmail && (
                     <span className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 text-xs text-white/70">
@@ -90,7 +97,9 @@ export default async function AdminSuggestionsPage({ searchParams }: { searchPar
                     {formatDistanceToNow(new Date(suggestion.createdAt), { addSuffix: true })}
                   </span>
                 </div>
-                <pre className="whitespace-pre-wrap text-sm text-white/90">{suggestion.message}</pre>
+                <pre className="whitespace-pre-wrap text-sm text-white/90">
+                  {suggestion.message}
+                </pre>
               </li>
             ))}
           </ul>

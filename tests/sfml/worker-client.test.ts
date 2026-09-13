@@ -38,9 +38,7 @@ describe("analysis worker lifecycle", () => {
       return worker;
     });
     const controller = new AbortController();
-    const first = client
-      .analyze("INPUT FROM", {}, controller.signal)
-      .catch((e) => e.name);
+    const first = client.analyze("INPUT FROM", {}, controller.signal).catch((e) => e.name);
     controller.abort();
     expect(await first).toBe("AbortError");
     expect(workers[0].stopped).toBe(true);
@@ -56,9 +54,7 @@ describe("analysis worker lifecycle", () => {
     const client = createSfmlAnalysisClient(() => worker);
     const first = client.analyze(code);
     const controller = new AbortController();
-    const canceled = client
-      .analyze("invalid", {}, controller.signal)
-      .catch((e) => e.name);
+    const canceled = client.analyze("invalid", {}, controller.signal).catch((e) => e.name);
     const third = client.analyze(code);
     controller.abort();
     expect(await canceled).toBe("AbortError");

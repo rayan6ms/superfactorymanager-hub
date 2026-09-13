@@ -26,10 +26,7 @@ export type AnalyzeOptions = {
 
 export { getSfmlAnalyzeDebounceMs } from "./timing";
 
-export function analyzeSfmlCode(
-  code: string,
-  opts: AnalyzeOptions = {},
-): CodeFeedback {
+export function analyzeSfmlCode(code: string, opts: AnalyzeOptions = {}): CodeFeedback {
   const { required = false, minLength = 3, emptyMessage } = opts;
   const trimmed = code.trim();
 
@@ -74,17 +71,13 @@ export function analyzeSfmlCode(
     const first = parsed.errors[0];
     const location = first
       ? `line ${first.lineStart}${
-          typeof first.columnStart === "number"
-            ? `, column ${first.columnStart + 1}`
-            : ""
+          typeof first.columnStart === "number" ? `, column ${first.columnStart + 1}` : ""
         }`
       : "the script";
 
     return {
       status: "error",
-      message: first
-        ? `Syntax error on ${location}: ${first.message}`
-        : "Syntax error in script.",
+      message: first ? `Syntax error on ${location}: ${first.message}` : "Syntax error in script.",
       syntaxErrors: parsed.errors,
       warnings: [],
     };

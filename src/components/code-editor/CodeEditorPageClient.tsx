@@ -107,7 +107,7 @@ export default function CodeEditorPageClient({
 
   const errorMarkers = useMemo(
     () =>
-      codeFeedback.syntaxErrors.map(err => ({
+      codeFeedback.syntaxErrors.map((err) => ({
         line: err.lineStart,
         message: err.message,
       })),
@@ -116,7 +116,7 @@ export default function CodeEditorPageClient({
 
   const warningRanges = useMemo(
     () =>
-      codeFeedback.warnings.map(w => ({
+      codeFeedback.warnings.map((w) => ({
         startLine: w.lineStart,
         endLine: w.lineEnd ?? w.lineStart,
         message: w.message,
@@ -138,13 +138,16 @@ export default function CodeEditorPageClient({
     if (typeof window === "undefined") return;
     try {
       window.localStorage.setItem(CODE_EDITOR_DRAFT_STORAGE_KEY, value);
-    } catch { }
+    } catch {}
   }, []);
 
-  const requireLoginWithDraftWarning = useCallback((message: string) => {
-    persistDraftNow(code);
-    openLogin(message);
-  }, [code, openLogin, persistDraftNow]);
+  const requireLoginWithDraftWarning = useCallback(
+    (message: string) => {
+      persistDraftNow(code);
+      openLogin(message);
+    },
+    [code, openLogin, persistDraftNow],
+  );
 
   const showCodeLengthTip = useCallback((count: number) => {
     setCodeLengthErrorCount(count);
@@ -156,11 +159,14 @@ export default function CodeEditorPageClient({
     return `${window.location.origin}${sharePath}`;
   }, []);
 
-  const copyBuildLink = useCallback(async (build: SavedBuild) => {
-    const absoluteUrl = getBuildShareUrl(build);
-    if (!absoluteUrl) return;
-    await navigator.clipboard.writeText(absoluteUrl);
-  }, [getBuildShareUrl]);
+  const copyBuildLink = useCallback(
+    async (build: SavedBuild) => {
+      const absoluteUrl = getBuildShareUrl(build);
+      if (!absoluteUrl) return;
+      await navigator.clipboard.writeText(absoluteUrl);
+    },
+    [getBuildShareUrl],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -169,7 +175,7 @@ export default function CodeEditorPageClient({
       if (rawDraft && rawDraft.trim()) {
         setCode(rawDraft);
       }
-    } catch { }
+    } catch {}
     setHasLoadedDraft(true);
   }, []);
 
@@ -229,10 +235,13 @@ export default function CodeEditorPageClient({
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/builds/check-name?name=${encodeURIComponent(buildName)}`, {
-          credentials: "include",
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          `/api/builds/check-name?name=${encodeURIComponent(buildName)}`,
+          {
+            credentials: "include",
+            signal: controller.signal,
+          },
+        );
         if (requestId !== nameRequestRef.current) return;
 
         if (response.status === 401) {
@@ -240,9 +249,10 @@ export default function CodeEditorPageClient({
           return;
         }
 
-        const payload = await response.json().catch(() => null) as
-          | { available?: boolean; reason?: string }
-          | null;
+        const payload = (await response.json().catch(() => null)) as {
+          available?: boolean;
+          reason?: string;
+        } | null;
 
         if (!response.ok) {
           setNameCheck({ status: "error", message: "Could not check availability right now." });
@@ -279,19 +289,22 @@ export default function CodeEditorPageClient({
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
-  const openSaveModal = useCallback((intent: SaveIntent) => {
-    if (!initialIsAuthenticated) {
-      requireLoginWithDraftWarning(
-        "You need to log in to save or share. Your current code is safe and will be restored after login.",
-      );
-      return;
-    }
+  const openSaveModal = useCallback(
+    (intent: SaveIntent) => {
+      if (!initialIsAuthenticated) {
+        requireLoginWithDraftWarning(
+          "You need to log in to save or share. Your current code is safe and will be restored after login.",
+        );
+        return;
+      }
 
-    setSaveIntent(intent);
-    setSaveError(null);
-    setShareFallbackLink(null);
-    setSaveModalOpen(true);
-  }, [initialIsAuthenticated, requireLoginWithDraftWarning]);
+      setSaveIntent(intent);
+      setSaveError(null);
+      setShareFallbackLink(null);
+      setSaveModalOpen(true);
+    },
+    [initialIsAuthenticated, requireLoginWithDraftWarning],
+  );
 
   const handleCreatePost = useCallback(() => {
     if (!initialIsAuthenticated) {
@@ -304,7 +317,7 @@ export default function CodeEditorPageClient({
     if (typeof window !== "undefined") {
       try {
         window.sessionStorage.setItem(POST_COMPOSER_PREFILL_CODE_KEY, code);
-      } catch { }
+      } catch {}
     }
     router.push("/posts/new");
   }, [code, initialIsAuthenticated, requireLoginWithDraftWarning, router]);
@@ -340,191 +353,212 @@ export default function CodeEditorPageClient({
     requireLoginWithDraftWarning,
   ]);
 
-  const handleSaveSubmit = useCallback(async (event: React.FormEvent) => {
-    event.preventDefault();
-    setSaveError(null);
+  const handleSaveSubmit = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      setSaveError(null);
 
-    const parsed = z.object({
-      name: buildNameSchema,
-      tag: buildTagSchema,
-      visibility: buildVisibilitySchema,
-    }).safeParse({
-      name: buildName,
-      tag: buildTag,
-      visibility,
-    });
-
-    if (!parsed.success) {
-      const issue = parsed.error.issues[0];
-      if (issue?.path[0] === "name") {
-        setNameCheck({
-          status: "invalid",
-          message: issue.message ?? "Build name is required.",
+      const parsed = z
+        .object({
+          name: buildNameSchema,
+          tag: buildTagSchema,
+          visibility: buildVisibilitySchema,
+        })
+        .safeParse({
+          name: buildName,
+          tag: buildTag,
+          visibility,
         });
-      }
-      setSaveError(issue?.message ?? "Build details are invalid.");
-      return;
-    }
 
-    if (!hasValidCodeLength) {
-      showCodeLengthTip(codeStats.nonWhitespaceCount);
-      setSaveError(CODE_TOO_SHORT_ERROR);
-      return;
-    }
-
-    const normalized = normalizeBuildName(parsed.data.name).nameLower;
-    if (lastSavedBuild && hasUnsavedChanges && normalized === lastSavedBuild.nameLower) {
-      const message = "To update an existing build, open it from your builds page.";
-      setNameCheck({ status: "taken", message });
-      setSaveError(message);
-      return;
-    }
-
-    if (nameCheck.status === "checking") {
-      setSaveError("Please wait for name availability to finish checking.");
-      return;
-    }
-    if (nameCheck.status === "invalid" || nameCheck.status === "taken" || nameCheck.status === "error") {
-      setSaveError(nameCheck.message);
-      return;
-    }
-    if (nameCheck.status !== "available") {
-      setSaveError("Please enter a valid, available name.");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const response = await fetch("/api/builds", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          name: parsed.data.name,
-          tag: parsed.data.tag,
-          code,
-          visibility: parsed.data.visibility,
-        }),
-      });
-
-      const payload = await response.json().catch(() => null) as BuildWriteResponse | null;
-      if (response.status === 401) {
-        setSaveModalOpen(false);
-        requireLoginWithDraftWarning(
-          "You need to log in to save or share. Your current code is safe and will be restored after login.",
-        );
+      if (!parsed.success) {
+        const issue = parsed.error.issues[0];
+        if (issue?.path[0] === "name") {
+          setNameCheck({
+            status: "invalid",
+            message: issue.message ?? "Build name is required.",
+          });
+        }
+        setSaveError(issue?.message ?? "Build details are invalid.");
         return;
       }
 
-      if (response.status === 409 && payload?.error === "BUILD_NAME_TAKEN") {
-        setNameCheck({ status: "taken", message: "That build name is already taken." });
-        setSaveError("That build name is already taken.");
-        return;
-      }
-
-      if (response.status === 400 && payload?.error === "CODE_TOO_SHORT") {
-        const count = typeof payload.nonWhitespaceCount === "number"
-          ? payload.nonWhitespaceCount
-          : codeStats.nonWhitespaceCount;
-        showCodeLengthTip(count);
+      if (!hasValidCodeLength) {
+        showCodeLengthTip(codeStats.nonWhitespaceCount);
         setSaveError(CODE_TOO_SHORT_ERROR);
         return;
       }
 
-      if (!response.ok || !payload?.build) {
-        setSaveError(payload?.error ?? "Could not save build right now.");
+      const normalized = normalizeBuildName(parsed.data.name).nameLower;
+      if (lastSavedBuild && hasUnsavedChanges && normalized === lastSavedBuild.nameLower) {
+        const message = "To update an existing build, open it from your builds page.";
+        setNameCheck({ status: "taken", message });
+        setSaveError(message);
         return;
       }
 
-      const savedBuild: SavedBuild = {
-        username: payload.build.username,
-        slug: payload.build.slug,
-        nameLower: payload.build.nameLower,
-      };
-      setLastSavedBuild(savedBuild);
-      setLastSavedTrimmedCode(codeStats.trimmedCode);
-      setSaveModalOpen(false);
-      setShareFallbackLink(null);
+      if (nameCheck.status === "checking") {
+        setSaveError("Please wait for name availability to finish checking.");
+        return;
+      }
+      if (
+        nameCheck.status === "invalid" ||
+        nameCheck.status === "taken" ||
+        nameCheck.status === "error"
+      ) {
+        setSaveError(nameCheck.message);
+        return;
+      }
+      if (nameCheck.status !== "available") {
+        setSaveError("Please enter a valid, available name.");
+        return;
+      }
 
-      if (saveIntent === "share") {
-        const shareUrl = getBuildShareUrl(savedBuild);
-        if (parsed.data.visibility !== "PUBLIC") {
-          if (typeof window !== "undefined") {
-            window.sessionStorage.setItem(
-              POST_REDIRECT_TOAST_STORAGE_KEY,
-              "Build saved. Change visibility to PUBLIC to share its link.",
-            );
-            window.sessionStorage.removeItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY);
-          }
-        } else {
-          try {
-            await copyBuildLink(savedBuild);
-            if (typeof window !== "undefined") {
-              window.sessionStorage.setItem(POST_REDIRECT_TOAST_STORAGE_KEY, "Build link copied!");
-              window.sessionStorage.removeItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY);
-            }
-          } catch {
+      setIsSaving(true);
+      try {
+        const response = await fetch("/api/builds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            name: parsed.data.name,
+            tag: parsed.data.tag,
+            code,
+            visibility: parsed.data.visibility,
+          }),
+        });
+
+        const payload = (await response.json().catch(() => null)) as BuildWriteResponse | null;
+        if (response.status === 401) {
+          setSaveModalOpen(false);
+          requireLoginWithDraftWarning(
+            "You need to log in to save or share. Your current code is safe and will be restored after login.",
+          );
+          return;
+        }
+
+        if (response.status === 409 && payload?.error === "BUILD_NAME_TAKEN") {
+          setNameCheck({ status: "taken", message: "That build name is already taken." });
+          setSaveError("That build name is already taken.");
+          return;
+        }
+
+        if (response.status === 400 && payload?.error === "CODE_TOO_SHORT") {
+          const count =
+            typeof payload.nonWhitespaceCount === "number"
+              ? payload.nonWhitespaceCount
+              : codeStats.nonWhitespaceCount;
+          showCodeLengthTip(count);
+          setSaveError(CODE_TOO_SHORT_ERROR);
+          return;
+        }
+
+        if (!response.ok || !payload?.build) {
+          setSaveError(payload?.error ?? "Could not save build right now.");
+          return;
+        }
+
+        const savedBuild: SavedBuild = {
+          username: payload.build.username,
+          slug: payload.build.slug,
+          nameLower: payload.build.nameLower,
+        };
+        setLastSavedBuild(savedBuild);
+        setLastSavedTrimmedCode(codeStats.trimmedCode);
+        setSaveModalOpen(false);
+        setShareFallbackLink(null);
+
+        if (saveIntent === "share") {
+          const shareUrl = getBuildShareUrl(savedBuild);
+          if (parsed.data.visibility !== "PUBLIC") {
             if (typeof window !== "undefined") {
               window.sessionStorage.setItem(
                 POST_REDIRECT_TOAST_STORAGE_KEY,
-                "Build saved. Clipboard access was blocked, copy the link below.",
+                "Build saved. Change visibility to PUBLIC to share its link.",
               );
-              if (shareUrl) {
-                window.sessionStorage.setItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY, shareUrl);
+              window.sessionStorage.removeItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY);
+            }
+          } else {
+            try {
+              await copyBuildLink(savedBuild);
+              if (typeof window !== "undefined") {
+                window.sessionStorage.setItem(
+                  POST_REDIRECT_TOAST_STORAGE_KEY,
+                  "Build link copied!",
+                );
+                window.sessionStorage.removeItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY);
+              }
+            } catch {
+              if (typeof window !== "undefined") {
+                window.sessionStorage.setItem(
+                  POST_REDIRECT_TOAST_STORAGE_KEY,
+                  "Build saved. Clipboard access was blocked, copy the link below.",
+                );
+                if (shareUrl) {
+                  window.sessionStorage.setItem(POST_REDIRECT_SHARE_LINK_STORAGE_KEY, shareUrl);
+                }
               }
             }
           }
         }
-      }
 
-      router.push(buildPublicBuildPath(savedBuild.username, savedBuild.slug));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not save build right now.";
-      setSaveError(message);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [
-    buildName,
-    buildTag,
-    code,
-    codeStats.nonWhitespaceCount,
-    codeStats.trimmedCode,
-    copyBuildLink,
-    getBuildShareUrl,
-    hasUnsavedChanges,
-    hasValidCodeLength,
-    lastSavedBuild,
-    nameCheck,
-    requireLoginWithDraftWarning,
-    router,
-    saveIntent,
-    showCodeLengthTip,
-    visibility,
-  ]);
+        router.push(buildPublicBuildPath(savedBuild.username, savedBuild.slug));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not save build right now.";
+        setSaveError(message);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [
+      buildName,
+      buildTag,
+      code,
+      codeStats.nonWhitespaceCount,
+      codeStats.trimmedCode,
+      copyBuildLink,
+      getBuildShareUrl,
+      hasUnsavedChanges,
+      hasValidCodeLength,
+      lastSavedBuild,
+      nameCheck,
+      requireLoginWithDraftWarning,
+      router,
+      saveIntent,
+      showCodeLengthTip,
+      visibility,
+    ],
+  );
 
   const nameStatusIcon = useMemo(() => {
-    if (nameCheck.status === "checking") return <Loader2 className="h-4 w-4 animate-spin text-white/70" />;
+    if (nameCheck.status === "checking")
+      return <Loader2 className="h-4 w-4 animate-spin text-white/70" />;
     if (nameCheck.status === "available") return <Check className="h-4 w-4 text-emerald-300" />;
-    if (nameCheck.status === "invalid" || nameCheck.status === "taken" || nameCheck.status === "error") {
+    if (
+      nameCheck.status === "invalid" ||
+      nameCheck.status === "taken" ||
+      nameCheck.status === "error"
+    ) {
       return <X className="h-4 w-4 text-red-300" />;
     }
     return null;
   }, [nameCheck.status]);
 
-  const saveModalTitle = saveIntent === "share"
-    ? visibility === "PUBLIC"
-      ? "Save build and copy link"
-      : "Save private build"
-    : "Save build";
-  const saveModalDescription = saveIntent === "share" && visibility === "PRIVATE"
-    ? "Add one short tag and save this build privately. Switch visibility to PUBLIC when you want a shareable link."
-    : "Add one short tag to describe what this build is for. It will be shown on build cards and used in search.";
-  const submitLabel = saveIntent === "share"
-    ? visibility === "PUBLIC"
-      ? "Save and copy link"
-      : "Save private build"
-    : "Save build";
+  const saveModalTitle =
+    saveIntent === "share"
+      ? visibility === "PUBLIC"
+        ? "Save build and copy link"
+        : "Save private build"
+      : "Save build";
+  const saveModalDescription =
+    saveIntent === "share" && visibility === "PRIVATE"
+      ? "Add one short tag and save this build privately. Switch visibility to PUBLIC when you want a shareable link."
+      : "Add one short tag to describe what this build is for. It will be shown on build cards and used in search.";
+  const submitLabel =
+    saveIntent === "share"
+      ? visibility === "PUBLIC"
+        ? "Save and copy link"
+        : "Save private build"
+      : "Save build";
 
   return (
     <div className="space-y-8 pb-4">
@@ -544,8 +578,8 @@ export default function CodeEditorPageClient({
 
         <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/75 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-3xl text-white/70">
-            Need inspiration or not sure how to structure your script? Click to open the official guide in a new tab to see
-            complete examples.
+            Need inspiration or not sure how to structure your script? Click to open the official
+            guide in a new tab to see complete examples.
           </p>
           <Link href="/guide" target="_blank" rel="noreferrer" className="inline-flex sm:shrink-0">
             <Button size="sm" variant="transparent" className="w-full justify-center gap-2">
@@ -569,7 +603,9 @@ export default function CodeEditorPageClient({
                 onClick={() => setWrapLines(true)}
                 className={clsx(
                   "rounded-full px-3 py-1.5 transition",
-                  wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                  wrapLines
+                    ? "bg-brand-500 text-white shadow-soft"
+                    : "text-white/70 hover:text-white",
                 )}
               >
                 Wrap lines
@@ -580,7 +616,9 @@ export default function CodeEditorPageClient({
                 onClick={() => setWrapLines(false)}
                 className={clsx(
                   "rounded-full px-3 py-1.5 transition",
-                  !wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                  !wrapLines
+                    ? "bg-brand-500 text-white shadow-soft"
+                    : "text-white/70 hover:text-white",
                 )}
               >
                 Horizontal scroll
@@ -606,7 +644,10 @@ export default function CodeEditorPageClient({
               {codeFeedback.syntaxErrors.map((err, idx) => (
                 <li key={`${err.lineStart}-${err.columnStart ?? 0}-${idx}`}>
                   Line {err.lineStart}
-                  {typeof err.columnStart === "number" ? `, column ${err.columnStart + 1}` : ""} – {err.message}
+                  {typeof err.columnStart === "number"
+                    ? `, column ${err.columnStart + 1}`
+                    : ""} –{" "}
+                  {err.message}
                 </li>
               ))}
             </ul>
@@ -629,7 +670,8 @@ export default function CodeEditorPageClient({
 
         <div className="space-y-3 rounded-2xl border border-white/10 bg-black/30 p-4">
           <p className="text-sm text-white/65">
-            Share a URL to your code creation, anyone with the link may see your build if the visibility is set to public.
+            Share a URL to your code creation, anyone with the link may see your build if the
+            visibility is set to public.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
             <Button type="button" variant="outline" onClick={handleCreatePost}>
@@ -683,10 +725,12 @@ export default function CodeEditorPageClient({
                   Displayed casing is preserved. Name matching is case-insensitive.
                 </p>
                 {nameCheck.status !== "idle" && nameCheck.status !== "checking" && (
-                  <p className={clsx(
-                    "text-sm",
-                    nameCheck.status === "available" ? "text-emerald-300" : "text-red-300",
-                  )}>
+                  <p
+                    className={clsx(
+                      "text-sm",
+                      nameCheck.status === "available" ? "text-emerald-300" : "text-red-300",
+                    )}
+                  >
                     {nameCheck.status === "available" ? "Name is available." : nameCheck.message}
                   </p>
                 )}
@@ -720,7 +764,9 @@ export default function CodeEditorPageClient({
                     onClick={() => setVisibility("PUBLIC")}
                     className={clsx(
                       "rounded-full px-3 py-1.5 transition",
-                      visibility === "PUBLIC" ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                      visibility === "PUBLIC"
+                        ? "bg-brand-500 text-white shadow-soft"
+                        : "text-white/70 hover:text-white",
                     )}
                   >
                     PUBLIC
@@ -731,7 +777,9 @@ export default function CodeEditorPageClient({
                     onClick={() => setVisibility("PRIVATE")}
                     className={clsx(
                       "rounded-full px-3 py-1.5 transition",
-                      visibility === "PRIVATE" ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                      visibility === "PRIVATE"
+                        ? "bg-brand-500 text-white shadow-soft"
+                        : "text-white/70 hover:text-white",
                     )}
                   >
                     PRIVATE
@@ -754,9 +802,7 @@ export default function CodeEditorPageClient({
                 </div>
               )}
 
-              {saveError && (
-                <p className="text-sm text-error">{saveError}</p>
-              )}
+              {saveError && <p className="text-sm text-error">{saveError}</p>}
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                 <Badge>
@@ -803,7 +849,11 @@ export default function CodeEditorPageClient({
                 Clipboard permission is unavailable. Copy this canonical build link manually.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Input readOnly value={shareFallbackLink} className="border-amber-200/50 bg-amber-950/50 font-mono text-xs text-amber-50" />
+                <Input
+                  readOnly
+                  value={shareFallbackLink}
+                  className="border-amber-200/50 bg-amber-950/50 font-mono text-xs text-amber-50"
+                />
                 <Button
                   type="button"
                   className="border-amber-200/40 bg-amber-500 text-white hover:bg-amber-400 sm:shrink-0"

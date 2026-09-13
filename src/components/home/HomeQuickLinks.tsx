@@ -10,35 +10,35 @@ const LINKS: Array<{
   href: string;
   cta: string;
 }> = [
-    {
-      title: "Official guide",
-      description: "Want to learn how to use SFM? Try the official guide.",
-      Icon: BookOpen,
-      href: "/guide",
-      cta: "Open",
-    },
-    {
-      title: "Code editor",
-      description: "Try making your own code using our editor.",
-      Icon: Code2,
-      href: "/code-editor",
-      cta: "Open",
-    },
-    {
-      title: "Share feedback",
-      description: "Tell us what you think or send a suggestion.",
-      Icon: MessagesSquare,
-      href: "/contact",
-      cta: "Contact",
-    },
-    {
-      title: "Latest updates",
-      description: "Check updates and the latest features.",
-      Icon: History,
-      href: "/changelog",
-      cta: "View",
-    },
-  ];
+  {
+    title: "Official guide",
+    description: "Want to learn how to use SFM? Try the official guide.",
+    Icon: BookOpen,
+    href: "/guide",
+    cta: "Open",
+  },
+  {
+    title: "Code editor",
+    description: "Try making your own code using our editor.",
+    Icon: Code2,
+    href: "/code-editor",
+    cta: "Open",
+  },
+  {
+    title: "Share feedback",
+    description: "Tell us what you think or send a suggestion.",
+    Icon: MessagesSquare,
+    href: "/contact",
+    cta: "Contact",
+  },
+  {
+    title: "Latest updates",
+    description: "Check updates and the latest features.",
+    Icon: History,
+    href: "/changelog",
+    cta: "View",
+  },
+];
 
 export default function HomeQuickLinks() {
   return (
@@ -50,17 +50,12 @@ export default function HomeQuickLinks() {
 
       <div className="grid gap-3 md:grid-cols-2">
         {LINKS.map(({ href, title, description, Icon, cta }) => (
-          <div
-            key={href}
-            className="rounded-xl border border-white/10 bg-white/5 p-3"
-          >
+          <div key={href} className="rounded-xl border border-white/10 bg-white/5 p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <Icon className="h-4 w-4 text-white/70" aria-hidden="true" />
-                  <p className="truncate font-semibold text-white">
-                    {title}
-                  </p>
+                  <p className="truncate font-semibold text-white">{title}</p>
                 </div>
               </div>
 

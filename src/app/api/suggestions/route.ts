@@ -31,12 +31,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
   }
 
-  const {
-    message,
-    contactEmail,
-    contactName,
-    website,
-  } = parse.data;
+  const { message, contactEmail, contactName, website } = parse.data;
 
   if (website?.trim()) {
     return NextResponse.json({ ok: true });

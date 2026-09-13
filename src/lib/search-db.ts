@@ -61,7 +61,12 @@ function buildConditions(filters?: PostSearchFilters) {
 
 async function runRankedSearch(
   tsQuerySql: Prisma.Sql,
-  options: { limit?: number; offset?: number; filters?: PostSearchFilters; order?: PostSearchOrder },
+  options: {
+    limit?: number;
+    offset?: number;
+    filters?: PostSearchFilters;
+    order?: PostSearchOrder;
+  },
 ): Promise<{ results: PostSearchResult[]; total: number }> {
   const limit = Math.max(1, Math.min(options.limit ?? 20, 100));
   const offset = Math.max(0, options.offset ?? 0);
@@ -124,9 +129,9 @@ export async function searchPosts(q: string, limit = 20): Promise<PostSearchResu
 export function toPrefixQuery(q: string): string {
   const tokens = q
     .split(/\s+/)
-    .map(part => part.replace(/[^\p{L}\p{N}]/gu, ""))
+    .map((part) => part.replace(/[^\p{L}\p{N}]/gu, ""))
     .filter(Boolean)
-    .map(part => `${part}:*`);
+    .map((part) => `${part}:*`);
 
   return tokens.join(" & ");
 }
@@ -135,10 +140,9 @@ export async function searchPostsPrefix(q: string, limit = 20): Promise<PostSear
   const prefixQuery = toPrefixQuery(q.trim());
   if (!prefixQuery) return [];
 
-  const { results } = await runRankedSearch(
-    Prisma.sql`to_tsquery('english', ${prefixQuery})`,
-    { limit },
-  );
+  const { results } = await runRankedSearch(Prisma.sql`to_tsquery('english', ${prefixQuery})`, {
+    limit,
+  });
 
   return results;
 }

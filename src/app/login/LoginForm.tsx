@@ -70,7 +70,7 @@ export default function LoginForm({ next }: LoginFormProps) {
         case "EMAIL_NOT_VERIFIED":
           message.form = "We couldn't sign you in because your email hasn't been verified yet.";
           setStatusMessage(
-            "Check your inbox and spam folder. If the original link never arrived or expired, request a fresh verification email below."
+            "Check your inbox and spam folder. If the original link never arrived or expired, request a fresh verification email below.",
           );
           setCanResendVerification(true);
           break;
@@ -113,9 +113,9 @@ export default function LoginForm({ next }: LoginFormProps) {
               placeholder="Email or username"
               type="text"
               value={email}
-              onChange={e => {
+              onChange={(e) => {
                 setEmail(e.target.value);
-                setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
+                setErrors((prev) => ({ ...prev, email: undefined, form: undefined }));
                 setStatusMessage("");
                 setCanResendVerification(false);
               }}
@@ -137,9 +137,9 @@ export default function LoginForm({ next }: LoginFormProps) {
               placeholder="Password"
               type={showPassword ? "text" : "password"}
               value={password}
-              onChange={e => {
+              onChange={(e) => {
                 setPassword(e.target.value);
-                setErrors(prev => ({ ...prev, password: undefined, form: undefined }));
+                setErrors((prev) => ({ ...prev, password: undefined, form: undefined }));
                 setStatusMessage("");
                 setCanResendVerification(false);
               }}
@@ -149,7 +149,7 @@ export default function LoginForm({ next }: LoginFormProps) {
               rightIcon={
                 <button
                   type="button"
-                  onClick={() => setShowPassword(prev => !prev)}
+                  onClick={() => setShowPassword((prev) => !prev)}
                   className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-(--surface-2)"
                   aria-pressed={showPassword}
                   aria-label={showPassword ? "Hide password" : "Show password"}
@@ -164,7 +164,10 @@ export default function LoginForm({ next }: LoginFormProps) {
               </p>
             )}
             <div className="text-right text-sm">
-              <Link href="/reset-password" className="text-white/70 underline-offset-4 transition hover:text-white hover:underline">
+              <Link
+                href="/reset-password"
+                className="text-white/70 underline-offset-4 transition hover:text-white hover:underline"
+              >
                 Forgot your password?
               </Link>
             </div>
@@ -181,7 +184,9 @@ export default function LoginForm({ next }: LoginFormProps) {
         <div className="space-y-3 text-left">
           <div className="relative flex items-center">
             <div className="h-px flex-1 bg-white/15" />
-            <span className="px-3 text-xs uppercase tracking-wide text-white/50">Or continue with</span>
+            <span className="px-3 text-xs uppercase tracking-wide text-white/50">
+              Or continue with
+            </span>
             <div className="h-px flex-1 bg-white/15" />
           </div>
           <div className="grid gap-2">
@@ -222,7 +227,10 @@ export default function LoginForm({ next }: LoginFormProps) {
         )}
       </Card>
       <div className="w-full max-w-sm text-center text-sm text-white/70">
-        New here? <Link href="/signup" className="underline">Create an account</Link>
+        New here?{" "}
+        <Link href="/signup" className="underline">
+          Create an account
+        </Link>
       </div>
     </main>
   );

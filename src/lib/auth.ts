@@ -15,21 +15,17 @@ import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "
 import { isAdminEmail } from "./admin";
 
 const credsSchema = z.object({
-  identifier: z
-    .string()
-    .trim()
-    .min(1, "IDENTIFIER_REQUIRED"),
-  password: z
-    .string()
-    .min(1, "PASSWORD_REQUIRED")
-    .min(8, "PASSWORD_TOO_SHORT"),
+  identifier: z.string().trim().min(1, "IDENTIFIER_REQUIRED"),
+  password: z.string().min(1, "PASSWORD_REQUIRED").min(8, "PASSWORD_TOO_SHORT"),
 });
 
 const sessionProfileUpdateSchema = z.object({
-  user: z.object({
-    name: z.string().trim().min(1).optional(),
-    image: z.string().trim().max(4096).nullable().optional(),
-  }).partial(),
+  user: z
+    .object({
+      name: z.string().trim().min(1).optional(),
+      image: z.string().trim().max(4096).nullable().optional(),
+    })
+    .partial(),
 });
 
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
@@ -77,13 +73,10 @@ const providers: NextAuthConfig["providers"] = [
       const { identifier, password } = parsed.data;
       const normalizedIdentifier = identifier.toLowerCase();
       const identifierKey = hashRateLimitIdentifier(normalizedIdentifier, "auth:login:identifier");
-      const identifierBucket = await checkRateLimit(
-        `auth:login:identifier:${identifierKey}`,
-        {
-          windowMs: LOGIN_WINDOW_MS,
-          limit: LOGIN_LIMIT_PER_IDENTIFIER,
-        },
-      );
+      const identifierBucket = await checkRateLimit(`auth:login:identifier:${identifierKey}`, {
+        windowMs: LOGIN_WINDOW_MS,
+        limit: LOGIN_LIMIT_PER_IDENTIFIER,
+      });
       if (!identifierBucket.allowed) {
         throw new Error("TOO_MANY_ATTEMPTS");
       }
@@ -132,7 +125,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    })
+    }),
   );
 }
 
@@ -141,7 +134,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    })
+    }),
   );
 }
 
@@ -163,7 +156,8 @@ async function ensurePasswordReminderNotification(userId: string, profilePath = 
     await createNotification({
       userId,
       title: "Secure your account",
-      message: "Add a password so you can log in without your social account. Visit your profile to request a reset email.",
+      message:
+        "Add a password so you can log in without your social account. Visit your profile to request a reset email.",
       link: profilePath,
       metadata: { kind: "password-reminder" },
     });
@@ -193,7 +187,14 @@ export const authOptions: NextAuthConfig = {
       try {
         const existing = await db.user.findUnique({
           where: { id: user.id as string },
-          select: { id: true, name: true, email: true, image: true, passwordHash: true, emailVerified: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            passwordHash: true,
+            emailVerified: true,
+          },
         });
 
         if (!existing) {
@@ -213,7 +214,11 @@ export const authOptions: NextAuthConfig = {
         let nextName = existing.name ?? user.name ?? existing.email ?? user.email ?? undefined;
 
         if (!existing.name) {
-          const unique = await generateAvailableUsername(user.name ?? existing.name ?? null, existing.email ?? user.email ?? null, existing.id);
+          const unique = await generateAvailableUsername(
+            user.name ?? existing.name ?? null,
+            existing.email ?? user.email ?? null,
+            existing.id,
+          );
           updateData.name = unique;
           nextName = unique;
         }
@@ -222,7 +227,11 @@ export const authOptions: NextAuthConfig = {
           const fallbackName = nextName ?? existing.email ?? user.email ?? "user";
           const seed = existing.email ?? user.email ?? existing.id;
           const fallbackAvatar = generateInitialAvatar({ name: fallbackName, seed });
-          const resolved = await resolveProfileImage({ image: user.image, name: fallbackName, seed });
+          const resolved = await resolveProfileImage({
+            image: user.image,
+            name: fallbackName,
+            seed,
+          });
 
           if (resolved !== existing.image) {
             if (resolved === fallbackAvatar) {
@@ -244,7 +253,9 @@ export const authOptions: NextAuthConfig = {
 
         if (!existing.passwordHash) {
           const notificationUsername = updateData.name ?? existing.name;
-          const profilePath = notificationUsername ? `/profile/${encodeURIComponent(notificationUsername)}` : "/profile";
+          const profilePath = notificationUsername
+            ? `/profile/${encodeURIComponent(notificationUsername)}`
+            : "/profile";
           await ensurePasswordReminderNotification(existing.id, profilePath);
         }
       } catch (err) {
@@ -337,9 +348,14 @@ export const authOptions: NextAuthConfig = {
 
         if (!existing) return;
 
-        const uniqueName = await generateAvailableUsername(user.name ?? existing.name ?? null, existing.email ?? user.email ?? null, existing.id);
+        const uniqueName = await generateAvailableUsername(
+          user.name ?? existing.name ?? null,
+          existing.email ?? user.email ?? null,
+          existing.id,
+        );
         const seed = existing.email ?? user.email ?? existing.id;
-        const imageSource = typeof user.image === "string" ? user.image : existing.image ?? undefined;
+        const imageSource =
+          typeof user.image === "string" ? user.image : (existing.image ?? undefined);
         const resolvedImage = imageSource
           ? await resolveProfileImage({ image: imageSource, name: uniqueName, seed })
           : generateInitialAvatar({ name: uniqueName, seed });
@@ -354,7 +370,10 @@ export const authOptions: NextAuthConfig = {
         });
 
         if (!existing.passwordHash) {
-          await ensurePasswordReminderNotification(existing.id, `/profile/${encodeURIComponent(uniqueName)}`);
+          await ensurePasswordReminderNotification(
+            existing.id,
+            `/profile/${encodeURIComponent(uniqueName)}`,
+          );
         }
       } catch (error) {
         console.warn("createUser event handling failed:", error);

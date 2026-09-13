@@ -72,12 +72,7 @@ export function lexSfml(code: string): {
       continue;
     }
     if (code.startsWith("--", offset)) {
-      while (
-        offset < code.length &&
-        code[offset] !== "\r" &&
-        code[offset] !== "\n"
-      )
-        offset++;
+      while (offset < code.length && code[offset] !== "\r" && code[offset] !== "\n") offset++;
       column += offset - start;
       continue;
     }
@@ -128,22 +123,14 @@ export function lexSfml(code: string): {
         }
       } else if (isIdentifierStart(c)) {
         offset++;
-        while (
-          isIdentifierStart(code.charCodeAt(offset)) ||
-          isDigit(code.charCodeAt(offset))
-        )
+        while (isIdentifierStart(code.charCodeAt(offset)) || isDigit(code.charCodeAt(offset)))
           offset++;
         const word = code.slice(start, offset).toUpperCase();
-        kind =
-          word === "G" ? "GLOBAL" : keywords.has(word) ? word : "identifier";
+        kind = word === "G" ? "GLOBAL" : keywords.has(word) ? word : "identifier";
       } else {
         const pair = code.slice(offset, offset + 2);
         kind = punctuation[pair] ?? punctuation[code[offset]] ?? "invalid";
-        offset += punctuation[pair]
-          ? 2
-          : code.codePointAt(offset)! > 0xffff
-            ? 2
-            : 1;
+        offset += punctuation[pair] ? 2 : code.codePointAt(offset)! > 0xffff ? 2 : 1;
       }
       column += offset - start;
       if (kind === "invalid" && errors.length < MAX_DIAGNOSTICS) {

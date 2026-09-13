@@ -32,7 +32,11 @@ export function truncateMetaDescription(value: string, maxLength = 155) {
 }
 
 export function uniqueKeywords(values: Array<string | null | undefined>) {
-  return [...new Set(values.map(value => value?.trim()).filter((value): value is string => Boolean(value)))];
+  return [
+    ...new Set(
+      values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)),
+    ),
+  ];
 }
 
 export function safeJsonLd(data: unknown) {

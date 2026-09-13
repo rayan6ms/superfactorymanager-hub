@@ -145,7 +145,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     throw err;
   }
 
-  let parentComment: { id: string; authorId: string; postId: string; isDeleted: boolean } | null = null;
+  let parentComment: { id: string; authorId: string; postId: string; isDeleted: boolean } | null =
+    null;
   if (parentId) {
     parentComment = await db.comment.findUnique({
       where: { id: parentId },
@@ -163,7 +164,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       return badRequest("Invalid parent comment");
     }
     if (parentDepth >= COMMENT_MAX_DEPTH) {
-      return badRequest("This thread reached the maximum reply depth. Please start a new top-level comment.");
+      return badRequest(
+        "This thread reached the maximum reply depth. Please start a new top-level comment.",
+      );
     }
   }
 
@@ -239,12 +242,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     const seen = new Set<string>();
     await Promise.all(
       notificationPayloads
-        .filter(payload => {
+        .filter((payload) => {
           if (seen.has(payload.userId)) return false;
           seen.add(payload.userId);
           return true;
         })
-        .map(payload =>
+        .map((payload) =>
           createNotification({
             userId: payload.userId,
             title: payload.title,
@@ -252,7 +255,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
             origin: NotificationOrigin.POST,
             link: payload.link,
             metadata: payload.metadata,
-          }).catch(error => {
+          }).catch((error) => {
             console.warn("Failed to create comment notification", error);
           }),
         ),

@@ -33,11 +33,7 @@ export function wilsonInterval(
   return { lower, upper, center: p, n };
 }
 
-export function wilsonScore(
-  upvotes: number,
-  downvotes: number,
-  z: number = WILSON_Z_80,
-): number {
+export function wilsonScore(upvotes: number, downvotes: number, z: number = WILSON_Z_80): number {
   return wilsonInterval(upvotes, downvotes, z).lower;
 }
 

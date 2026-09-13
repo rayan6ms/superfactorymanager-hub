@@ -39,27 +39,24 @@ type CreateForkBuildOptions = {
 
 export type CreateForkBuildResult =
   | {
-    ok: true;
-    build: BuildSummary;
-  }
+      ok: true;
+      build: BuildSummary;
+    }
   | {
-    ok: false;
-    error: "BUILD_NAME_TAKEN";
-    normalized: string;
-  }
+      ok: false;
+      error: "BUILD_NAME_TAKEN";
+      normalized: string;
+    }
   | {
-    ok: false;
-    error: "FORK_SOURCE_NOT_FOUND";
-  }
+      ok: false;
+      error: "FORK_SOURCE_NOT_FOUND";
+    }
   | {
-    ok: false;
-    error: "UNABLE_TO_CREATE_BUILD";
-  };
+      ok: false;
+      error: "UNABLE_TO_CREATE_BUILD";
+    };
 
-function uniqueTargetIncludes(
-  target: string[] | string | undefined,
-  fields: string[],
-) {
+function uniqueTargetIncludes(target: string[] | string | undefined, fields: string[]) {
   if (!target) return false;
   if (Array.isArray(target)) {
     return fields.every((field) => target.includes(field));
@@ -177,10 +174,7 @@ export async function createForkBuild({
         };
       }
 
-      if (
-        error instanceof PrismaClient.PrismaClientKnownRequestError
-        && error.code === "P2002"
-      ) {
+      if (error instanceof PrismaClient.PrismaClientKnownRequestError && error.code === "P2002") {
         const target = error.meta?.target as string[] | string | undefined;
         if (uniqueTargetIncludes(target, ["userId", "nameLower"])) {
           return {

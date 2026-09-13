@@ -20,9 +20,7 @@ const ADS_ROUTE_PREFIXES = [
 
 function shouldMountAds(pathname: string) {
   return ADS_ROUTE_PREFIXES.some((prefix) =>
-    prefix === "/"
-      ? pathname === "/"
-      : pathname === prefix || pathname.startsWith(`${prefix}/`)
+    prefix === "/" ? pathname === "/" : pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }
 

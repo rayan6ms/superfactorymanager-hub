@@ -49,7 +49,11 @@ export default function RestoreDeletionButton({ type, targetId, label = "Restore
           loading && "opacity-60",
         )}
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <RotateCcw className="h-4 w-4" aria-hidden />}
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        ) : (
+          <RotateCcw className="h-4 w-4" aria-hidden />
+        )}
         <span>{label}</span>
       </button>
       {error && <p className="text-right text-xs text-red-300">{error}</p>}

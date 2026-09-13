@@ -10,7 +10,11 @@ export type ReportActionPayload = {
   defaultResolved: boolean;
 };
 
-export default function ReportActionControls({ reportId, targetLabel, defaultResolved }: ReportActionPayload) {
+export default function ReportActionControls({
+  reportId,
+  targetLabel,
+  defaultResolved,
+}: ReportActionPayload) {
   const router = useRouter();
   const [markResolved, setMarkResolved] = useState(!defaultResolved);
   const [flagTarget, setFlagTarget] = useState(false);
@@ -79,7 +83,7 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
               type="checkbox"
               className="h-4 w-4 rounded border-white/30 bg-transparent"
               checked={markResolved}
-              onChange={event => setMarkResolved(event.target.checked)}
+              onChange={(event) => setMarkResolved(event.target.checked)}
             />
             Mark report as resolved
           </label>
@@ -94,11 +98,13 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent"
             checked={flagTarget}
-            onChange={event => setFlagTarget(event.target.checked)}
+            onChange={(event) => setFlagTarget(event.target.checked)}
           />
           <span>
             Flag this content as deleted
-            <span className="block text-xs text-white/60">Hide the reported item from public view.</span>
+            <span className="block text-xs text-white/60">
+              Hide the reported item from public view.
+            </span>
           </span>
         </label>
         <label className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80">
@@ -106,11 +112,13 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent"
             checked={revokePostVotes}
-            onChange={event => setRevokePostVotes(event.target.checked)}
+            onChange={(event) => setRevokePostVotes(event.target.checked)}
           />
           <span>
             Revoke all of the user&apos;s post votes
-            <span className="block text-xs text-white/60">Remove their previous post ratings and recalculate scores.</span>
+            <span className="block text-xs text-white/60">
+              Remove their previous post ratings and recalculate scores.
+            </span>
           </span>
         </label>
         <label className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80">
@@ -118,11 +126,13 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent"
             checked={flagAuthorPosts}
-            onChange={event => setFlagAuthorPosts(event.target.checked)}
+            onChange={(event) => setFlagAuthorPosts(event.target.checked)}
           />
           <span>
             Flag all posts by this user
-            <span className="block text-xs text-white/60">Soft-delete every post authored by them.</span>
+            <span className="block text-xs text-white/60">
+              Soft-delete every post authored by them.
+            </span>
           </span>
         </label>
         <label className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80">
@@ -130,11 +140,13 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent"
             checked={flagAuthorComments}
-            onChange={event => setFlagAuthorComments(event.target.checked)}
+            onChange={(event) => setFlagAuthorComments(event.target.checked)}
           />
           <span>
             Flag all comments by this user
-            <span className="block text-xs text-white/60">Soft-delete every comment authored by them.</span>
+            <span className="block text-xs text-white/60">
+              Soft-delete every comment authored by them.
+            </span>
           </span>
         </label>
       </div>
@@ -145,11 +157,13 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent"
             checked={disableCreatePosts}
-            onChange={event => setDisableCreatePosts(event.target.checked)}
+            onChange={(event) => setDisableCreatePosts(event.target.checked)}
           />
           <span>
             Block new posts
-            <span className="block text-xs text-white/60">Prevent the user from publishing new posts.</span>
+            <span className="block text-xs text-white/60">
+              Prevent the user from publishing new posts.
+            </span>
           </span>
         </label>
         <label className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80">
@@ -157,11 +171,13 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent"
             checked={disableCreateComments}
-            onChange={event => setDisableCreateComments(event.target.checked)}
+            onChange={(event) => setDisableCreateComments(event.target.checked)}
           />
           <span>
             Block new comments
-            <span className="block text-xs text-white/60">Stop the user from adding any comments.</span>
+            <span className="block text-xs text-white/60">
+              Stop the user from adding any comments.
+            </span>
           </span>
         </label>
         <label className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/80">
@@ -169,7 +185,7 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent"
             checked={disableVotePosts}
-            onChange={event => setDisableVotePosts(event.target.checked)}
+            onChange={(event) => setDisableVotePosts(event.target.checked)}
           />
           <span>
             Block post votes
@@ -181,31 +197,37 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent"
             checked={disableVoteComments}
-            onChange={event => setDisableVoteComments(event.target.checked)}
+            onChange={(event) => setDisableVoteComments(event.target.checked)}
           />
           <span>
             Block comment votes
-            <span className="block text-xs text-white/60">Remove access to voting on comments.</span>
+            <span className="block text-xs text-white/60">
+              Remove access to voting on comments.
+            </span>
           </span>
         </label>
       </div>
 
       <div className="grid gap-3 md:grid-cols-[1fr,200px]">
         <label className="space-y-2 text-sm text-white/80">
-          <span className="block text-xs uppercase tracking-wide text-white/60">Moderator note</span>
+          <span className="block text-xs uppercase tracking-wide text-white/60">
+            Moderator note
+          </span>
           <textarea
             value={note}
-            onChange={event => setNote(event.target.value)}
+            onChange={(event) => setNote(event.target.value)}
             rows={3}
             className="w-full rounded-lg border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/40 focus:border-brand-300 focus:outline-none"
             placeholder="Explain the decision or context for future reference."
           />
         </label>
         <label className="space-y-2 text-sm text-white/80">
-          <span className="block text-xs uppercase tracking-wide text-white/60">Timeout duration</span>
+          <span className="block text-xs uppercase tracking-wide text-white/60">
+            Timeout duration
+          </span>
           <select
             value={timeoutMinutes}
-            onChange={event => setTimeoutMinutes(event.target.value)}
+            onChange={(event) => setTimeoutMinutes(event.target.value)}
             className="w-full rounded-lg border border-white/10 bg-black/40 p-3 text-sm text-white focus:border-brand-300 focus:outline-none"
           >
             <option value="">No timeout</option>
@@ -223,7 +245,9 @@ export default function ReportActionControls({ reportId, targetLabel, defaultRes
       {feedback && <p className="text-sm text-emerald-300">{feedback}</p>}
 
       <div className="flex flex-wrap justify-between gap-3">
-        <p className="text-xs text-white/60">Submitting applies changes immediately. Use cautiously.</p>
+        <p className="text-xs text-white/60">
+          Submitting applies changes immediately. Use cautiously.
+        </p>
         <button
           type="submit"
           disabled={submitting}

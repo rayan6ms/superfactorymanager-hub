@@ -11,7 +11,6 @@ import { scheduleSfmlAnalysis } from "@/lib/sfml/analysis-worker-client";
 import CopyCodeButton from "@/components/CopyCodeButton";
 import { Maximize2, Minimize2 } from "lucide-react";
 
-
 type ExampleKey =
   | "a_simple_program"
   | "empty_slots"
@@ -45,15 +44,27 @@ type ExampleState = {
 };
 
 const EXAMPLES: ExampleDef[] = [
-  { key: "a_simple_program", label: "A simple program", file: "/guide/examples/a_simple_program.sfml" },
+  {
+    key: "a_simple_program",
+    label: "A simple program",
+    file: "/guide/examples/a_simple_program.sfml",
+  },
   { key: "empty_slots", label: "Empty Slots", file: "/guide/examples/empty_slots.sfml" },
   { key: "forget", label: "Forget", file: "/guide/examples/forget.sfml" },
   { key: "known_issues", label: "Known issues", file: "/guide/examples/known_issues.sfml" },
-  { key: "redstone_signals", label: "Redstone signals", file: "/guide/examples/redstone_signals.sfml" },
+  {
+    key: "redstone_signals",
+    label: "Redstone signals",
+    file: "/guide/examples/redstone_signals.sfml",
+  },
   { key: "tag_matching", label: "Tag matching", file: "/guide/examples/tag_matching.sfml" },
   { key: "ae2_inscribers", label: "AE2 Inscribers", file: "/guide/examples/ae2_inscribers.sfml" },
   { key: "filtering", label: "Filtering", file: "/guide/examples/filtering.sfml" },
-  { key: "furnace_manager", label: "Furnace Manager", file: "/guide/examples/furnace_manager.sfml" },
+  {
+    key: "furnace_manager",
+    label: "Furnace Manager",
+    file: "/guide/examples/furnace_manager.sfml",
+  },
   { key: "limits", label: "Limits", file: "/guide/examples/limits.sfml" },
   { key: "round_robin", label: "Round Robin", file: "/guide/examples/round_robin.sfml" },
   {
@@ -62,15 +73,26 @@ const EXAMPLES: ExampleDef[] = [
     file: "/guide/examples/fluids_and_other_resource_types.sfml",
   },
   { key: "if_statements", label: "IF statements", file: "/guide/examples/if_statements.sfml" },
-  { key: "redstone_item_movement", label: "Redstone item movement", file: "/guide/examples/redstone_item_movement.sfml" },
-  { key: "slots_and_sides", label: "Slots and sides", file: "/guide/examples/slots_and_sides.sfml" },
+  {
+    key: "redstone_item_movement",
+    label: "Redstone item movement",
+    file: "/guide/examples/redstone_item_movement.sfml",
+  },
+  {
+    key: "slots_and_sides",
+    label: "Slots and sides",
+    file: "/guide/examples/slots_and_sides.sfml",
+  },
   { key: "time_triggers", label: "Time triggers", file: "/guide/examples/time_triggers.sfml" },
 ];
 
-const EXAMPLES_BY_KEY: Record<ExampleKey, ExampleDef> = EXAMPLES.reduce((acc, ex) => {
-  acc[ex.key] = ex;
-  return acc;
-}, {} as Record<ExampleKey, ExampleDef>);
+const EXAMPLES_BY_KEY: Record<ExampleKey, ExampleDef> = EXAMPLES.reduce(
+  (acc, ex) => {
+    acc[ex.key] = ex;
+    return acc;
+  },
+  {} as Record<ExampleKey, ExampleDef>,
+);
 
 type TabKey = "examples" | "getting-started" | "basics";
 
@@ -136,7 +158,12 @@ function GuideImage({
 
   return (
     <div className={containerClass}>
-      <div className={clsx("relative w-full overflow-hidden rounded-2xl border border-white/15 bg-black/40", aspect)}>
+      <div
+        className={clsx(
+          "relative w-full overflow-hidden rounded-2xl border border-white/15 bg-black/40",
+          aspect,
+        )}
+      >
         <Image
           src={src}
           alt={alt}
@@ -155,7 +182,9 @@ function GuideImage({
               "absolute right-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full",
               "border border-white/20 bg-black/60 text-white shadow-sm backdrop-blur",
               "transition hover:bg-black/80 hover:border-white/35",
-              hideButtonWhenExpandedUntilHover && expanded ? "opacity-0 group-hover:opacity-100" : "opacity-100",
+              hideButtonWhenExpandedUntilHover && expanded
+                ? "opacity-0 group-hover:opacity-100"
+                : "opacity-100",
             )}
           >
             {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -185,11 +214,11 @@ function GuideStep({
         <div className={clsx("w-full", expanded ? "max-w-none" : collapsedImageMaxWidthClass)}>
           {isExpandableGuideImageElement(image)
             ? React.cloneElement(image, {
-              expanded,
-              onExpandedChange: setExpanded,
-              collapsedMode: "start",
-              collapsedMaxWidthClass: collapsedImageMaxWidthClass,
-            })
+                expanded,
+                onExpandedChange: setExpanded,
+                collapsedMode: "start",
+                collapsedMaxWidthClass: collapsedImageMaxWidthClass,
+              })
             : image}
         </div>
       ) : null}
@@ -204,7 +233,7 @@ export default function GuidePage() {
 
   const [examplesState, setExamplesState] = useState<Record<ExampleKey, ExampleState>>(() => {
     const initial: Record<ExampleKey, ExampleState> = {} as Record<ExampleKey, ExampleState>;
-    EXAMPLES.forEach(ex => {
+    EXAMPLES.forEach((ex) => {
       initial[ex.key] = { code: "", original: "", loaded: false, loading: false, error: null };
     });
     return initial;
@@ -232,7 +261,7 @@ export default function GuidePage() {
     const def = EXAMPLES_BY_KEY[activeExample];
     if (!def) return;
 
-    setExamplesState(prev => ({
+    setExamplesState((prev) => ({
       ...prev,
       [activeExample]: {
         ...prev[activeExample],
@@ -246,7 +275,7 @@ export default function GuidePage() {
         const res = await fetch(def.file);
         if (!res.ok) throw new Error(`Failed to load example: ${res.status}`);
         const text = await res.text();
-        setExamplesState(prev => ({
+        setExamplesState((prev) => ({
           ...prev,
           [activeExample]: {
             code: text,
@@ -258,7 +287,7 @@ export default function GuidePage() {
         }));
       } catch (err) {
         console.error(err);
-        setExamplesState(prev => ({
+        setExamplesState((prev) => ({
           ...prev,
           [activeExample]: {
             ...prev[activeExample],
@@ -270,16 +299,19 @@ export default function GuidePage() {
     })();
   }, [activeExample, examplesState]);
 
-  useEffect(() => scheduleSfmlAnalysis(isLoaded ? currentCode : "", {}, setFeedback), [currentCode, isLoaded]);
+  useEffect(
+    () => scheduleSfmlAnalysis(isLoaded ? currentCode : "", {}, setFeedback),
+    [currentCode, isLoaded],
+  );
 
   const errorMarkers = useMemo(
-    () => feedback.syntaxErrors.map(err => ({ line: err.lineStart, message: err.message })),
+    () => feedback.syntaxErrors.map((err) => ({ line: err.lineStart, message: err.message })),
     [feedback.syntaxErrors],
   );
 
   const warningRanges = useMemo(
     () =>
-      feedback.warnings.map(w => ({
+      feedback.warnings.map((w) => ({
         startLine: w.lineStart,
         endLine: w.lineEnd ?? w.lineStart,
         message: w.message,
@@ -291,7 +323,7 @@ export default function GuidePage() {
   const hasWarnings = feedback.status === "ok" && feedback.warnings.length > 0;
 
   const handleCodeChange = (next: string) => {
-    setExamplesState(prev => ({
+    setExamplesState((prev) => ({
       ...prev,
       [activeExample]: {
         ...(prev[activeExample] ?? {
@@ -310,7 +342,7 @@ export default function GuidePage() {
     const base = examplesState[activeExample];
     if (!base || !base.loaded) return;
 
-    setExamplesState(prev => ({
+    setExamplesState((prev) => ({
       ...prev,
       [activeExample]: {
         ...prev[activeExample],
@@ -332,14 +364,16 @@ export default function GuidePage() {
           { key: "examples", label: "Examples" },
           { key: "getting-started", label: "Getting Started" },
           { key: "basics", label: "Basics" },
-        ].map(tab => (
+        ].map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key as TabKey)}
             className={clsx(
               "rounded-full px-4 py-1.5 transition",
-              activeTab === tab.key ? "bg-white text-black shadow-soft" : "text-white/70 hover:text-white",
+              activeTab === tab.key
+                ? "bg-white text-black shadow-soft"
+                : "text-white/70 hover:text-white",
             )}
           >
             {tab.label}
@@ -354,14 +388,14 @@ export default function GuidePage() {
       <div className="space-y-2">
         <h2 className="text-lg font-semibold text-white">Examples</h2>
         <p className="text-sm text-white/65">
-          These examples cover common SuperFactoryManager patterns. Pick one to load it into the editor, tweak it as you
-          like, and copy the result into your manager. Changes stay in your browser until you reload the page or hit
-          reset.
+          These examples cover common SuperFactoryManager patterns. Pick one to load it into the
+          editor, tweak it as you like, and copy the result into your manager. Changes stay in your
+          browser until you reload the page or hit reset.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {EXAMPLES.map(example => {
+        {EXAMPLES.map((example) => {
           const isActive = example.key === activeExample;
           return (
             <button
@@ -396,7 +430,9 @@ export default function GuidePage() {
               onClick={() => setWrapLines(true)}
               className={clsx(
                 "rounded-full px-3 py-1.5 transition",
-                wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                wrapLines
+                  ? "bg-brand-500 text-white shadow-soft"
+                  : "text-white/70 hover:text-white",
               )}
             >
               Wrap lines
@@ -407,7 +443,9 @@ export default function GuidePage() {
               onClick={() => setWrapLines(false)}
               className={clsx(
                 "rounded-full px-3 py-1.5 transition",
-                !wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                !wrapLines
+                  ? "bg-brand-500 text-white shadow-soft"
+                  : "text-white/70 hover:text-white",
               )}
             >
               Horizontal scroll
@@ -429,7 +467,9 @@ export default function GuidePage() {
 
       <div className="rounded-2xl border border-white/10 bg-black/20">
         {isLoading && <div className="px-4 py-3 text-sm text-white/70">Loading example code…</div>}
-        {currentError && !isLoading && <div className="px-4 py-3 text-sm text-red-200">{currentError}</div>}
+        {currentError && !isLoading && (
+          <div className="px-4 py-3 text-sm text-red-200">{currentError}</div>
+        )}
         {isLoaded && !isLoading && (
           <CodeBox
             value={currentCode}
@@ -482,8 +522,8 @@ export default function GuidePage() {
       )}
 
       <p className="text-xs text-white/55">
-        Edits are kept in memory while this page stays open. Reloading the page will restore all examples to their
-        original versions.
+        Edits are kept in memory while this page stays open. Reloading the page will restore all
+        examples to their original versions.
       </p>
     </Card>
   );
@@ -497,20 +537,25 @@ export default function GuidePage() {
       <section className="space-y-3">
         <h3 className="text-base font-semibold text-white">Basics</h3>
         <p className="text-sm text-white/80">
-          All inventories must be connected to the manager via inventory cables for them to be usable by the program.
-          The manager itself acts as an inventory cable as well.
+          All inventories must be connected to the manager via inventory cables for them to be
+          usable by the program. The manager itself acts as an inventory cable as well.
         </p>
         <p className="text-sm text-white/80">
-          Use the label gun to apply or remove labels from blocks in the world. Hold shift while scrolling with the
-          label gun in hand to cycle through the loaded labels.
+          Use the label gun to apply or remove labels from blocks in the world. Hold shift while
+          scrolling with the label gun in hand to cycle through the loaded labels.
         </p>
         <p className="text-sm text-white/80">
-          It&apos;s usually easiest to write your program first, then pull the labels from the program instead of
-          manually retyping every label.
+          It&apos;s usually easiest to write your program first, then pull the labels from the
+          program instead of manually retyping every label.
         </p>
         <div className="space-y-2">
-          <p className="text-sm font-medium text-white/85">An example video of loading scripts and labels into a manager:</p>
-          <video controls className="mt-1 w-full max-w-xl rounded-2xl border border-white/15 bg-black/40">
+          <p className="text-sm font-medium text-white/85">
+            An example video of loading scripts and labels into a manager:
+          </p>
+          <video
+            controls
+            className="mt-1 w-full max-w-xl rounded-2xl border border-white/15 bg-black/40"
+          >
             <source src="guide/basics/sfm_examples.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
@@ -538,7 +583,10 @@ export default function GuidePage() {
         <ul className="list-disc space-y-1 pl-5 text-sm text-white/80">
           <li>A program consists of an ordered list of triggers.</li>
           <li>Each trigger has an ordered list of inputs.</li>
-          <li>Each trigger clears the input list after executing so the inputs don&apos;t affect other triggers.</li>
+          <li>
+            Each trigger clears the input list after executing so the inputs don&apos;t affect other
+            triggers.
+          </li>
           <li>Each trigger contains a block, which is an ordered list of statements.</li>
         </ul>
         <p className="text-sm text-white/80">Examples:</p>
@@ -550,7 +598,7 @@ export default function GuidePage() {
             <span style={{ color: "#ffc47c" }}>TICKS</span>{" "}
             <span style={{ color: "#767dff" }}>DO</span>
             <br />
-            <span style={{ color: "#a8a8a8" }}>  -- do stuff here</span>
+            <span style={{ color: "#a8a8a8" }}> -- do stuff here</span>
             <br />
             <span style={{ color: "#767dff" }}>END</span>
           </code>
@@ -563,7 +611,7 @@ export default function GuidePage() {
             <span style={{ color: "#ffc47c" }}>seconds</span>{" "}
             <span style={{ color: "#767dff" }}>do</span>
             <br />
-            <span style={{ color: "#a8a8a8" }}>  -- do stuff here</span>
+            <span style={{ color: "#a8a8a8" }}> -- do stuff here</span>
             <br />
             <span style={{ color: "#767dff" }}>end</span>
           </code>
@@ -674,7 +722,8 @@ export default function GuidePage() {
             }
           >
             <p>
-              Place your Factory Manager in the world, and connect it to your inventories using Inventory Cables.
+              Place your Factory Manager in the world, and connect it to your inventories using
+              Inventory Cables.
             </p>
           </GuideStep>
 
@@ -749,15 +798,16 @@ export default function GuidePage() {
             }
           >
             <p>
-              Shift-right-click the manager with the label gun in your hand to load the labels from your program.
+              Shift-right-click the manager with the label gun in your hand to load the labels from
+              your program.
             </p>
           </GuideStep>
 
           <GuideStep>
             <p>
-              You can now use the scroll wheel while holding shift to change the active label. Right-click blocks in the
-              world to apply or remove the label. There is also a right-click menu for entering a custom label that may
-              not be in your program yet.
+              You can now use the scroll wheel while holding shift to change the active label.
+              Right-click blocks in the world to apply or remove the label. There is also a
+              right-click menu for entering a custom label that may not be in your program yet.
             </p>
           </GuideStep>
 
@@ -773,8 +823,8 @@ export default function GuidePage() {
             }
           >
             <p>
-              Once you&apos;ve assigned the labels, right-click the manager while not holding shift to save the labels
-              to the Program Disk.
+              Once you&apos;ve assigned the labels, right-click the manager while not holding shift
+              to save the labels to the Program Disk.
             </p>
           </GuideStep>
 

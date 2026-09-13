@@ -3,10 +3,7 @@ import sharp from "sharp";
 import { auth } from "@/lib/auth";
 import { MAX_POST_IMAGES } from "@/lib/images";
 import { deleteBlobs, uploadImageVariant } from "@/lib/blob";
-import {
-  MAX_UPLOAD_IMAGE_PIXELS,
-  validateUploadBatch,
-} from "@/lib/upload-security";
+import { MAX_UPLOAD_IMAGE_PIXELS, validateUploadBatch } from "@/lib/upload-security";
 import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 export const runtime = "nodejs";
@@ -115,7 +112,9 @@ export async function POST(req: Request) {
 
         try {
           const buffer = Buffer.from(await file.arrayBuffer());
-          const metadata = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS }).metadata();
+          const metadata = await sharp(buffer, {
+            limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS,
+          }).metadata();
           if (!metadata.width || !metadata.height) {
             throw new Error("Unsupported image format.");
           }

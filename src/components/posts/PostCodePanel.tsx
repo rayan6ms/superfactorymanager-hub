@@ -15,13 +15,18 @@ export default function PostCodePanel({ initialCode }: PostCodePanelProps) {
   const [code, setCode] = useState(initialCode);
   const [wrapLines, setWrapLines] = useState(true);
 
-  const [codeFeedback, setCodeFeedback] = useState<CodeFeedback>({ status: "idle", message: null, syntaxErrors: [], warnings: [] });
+  const [codeFeedback, setCodeFeedback] = useState<CodeFeedback>({
+    status: "idle",
+    message: null,
+    syntaxErrors: [],
+    warnings: [],
+  });
 
   useEffect(() => scheduleSfmlAnalysis(code, { required: false }, setCodeFeedback), [code]);
 
   const errorMarkers = useMemo(
     () =>
-      codeFeedback.syntaxErrors.map(err => ({
+      codeFeedback.syntaxErrors.map((err) => ({
         line: err.lineStart,
         message: err.message,
       })),
@@ -30,7 +35,7 @@ export default function PostCodePanel({ initialCode }: PostCodePanelProps) {
 
   const warningRanges = useMemo(
     () =>
-      codeFeedback.warnings.map(warning => ({
+      codeFeedback.warnings.map((warning) => ({
         startLine: warning.lineStart,
         endLine: warning.lineEnd ?? warning.lineStart,
         message: warning.message,
@@ -46,9 +51,7 @@ export default function PostCodePanel({ initialCode }: PostCodePanelProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-white">Code</h2>
-          <span className="text-xs text-white/50">
-            Edit &amp; paste into SuperFactoryManager
-          </span>
+          <span className="text-xs text-white/50">Edit &amp; paste into SuperFactoryManager</span>
         </div>
 
         <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
@@ -107,9 +110,7 @@ export default function PostCodePanel({ initialCode }: PostCodePanelProps) {
                   {codeFeedback.syntaxErrors.map((err, idx) => (
                     <li key={`${err.lineStart}-${err.columnStart}-${idx}`}>
                       Line {err.lineStart}
-                      {typeof err.columnStart === "number"
-                        ? `, column ${err.columnStart + 1}`
-                        : ""}
+                      {typeof err.columnStart === "number" ? `, column ${err.columnStart + 1}` : ""}
                       {" – "}
                       {err.message}
                     </li>
@@ -140,8 +141,7 @@ export default function PostCodePanel({ initialCode }: PostCodePanelProps) {
       )}
 
       <p className="text-xs text-white/55">
-        Changes here are local to your browser and will be lost when you leave
-        the page.
+        Changes here are local to your browser and will be lost when you leave the page.
       </p>
     </div>
   );

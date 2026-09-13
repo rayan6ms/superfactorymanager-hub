@@ -22,7 +22,13 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { normalizePostDescription } from "@/lib/post-description";
 import { getPublicPostDetail } from "@/lib/posts";
-import { CORE_SEO_KEYWORDS, SITE_NAME, safeJsonLd, truncateMetaDescription, uniqueKeywords } from "@/lib/seo";
+import {
+  CORE_SEO_KEYWORDS,
+  SITE_NAME,
+  safeJsonLd,
+  truncateMetaDescription,
+  uniqueKeywords,
+} from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -73,7 +79,11 @@ function buildDescriptionCopy(body: string) {
   return truncateMetaDescription(body) || undefined;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPublicPostDetail(slug);
 
@@ -88,10 +98,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const description =
     buildDescriptionCopy(normalizedDescription) ?? `Explore ${post.title} for SuperFactoryManager.`;
   const heroImage = post.images?.[0] ?? null;
-  const heroSrc = heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
+  const heroSrc =
+    heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
   const canonical = `${baseUrl}/posts/${post.slug}`;
-  const tagNames = post.tags?.map(item => item.tag?.name).filter((name): name is string => Boolean(name)) ?? [];
-  const dependencyNames = post.dependencies?.map(item => item.name || item.slug).filter(Boolean) ?? [];
+  const tagNames =
+    post.tags?.map((item) => item.tag?.name).filter((name): name is string => Boolean(name)) ?? [];
+  const dependencyNames =
+    post.dependencies?.map((item) => item.name || item.slug).filter(Boolean) ?? [];
 
   return {
     title: `${post.title} - Super Factory Manager Code`,
@@ -137,7 +150,8 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
         <Card className="space-y-4 p-6">
           <h1 className="text-2xl font-semibold text-white">Post temporarily unavailable</h1>
           <p className="text-white/70">
-            This page needs the database and Prisma is currently unavailable. Try again after service is restored.
+            This page needs the database and Prisma is currently unavailable. Try again after
+            service is restored.
           </p>
           <Link href="/posts" className="text-brand-200 hover:text-brand-100 hover:underline">
             Return to posts
@@ -163,17 +177,25 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
     );
   }
 
-  const verification = buildVerificationSummary([
-    { value: 1, _count: { value: post.workedCount } },
-    { value: -1, _count: { value: post.brokenCount } },
-  ], null, false);
+  const verification = buildVerificationSummary(
+    [
+      { value: 1, _count: { value: post.workedCount } },
+      { value: -1, _count: { value: post.brokenCount } },
+    ],
+    null,
+    false,
+  );
 
-  const views = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(post.views ?? 0);
+  const views = new Intl.NumberFormat(undefined, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(post.views ?? 0);
   const uploadDate = formatUploadDate(post.uploadDate);
   const moderationDate = post.moderationEditedAt ? formatUploadDate(post.moderationEditedAt) : null;
   const heroImage = post.images?.[0] ?? null;
-  const heroSrc = heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
-  const tags = post.tags?.map(t => t.tag).filter(Boolean) ?? [];
+  const heroSrc =
+    heroImage?.thumbLg || heroImage?.original || heroImage?.thumbMd || heroImage?.thumbSm || null;
+  const tags = post.tags?.map((t) => t.tag).filter(Boolean) ?? [];
   const authorDisplayName = post.author?.name ?? post.authorName;
   const authorImage = post.author?.image ?? null;
   const authorProfile = post.author?.name ? `/profile/${post.author.name}` : null;
@@ -186,7 +208,8 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
     "@context": "https://schema.org",
     "@type": "TechArticle",
     headline: post.title,
-    description: buildDescriptionCopy(postDescription) ?? `Super Factory Manager code for ${post.title}.`,
+    description:
+      buildDescriptionCopy(postDescription) ?? `Super Factory Manager code for ${post.title}.`,
     url: postUrl,
     datePublished: post.uploadDate.toISOString(),
     dateModified: (post.updatedAt ?? post.uploadDate).toISOString(),
@@ -207,24 +230,21 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
       "SFM code",
       "SFML",
       post.category?.name,
-      ...tags.map(tag => tag.name),
-      ...post.dependencies.map(dep => dep.name || dep.slug),
+      ...tags.map((tag) => tag.name),
+      ...post.dependencies.map((dep) => dep.name || dep.slug),
     ]).join(", "),
     programmingLanguage: "SFML",
     about: [
       "Super Factory Manager",
       "Minecraft automation",
       post.category?.name,
-      ...tags.map(tag => tag.name),
+      ...tags.map((tag) => tag.name),
     ].filter(Boolean),
   };
 
   return (
     <div className="space-y-8">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
       {isDegraded ? <DatabaseUnavailableNotice /> : null}
       <ViewBeacon slug={slug} />
       <Link
@@ -237,21 +257,16 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
       <Card className="overflow-hidden p-0">
         {heroSrc && (
           <div className="relative h-64 w-full rounded-t-lg rounded-b-xs overflow-hidden border-b border-white/10 bg-black/40">
-            <Image
-              src={heroSrc}
-              alt={post.title}
-              fill
-              sizes="100vw"
-              className="object-cover"
-            />
-
+            <Image src={heroSrc} alt={post.title} fill sizes="100vw" className="object-cover" />
           </div>
         )}
         <div className="space-y-6 px-2 md:px-6 py-6">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.4em] text-white/40">{post.category?.name ?? "Post"}</p>
+                <p className="text-xs uppercase tracking-[0.4em] text-white/40">
+                  {post.category?.name ?? "Post"}
+                </p>
                 <h1 className="text-3xl font-semibold text-white">{post.title}</h1>
               </div>
               <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -274,7 +289,9 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
             {post.moderationEditedNote && (
               <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-50">
                 <span className="font-semibold">{post.moderationEditedNote}</span>
-                {moderationDate ? <span className="text-amber-100/80">Updated {moderationDate}</span> : null}
+                {moderationDate ? (
+                  <span className="text-amber-100/80">Updated {moderationDate}</span>
+                ) : null}
               </div>
             )}
 
@@ -294,7 +311,10 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 <div className="min-w-0">
                   <p className="text-xs uppercase tracking-[0.3em] text-white/50">Author</p>
                   {authorProfile ? (
-                    <Link href={authorProfile} className="text-lg font-semibold text-white underline-offset-4 hover:underline">
+                    <Link
+                      href={authorProfile}
+                      className="text-lg font-semibold text-white underline-offset-4 hover:underline"
+                    >
                       {authorDisplayName}
                     </Link>
                   ) : (
@@ -303,20 +323,20 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
                 </div>
               </div>
               {authorBio ? (
-                <p className="text-sm italic text-white/70 sm:max-w-md sm:text-right sm:pl-4">“{authorBio}”</p>
+                <p className="text-sm italic text-white/70 sm:max-w-md sm:text-right sm:pl-4">
+                  “{authorBio}”
+                </p>
               ) : null}
             </div>
           </div>
 
           <div className="prose prose-invert max-w-none whitespace-pre-line prose-headings:text-white prose-p:text-white/85 prose-li:text-white/80 prose-strong:text-white prose-em:text-white/90 prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/40 prose-code:rounded prose-code:bg-white/10 prose-code:px-1 prose-code:py-0.5 prose-code:text-brand-100 prose-code:before:content-none prose-code:after:content-none prose-pre:whitespace-pre-wrap prose-pre:wrap-anywhere prose-pre:[&>code]:bg-transparent prose-pre:[&>code]:p-0">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {postDescription}
-            </ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{postDescription}</ReactMarkdown>
           </div>
 
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {tags.map(tag => (
+              {tags.map((tag) => (
                 <Link
                   key={tag.slug}
                   href={`/tags?tags=${encodeURIComponent(tag.slug)}`}
@@ -354,7 +374,7 @@ export default async function PostPage(props: { params: Promise<{ slug: string }
             <h2 className="text-lg font-semibold text-white">Dependencies</h2>
             {post.dependencies?.length ? (
               <ul className="list-disc space-y-2 pl-5 text-sm text-white/80">
-                {post.dependencies.map(dep => (
+                {post.dependencies.map((dep) => (
                   <li key={dep.id} className="wrap-break-word">
                     <a
                       href={dep.url}

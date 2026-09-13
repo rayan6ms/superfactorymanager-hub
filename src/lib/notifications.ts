@@ -81,7 +81,7 @@ export async function getNotifications(
 export async function markNotifications(
   userId: string,
   ids: string[],
-  read: boolean
+  read: boolean,
 ): Promise<{ unreadCount: number }> {
   if (!ids.length) {
     const unreadCount = await db.notification.count({ where: { userId, readAt: null } });
@@ -134,7 +134,7 @@ export async function createNotification(options: {
     },
   });
 
-  void maybeSendNotificationEmail(notification).catch(error => {
+  void maybeSendNotificationEmail(notification).catch((error) => {
     console.warn("Failed to process notification email delivery", error);
   });
 

@@ -55,7 +55,9 @@ export function PostCollaborationCard({
 
   if (!openForImprovement || isAuthor) return null;
 
-  const href = isAuthenticated ? `/posts/${slug}/edit` : `/login?next=${encodeURIComponent(`/posts/${slug}/edit`)}`;
+  const href = isAuthenticated
+    ? `/posts/${slug}/edit`
+    : `/login?next=${encodeURIComponent(`/posts/${slug}/edit`)}`;
   const cta = isAuthenticated ? "Suggest an improvement" : "Log in to collaborate";
 
   return (
@@ -64,7 +66,8 @@ export function PostCollaborationCard({
         <p className="text-xs uppercase tracking-[0.3em] text-white/50">Collaborate</p>
         <h2 className="text-lg font-semibold text-white">Share an improvement</h2>
         <p className="text-sm text-white/65">
-          Paste your revised code and send it to the author for review. We&apos;ll keep the edit history for them.
+          Paste your revised code and send it to the author for review. We&apos;ll keep the edit
+          history for them.
         </p>
       </div>
       <Link href={href} className="inline-flex">

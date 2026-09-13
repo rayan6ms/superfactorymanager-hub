@@ -39,7 +39,10 @@ export default function BuildCard({
   const updatedDate = formatBuildDate(updatedAt);
   const createdTs = new Date(createdAt).getTime();
   const updatedTs = new Date(updatedAt).getTime();
-  const showUpdated = Number.isFinite(createdTs) && Number.isFinite(updatedTs) && Math.abs(updatedTs - createdTs) > 1000;
+  const showUpdated =
+    Number.isFinite(createdTs) &&
+    Number.isFinite(updatedTs) &&
+    Math.abs(updatedTs - createdTs) > 1000;
 
   return (
     <Link
@@ -48,16 +51,20 @@ export default function BuildCard({
     >
       <Card hoverable className="h-full space-y-3 p-5 backdrop-blur-none sm:backdrop-blur-sm">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="min-w-0 flex-1 line-clamp-2 wrap-anywhere text-lg font-semibold text-white">{name}</h3>
+          <h3 className="min-w-0 flex-1 line-clamp-2 wrap-anywhere text-lg font-semibold text-white">
+            {name}
+          </h3>
           <div className="flex max-w-[11rem] shrink-0 flex-wrap justify-end gap-2">
             <Badge className="max-w-[11rem] truncate border-sky-400/30 bg-sky-500/10 text-sky-100">
               {tag}
             </Badge>
             {showVisibility ? (
               <Badge
-                className={visibility === "PRIVATE"
-                  ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-                  : "border-emerald-500/35 bg-emerald-500/10 text-emerald-200"}
+                className={
+                  visibility === "PRIVATE"
+                    ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                    : "border-emerald-500/35 bg-emerald-500/10 text-emerald-200"
+                }
               >
                 {visibility}
               </Badge>

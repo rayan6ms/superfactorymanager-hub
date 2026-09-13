@@ -21,10 +21,7 @@ type Props = {
   searchParams?: SearchParams;
 };
 
-function getParam(
-  params: Record<string, string | string[] | undefined> | undefined,
-  key: string,
-) {
+function getParam(params: Record<string, string | string[] | undefined> | undefined, key: string) {
   const value = params?.[key];
   if (Array.isArray(value)) return value[0] ?? "";
   return typeof value === "string" ? value : "";
@@ -46,10 +43,18 @@ export default async function SearchPage({ searchParams }: Props) {
 
   const [postResult, buildResult] = trimmedQuery
     ? await Promise.all([
-      searchPostsWithFilters({ q: trimmedQuery, order: "best", limit: postsLimit, page: 1 }),
-      searchPublicBuildsWithFilters({ q: trimmedQuery, order: "best", limit: buildsLimit, page: 1 }),
-    ])
-    : [{ posts: [], total: 0 }, { builds: [], total: 0 }];
+        searchPostsWithFilters({ q: trimmedQuery, order: "best", limit: postsLimit, page: 1 }),
+        searchPublicBuildsWithFilters({
+          q: trimmedQuery,
+          order: "best",
+          limit: buildsLimit,
+          page: 1,
+        }),
+      ])
+    : [
+        { posts: [], total: 0 },
+        { builds: [], total: 0 },
+      ];
   const isDegraded = hasRecentDatabaseFallback();
 
   const buildSearchHref = (opts?: {
@@ -64,7 +69,8 @@ export default async function SearchPage({ searchParams }: Props) {
     const nextBuildsLimit = opts?.buildsLimit ?? buildsLimit;
 
     if (nextPostsLimit !== DEFAULT_SECTION_LIMIT) query.set("postsLimit", String(nextPostsLimit));
-    if (nextBuildsLimit !== DEFAULT_SECTION_LIMIT) query.set("buildsLimit", String(nextBuildsLimit));
+    if (nextBuildsLimit !== DEFAULT_SECTION_LIMIT)
+      query.set("buildsLimit", String(nextBuildsLimit));
 
     const suffix = query.toString();
     const base = suffix ? `/search?${suffix}` : "/search";
@@ -78,8 +84,10 @@ export default async function SearchPage({ searchParams }: Props) {
     ? `/builds?${new URLSearchParams({ q: trimmedQuery }).toString()}`
     : "/builds";
 
-  const showMorePosts = postResult.total > postResult.posts.length && postsLimit < MAX_SECTION_LIMIT;
-  const showMoreBuilds = buildResult.total > buildResult.builds.length && buildsLimit < MAX_SECTION_LIMIT;
+  const showMorePosts =
+    postResult.total > postResult.posts.length && postsLimit < MAX_SECTION_LIMIT;
+  const showMoreBuilds =
+    buildResult.total > buildResult.builds.length && buildsLimit < MAX_SECTION_LIMIT;
 
   const showMorePostsHref = buildSearchHref({
     postsLimit: Math.min(postsLimit + LIMIT_STEP, MAX_SECTION_LIMIT),
@@ -103,14 +111,12 @@ export default async function SearchPage({ searchParams }: Props) {
         <p className="text-white/70">Search once and browse both content types below.</p>
       </div>
 
-      <SearchBar
-        action="/search"
-        placeholder="Search posts and builds"
-        defaultValue={q}
-      />
+      <SearchBar action="/search" placeholder="Search posts and builds" defaultValue={q} />
 
       {!trimmedQuery ? (
-        <Card className="p-8 text-center text-white/70">Enter a search term to see posts and builds.</Card>
+        <Card className="p-8 text-center text-white/70">
+          Enter a search term to see posts and builds.
+        </Card>
       ) : (
         <>
           <section id="posts-results" className="space-y-4 scroll-mt-24">
@@ -123,7 +129,9 @@ export default async function SearchPage({ searchParams }: Props) {
 
             {postResult.posts.length ? (
               <>
-                <p className="text-sm text-white/60">Showing {postResult.posts.length} of {postResult.total} posts</p>
+                <p className="text-sm text-white/60">
+                  Showing {postResult.posts.length} of {postResult.total} posts
+                </p>
                 <ul className="grid gap-5 md:grid-cols-2">
                   {postResult.posts.map((post) => (
                     <PostCard key={post.id} post={post} />
@@ -131,14 +139,19 @@ export default async function SearchPage({ searchParams }: Props) {
                 </ul>
                 {showMorePosts ? (
                   <div>
-                    <Link href={showMorePostsHref} className="inline-flex rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/35 hover:text-white">
+                    <Link
+                      href={showMorePostsHref}
+                      className="inline-flex rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/35 hover:text-white"
+                    >
                       Show more posts
                     </Link>
                   </div>
                 ) : null}
               </>
             ) : (
-              <Card className="p-8 text-center text-white/70">No posts found for “{trimmedQuery}”.</Card>
+              <Card className="p-8 text-center text-white/70">
+                No posts found for “{trimmedQuery}”.
+              </Card>
             )}
           </section>
 
@@ -152,7 +165,9 @@ export default async function SearchPage({ searchParams }: Props) {
 
             {buildResult.builds.length ? (
               <>
-                <p className="text-sm text-white/60">Showing {buildResult.builds.length} of {buildResult.total} builds</p>
+                <p className="text-sm text-white/60">
+                  Showing {buildResult.builds.length} of {buildResult.total} builds
+                </p>
                 <ul className="grid gap-5 md:grid-cols-2">
                   {buildResult.builds.map((build) => (
                     <li key={`${build.username}:${build.slug}`}>
@@ -173,14 +188,19 @@ export default async function SearchPage({ searchParams }: Props) {
                 </ul>
                 {showMoreBuilds ? (
                   <div>
-                    <Link href={showMoreBuildsHref} className="inline-flex rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/35 hover:text-white">
+                    <Link
+                      href={showMoreBuildsHref}
+                      className="inline-flex rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/35 hover:text-white"
+                    >
                       Show more builds
                     </Link>
                   </div>
                 ) : null}
               </>
             ) : (
-              <Card className="p-8 text-center text-white/70">No builds found for “{trimmedQuery}”.</Card>
+              <Card className="p-8 text-center text-white/70">
+                No builds found for “{trimmedQuery}”.
+              </Card>
             )}
           </section>
         </>

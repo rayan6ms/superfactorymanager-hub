@@ -72,12 +72,16 @@ export default function ResetPasswordRequestPage() {
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-semibold text-white">Forgot password</h1>
           <p className="text-sm text-white/70">
-            Enter the email address associated with your account and we&apos;ll send you a reset link.
+            Enter the email address associated with your account and we&apos;ll send you a reset
+            link.
           </p>
         </div>
         {state === "success" ? (
           <div className="space-y-3 text-center text-sm text-white/80">
-            <p>If an account exists for <span className="font-semibold">{email.trim()}</span>, a reset link has been sent.</p>
+            <p>
+              If an account exists for <span className="font-semibold">{email.trim()}</span>, a
+              reset link has been sent.
+            </p>
             <p>Please check your inbox and follow the link to finish resetting your password.</p>
           </div>
         ) : (
@@ -91,9 +95,9 @@ export default function ResetPasswordRequestPage() {
                 type="email"
                 placeholder="Email"
                 value={email}
-                onChange={event => {
+                onChange={(event) => {
                   setEmail(event.target.value);
-                  setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
+                  setErrors((prev) => ({ ...prev, email: undefined, form: undefined }));
                 }}
                 autoComplete="email"
                 aria-invalid={Boolean(errors.email)}
@@ -117,7 +121,10 @@ export default function ResetPasswordRequestPage() {
         )}
       </Card>
       <div className="w-full max-w-sm text-center text-sm text-white/70">
-        Remembered it? <Link href="/login" className="underline">Back to login</Link>
+        Remembered it?{" "}
+        <Link href="/login" className="underline">
+          Back to login
+        </Link>
       </div>
     </main>
   );

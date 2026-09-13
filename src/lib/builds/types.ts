@@ -47,11 +47,7 @@ export type BuildDetailPayload = {
   selectedCommitId: string | null;
 };
 
-export type BuildWriteError =
-  | "BUILD_NAME_TAKEN"
-  | "CODE_TOO_SHORT"
-  | "Not found"
-  | string;
+export type BuildWriteError = "BUILD_NAME_TAKEN" | "CODE_TOO_SHORT" | "Not found" | string;
 
 export type BuildWriteResponse = {
   build?: BuildSummary;

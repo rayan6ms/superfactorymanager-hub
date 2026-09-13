@@ -4,11 +4,7 @@ import { Prisma } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 import { BUILD_CARD_SELECT, type SerializedBuild } from "@/lib/builds/search";
 import { db } from "@/lib/db";
-import {
-  POST_CARD_SELECT,
-  serializePost,
-  type SerializedPost,
-} from "@/lib/posts";
+import { POST_CARD_SELECT, serializePost, type SerializedPost } from "@/lib/posts";
 
 const PREVIEW_LIMIT = 4;
 
@@ -111,9 +107,7 @@ const getCachedPublicProfileIdentity = unstable_cache(
       select: { id: true, name: true },
     });
 
-    return user?.name
-      ? { id: user.id, name: user.name }
-      : null;
+    return user?.name ? { id: user.id, name: user.name } : null;
   },
   ["public-profile-identity"],
   { revalidate: 60 },
@@ -190,7 +184,9 @@ export async function getPublicProfileIdentity(username: string) {
   return getCachedPublicProfileIdentity(normalized);
 }
 
-export async function getPublicProfileOverview(username: string): Promise<PublicProfileOverview | null> {
+export async function getPublicProfileOverview(
+  username: string,
+): Promise<PublicProfileOverview | null> {
   const normalized = normalizeUsername(username);
   if (!normalized) return null;
 

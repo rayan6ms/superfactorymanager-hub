@@ -22,9 +22,10 @@ export default async function ChangelogPage({ searchParams }: Props) {
   const isDegraded = hasRecentDatabaseFallback();
   const totalPages = getTotalPages(initial.total, PAGE_SIZE);
   const currentPage = Math.min(requestedPage, totalPages);
-  const result = currentPage === requestedPage
-    ? initial
-    : await getChangelogEntries({ page: currentPage, limit: PAGE_SIZE });
+  const result =
+    currentPage === requestedPage
+      ? initial
+      : await getChangelogEntries({ page: currentPage, limit: PAGE_SIZE });
 
   const buildPageHref = (page: number) => {
     const params = new URLSearchParams();
@@ -40,7 +41,8 @@ export default async function ChangelogPage({ searchParams }: Props) {
         <p className="text-xs uppercase tracking-[0.3em] text-white/50">Releases</p>
         <h1 className="text-3xl font-semibold text-white">Changelog</h1>
         <p className="text-sm text-white/70">
-          Release notes collected directly from GitHub. Newest versions appear first and are marked as latest.
+          Release notes collected directly from GitHub. Newest versions appear first and are marked
+          as latest.
         </p>
       </div>
 

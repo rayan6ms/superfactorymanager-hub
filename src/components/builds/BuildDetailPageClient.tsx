@@ -97,10 +97,16 @@ export default function BuildDetailPageClient({
   const [buildMeta, setBuildMeta] = useState(initialData.build);
   const [commits, setCommits] = useState(initialData.commits);
   const [commitHistory, setCommitHistory] = useState(initialData.commitHistory);
-  const [selectedCommitId, setSelectedCommitId] = useState<string | null>(initialData.selectedCommitId);
+  const [selectedCommitId, setSelectedCommitId] = useState<string | null>(
+    initialData.selectedCommitId,
+  );
   const [code, setCode] = useState(initialData.code);
-  const [persistedTrimmedCode, setPersistedTrimmedCode] = useState(() => getCodeContentStats(initialData.code).trimmedCode);
-  const [loadedTrimmedCodeBaseline, setLoadedTrimmedCodeBaseline] = useState(() => getCodeContentStats(initialData.code).trimmedCode);
+  const [persistedTrimmedCode, setPersistedTrimmedCode] = useState(
+    () => getCodeContentStats(initialData.code).trimmedCode,
+  );
+  const [loadedTrimmedCodeBaseline, setLoadedTrimmedCodeBaseline] = useState(
+    () => getCodeContentStats(initialData.code).trimmedCode,
+  );
 
   const [wrapLines, setWrapLines] = useState(true);
   const [codeFeedback, setCodeFeedback] = useState<CodeFeedback>({
@@ -158,7 +164,11 @@ export default function BuildDetailPageClient({
   const showUpdated = useMemo(() => {
     const createdTs = new Date(buildMeta.createdAt).getTime();
     const updatedTs = new Date(buildMeta.updatedAt).getTime();
-    return Number.isFinite(createdTs) && Number.isFinite(updatedTs) && Math.abs(updatedTs - createdTs) > 1000;
+    return (
+      Number.isFinite(createdTs) &&
+      Number.isFinite(updatedTs) &&
+      Math.abs(updatedTs - createdTs) > 1000
+    );
   }, [buildMeta.createdAt, buildMeta.updatedAt]);
 
   const hasHistoricalAuthorSaves = useMemo(() => {
@@ -166,7 +176,10 @@ export default function BuildDetailPageClient({
     return showUpdated || authorSaveCount > 0;
   }, [authorSaveCount, isAuthor, showUpdated]);
 
-  const draftKey = useMemo(() => buildDraftKey(buildMeta.username, buildMeta.slug), [buildMeta.slug, buildMeta.username]);
+  const draftKey = useMemo(
+    () => buildDraftKey(buildMeta.username, buildMeta.slug),
+    [buildMeta.slug, buildMeta.username],
+  );
 
   useEffect(() => scheduleSfmlAnalysis(code, { required: false }, setCodeFeedback), [code]);
 
@@ -176,27 +189,31 @@ export default function BuildDetailPageClient({
   );
 
   const warningRanges = useMemo(
-    () => codeFeedback.warnings.map((warning) => ({
-      startLine: warning.lineStart,
-      endLine: warning.lineEnd ?? warning.lineStart,
-      message: warning.message,
-    })),
+    () =>
+      codeFeedback.warnings.map((warning) => ({
+        startLine: warning.lineStart,
+        endLine: warning.lineEnd ?? warning.lineStart,
+        message: warning.message,
+      })),
     [codeFeedback.warnings],
   );
 
   const showErrors = codeFeedback.status === "error" && codeFeedback.syntaxErrors.length > 0;
   const showWarnings = codeFeedback.status === "ok" && codeFeedback.warnings.length > 0;
 
-  const persistDraftNow = useCallback((value: string) => {
-    if (typeof window === "undefined") return;
-    try {
-      if (isAuthor) {
-        window.localStorage.setItem(draftKey, value);
-      } else {
-        window.localStorage.setItem(CODE_EDITOR_DRAFT_STORAGE_KEY, value);
-      }
-    } catch { }
-  }, [draftKey, isAuthor]);
+  const persistDraftNow = useCallback(
+    (value: string) => {
+      if (typeof window === "undefined") return;
+      try {
+        if (isAuthor) {
+          window.localStorage.setItem(draftKey, value);
+        } else {
+          window.localStorage.setItem(CODE_EDITOR_DRAFT_STORAGE_KEY, value);
+        }
+      } catch {}
+    },
+    [draftKey, isAuthor],
+  );
 
   useEffect(() => {
     if (!isAuthor || hasLoadedDraftRef.current || typeof window === "undefined") return;
@@ -207,11 +224,17 @@ export default function BuildDetailPageClient({
       if (rawDraft && rawDraft.trim()) {
         setCode(rawDraft);
       }
-    } catch { }
+    } catch {}
   }, [draftKey, isAuthor]);
 
   useEffect(() => {
-    if (!isAuthor || !hasLoadedDraftRef.current || selectedCommitId !== null || typeof window === "undefined") return;
+    if (
+      !isAuthor ||
+      !hasLoadedDraftRef.current ||
+      selectedCommitId !== null ||
+      typeof window === "undefined"
+    )
+      return;
 
     if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current);
 
@@ -260,10 +283,13 @@ export default function BuildDetailPageClient({
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/builds/check-name?name=${encodeURIComponent(forkName)}`, {
-          credentials: "include",
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          `/api/builds/check-name?name=${encodeURIComponent(forkName)}`,
+          {
+            credentials: "include",
+            signal: controller.signal,
+          },
+        );
 
         if (requestId !== forkNameRequestRef.current) return;
 
@@ -272,7 +298,10 @@ export default function BuildDetailPageClient({
           return;
         }
 
-        const payload = await response.json().catch(() => null) as { available?: boolean; reason?: string } | null;
+        const payload = (await response.json().catch(() => null)) as {
+          available?: boolean;
+          reason?: string;
+        } | null;
         if (!response.ok) {
           setForkNameCheck({ status: "error", message: "Could not check availability right now." });
           return;
@@ -302,10 +331,13 @@ export default function BuildDetailPageClient({
     };
   }, [forkName, isAuthor, saveModalOpen]);
 
-  const requireLoginWithDraftWarning = useCallback((message: string) => {
-    persistDraftNow(code);
-    openLogin(message);
-  }, [code, openLogin, persistDraftNow]);
+  const requireLoginWithDraftWarning = useCallback(
+    (message: string) => {
+      persistDraftNow(code);
+      openLogin(message);
+    },
+    [code, openLogin, persistDraftNow],
+  );
 
   const handleCreatePost = useCallback(() => {
     if (!initialIsAuthenticated) {
@@ -318,7 +350,7 @@ export default function BuildDetailPageClient({
     if (typeof window !== "undefined") {
       try {
         window.sessionStorage.setItem(POST_COMPOSER_PREFILL_CODE_KEY, code);
-      } catch { }
+      } catch {}
     }
     router.push("/posts/new");
   }, [code, initialIsAuthenticated, requireLoginWithDraftWarning, router]);
@@ -353,18 +385,21 @@ export default function BuildDetailPageClient({
     }
   }, [canonicalBuildUrl, copyCanonicalBuildLink, isBuildShareable]);
 
-  const openSaveDialog = useCallback((intent: SaveIntent) => {
-    if (!isAuthor && !initialIsAuthenticated) {
-      requireLoginWithDraftWarning(
-        "You need to log in to save or share. Your current code is safe and will be restored after login.",
-      );
-      return;
-    }
-    setSaveIntent(intent);
-    setSaveError(null);
-    setShareFallbackLink(null);
-    setSaveModalOpen(true);
-  }, [initialIsAuthenticated, isAuthor, requireLoginWithDraftWarning]);
+  const openSaveDialog = useCallback(
+    (intent: SaveIntent) => {
+      if (!isAuthor && !initialIsAuthenticated) {
+        requireLoginWithDraftWarning(
+          "You need to log in to save or share. Your current code is safe and will be restored after login.",
+        );
+        return;
+      }
+      setSaveIntent(intent);
+      setSaveError(null);
+      setShareFallbackLink(null);
+      setSaveModalOpen(true);
+    },
+    [initialIsAuthenticated, isAuthor, requireLoginWithDraftWarning],
+  );
 
   const handleShare = useCallback(async () => {
     if (!isBuildShareable) {
@@ -379,98 +414,126 @@ export default function BuildDetailPageClient({
     await handleCopyLink();
   }, [handleCopyLink, hasUnsavedChanges, isAuthor, isBuildShareable, openSaveDialog]);
 
-  const handleLoadCommit = useCallback(async (nextCommitId: string | null) => {
-    if (nextCommitId === selectedCommitId) return;
+  const handleLoadCommit = useCallback(
+    async (nextCommitId: string | null) => {
+      if (nextCommitId === selectedCommitId) return;
 
-    if (hasUnsavedChanges) {
-      const confirmed = typeof window === "undefined"
-        ? true
-        : window.confirm("You have unsaved edits. Loading another commit will replace the current editor contents. Continue?");
-      if (!confirmed) return;
+      if (hasUnsavedChanges) {
+        const confirmed =
+          typeof window === "undefined"
+            ? true
+            : window.confirm(
+                "You have unsaved edits. Loading another commit will replace the current editor contents. Continue?",
+              );
+        if (!confirmed) return;
 
-      if (selectedCommitId === null) {
-        persistDraftNow(code);
-        setToastMessage("Current draft saved locally before switching commits.");
-      }
-    }
-
-    const query = nextCommitId ? `?commitId=${encodeURIComponent(nextCommitId)}` : "";
-
-    setIsLoadingCommit(true);
-    setSaveError(null);
-    try {
-      const response = await fetch(`/api/builds/${encodeURIComponent(buildMeta.username)}/${encodeURIComponent(buildMeta.slug)}${query}`, {
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        setToastMessage("Could not load that commit.");
-        return;
+        if (selectedCommitId === null) {
+          persistDraftNow(code);
+          setToastMessage("Current draft saved locally before switching commits.");
+        }
       }
 
-      const payload = await response.json() as BuildDetailPayload;
-      const nextTrimmedCode = getCodeContentStats(payload.code).trimmedCode;
-      setBuildMeta(payload.build);
-      setBuildTag(payload.build.tag);
-      setForkTag(payload.build.tag);
-      setCommits(payload.commits);
-      setCommitHistory(payload.commitHistory);
-      setSelectedCommitId(payload.selectedCommitId);
-      setCode(payload.code);
-      setLoadedTrimmedCodeBaseline(nextTrimmedCode);
-      if (!payload.selectedCommitId) {
-        setPersistedTrimmedCode(nextTrimmedCode);
-      }
-      router.replace(query ? `${pathname}${query}` : pathname, { scroll: false });
-    } finally {
-      setIsLoadingCommit(false);
-    }
-  }, [buildMeta.slug, buildMeta.username, code, hasUnsavedChanges, pathname, persistDraftNow, router, selectedCommitId]);
+      const query = nextCommitId ? `?commitId=${encodeURIComponent(nextCommitId)}` : "";
 
-  const handleChangeVisibility = useCallback(async (nextVisibility: BuildVisibility) => {
-    if (!isAuthor || buildMeta.visibility === nextVisibility) return;
-
-    setIsChangingVisibility(true);
-    setSaveError(null);
-    try {
-      const response = await fetch(`/api/builds/me/${encodeURIComponent(buildMeta.slug)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          code: persistedTrimmedCode,
-          visibility: nextVisibility,
-          createCommit: false,
-        }),
-      });
-
-      const payload = await response.json().catch(() => null) as BuildWriteResponse | null;
-
-      if (response.status === 401) {
-        requireLoginWithDraftWarning(
-          "You need to log in to save. Your current code is safe and will be restored after login.",
+      setIsLoadingCommit(true);
+      setSaveError(null);
+      try {
+        const response = await fetch(
+          `/api/builds/${encodeURIComponent(buildMeta.username)}/${encodeURIComponent(buildMeta.slug)}${query}`,
+          {
+            credentials: "include",
+            cache: "no-store",
+          },
         );
-        return;
-      }
 
-      if (!response.ok || !payload?.build) {
-        setSaveError(payload?.error ?? "Could not update visibility right now.");
-        return;
-      }
+        if (!response.ok) {
+          setToastMessage("Could not load that commit.");
+          return;
+        }
 
-      setBuildMeta((prev) => ({
-        ...prev,
-        tag: payload.build?.tag ?? prev.tag,
-        visibility: payload.build?.visibility ?? prev.visibility,
-        updatedAt: payload.build?.updatedAt ?? prev.updatedAt,
-      }));
-      setBuildTag(payload.build?.tag ?? buildTag);
-      setToastMessage("Saved!");
-    } finally {
-      setIsChangingVisibility(false);
-    }
-  }, [buildMeta.slug, buildMeta.visibility, buildTag, isAuthor, persistedTrimmedCode, requireLoginWithDraftWarning]);
+        const payload = (await response.json()) as BuildDetailPayload;
+        const nextTrimmedCode = getCodeContentStats(payload.code).trimmedCode;
+        setBuildMeta(payload.build);
+        setBuildTag(payload.build.tag);
+        setForkTag(payload.build.tag);
+        setCommits(payload.commits);
+        setCommitHistory(payload.commitHistory);
+        setSelectedCommitId(payload.selectedCommitId);
+        setCode(payload.code);
+        setLoadedTrimmedCodeBaseline(nextTrimmedCode);
+        if (!payload.selectedCommitId) {
+          setPersistedTrimmedCode(nextTrimmedCode);
+        }
+        router.replace(query ? `${pathname}${query}` : pathname, { scroll: false });
+      } finally {
+        setIsLoadingCommit(false);
+      }
+    },
+    [
+      buildMeta.slug,
+      buildMeta.username,
+      code,
+      hasUnsavedChanges,
+      pathname,
+      persistDraftNow,
+      router,
+      selectedCommitId,
+    ],
+  );
+
+  const handleChangeVisibility = useCallback(
+    async (nextVisibility: BuildVisibility) => {
+      if (!isAuthor || buildMeta.visibility === nextVisibility) return;
+
+      setIsChangingVisibility(true);
+      setSaveError(null);
+      try {
+        const response = await fetch(`/api/builds/me/${encodeURIComponent(buildMeta.slug)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            code: persistedTrimmedCode,
+            visibility: nextVisibility,
+            createCommit: false,
+          }),
+        });
+
+        const payload = (await response.json().catch(() => null)) as BuildWriteResponse | null;
+
+        if (response.status === 401) {
+          requireLoginWithDraftWarning(
+            "You need to log in to save. Your current code is safe and will be restored after login.",
+          );
+          return;
+        }
+
+        if (!response.ok || !payload?.build) {
+          setSaveError(payload?.error ?? "Could not update visibility right now.");
+          return;
+        }
+
+        setBuildMeta((prev) => ({
+          ...prev,
+          tag: payload.build?.tag ?? prev.tag,
+          visibility: payload.build?.visibility ?? prev.visibility,
+          updatedAt: payload.build?.updatedAt ?? prev.updatedAt,
+        }));
+        setBuildTag(payload.build?.tag ?? buildTag);
+        setToastMessage("Saved!");
+      } finally {
+        setIsChangingVisibility(false);
+      }
+    },
+    [
+      buildMeta.slug,
+      buildMeta.visibility,
+      buildTag,
+      isAuthor,
+      persistedTrimmedCode,
+      requireLoginWithDraftWarning,
+    ],
+  );
 
   const handleSave = useCallback(async () => {
     if (!isAuthor) return;
@@ -507,11 +570,11 @@ export default function BuildDetailPageClient({
           tag: tagResult.data,
           code,
           createCommit: shouldCreateCommit,
-          commitMessage: shouldCreateCommit ? (commitMessage.trim() || null) : null,
+          commitMessage: shouldCreateCommit ? commitMessage.trim() || null : null,
         }),
       });
 
-      const payload = await response.json().catch(() => null) as BuildWriteResponse | null;
+      const payload = (await response.json().catch(() => null)) as BuildWriteResponse | null;
 
       if (response.status === 401) {
         setSaveModalOpen(false);
@@ -522,9 +585,10 @@ export default function BuildDetailPageClient({
       }
 
       if (response.status === 400 && payload?.error === "CODE_TOO_SHORT") {
-        const count = typeof payload.nonWhitespaceCount === "number"
-          ? payload.nonWhitespaceCount
-          : codeStats.nonWhitespaceCount;
+        const count =
+          typeof payload.nonWhitespaceCount === "number"
+            ? payload.nonWhitespaceCount
+            : codeStats.nonWhitespaceCount;
         setCodeLengthErrorCount(count);
         setSaveError(CODE_TOO_SHORT_ERROR);
         return;
@@ -572,7 +636,7 @@ export default function BuildDetailPageClient({
       if (typeof window !== "undefined") {
         try {
           window.localStorage.setItem(draftKey, codeStats.trimmedCode);
-        } catch { }
+        } catch {}
       }
     } finally {
       setIsSaving(false);
@@ -599,80 +663,13 @@ export default function BuildDetailPageClient({
     saveIntent,
   ]);
 
-  const handleFork = useCallback(async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleFork = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
 
-    if (isAuthor) return;
+      if (isAuthor) return;
 
-    if (!initialIsAuthenticated) {
-      setSaveModalOpen(false);
-      requireLoginWithDraftWarning(
-        "You need to log in to save or share. Your current code is safe and will be restored after login.",
-      );
-      return;
-    }
-
-    const parsed = z.object({
-      name: buildNameSchema,
-      tag: buildTagSchema,
-      visibility: buildVisibilitySchema,
-    }).safeParse({
-      name: forkName,
-      tag: forkTag,
-      visibility: forkVisibility,
-    });
-
-    if (!parsed.success) {
-      setForkNameCheck({
-        status: "invalid",
-        message: parsed.error.issues[0]?.message ?? "Invalid build name.",
-      });
-      setSaveError(parsed.error.issues[0]?.message ?? "Invalid build name.");
-      return;
-    }
-
-    if (!hasValidCodeLength) {
-      setCodeLengthErrorCount(codeStats.nonWhitespaceCount);
-      setSaveError(CODE_TOO_SHORT_ERROR);
-      return;
-    }
-
-    if (forkNameCheck.status === "checking") {
-      setSaveError("Please wait for name availability to finish checking.");
-      return;
-    }
-    if (forkNameCheck.status === "invalid" || forkNameCheck.status === "taken" || forkNameCheck.status === "error") {
-      setSaveError(forkNameCheck.message);
-      return;
-    }
-    if (forkNameCheck.status !== "available") {
-      setSaveError("Please enter a valid, available name.");
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveError(null);
-
-    try {
-      const response = await fetch("/api/builds", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          name: parsed.data.name,
-          tag: parsed.data.tag,
-          code,
-          visibility: parsed.data.visibility,
-          forkedFrom: {
-            username: buildMeta.username,
-            slug: buildMeta.slug,
-          },
-        }),
-      });
-
-      const payload = await response.json().catch(() => null) as BuildWriteResponse | null;
-
-      if (response.status === 401) {
+      if (!initialIsAuthenticated) {
         setSaveModalOpen(false);
         requireLoginWithDraftWarning(
           "You need to log in to save or share. Your current code is safe and will be restored after login.",
@@ -680,46 +677,123 @@ export default function BuildDetailPageClient({
         return;
       }
 
-      if (response.status === 409 && payload?.error === "BUILD_NAME_TAKEN") {
-        setForkNameCheck({ status: "taken", message: "That build name is already taken." });
-        setSaveError("That build name is already taken.");
+      const parsed = z
+        .object({
+          name: buildNameSchema,
+          tag: buildTagSchema,
+          visibility: buildVisibilitySchema,
+        })
+        .safeParse({
+          name: forkName,
+          tag: forkTag,
+          visibility: forkVisibility,
+        });
+
+      if (!parsed.success) {
+        setForkNameCheck({
+          status: "invalid",
+          message: parsed.error.issues[0]?.message ?? "Invalid build name.",
+        });
+        setSaveError(parsed.error.issues[0]?.message ?? "Invalid build name.");
         return;
       }
 
-      if (response.status === 400 && payload?.error === "CODE_TOO_SHORT") {
-        const count = typeof payload.nonWhitespaceCount === "number"
-          ? payload.nonWhitespaceCount
-          : codeStats.nonWhitespaceCount;
-        setCodeLengthErrorCount(count);
+      if (!hasValidCodeLength) {
+        setCodeLengthErrorCount(codeStats.nonWhitespaceCount);
         setSaveError(CODE_TOO_SHORT_ERROR);
         return;
       }
 
-      if (!response.ok || !payload?.build) {
-        setSaveError(payload?.error ?? "Could not fork build right now.");
+      if (forkNameCheck.status === "checking") {
+        setSaveError("Please wait for name availability to finish checking.");
+        return;
+      }
+      if (
+        forkNameCheck.status === "invalid" ||
+        forkNameCheck.status === "taken" ||
+        forkNameCheck.status === "error"
+      ) {
+        setSaveError(forkNameCheck.message);
+        return;
+      }
+      if (forkNameCheck.status !== "available") {
+        setSaveError("Please enter a valid, available name.");
         return;
       }
 
-      setSaveModalOpen(false);
-      router.push(buildPublicBuildPath(payload.build.username, payload.build.slug));
-    } finally {
-      setIsSaving(false);
-    }
-  }, [
-    buildMeta.slug,
-    buildMeta.username,
-    code,
-    codeStats.nonWhitespaceCount,
-    forkName,
-    forkNameCheck,
-    forkTag,
-    forkVisibility,
-    hasValidCodeLength,
-    initialIsAuthenticated,
-    isAuthor,
-    requireLoginWithDraftWarning,
-    router,
-  ]);
+      setIsSaving(true);
+      setSaveError(null);
+
+      try {
+        const response = await fetch("/api/builds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            name: parsed.data.name,
+            tag: parsed.data.tag,
+            code,
+            visibility: parsed.data.visibility,
+            forkedFrom: {
+              username: buildMeta.username,
+              slug: buildMeta.slug,
+            },
+          }),
+        });
+
+        const payload = (await response.json().catch(() => null)) as BuildWriteResponse | null;
+
+        if (response.status === 401) {
+          setSaveModalOpen(false);
+          requireLoginWithDraftWarning(
+            "You need to log in to save or share. Your current code is safe and will be restored after login.",
+          );
+          return;
+        }
+
+        if (response.status === 409 && payload?.error === "BUILD_NAME_TAKEN") {
+          setForkNameCheck({ status: "taken", message: "That build name is already taken." });
+          setSaveError("That build name is already taken.");
+          return;
+        }
+
+        if (response.status === 400 && payload?.error === "CODE_TOO_SHORT") {
+          const count =
+            typeof payload.nonWhitespaceCount === "number"
+              ? payload.nonWhitespaceCount
+              : codeStats.nonWhitespaceCount;
+          setCodeLengthErrorCount(count);
+          setSaveError(CODE_TOO_SHORT_ERROR);
+          return;
+        }
+
+        if (!response.ok || !payload?.build) {
+          setSaveError(payload?.error ?? "Could not fork build right now.");
+          return;
+        }
+
+        setSaveModalOpen(false);
+        router.push(buildPublicBuildPath(payload.build.username, payload.build.slug));
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [
+      buildMeta.slug,
+      buildMeta.username,
+      code,
+      codeStats.nonWhitespaceCount,
+      forkName,
+      forkNameCheck,
+      forkTag,
+      forkVisibility,
+      hasValidCodeLength,
+      initialIsAuthenticated,
+      isAuthor,
+      requireLoginWithDraftWarning,
+      router,
+    ],
+  );
 
   const commitOptions = useMemo(() => {
     return commits.map((commit) => {
@@ -745,41 +819,44 @@ export default function BuildDetailPageClient({
   }, [commitHistory]);
 
   const nameStatusIcon = useMemo(() => {
-    if (forkNameCheck.status === "checking") return <Loader2 className="h-4 w-4 animate-spin text-white/70" />;
+    if (forkNameCheck.status === "checking")
+      return <Loader2 className="h-4 w-4 animate-spin text-white/70" />;
     if (forkNameCheck.status === "available") return <Check className="h-4 w-4 text-emerald-300" />;
-    if (forkNameCheck.status === "invalid" || forkNameCheck.status === "taken" || forkNameCheck.status === "error") {
+    if (
+      forkNameCheck.status === "invalid" ||
+      forkNameCheck.status === "taken" ||
+      forkNameCheck.status === "error"
+    ) {
       return <X className="h-4 w-4 text-red-300" />;
     }
     return null;
   }, [forkNameCheck.status]);
 
-  const fallbackBackHref = initialBackTo === "home"
-    ? "/"
-    : initialBackTo === "profile"
-    ? `/profile/${encodeURIComponent(buildMeta.username)}`
-    : initialBackTo === "builds"
-      ? `/profile/${encodeURIComponent(buildMeta.username)}/builds`
-      : initialBackTo === "explore-builds"
-        ? "/builds"
-        : initialBackTo === "search"
-          ? "/search"
-          : null;
-  const fallbackBackLabel = initialBackTo === "home"
-    ? "← Back to home"
-    : initialBackTo === "profile"
-    ? "← Back to profile"
-    : initialBackTo === "builds" || initialBackTo === "explore-builds"
-      ? "← Back to builds"
-      : initialBackTo === "search"
-        ? "← Back to search results"
-        : null;
+  const fallbackBackHref =
+    initialBackTo === "home"
+      ? "/"
+      : initialBackTo === "profile"
+        ? `/profile/${encodeURIComponent(buildMeta.username)}`
+        : initialBackTo === "builds"
+          ? `/profile/${encodeURIComponent(buildMeta.username)}/builds`
+          : initialBackTo === "explore-builds"
+            ? "/builds"
+            : initialBackTo === "search"
+              ? "/search"
+              : null;
+  const fallbackBackLabel =
+    initialBackTo === "home"
+      ? "← Back to home"
+      : initialBackTo === "profile"
+        ? "← Back to profile"
+        : initialBackTo === "builds" || initialBackTo === "explore-builds"
+          ? "← Back to builds"
+          : initialBackTo === "search"
+            ? "← Back to search results"
+            : null;
 
-  const backHref = initialBackHref
-    ? initialBackHref
-    : fallbackBackHref;
-  const backLabel = initialBackHref
-    ? getBackLabelFromHref(initialBackHref)
-    : fallbackBackLabel;
+  const backHref = initialBackHref ? initialBackHref : fallbackBackHref;
+  const backLabel = initialBackHref ? getBackLabelFromHref(initialBackHref) : fallbackBackLabel;
 
   return (
     <main className="space-y-8 pb-8">
@@ -787,14 +864,20 @@ export default function BuildDetailPageClient({
 
       <div className="space-y-2">
         <p className="eyebrow">Build</p>
-        <h1 className="text-3xl font-semibold wrap-anywhere text-white">{buildMeta.nameOriginal}</h1>
+        <h1 className="text-3xl font-semibold wrap-anywhere text-white">
+          {buildMeta.nameOriginal}
+        </h1>
         <div className="flex flex-wrap gap-2">
-          <Badge className="border-sky-400/30 bg-sky-500/10 text-sky-100">{displayedBuildTag}</Badge>
+          <Badge className="border-sky-400/30 bg-sky-500/10 text-sky-100">
+            {displayedBuildTag}
+          </Badge>
           {isAuthor ? (
             <Badge
-              className={buildMeta.visibility === "PRIVATE"
-                ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-                : "border-emerald-500/35 bg-emerald-500/10 text-emerald-200"}
+              className={
+                buildMeta.visibility === "PRIVATE"
+                  ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
+                  : "border-emerald-500/35 bg-emerald-500/10 text-emerald-200"
+              }
             >
               {buildMeta.visibility}
             </Badge>
@@ -803,21 +886,27 @@ export default function BuildDetailPageClient({
         <div className="space-y-1 text-sm text-white/70">
           <p>
             By{" "}
-            <Link href={`/profile/${encodeURIComponent(buildMeta.username)}`} className="text-brand-300 underline-offset-4 hover:underline">
+            <Link
+              href={`/profile/${encodeURIComponent(buildMeta.username)}`}
+              className="text-brand-300 underline-offset-4 hover:underline"
+            >
               {buildMeta.username}
             </Link>
           </p>
           <div className="sm:flex gap-4">
             <p>Created {formatMetaDate(buildMeta.createdAt)}</p>
-            {showUpdated ?
-              <div className='flex gap-4'>
+            {showUpdated ? (
+              <div className="flex gap-4">
                 <p className="hidden sm:block">|</p>
                 <p>Updated {formatMetaDate(buildMeta.updatedAt)}</p>
               </div>
-              : null}
+            ) : null}
           </div>
           {backHref && backLabel ? (
-            <Link href={backHref} className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline pt-4">
+            <Link
+              href={backHref}
+              className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline pt-4"
+            >
               {backLabel}
             </Link>
           ) : null}
@@ -839,11 +928,16 @@ export default function BuildDetailPageClient({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold text-white">Code</h2>
-            <p className="text-sm text-white/60">View the current build or a saved commit version.</p>
+            <p className="text-sm text-white/60">
+              View the current build or a saved commit version.
+            </p>
           </div>
 
           <div className="min-w-[220px] space-y-1">
-            <label htmlFor="build-commit-picker" className="text-xs font-medium uppercase tracking-wide text-white/60">
+            <label
+              htmlFor="build-commit-picker"
+              className="text-xs font-medium uppercase tracking-wide text-white/60"
+            >
               Commit
             </label>
             <select
@@ -875,7 +969,9 @@ export default function BuildDetailPageClient({
                 disabled={isChangingVisibility}
                 className={clsx(
                   "rounded-full px-3 py-1.5 transition",
-                  buildMeta.visibility === "PUBLIC" ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                  buildMeta.visibility === "PUBLIC"
+                    ? "bg-brand-500 text-white shadow-soft"
+                    : "text-white/70 hover:text-white",
                 )}
               >
                 PUBLIC
@@ -887,7 +983,9 @@ export default function BuildDetailPageClient({
                 disabled={isChangingVisibility}
                 className={clsx(
                   "rounded-full px-3 py-1.5 transition",
-                  buildMeta.visibility === "PRIVATE" ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                  buildMeta.visibility === "PRIVATE"
+                    ? "bg-brand-500 text-white shadow-soft"
+                    : "text-white/70 hover:text-white",
                 )}
               >
                 PRIVATE
@@ -901,9 +999,13 @@ export default function BuildDetailPageClient({
             <div className="flex items-center justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-white/80">Build tag</p>
-                <p className="text-sm text-white/55">This label appears on build cards and in build search.</p>
+                <p className="text-sm text-white/55">
+                  This label appears on build cards and in build search.
+                </p>
               </div>
-              <span className="text-xs text-white/45">{buildTag.trim().length}/{BUILD_TAG_MAX_LENGTH}</span>
+              <span className="text-xs text-white/45">
+                {buildTag.trim().length}/{BUILD_TAG_MAX_LENGTH}
+              </span>
             </div>
             <Input
               id="build-tag-inline"
@@ -915,7 +1017,12 @@ export default function BuildDetailPageClient({
               }}
               maxLength={BUILD_TAG_MAX_LENGTH}
             />
-            <p className={clsx("text-sm", buildTagValidationMessage ? "text-red-300" : "text-white/55")}>
+            <p
+              className={clsx(
+                "text-sm",
+                buildTagValidationMessage ? "text-red-300" : "text-white/55",
+              )}
+            >
               {buildTagValidationMessage ?? "Save build to apply any tag change."}
             </p>
           </div>
@@ -923,7 +1030,8 @@ export default function BuildDetailPageClient({
 
         <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/75 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-3xl text-white/70">
-            Need inspiration or not sure how to structure your script? Click to open the official guide in a new tab.
+            Need inspiration or not sure how to structure your script? Click to open the official
+            guide in a new tab.
           </p>
           <Link href="/guide" target="_blank" rel="noreferrer" className="inline-flex sm:shrink-0">
             <Button size="sm" variant="transparent" className="w-full justify-center gap-2">
@@ -947,7 +1055,9 @@ export default function BuildDetailPageClient({
                 onClick={() => setWrapLines(true)}
                 className={clsx(
                   "rounded-full px-3 py-1.5 transition",
-                  wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                  wrapLines
+                    ? "bg-brand-500 text-white shadow-soft"
+                    : "text-white/70 hover:text-white",
                 )}
               >
                 Wrap lines
@@ -958,7 +1068,9 @@ export default function BuildDetailPageClient({
                 onClick={() => setWrapLines(false)}
                 className={clsx(
                   "rounded-full px-3 py-1.5 transition",
-                  !wrapLines ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                  !wrapLines
+                    ? "bg-brand-500 text-white shadow-soft"
+                    : "text-white/70 hover:text-white",
                 )}
               >
                 Horizontal scroll
@@ -984,7 +1096,10 @@ export default function BuildDetailPageClient({
               {codeFeedback.syntaxErrors.map((err, idx) => (
                 <li key={`${err.lineStart}-${err.columnStart ?? 0}-${idx}`}>
                   Line {err.lineStart}
-                  {typeof err.columnStart === "number" ? `, column ${err.columnStart + 1}` : ""} - {err.message}
+                  {typeof err.columnStart === "number"
+                    ? `, column ${err.columnStart + 1}`
+                    : ""} -{" "}
+                  {err.message}
                 </li>
               ))}
             </ul>
@@ -998,7 +1113,10 @@ export default function BuildDetailPageClient({
               {codeFeedback.warnings.map((warning, idx) => (
                 <li key={`${warning.lineStart}-${warning.lineEnd ?? warning.lineStart}-${idx}`}>
                   Line {warning.lineStart}
-                  {warning.lineEnd && warning.lineEnd !== warning.lineStart ? `-${warning.lineEnd}` : ""} - {warning.message}
+                  {warning.lineEnd && warning.lineEnd !== warning.lineStart
+                    ? `-${warning.lineEnd}`
+                    : ""}{" "}
+                  - {warning.message}
                 </li>
               ))}
             </ul>
@@ -1025,15 +1143,16 @@ export default function BuildDetailPageClient({
               variant="outline"
               onClick={() => void handleShare()}
               disabled={isAuthor && !isBuildShareable}
-              title={isAuthor && !isBuildShareable ? "Private builds can't be shared until visibility is PUBLIC." : undefined}
+              title={
+                isAuthor && !isBuildShareable
+                  ? "Private builds can't be shared until visibility is PUBLIC."
+                  : undefined
+              }
             >
               <Share2 className="h-4 w-4" aria-hidden="true" />
               Share
             </Button>
-            <Button
-              type="button"
-              onClick={() => openSaveDialog("save")}
-            >
+            <Button type="button" onClick={() => openSaveDialog("save")}>
               <Save className="h-4 w-4" aria-hidden="true" />
               {isAuthor ? "Save build" : "Save to your builds"}
             </Button>
@@ -1054,7 +1173,11 @@ export default function BuildDetailPageClient({
                 Clipboard permission is unavailable. Copy this canonical build link manually.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Input readOnly value={shareFallbackLink} className="border-amber-200/50 bg-amber-950/50 font-mono text-xs text-amber-50" />
+                <Input
+                  readOnly
+                  value={shareFallbackLink}
+                  className="border-amber-200/50 bg-amber-950/50 font-mono text-xs text-amber-50"
+                />
                 <Button
                   type="button"
                   onClick={() => void handleCopyLink()}
@@ -1136,7 +1259,12 @@ export default function BuildDetailPageClient({
                         : "Code is too short to save"}
                     </Badge>
                     <div className="flex items-center gap-2">
-                      <Button type="button" variant="ghost" onClick={() => setSaveModalOpen(false)} disabled={isSaving}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setSaveModalOpen(false)}
+                        disabled={isSaving}
+                      >
                         Cancel
                       </Button>
                       <Button type="button" onClick={() => void handleSave()} disabled={isSaving}>
@@ -1145,7 +1273,11 @@ export default function BuildDetailPageClient({
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Saving...
                           </>
-                        ) : saveIntent === "share" ? "Save and share" : "Save build"}
+                        ) : saveIntent === "share" ? (
+                          "Save and share"
+                        ) : (
+                          "Save build"
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -1155,7 +1287,9 @@ export default function BuildDetailPageClient({
               <>
                 <div className="space-y-1">
                   <h2 className="text-xl font-semibold text-white">Save to your builds</h2>
-                  <p className="text-sm text-white/65">Create your own copy of this build with your edits.</p>
+                  <p className="text-sm text-white/65">
+                    Create your own copy of this build with your edits.
+                  </p>
                 </div>
 
                 <form className="space-y-4" onSubmit={handleFork}>
@@ -1174,11 +1308,17 @@ export default function BuildDetailPageClient({
                       rightIcon={nameStatusIcon}
                     />
                     {forkNameCheck.status !== "idle" && forkNameCheck.status !== "checking" && (
-                      <p className={clsx(
-                        "text-sm",
-                        forkNameCheck.status === "available" ? "text-emerald-300" : "text-red-300",
-                      )}>
-                        {forkNameCheck.status === "available" ? "Name is available." : forkNameCheck.message}
+                      <p
+                        className={clsx(
+                          "text-sm",
+                          forkNameCheck.status === "available"
+                            ? "text-emerald-300"
+                            : "text-red-300",
+                        )}
+                      >
+                        {forkNameCheck.status === "available"
+                          ? "Name is available."
+                          : forkNameCheck.message}
                       </p>
                     )}
                   </div>
@@ -1211,7 +1351,9 @@ export default function BuildDetailPageClient({
                         onClick={() => setForkVisibility("PUBLIC")}
                         className={clsx(
                           "rounded-full px-3 py-1.5 transition",
-                          forkVisibility === "PUBLIC" ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                          forkVisibility === "PUBLIC"
+                            ? "bg-brand-500 text-white shadow-soft"
+                            : "text-white/70 hover:text-white",
                         )}
                       >
                         PUBLIC
@@ -1222,7 +1364,9 @@ export default function BuildDetailPageClient({
                         onClick={() => setForkVisibility("PRIVATE")}
                         className={clsx(
                           "rounded-full px-3 py-1.5 transition",
-                          forkVisibility === "PRIVATE" ? "bg-brand-500 text-white shadow-soft" : "text-white/70 hover:text-white",
+                          forkVisibility === "PRIVATE"
+                            ? "bg-brand-500 text-white shadow-soft"
+                            : "text-white/70 hover:text-white",
                         )}
                       >
                         PRIVATE
@@ -1237,7 +1381,12 @@ export default function BuildDetailPageClient({
                         : "Code is too short to save"}
                     </Badge>
                     <div className="flex items-center gap-2">
-                      <Button type="button" variant="ghost" onClick={() => setSaveModalOpen(false)} disabled={isSaving}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setSaveModalOpen(false)}
+                        disabled={isSaving}
+                      >
                         Cancel
                       </Button>
                       <Button type="submit" disabled={isSaving}>
@@ -1246,7 +1395,9 @@ export default function BuildDetailPageClient({
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Saving...
                           </>
-                        ) : "Save to your builds"}
+                        ) : (
+                          "Save to your builds"
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -1256,7 +1407,6 @@ export default function BuildDetailPageClient({
           </Card>
         </div>
       )}
-
     </main>
   );
 }

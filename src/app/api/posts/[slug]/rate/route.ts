@@ -143,9 +143,11 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ slug: strin
   const throttleResponse = await enforceVoteThrottle(user.id);
   if (throttleResponse) return throttleResponse;
 
-  await db.rating.delete({
-    where: { userId_postId: { userId: user.id, postId: post.id } },
-  }).catch(() => null);
+  await db.rating
+    .delete({
+      where: { userId_postId: { userId: user.id, postId: post.id } },
+    })
+    .catch(() => null);
 
   const { updated, worked, broken, total } = await recomputePostRating(post.id);
   return NextResponse.json({ worked, broken, total, my: null, post: updated });

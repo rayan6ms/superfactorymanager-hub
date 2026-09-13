@@ -61,21 +61,21 @@ export async function GET(req: Request) {
       filters: { categoryKey: category, sfmVersion: version },
     });
 
-    const ids = results.map(result => result.id);
+    const ids = results.map((result) => result.id);
     const items = ids.length
       ? await db.post.findMany({
-        where: { id: { in: ids } },
-        include: {
-          category: true,
-          images: { orderBy: { position: "asc" } },
-          dependencies: true,
-          author: { select: { id: true, name: true } },
-          tags: { include: { tag: true } },
-        },
-      })
+          where: { id: { in: ids } },
+          include: {
+            category: true,
+            images: { orderBy: { position: "asc" } },
+            dependencies: true,
+            author: { select: { id: true, name: true } },
+            tags: { include: { tag: true } },
+          },
+        })
       : [];
 
-    const map = new Map(items.map(i => [i.id, i]));
+    const map = new Map(items.map((i) => [i.id, i]));
     const ordered = ids
       .map((id: string) => map.get(id))
       .filter((post): post is PostWithRelations => Boolean(post))
@@ -118,14 +118,19 @@ export async function POST(req: Request) {
     const modsForGame = byGame[parsed.gameVersion] || [];
     if (!modsForGame.includes(parsed.modVersion)) {
       return NextResponse.json(
-        { error: `Mod version ${parsed.modVersion} is not available for Minecraft ${parsed.gameVersion}` },
+        {
+          error: `Mod version ${parsed.modVersion} is not available for Minecraft ${parsed.gameVersion}`,
+        },
         { status: 400 },
       );
     }
 
     const normalizedTags = normalizeTags(parsed.tags);
     if (normalizedTags.length < TAG_MIN_COUNT) {
-      return NextResponse.json({ error: "Add more distinct tags to describe your post." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Add more distinct tags to describe your post." },
+        { status: 400 },
+      );
     }
 
     const user = await getCurrentUserFromSession(session.user, {
@@ -212,7 +217,7 @@ export async function POST(req: Request) {
       codeNote = "Invalid control characters found.";
     }
 
-    const hydrated = await db.$transaction(async tx => {
+    const hydrated = await db.$transaction(async (tx) => {
       const created = await tx.post.create({
         data: {
           slug,
@@ -239,7 +244,7 @@ export async function POST(req: Request) {
             })),
           },
           dependencies: {
-            create: depObjs.map(d => ({
+            create: depObjs.map((d) => ({
               name: d.name,
               slug: d.slug,
               source: d.source,
@@ -247,7 +252,7 @@ export async function POST(req: Request) {
             })),
           },
           tags: {
-            create: normalizedTags.map(tag => ({
+            create: normalizedTags.map((tag) => ({
               tag: {
                 connectOrCreate: {
                   where: { slug: tag.slug },

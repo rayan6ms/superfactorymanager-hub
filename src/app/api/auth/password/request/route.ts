@@ -3,16 +3,18 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "@/lib/request-security";
+import {
+  checkRateLimit,
+  getClientRateLimitKey,
+  hashRateLimitIdentifier,
+} from "@/lib/request-security";
 
 const schema = z.object({
   email: z
     .string()
     .trim()
     .min(1, "EMAIL_REQUIRED")
-    .pipe(
-      z.email({ message: "INVALID_EMAIL" })
-    )
+    .pipe(z.email({ message: "INVALID_EMAIL" }))
     .transform((value) => value.toLowerCase()),
 });
 

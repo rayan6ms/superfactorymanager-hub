@@ -160,7 +160,9 @@ export default function SignupForm({ next }: SignupFormProps) {
       setShowResendVerification(true);
       setResendIdentifier(trimmedEmail);
     } else {
-      setSuccessMessage(`If your signup can be completed, a verification email has been sent to ${trimmedEmail}.`);
+      setSuccessMessage(
+        `If your signup can be completed, a verification email has been sent to ${trimmedEmail}.`,
+      );
       setShowResendVerification(false);
       setResendIdentifier("");
     }
@@ -200,9 +202,9 @@ export default function SignupForm({ next }: SignupFormProps) {
               id="name"
               placeholder="Name"
               value={name}
-              onChange={e => {
+              onChange={(e) => {
                 setName(e.target.value);
-                setErrors(prev => ({ ...prev, name: undefined, form: undefined }));
+                setErrors((prev) => ({ ...prev, name: undefined, form: undefined }));
                 setShowResendVerification(false);
                 setResendIdentifier("");
               }}
@@ -225,9 +227,9 @@ export default function SignupForm({ next }: SignupFormProps) {
               placeholder="Email"
               type="email"
               value={email}
-              onChange={e => {
+              onChange={(e) => {
                 setEmail(e.target.value);
-                setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
+                setErrors((prev) => ({ ...prev, email: undefined, form: undefined }));
                 setShowResendVerification(false);
                 setResendIdentifier("");
               }}
@@ -249,9 +251,9 @@ export default function SignupForm({ next }: SignupFormProps) {
               placeholder="Password"
               type={showPassword ? "text" : "password"}
               value={password}
-              onChange={e => {
+              onChange={(e) => {
                 setPassword(e.target.value);
-                setErrors(prev => ({ ...prev, password: undefined, form: undefined }));
+                setErrors((prev) => ({ ...prev, password: undefined, form: undefined }));
                 setShowResendVerification(false);
                 setResendIdentifier("");
               }}
@@ -261,7 +263,7 @@ export default function SignupForm({ next }: SignupFormProps) {
               rightIcon={
                 <button
                   type="button"
-                  onClick={() => setShowPassword(prev => !prev)}
+                  onClick={() => setShowPassword((prev) => !prev)}
                   className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-(--surface-2)"
                   aria-pressed={showPassword}
                   aria-label={showPassword ? "Hide password" : "Show password"}
@@ -291,7 +293,9 @@ export default function SignupForm({ next }: SignupFormProps) {
         <div className="space-y-3 text-left">
           <div className="relative flex items-center">
             <div className="h-px flex-1 bg-white/15" />
-            <span className="px-3 text-xs uppercase tracking-wide text-white/50">Or continue with</span>
+            <span className="px-3 text-xs uppercase tracking-wide text-white/50">
+              Or continue with
+            </span>
             <div className="h-px flex-1 bg-white/15" />
           </div>
           <div className="grid gap-2">
@@ -327,7 +331,10 @@ export default function SignupForm({ next }: SignupFormProps) {
         )}
       </Card>
       <div className="w-full max-w-sm text-center text-sm text-white/70">
-        Already have an account? <Link href="/login" className="underline">Log in</Link>
+        Already have an account?{" "}
+        <Link href="/login" className="underline">
+          Log in
+        </Link>
       </div>
     </main>
   );

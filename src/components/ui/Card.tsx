@@ -11,7 +11,7 @@ export default function Card({
       className={clsx(
         "surface p-4 backdrop-blur-sm wrap-break-word",
         hoverable && "transition hover:shadow-card hover:-translate-y-px",
-        className
+        className,
       )}
     >
       {children}

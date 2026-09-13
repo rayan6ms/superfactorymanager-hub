@@ -56,7 +56,10 @@ export default function ExternalLinkGuard() {
       setPending({
         href: anchor.href,
         hostname,
-        target: event.metaKey || event.ctrlKey || anchor.target === "_blank" ? "_blank" : anchor.target || "_self",
+        target:
+          event.metaKey || event.ctrlKey || anchor.target === "_blank"
+            ? "_blank"
+            : anchor.target || "_self",
       });
     };
 
@@ -68,7 +71,11 @@ export default function ExternalLinkGuard() {
 
   const proceed = () => {
     if (!pending) return;
-    window.open(pending.href, pending.target || "_self", pending.target === "_blank" ? "noopener,noreferrer" : undefined);
+    window.open(
+      pending.href,
+      pending.target || "_self",
+      pending.target === "_blank" ? "noopener,noreferrer" : undefined,
+    );
     setPending(null);
   };
 
@@ -155,7 +162,8 @@ export default function ExternalLinkGuard() {
         <div className="space-y-2">
           <h2 className="text-xl font-semibold text-white">You are leaving SFMHub</h2>
           <p className="text-sm text-white/70">
-            We cannot guarantee that {pending.hostname} is safe. Continue to this site or stay on the current page.
+            We cannot guarantee that {pending.hostname} is safe. Continue to this site or stay on
+            the current page.
           </p>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/80 break-words">
             {pending.href}

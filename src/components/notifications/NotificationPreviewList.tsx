@@ -58,13 +58,13 @@ export default function NotificationPreviewList({
 
       const makeRead = unread;
 
-      setPendingIds(prev => {
+      setPendingIds((prev) => {
         const next = new Set(prev);
         next.add(id);
         return next;
       });
 
-      setLocalUnread(prev => ({
+      setLocalUnread((prev) => ({
         ...prev,
         [id]: !makeRead,
       }));
@@ -86,13 +86,13 @@ export default function NotificationPreviewList({
         }
       } catch (error) {
         console.error(error);
-        setLocalUnread(prev => {
+        setLocalUnread((prev) => {
           const next = { ...prev };
           delete next[id];
           return next;
         });
       } finally {
-        setPendingIds(prev => {
+        setPendingIds((prev) => {
           const next = new Set(prev);
           next.delete(id);
           return next;
@@ -102,7 +102,10 @@ export default function NotificationPreviewList({
     [localUnread, onMarkRead],
   );
 
-  const items = typeof maxVisible === "number" ? notifications.slice(0, Math.max(0, maxVisible)) : notifications;
+  const items =
+    typeof maxVisible === "number"
+      ? notifications.slice(0, Math.max(0, maxVisible))
+      : notifications;
 
   if (!notifications.length) {
     return (
@@ -120,7 +123,7 @@ export default function NotificationPreviewList({
 
   return (
     <ul className={clsx("space-y-3", className)}>
-      {items.map(item => {
+      {items.map((item) => {
         const created = formatNotificationTimestamp(item.createdAt);
 
         const unreadFromProps = !item.readAt;

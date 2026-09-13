@@ -8,15 +8,15 @@ const BUILD_DETAIL_COMMITS_LIMIT = 50;
 
 export type BuildDetailQueryResult =
   | {
-    status: 404;
-    payload: null;
-    visibility: null;
-  }
+      status: 404;
+      payload: null;
+      visibility: null;
+    }
   | {
-    status: 200;
-    payload: BuildDetailPayload;
-    visibility: BuildVisibility;
-  };
+      status: 200;
+      payload: BuildDetailPayload;
+      visibility: BuildVisibility;
+    };
 
 type BuildDetailLookupOptions = {
   username: string;
@@ -115,12 +115,13 @@ async function getBuildDetailUncached(
   ]);
 
   const includesSelectedCommitOutsideWindow = Boolean(
-    selectedCommitSummary
-    && !recentCommits.some((commit) => commit.id === selectedCommitSummary?.id),
+    selectedCommitSummary &&
+    !recentCommits.some((commit) => commit.id === selectedCommitSummary?.id),
   );
-  const commits = includesSelectedCommitOutsideWindow && selectedCommitSummary
-    ? [selectedCommitSummary, ...recentCommits]
-    : recentCommits;
+  const commits =
+    includesSelectedCommitOutsideWindow && selectedCommitSummary
+      ? [selectedCommitSummary, ...recentCommits]
+      : recentCommits;
 
   return {
     status: 200,
@@ -136,9 +137,9 @@ async function getBuildDetailUncached(
         updatedAt: build.updatedAt.toISOString(),
         forkedFrom: build.forkedFromBuild?.user.name
           ? {
-            username: build.forkedFromBuild.user.name,
-            slug: build.forkedFromBuild.slug,
-          }
+              username: build.forkedFromBuild.user.name,
+              slug: build.forkedFromBuild.slug,
+            }
           : null,
       },
       code,
@@ -160,24 +161,23 @@ async function getBuildDetailUncached(
 }
 
 const getCachedPublicBuildDetail = unstable_cache(
-  async (options: CachedPublicBuildDetailInput) => getBuildDetailUncached({
-    username: options.username,
-    slug: options.slug,
-    commitId: options.commitId,
-    viewerId: null,
-  }),
+  async (options: CachedPublicBuildDetailInput) =>
+    getBuildDetailUncached({
+      username: options.username,
+      slug: options.slug,
+      commitId: options.commitId,
+      viewerId: null,
+    }),
   ["public-build-detail"],
   { revalidate: 60 },
 );
 
-export async function getBuildDetail(
-  options: {
-    username: string;
-    slug: string;
-    commitId?: string | null;
-    viewerEmail?: string | null;
-  },
-): Promise<BuildDetailQueryResult> {
+export async function getBuildDetail(options: {
+  username: string;
+  slug: string;
+  commitId?: string | null;
+  viewerEmail?: string | null;
+}): Promise<BuildDetailQueryResult> {
   const normalizedUsername = options.username.trim().toLowerCase();
   const normalizedSlug = options.slug.trim();
   if (!normalizedUsername || !normalizedSlug) {

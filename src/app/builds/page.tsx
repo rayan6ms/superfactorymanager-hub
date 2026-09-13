@@ -42,7 +42,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     description: q
       ? `Explore public SFM builds matching ${q}: Super Factory Manager code snapshots, SFML examples, and Minecraft automation ideas.`
       : "Explore public Super Factory Manager builds, SFM code snapshots, SFML examples, and Minecraft automation ideas from the SFMHub community.",
-    keywords: uniqueKeywords([...CORE_SEO_KEYWORDS, q, username, "Super Factory Manager builds", "SFM build code"]),
+    keywords: uniqueKeywords([
+      ...CORE_SEO_KEYWORDS,
+      q,
+      username,
+      "Super Factory Manager builds",
+      "SFM build code",
+    ]),
     alternates: { canonical: "/builds" },
     robots: {
       index: !hasFilters,
@@ -51,10 +57,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-function getParam(
-  params: Record<string, string | string[] | undefined> | undefined,
-  key: string,
-) {
+function getParam(params: Record<string, string | string[] | undefined> | undefined, key: string) {
   const value = params?.[key];
   if (Array.isArray(value)) return value[0] ?? "";
   return typeof value === "string" ? value : "";
@@ -114,9 +117,12 @@ export default async function BuildsPage({ searchParams }: Props) {
         <h1 className="text-3xl font-semibold text-white">Explore builds</h1>
         <p className="text-white/70">Search community builds by name, tag, author, or date.</p>
         <Card className="border-white/10 bg-white/5 p-4 text-sm text-white/75">
-          Builds listed here do not necessarily work. They are publicly saved code snapshots.
-          For tested builds with more detail and explanation, check the{" "}
-          <Link href="/posts" className="font-semibold text-brand-300 underline-offset-4 transition hover:underline">
+          Builds listed here do not necessarily work. They are publicly saved code snapshots. For
+          tested builds with more detail and explanation, check the{" "}
+          <Link
+            href="/posts"
+            className="font-semibold text-brand-300 underline-offset-4 transition hover:underline"
+          >
             posts
           </Link>
           .
@@ -164,7 +170,9 @@ export default async function BuildsPage({ searchParams }: Props) {
             ))}
           </ul>
         ) : (
-          <Card className="p-8 text-center text-white/70">No builds match the selected filters.</Card>
+          <Card className="p-8 text-center text-white/70">
+            No builds match the selected filters.
+          </Card>
         )}
 
         <Pagination

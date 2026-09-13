@@ -48,7 +48,8 @@ function renderUrl(item) {
   const lines = [`    <loc>${escapeXml(item.loc)}</loc>`];
   if (item.lastmod) lines.push(`    <lastmod>${item.lastmod}</lastmod>`);
   if (item.changefreq) lines.push(`    <changefreq>${item.changefreq}</changefreq>`);
-  if (typeof item.priority === "number") lines.push(`    <priority>${item.priority.toFixed(1)}</priority>`);
+  if (typeof item.priority === "number")
+    lines.push(`    <priority>${item.priority.toFixed(1)}</priority>`);
   return `  <url>\n${lines.join("\n")}\n  </url>`;
 }
 
@@ -64,15 +65,18 @@ function addOrMergeUrl(urlMap, next) {
   }
   if (!existing.changefreq && next.changefreq) existing.changefreq = next.changefreq;
   if (typeof next.priority === "number") {
-    existing.priority = typeof existing.priority === "number" ? Math.max(existing.priority, next.priority) : next.priority;
+    existing.priority =
+      typeof existing.priority === "number"
+        ? Math.max(existing.priority, next.priority)
+        : next.priority;
   }
 }
 
 function buildXml(items) {
   const sorted = [...items].sort((a, b) => a.loc.localeCompare(b.loc));
   return [
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-    "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">",
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     sorted.map(renderUrl).join("\n"),
     "</urlset>",
     "",
@@ -83,15 +87,17 @@ async function generateSitemap() {
   const baseUrl = getBaseUrl();
   const prismaUrl = process.env.PRISMA_DATABASE_URL?.trim();
   const isAccelerateUrl = Boolean(
-    prismaUrl
-    && (prismaUrl.startsWith("prisma://") || prismaUrl.startsWith("prisma+postgres://")),
+    prismaUrl && (prismaUrl.startsWith("prisma://") || prismaUrl.startsWith("prisma+postgres://")),
   );
-  const directDatabaseUrl = process.env.POSTGRES_URL?.trim()
-    || process.env.DATABASE_URL?.trim()
-    || (!isAccelerateUrl ? prismaUrl : undefined);
+  const directDatabaseUrl =
+    process.env.POSTGRES_URL?.trim() ||
+    process.env.DATABASE_URL?.trim() ||
+    (!isAccelerateUrl ? prismaUrl : undefined);
 
   if (!directDatabaseUrl) {
-    throw new Error("Sitemap generation requires a direct Postgres URL. Set POSTGRES_URL or DATABASE_URL.");
+    throw new Error(
+      "Sitemap generation requires a direct Postgres URL. Set POSTGRES_URL or DATABASE_URL.",
+    );
   }
 
   const prisma = new PrismaClient({

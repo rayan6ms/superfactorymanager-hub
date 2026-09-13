@@ -26,8 +26,14 @@ export default async function AdminDeletionsPage({
   const postPageParam = params?.postPage;
   const commentPageParam = params?.commentPage;
   const tabParam = params?.tab;
-  const requestedPostPage = parsePageParam(Array.isArray(postPageParam) ? postPageParam[0] : postPageParam, 1);
-  const requestedCommentPage = parsePageParam(Array.isArray(commentPageParam) ? commentPageParam[0] : commentPageParam, 1);
+  const requestedPostPage = parsePageParam(
+    Array.isArray(postPageParam) ? postPageParam[0] : postPageParam,
+    1,
+  );
+  const requestedCommentPage = parsePageParam(
+    Array.isArray(commentPageParam) ? commentPageParam[0] : commentPageParam,
+    1,
+  );
   const activeTab: TabKey = tabParam === "auto" ? "auto" : "manual";
   const PAGE_SIZE = 20;
 
@@ -111,7 +117,8 @@ export default async function AdminDeletionsPage({
         <p className="text-sm uppercase tracking-[0.3em] text-white/40">Admin</p>
         <h1 className="text-3xl font-semibold text-white">Deletion flags</h1>
         <p className="text-sm text-white/60">
-          Review content that was flagged as deleted. You can reinstate posts or comments after verifying they are safe.
+          Review content that was flagged as deleted. You can reinstate posts or comments after
+          verifying they are safe.
         </p>
         <Link
           href="/admin"
@@ -122,7 +129,7 @@ export default async function AdminDeletionsPage({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <Link
             key={tab.key}
             href={buildTabHref(tab.key)}
@@ -130,7 +137,7 @@ export default async function AdminDeletionsPage({
               "rounded-full border px-4 py-2 text-sm font-semibold transition",
               activeTab === tab.key
                 ? "border-white/50 bg-white/10 text-white"
-                : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:text-white"
+                : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:text-white",
             )}
           >
             {tab.label}
@@ -152,13 +159,17 @@ export default async function AdminDeletionsPage({
         <Card className="space-y-1 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Total</p>
           <p className="text-2xl font-semibold text-white">{postCount + commentCount}</p>
-          <p className="text-xs text-white/60">All content currently carrying a {flaggedLabel.toLowerCase()}.</p>
+          <p className="text-xs text-white/60">
+            All content currently carrying a {flaggedLabel.toLowerCase()}.
+          </p>
         </Card>
       </div>
 
       {activeTab === "manual" && (
         <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-50">
-          <p className="text-sm font-semibold">Manually flagged content will be deleted after 15 days.</p>
+          <p className="text-sm font-semibold">
+            Manually flagged content will be deleted after 15 days.
+          </p>
           <p className="text-sm text-amber-100/80">Restoring an item stops the countdown.</p>
         </div>
       )}
@@ -169,7 +180,9 @@ export default async function AdminDeletionsPage({
             <div className="space-y-1">
               <p className="text-xs uppercase tracking-[0.3em] text-white/40">Posts</p>
               <h2 className="text-lg font-semibold text-white">{flaggedLabel} posts</h2>
-              <p className="text-sm text-white/60">Restore posts after confirming their content is safe.</p>
+              <p className="text-sm text-white/60">
+                Restore posts after confirming their content is safe.
+              </p>
             </div>
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/70">
               {postCount} items
@@ -178,7 +191,7 @@ export default async function AdminDeletionsPage({
 
           <div className="space-y-3">
             {posts.length === 0 && <p className="text-sm text-white/60">No flagged posts.</p>}
-            {posts.map(post => {
+            {posts.map((post) => {
               const flaggedAt = post.deletionFlaggedAt ?? post.updatedAt ?? post.uploadDate;
               const purgeAt = post.deletionPurgeAt;
               return (
@@ -188,15 +201,22 @@ export default async function AdminDeletionsPage({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1">
-                      <Link href={`/posts/${post.slug}`} className="text-lg font-semibold text-white underline-offset-4 hover:underline">
+                      <Link
+                        href={`/posts/${post.slug}`}
+                        className="text-lg font-semibold text-white underline-offset-4 hover:underline"
+                      >
                         {post.title}
                       </Link>
-                      <p className="text-sm text-white/60">Category: {post.category?.name ?? "—"}</p>
+                      <p className="text-sm text-white/60">
+                        Category: {post.category?.name ?? "—"}
+                      </p>
                       <p className="text-xs text-white/50">
                         Flagged {formatDistanceToNow(flaggedAt, { addSuffix: true })}
                       </p>
                       {activeTab === "manual" && purgeAt && (
-                        <p className="text-xs text-amber-200">Permanent deletion {formatDistanceToNow(purgeAt, { addSuffix: true })}</p>
+                        <p className="text-xs text-amber-200">
+                          Permanent deletion {formatDistanceToNow(purgeAt, { addSuffix: true })}
+                        </p>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-2 text-right text-xs text-white/60">
@@ -225,7 +245,9 @@ export default async function AdminDeletionsPage({
             <div className="space-y-1">
               <p className="text-xs uppercase tracking-[0.3em] text-white/40">Comments</p>
               <h2 className="text-lg font-semibold text-white">{flaggedLabel} comments</h2>
-              <p className="text-sm text-white/60">Unhide comment threads after issues are resolved.</p>
+              <p className="text-sm text-white/60">
+                Unhide comment threads after issues are resolved.
+              </p>
             </div>
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/70">
               {commentCount} items
@@ -234,7 +256,7 @@ export default async function AdminDeletionsPage({
 
           <div className="space-y-3">
             {comments.length === 0 && <p className="text-sm text-white/60">No flagged comments.</p>}
-            {comments.map(comment => {
+            {comments.map((comment) => {
               const flaggedAt = comment.deletionFlaggedAt ?? comment.updatedAt;
               const purgeAt = comment.deletionPurgeAt;
               return (
@@ -244,7 +266,9 @@ export default async function AdminDeletionsPage({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-white">{comment.author?.name ?? comment.author?.email ?? "Unknown user"}</p>
+                      <p className="text-sm font-semibold text-white">
+                        {comment.author?.name ?? comment.author?.email ?? "Unknown user"}
+                      </p>
                       <Link
                         href={`/posts/${comment.post?.slug ?? ""}#comment-${comment.id}`}
                         className="text-sm text-brand-200 underline-offset-4 hover:underline"
@@ -255,7 +279,9 @@ export default async function AdminDeletionsPage({
                         Flagged {formatDistanceToNow(flaggedAt, { addSuffix: true })}
                       </p>
                       {activeTab === "manual" && purgeAt && (
-                        <p className="text-xs text-amber-200">Permanent deletion {formatDistanceToNow(purgeAt, { addSuffix: true })}</p>
+                        <p className="text-xs text-amber-200">
+                          Permanent deletion {formatDistanceToNow(purgeAt, { addSuffix: true })}
+                        </p>
                       )}
                     </div>
                     <RestoreDeletionButton type="comment" targetId={comment.id} label="Reinstate" />

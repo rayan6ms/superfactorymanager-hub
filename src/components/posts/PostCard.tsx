@@ -68,11 +68,7 @@ function renderRating(
         {successPercent}% success{" "}
         <span className="inline-flex items-center gap-1">
           (<span>{total}</span>
-          <span className="sr-only">
-            {" "}
-            vote{total === 1 ? "" : "s"}
-          </span>
-          )
+          <span className="sr-only"> vote{total === 1 ? "" : "s"}</span>)
         </span>
       </>
     );
@@ -88,10 +84,7 @@ function renderRating(
             <Check className="h-3 w-3 inline-block" aria-hidden="true" />
           </span>
           <span>{worked}</span>
-          <span className="sr-only">
-            {" "}
-            positive vote{worked === 1 ? "" : "s"}
-          </span>
+          <span className="sr-only"> positive vote{worked === 1 ? "" : "s"}</span>
         </span>
         <span className="text-white/30">/</span>
         <span className="inline-flex items-center gap-0.5">
@@ -99,10 +92,7 @@ function renderRating(
             <X className="h-3 w-3 inline-block" aria-hidden="true" />
           </span>
           <span>{broken}</span>
-          <span className="sr-only">
-            {" "}
-            negative vote{broken === 1 ? "" : "s"}
-          </span>
+          <span className="sr-only"> negative vote{broken === 1 ? "" : "s"}</span>
         </span>
         )
       </span>
@@ -118,8 +108,7 @@ function getInitial(name: string | null | undefined) {
 
 export default function PostCard({ post, compact = false }: Props) {
   const image = post.images?.[0];
-  const imageSrc =
-    image?.thumbLg || image?.thumbMd || image?.thumbSm || image?.original || null;
+  const imageSrc = image?.thumbLg || image?.thumbMd || image?.thumbSm || image?.original || null;
 
   const authorName = post.author?.name ?? post.authorName ?? "Unknown creator";
   const authorImage = post.author?.image ?? null;
@@ -153,7 +142,9 @@ export default function PostCard({ post, compact = false }: Props) {
                   {post.category?.name ? (
                     <>
                       {" "}
-                      <Badge className="translate-y-[-0.05rem] align-middle">{post.category.name}</Badge>
+                      <Badge className="translate-y-[-0.05rem] align-middle">
+                        {post.category.name}
+                      </Badge>
                     </>
                   ) : null}
                 </h3>
@@ -166,7 +157,7 @@ export default function PostCard({ post, compact = false }: Props) {
             </div>
             {post.tags?.length ? (
               <div className="flex flex-wrap gap-1 text-xs text-white/50">
-                {post.tags.slice(0, 4).map(tag => (
+                {post.tags.slice(0, 4).map((tag) => (
                   <span
                     key={tag.slug || tag.name}
                     className="rounded-full border border-white/10 px-2 py-0.5 text-[0.7rem] text-white/65"
@@ -184,12 +175,7 @@ export default function PostCard({ post, compact = false }: Props) {
               </div>
               <span className="inline-flex items-center gap-1 text-white/80">
                 <Star className="h-3 w-3 text-amber-300" aria-hidden />
-                {renderRating(
-                  post.rating,
-                  post.ratingCount,
-                  post.workedCount,
-                  post.brokenCount,
-                )}
+                {renderRating(post.rating, post.ratingCount, post.workedCount, post.brokenCount)}
               </span>
             </div>
           </Card>
@@ -233,12 +219,8 @@ export default function PostCard({ post, compact = false }: Props) {
                   </span>
                 )}
                 <div className="min-w-0">
-                  <p className="text-[0.6rem] uppercase tracking-[0.25em] text-white/45">
-                    Author
-                  </p>
-                  <p className="truncate text-sm font-semibold text-white">
-                    {authorName}
-                  </p>
+                  <p className="text-[0.6rem] uppercase tracking-[0.25em] text-white/45">Author</p>
+                  <p className="truncate text-sm font-semibold text-white">{authorName}</p>
                 </div>
               </div>
             </div>
@@ -249,7 +231,9 @@ export default function PostCard({ post, compact = false }: Props) {
                 {post.category?.name ? (
                   <>
                     {" "}
-                    <Badge className="translate-y-[-0.05rem] align-middle">{post.category.name}</Badge>
+                    <Badge className="translate-y-[-0.05rem] align-middle">
+                      {post.category.name}
+                    </Badge>
                   </>
                 ) : null}
               </h3>
@@ -260,7 +244,7 @@ export default function PostCard({ post, compact = false }: Props) {
               </div>
               {post.tags?.length ? (
                 <div className="flex flex-wrap gap-1 text-xs text-white/50">
-                  {post.tags.slice(0, 4).map(tag => (
+                  {post.tags.slice(0, 4).map((tag) => (
                     <span
                       key={tag.slug || tag.name}
                       className="rounded-full border border-white/10 px-2 py-0.5 text-[0.7rem] text-white/65"
@@ -278,12 +262,7 @@ export default function PostCard({ post, compact = false }: Props) {
                 </div>
                 <span className="inline-flex items-center gap-1 text-white/80">
                   <Star className="h-3 w-3 text-amber-300" aria-hidden />
-                  {renderRating(
-                    post.rating,
-                    post.ratingCount,
-                    post.workedCount,
-                    post.brokenCount,
-                  )}
+                  {renderRating(post.rating, post.ratingCount, post.workedCount, post.brokenCount)}
                 </span>
               </div>
             </div>

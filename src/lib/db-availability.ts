@@ -73,7 +73,8 @@ export function isPrismaDatabaseUnavailableError(error: unknown) {
 function rememberDatabaseUnavailable(error: unknown) {
   const now = Date.now();
   const reason = getErrorCode(error) ?? getErrorMessage(error);
-  const shouldLog = reason !== lastDatabaseUnavailableReason || now - lastDatabaseUnavailableAt > 30_000;
+  const shouldLog =
+    reason !== lastDatabaseUnavailableReason || now - lastDatabaseUnavailableAt > 30_000;
 
   lastDatabaseUnavailableAt = now;
   lastDatabaseUnavailableReason = reason;
@@ -107,8 +108,6 @@ export async function withDatabaseFallback<T>(
     }
 
     rememberDatabaseUnavailable(error);
-    return typeof fallback === "function"
-      ? await (fallback as () => T | Promise<T>)()
-      : fallback;
+    return typeof fallback === "function" ? await (fallback as () => T | Promise<T>)() : fallback;
   }
 }

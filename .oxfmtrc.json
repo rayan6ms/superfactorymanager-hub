@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "sortImports": false,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "docs/**",
+    "backups/**",
+    ".next/**",
+    ".vercel/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "src/generated/**",
+    "tests/sfml/fixtures/**",
+    "bun.lock",
+    "public/**"
+  ]
+}

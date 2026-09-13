@@ -18,7 +18,12 @@ const moderationSchema = z.object({
   disableCreateComments: z.boolean().optional().default(false),
   disableVotePosts: z.boolean().optional().default(false),
   disableVoteComments: z.boolean().optional().default(false),
-  timeoutMinutes: z.number().int().positive().max(60 * 24 * 30).optional(),
+  timeoutMinutes: z
+    .number()
+    .int()
+    .positive()
+    .max(60 * 24 * 30)
+    .optional(),
   note: z.string().trim().max(500).optional(),
   reopen: z.boolean().optional().default(false),
 });
@@ -77,11 +82,17 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   const shouldResolve = markResolved || hasEnforcementAction;
 
   if (reopen && shouldResolve) {
-    return NextResponse.json({ error: "Reopening cannot be combined with other actions." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Reopening cannot be combined with other actions." },
+      { status: 400 },
+    );
   }
 
   if (!shouldResolve && !note && !reopen) {
-    return NextResponse.json({ error: "Select at least one action or leave a note." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Select at least one action or leave a note." },
+      { status: 400 },
+    );
   }
 
   const report = await db.report.findUnique({
@@ -97,7 +108,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   }
 
   if (reopen) {
-    await db.$transaction(async tx => {
+    await db.$transaction(async (tx) => {
       await tx.report.update({ where: { id }, data: { resolvedAt: null } });
       await tx.reportAction.create({
         data: {
@@ -116,7 +127,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   const affectedPostIds = new Set<string>();
   const now = new Date();
 
-  await db.$transaction(async tx => {
+  await db.$transaction(async (tx) => {
     if (flagTarget && report.commentId) {
       await flagManyAsDeleted(tx, "comment", { id: report.commentId }, { auto: false, now });
     }
@@ -132,8 +143,11 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
         await flagManyAsDeleted(tx, "comment", { authorId: offenderId }, { auto: false, now });
       }
       if (revokePostVotes) {
-        const ratings = await tx.rating.findMany({ where: { userId: offenderId }, select: { postId: true } });
-        ratings.forEach(rating => affectedPostIds.add(rating.postId));
+        const ratings = await tx.rating.findMany({
+          where: { userId: offenderId },
+          select: { postId: true },
+        });
+        ratings.forEach((rating) => affectedPostIds.add(rating.postId));
         if (ratings.length) {
           await tx.rating.deleteMany({ where: { userId: offenderId } });
         }
@@ -153,7 +167,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
             canCreateComments: disableCreateComments ? false : undefined,
             canVotePosts: disableVotePosts ? false : undefined,
             canVoteComments: disableVoteComments ? false : undefined,
-            interactionBanUntil: timeoutMinutes ? new Date(Date.now() + timeoutMinutes * 60 * 1000) : undefined,
+            interactionBanUntil: timeoutMinutes
+              ? new Date(Date.now() + timeoutMinutes * 60 * 1000)
+              : undefined,
           },
         });
       }
@@ -195,7 +211,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   });
 
   if (affectedPostIds.size) {
-    await Promise.all(Array.from(affectedPostIds).map(postId => recomputePostRating(postId)));
+    await Promise.all(Array.from(affectedPostIds).map((postId) => recomputePostRating(postId)));
   }
 
   if ((flagTarget && Boolean(report.postId)) || flagAuthorPosts) {

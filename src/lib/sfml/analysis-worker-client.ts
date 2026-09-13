@@ -44,11 +44,7 @@ export function createSfmlAnalysisClient(
     void fallback(job.code, job.options).then(
       (result) => finish(job, result),
       (error) =>
-        finish(
-          job,
-          undefined,
-          error instanceof Error ? error : new Error("SFML analysis failed"),
-        ),
+        finish(job, undefined, error instanceof Error ? error : new Error("SFML analysis failed")),
     );
   }
   function pump() {
@@ -94,15 +90,9 @@ export function createSfmlAnalysisClient(
   }
 
   return {
-    analyze(
-      code: string,
-      options?: AnalyzeOptions,
-      signal?: AbortSignal,
-    ): Promise<CodeFeedback> {
+    analyze(code: string, options?: AnalyzeOptions, signal?: AbortSignal): Promise<CodeFeedback> {
       if (signal?.aborted)
-        return Promise.reject(
-          new DOMException("Analysis canceled", "AbortError"),
-        );
+        return Promise.reject(new DOMException("Analysis canceled", "AbortError"));
       return new Promise((resolve, reject) => {
         const job: Job = {
           id: ++nextId,
@@ -144,8 +134,7 @@ export function createSfmlAnalysisClient(
 }
 
 const client = createSfmlAnalysisClient(() => {
-  if (typeof window === "undefined" || typeof Worker === "undefined")
-    return null;
+  if (typeof window === "undefined" || typeof Worker === "undefined") return null;
   return new Worker(new URL("./analysis-worker.ts", import.meta.url), {
     type: "module",
     name: "sfml-analysis",
@@ -178,8 +167,7 @@ export function scheduleSfmlAnalysis(
         console.error("SFML analysis failed:", error);
         onFeedback({
           status: "error",
-          message:
-            "Code analysis could not finish. Please edit the code to retry.",
+          message: "Code analysis could not finish. Please edit the code to retry.",
           syntaxErrors: [],
           warnings: [],
         });

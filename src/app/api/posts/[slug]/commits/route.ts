@@ -50,7 +50,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ error: "This post is closed to community edits." }, { status: 403 });
   }
   if (post.authorId === user.id) {
-    return NextResponse.json({ error: "Use the edit form to update your own post." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Use the edit form to update your own post." },
+      { status: 400 },
+    );
   }
 
   try {
@@ -70,14 +73,27 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ error: "Code is too short." }, { status: 400 });
   }
   if (/[^\s]/.test(trimmedCode) === false) {
-    return NextResponse.json({ error: "Code must include non-whitespace characters." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Code must include non-whitespace characters." },
+      { status: 400 },
+    );
   }
   if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(trimmedCode)) {
-    return NextResponse.json({ error: "Code contains invalid control characters." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Code contains invalid control characters." },
+      { status: 400 },
+    );
   }
 
-  if (parsed.data.baseCommitId && post.currentCommitId && parsed.data.baseCommitId !== post.currentCommitId) {
-    return NextResponse.json({ error: "Please refresh before submitting another update." }, { status: 409 });
+  if (
+    parsed.data.baseCommitId &&
+    post.currentCommitId &&
+    parsed.data.baseCommitId !== post.currentCommitId
+  ) {
+    return NextResponse.json(
+      { error: "Please refresh before submitting another update." },
+      { status: 409 },
+    );
   }
 
   const commitTitle = parsed.data.title.trim();

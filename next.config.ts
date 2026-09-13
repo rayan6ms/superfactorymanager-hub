@@ -63,20 +63,15 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
 
   // Keep static generation within the shared workstation/server CPU budget.
-  experimental: { cpus: 2 },
+  experimental: { cpus: 2, useTypeScriptCli: true },
 
   turbopack: {},
 
-  serverExternalPackages: [
-    '@tensorflow/tfjs-node',
-  ],
+  serverExternalPackages: ["@tensorflow/tfjs-node"],
 
   images: {
     unoptimized: true,
-    remotePatterns: [
-      { protocol: "https", hostname: "i.ytimg.com" },
-      ...avatarImageRemotePatterns,
-    ],
+    remotePatterns: [{ protocol: "https", hostname: "i.ytimg.com" }, ...avatarImageRemotePatterns],
   },
 
   outputFileTracingIncludes: {

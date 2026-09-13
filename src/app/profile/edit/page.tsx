@@ -82,11 +82,16 @@ export default async function ProfilePage({ searchParams }: Props) {
     <main className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-semibold text-white">Edit profile</h1>
-        <p className="text-sm text-white/60">Manage your account details and see your recent posts.</p>
+        <p className="text-sm text-white/60">
+          Manage your account details and see your recent posts.
+        </p>
         {publicProfileHref ? (
           <p className="mt-2 text-sm text-white/70">
             See how others see your profile:{" "}
-            <Link href={publicProfileHref} className="font-medium text-brand-300 underline-offset-4 transition hover:underline">
+            <Link
+              href={publicProfileHref}
+              className="font-medium text-brand-300 underline-offset-4 transition hover:underline"
+            >
               View public profile
             </Link>
           </p>
@@ -109,7 +114,10 @@ export default async function ProfilePage({ searchParams }: Props) {
       <Card className="space-y-4 p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-white">Your posts</h2>
-          <Link href="/posts/new" className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline">
+          <Link
+            href="/posts/new"
+            className="text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
+          >
             Create new post
           </Link>
         </div>
@@ -117,19 +125,28 @@ export default async function ProfilePage({ searchParams }: Props) {
           <p className="text-sm text-white/60">You haven’t published any posts yet.</p>
         ) : (
           <ul className="divide-y divide-white/10 text-sm text-white/80">
-            {posts.map(post => (
-              <li key={post.id} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
+            {posts.map((post) => (
+              <li
+                key={post.id}
+                className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <div>
-                  <Link href={`/posts/${post.slug}`} className="text-base font-semibold text-white transition hover:text-brand-300">
+                  <Link
+                    href={`/posts/${post.slug}`}
+                    className="text-base font-semibold text-white transition hover:text-brand-300"
+                  >
                     {post.title}
                   </Link>
                   <p className="text-xs text-white/50">
-                    Published {formatDate(post.uploadDate)} · {(() => {
+                    Published {formatDate(post.uploadDate)} ·{" "}
+                    {(() => {
                       const total = Math.max(post.ratingCount ?? 0, 0);
                       if (total === 0) {
                         return "No verification votes yet";
                       }
-                      const confidence = Math.round(Math.max(0, Math.min(1, post.rating ?? 0)) * 100);
+                      const confidence = Math.round(
+                        Math.max(0, Math.min(1, post.rating ?? 0)) * 100,
+                      );
                       return `${confidence}% confidence (${total} vote${total === 1 ? "" : "s"})`;
                     })()}
                   </p>

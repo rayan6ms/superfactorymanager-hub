@@ -22,14 +22,8 @@ function secureEquals(left: string, right: string) {
   return crypto.timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-export async function isInternalApiAuthorized(
-  request: Request,
-  options: InternalAuthOptions = {},
-) {
-  const {
-    allowAdminSession = true,
-    secretEnvVar = "CRON_SECRET",
-  } = options;
+export async function isInternalApiAuthorized(request: Request, options: InternalAuthOptions = {}) {
+  const { allowAdminSession = true, secretEnvVar = "CRON_SECRET" } = options;
 
   const expectedSecret = process.env[secretEnvVar];
   const bearer = extractBearerToken(request);

@@ -9,11 +9,14 @@
     "start": "next start",
     "postinstall": "node scripts/prisma-generate.mjs",
     "db:migrate:deploy": "node scripts/require-direct-db-url.mjs && prisma migrate deploy",
-    "lint": "eslint",
+    "lint": "oxlint --threads 2",
     "sitemap:generate": "node scripts/generate-sitemap.mjs",
     "test": "bun test tests",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tests/tsconfig.json",
-    "benchmark:sfml": "bun scripts/benchmark-sfml.ts"
+    "benchmark:sfml": "bun scripts/benchmark-sfml.ts",
+    "lint:fix": "oxlint --threads 2 --fix",
+    "format": "oxfmt --threads 2 --write .",
+    "format:check": "oxfmt --threads 2 --check ."
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
@@ -55,25 +58,21 @@
     "@types/nodemailer": "^8.0.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@typescript/native": "npm:typescript@^7.0.2",
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "^2.11.23",
-    "eslint": "^9.0.0",
-    "eslint-config-next": "16.3.5",
     "npm-check-updates": "^23.1.0",
+    "oxfmt": "^0.67.0",
+    "oxlint": "^1.82.0",
     "postcss": "^8.5.28",
     "prisma": "^7.10.0",
     "tailwindcss": "^4.3.3",
-    "typescript": "npm:@typescript/typescript6@^6.0.2"
+    "typescript": "^7.0.2"
   },
   "overrides": {
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "dompurify": "^3.3.2"
   },
-  "trustedDependencies": [
-    "unrs-resolver"
-  ],
   "packageManager": "bun@1.4.0",
   "engines": {
     "node": ">=24.15.0 <25",

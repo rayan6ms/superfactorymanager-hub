@@ -34,13 +34,14 @@ export default async function PublicBuildDetailPage({ params, searchParams }: Pr
   const from = firstValue(resolvedSearchParams?.from);
   const back = firstValue(resolvedSearchParams?.back);
   const backHref = normalizeBackHref(back);
-  const backTo = from === "home"
-    || from === "profile"
-    || from === "builds"
-    || from === "explore-builds"
-    || from === "search"
-    ? from
-    : null;
+  const backTo =
+    from === "home" ||
+    from === "profile" ||
+    from === "builds" ||
+    from === "explore-builds" ||
+    from === "search"
+      ? from
+      : null;
 
   let viewerUsername: string | null = null;
   if (session?.user?.email) {
@@ -63,7 +64,8 @@ export default async function PublicBuildDetailPage({ params, searchParams }: Pr
   }
   const payload = result.payload;
 
-  const isAuthor = viewerUsername !== null && viewerUsername === payload.build.username.toLowerCase();
+  const isAuthor =
+    viewerUsername !== null && viewerUsername === payload.build.username.toLowerCase();
 
   return (
     <BuildDetailPageClient

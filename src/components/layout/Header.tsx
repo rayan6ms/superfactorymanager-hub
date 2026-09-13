@@ -52,7 +52,7 @@ export default function Header() {
         });
         if (!res.ok) return;
 
-        const data = await res.json() as NotificationsResponse;
+        const data = (await res.json()) as NotificationsResponse;
         if (Array.isArray(data.notifications)) {
           setNotificationItems(data.notifications);
         }
@@ -87,16 +87,20 @@ export default function Header() {
               href="/"
               className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/20 bg-(--surface-2) px-3 py-2 text-sm decoration-brand-400 transition hover:bg-(--surface-2)"
             >
-              <Image className="bg-white/30 px-0.5 rounded-full" src="/disk.webp" alt="logo" width={20} height={20} loading="eager" />
+              <Image
+                className="bg-white/30 px-0.5 rounded-full"
+                src="/disk.webp"
+                alt="logo"
+                width={20}
+                height={20}
+                loading="eager"
+              />
               <span className="bg-linear-to-b from-red-400 to-brand-500 bg-clip-text text-transparent font-extrabold">
                 SFMHub
               </span>
             </Link>
 
-            <div
-              className="hidden flex-1 items-center justify-center lg:flex"
-              data-header-search
-            >
+            <div className="hidden flex-1 items-center justify-center lg:flex" data-header-search>
               <div className="w-full max-w-md">
                 <Search className="max-w-md" />
               </div>
@@ -190,11 +194,7 @@ export default function Header() {
                       </div>
 
                       <Link href="/code-editor" className="inline-flex">
-                        <Button
-                          size="md"
-                          variant="outline"
-                          className="w-full justify-center"
-                        >
+                        <Button size="md" variant="outline" className="w-full justify-center">
                           <Code2 /> Code editor
                         </Button>
                       </Link>
@@ -209,11 +209,7 @@ export default function Header() {
 
                       {user && (
                         <Link href={editProfileHref} className="inline-flex">
-                          <Button
-                            size="md"
-                            variant="outline"
-                            className="w-full justify-center"
-                          >
+                          <Button size="md" variant="outline" className="w-full justify-center">
                             <UserRoundPen /> Edit profile
                           </Button>
                         </Link>
@@ -233,11 +229,7 @@ export default function Header() {
                       </div>
                     ) : (
                       <Link href="/login" className="inline-flex">
-                        <Button
-                          size="md"
-                          variant="outline"
-                          className="w-full justify-center px-4"
-                        >
+                        <Button size="md" variant="outline" className="w-full justify-center px-4">
                           <LogIn /> Log in
                         </Button>
                       </Link>

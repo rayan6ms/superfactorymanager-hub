@@ -76,7 +76,7 @@ export default function CodeHistoryPanel({
   const router = useRouter();
   const [primaryId, setPrimaryId] = useState<string>(currentCommitId ?? commits[0]?.id ?? "");
   const [secondaryId, setSecondaryId] = useState<string>(
-    commits.find(commit => commit.id !== (currentCommitId ?? commits[0]?.id ?? ""))?.id ?? "",
+    commits.find((commit) => commit.id !== (currentCommitId ?? commits[0]?.id ?? ""))?.id ?? "",
   );
 
   type CommitAction = "merge" | "reject" | "revert";
@@ -85,9 +85,12 @@ export default function CodeHistoryPanel({
   const [actionTarget, setActionTarget] = useState<ActionTarget>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const primaryCommit = useMemo(() => commits.find(commit => commit.id === primaryId) ?? null, [commits, primaryId]);
+  const primaryCommit = useMemo(
+    () => commits.find((commit) => commit.id === primaryId) ?? null,
+    [commits, primaryId],
+  );
   const secondaryCommit = useMemo(
-    () => commits.find(commit => commit.id === secondaryId) ?? null,
+    () => commits.find((commit) => commit.id === secondaryId) ?? null,
     [commits, secondaryId],
   );
 
@@ -97,11 +100,11 @@ export default function CodeHistoryPanel({
     let oldLine = 1;
     let newLine = 1;
 
-    return changes.flatMap(change => {
+    return changes.flatMap((change) => {
       const lines = change.value.split("\n");
       if (lines[lines.length - 1] === "") lines.pop();
 
-      return lines.map(line => {
+      return lines.map((line) => {
         if (change.added) {
           const row: DiffRow = { type: "added", text: line, oldLine: null, newLine };
           newLine += 1;
@@ -139,26 +142,28 @@ export default function CodeHistoryPanel({
       }
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not update this contribution.";
+      const message =
+        error instanceof Error ? error.message : "Could not update this contribution.";
       setActionError(message);
     } finally {
       setActionTarget(null);
     }
   };
 
-  const getCommitLabel = (commit: CommitForHistory) =>
-    commit.title ?? commit.message;
+  const getCommitLabel = (commit: CommitForHistory) => commit.title ?? commit.message;
 
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-white">Code history</h2>
-          <p className="text-sm text-white/70">Review contributions, merge pull requests, or revert earlier versions.</p>
+          <p className="text-sm text-white/70">
+            Review contributions, merge pull requests, or revert earlier versions.
+          </p>
         </div>
         {contributors.length > 0 && (
           <div className="flex flex-wrap gap-2 text-xs text-white/70">
-            {contributors.map(contributor => (
+            {contributors.map((contributor) => (
               <span key={contributor.id} className="rounded-full border border-white/10 px-3 py-1">
                 {contributor.name ?? "Anonymous"} · {contributor.mergedCommits}
               </span>
@@ -181,9 +186,9 @@ export default function CodeHistoryPanel({
               <select
                 className="mt-1 rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 value={primaryId}
-                onChange={event => setPrimaryId(event.target.value)}
+                onChange={(event) => setPrimaryId(event.target.value)}
               >
-                {commits.map(commit => (
+                {commits.map((commit) => (
                   <option key={commit.id} value={commit.id}>
                     {getCommitLabel(commit)}
                   </option>
@@ -195,12 +200,12 @@ export default function CodeHistoryPanel({
               <select
                 className="mt-1 rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white"
                 value={secondaryId}
-                onChange={event => setSecondaryId(event.target.value)}
+                onChange={(event) => setSecondaryId(event.target.value)}
               >
                 <option value="">— None —</option>
                 {commits
-                  .filter(commit => commit.id !== primaryId)
-                  .map(commit => (
+                  .filter((commit) => commit.id !== primaryId)
+                  .map((commit) => (
                     <option key={commit.id} value={commit.id}>
                       {getCommitLabel(commit)}
                     </option>
@@ -216,9 +221,13 @@ export default function CodeHistoryPanel({
                   <div className="flex flex-wrap items-center justify-between gap-3 bg-white/5 px-4 py-3 text-xs text-white/70">
                     <div>
                       <p className="font-semibold text-white">
-                        Comparing {getCommitLabel(primaryCommit)} against {getCommitLabel(secondaryCommit)}
+                        Comparing {getCommitLabel(primaryCommit)} against{" "}
+                        {getCommitLabel(secondaryCommit)}
                       </p>
-                      <p className="text-white/60">Green lines are additions in the comparison target; red lines were removed from the first selection.</p>
+                      <p className="text-white/60">
+                        Green lines are additions in the comparison target; red lines were removed
+                        from the first selection.
+                      </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-[11px]">
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 pr-2.5 py-1 font-semibold text-emerald-100">
@@ -234,17 +243,23 @@ export default function CodeHistoryPanel({
                       key={`${row.type}-${row.oldLine ?? "-"}-${row.newLine ?? "-"}-${index}`}
                       className={clsx(
                         "grid grid-cols-[3.25rem_3.25rem_1fr] items-start gap-3 px-4 py-1.5 text-xs sm:text-sm",
-                        DIFF_ROW_CLASS[row.type]
+                        DIFF_ROW_CLASS[row.type],
                       )}
                     >
-                      <span className="text-[11px] text-white/40 sm:text-xs">{row.oldLine ?? ""}</span>
-                      <span className="text-[11px] text-white/40 sm:text-xs">{row.newLine ?? ""}</span>
+                      <span className="text-[11px] text-white/40 sm:text-xs">
+                        {row.oldLine ?? ""}
+                      </span>
+                      <span className="text-[11px] text-white/40 sm:text-xs">
+                        {row.newLine ?? ""}
+                      </span>
                       <pre className="whitespace-pre-wrap text-inherit">{row.text || " "}</pre>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="px-4 py-4 text-sm text-white/60">No differences between the selected commits.</p>
+                <p className="px-4 py-4 text-sm text-white/60">
+                  No differences between the selected commits.
+                </p>
               )
             ) : (
               <p className="px-4 py-4 text-sm text-white/60">Choose two commits to view a diff.</p>
@@ -253,14 +268,17 @@ export default function CodeHistoryPanel({
         </div>
 
         <div className="space-y-4">
-          {commits.map(commit => {
+          {commits.map((commit) => {
             const statusStyle = STATUS_COLOR[commit.status] ?? "border-white/10 text-white";
             const isCurrent = commit.id === currentCommitId;
             const actionBusy = actionTarget?.commitId === commit.id;
             const isBusyAction = (a: CommitAction) =>
               actionTarget?.commitId === commit.id && actionTarget.action === a;
             return (
-              <div key={commit.id} className="space-y-3 rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div
+                key={commit.id}
+                className="space-y-3 rounded-2xl border border-white/10 bg-black/25 p-4"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-base font-semibold text-white">{getCommitLabel(commit)}</p>
@@ -271,7 +289,12 @@ export default function CodeHistoryPanel({
                       {commit.author.name ?? "Anonymous"} · {formatDate(commit.createdAt)}
                     </p>
                   </div>
-                  <span className={clsx("rounded-full border px-3 py-1 text-xs font-semibold", statusStyle)}>
+                  <span
+                    className={clsx(
+                      "rounded-full border px-3 py-1 text-xs font-semibold",
+                      statusStyle,
+                    )}
+                  >
                     {commit.status.toLowerCase()}
                   </span>
                 </div>

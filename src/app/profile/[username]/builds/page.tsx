@@ -98,7 +98,9 @@ export default async function UserBuildsPage({ params, searchParams }: Props) {
     }
 
     const suffix = query.toString();
-    return suffix ? `/profile/${encodeURIComponent(username)}/builds?${suffix}` : `/profile/${encodeURIComponent(username)}/builds`;
+    return suffix
+      ? `/profile/${encodeURIComponent(username)}/builds?${suffix}`
+      : `/profile/${encodeURIComponent(username)}/builds`;
   };
 
   return (

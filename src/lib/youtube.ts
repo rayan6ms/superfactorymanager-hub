@@ -1,8 +1,7 @@
-const ID_MATCHER = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([^"&?/\s]{11})/i;
+const ID_MATCHER =
+  /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([^"&?/\s]{11})/i;
 
-export type YoutubeAnalysis =
-  | { ok: true; id: string }
-  | { ok: false; message: string };
+export type YoutubeAnalysis = { ok: true; id: string } | { ok: false; message: string };
 
 function isAllowedHost(hostname: string, domain: string) {
   const host = hostname.toLowerCase();
@@ -45,7 +44,10 @@ export function analyzeYoutubeUrl(input: string): YoutubeAnalysis {
     return { ok: false, message: "Live links need the video ID at the end of the URL." };
   }
 
-  return { ok: false, message: "Include the video ID (v=VIDEO_ID or /embed/VIDEO_ID) in the link." };
+  return {
+    ok: false,
+    message: "Include the video ID (v=VIDEO_ID or /embed/VIDEO_ID) in the link.",
+  };
 }
 
 export function toEmbed(url: string): string | null {

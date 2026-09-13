@@ -28,7 +28,10 @@ export default function DeletionFlagDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const requireText = "CONFIRM";
-  const canSubmit = useMemo(() => confirmValue.trim().toUpperCase() === requireText, [confirmValue]);
+  const canSubmit = useMemo(
+    () => confirmValue.trim().toUpperCase() === requireText,
+    [confirmValue],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -77,74 +80,81 @@ export default function DeletionFlagDialog({
   const dialog =
     open && typeof document !== "undefined"
       ? createPortal(
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e111a]/80 px-4 py-6 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) close();
-          }}
-        >
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-neutral-900/90 p-6 shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2 text-amber-200">
-                <AlertTriangle className="h-5 w-5" aria-hidden />
-                <p className="text-xs uppercase tracking-[0.3em] text-amber-200">Deletion flag</p>
-              </div>
-              <button
-                type="button"
-                onClick={close}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/70 transition hover:border-white/35 hover:text-white"
-              >
-                <X className="h-5 w-5" aria-hidden />
-                <span className="sr-only">Close dialog</span>
-              </button>
-            </div>
-
-            <div className="mt-3 space-y-2">
-              <h2 className="text-xl font-semibold text-white">Flag this {type} as deleted?</h2>
-              <p className="text-sm text-white/70">
-                This hides the {type} from everyone immediately. Type “{requireText}” to confirm you want to flag {targetLabel} for removal.
-              </p>
-            </div>
-
-            <form className="mt-3 space-y-3" onSubmit={submit}>
-              <label className="space-y-2 text-md text-white/80">
-                <span>Type <span className="text-red-400">{requireText}</span> to proceed</span>
-                <input
-                  type="text"
-                  value={confirmValue}
-                  onChange={(event) => setConfirmValue(event.target.value)}
-                  className="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2 mt-1 text-white placeholder-white/40 outline-none transition focus:border-white/40"
-                  placeholder={requireText}
-                />
-              </label>
-              {error && <p className="text-sm text-red-300">{error}</p>}
-              <div className="flex flex-col pt-3 gap-3 sm:flex-row sm:justify-end">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e111a]/80 px-4 py-6 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) close();
+            }}
+          >
+            <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-neutral-900/90 p-6 shadow-2xl backdrop-blur-sm max-h-[calc(100dvh-3rem)] overflow-y-auto">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2 text-amber-200">
+                  <AlertTriangle className="h-5 w-5" aria-hidden />
+                  <p className="text-xs uppercase tracking-[0.3em] text-amber-200">Deletion flag</p>
+                </div>
                 <button
                   type="button"
                   onClick={close}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/35 hover:text-white"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/70 transition hover:border-white/35 hover:text-white"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className={clsx(
-                    "inline-flex items-center justify-center gap-2 rounded-full border border-rose-400/50 bg-rose-500/15 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:border-rose-300 hover:bg-rose-500/25",
-                    submitting && "opacity-60",
-                  )}
-                >
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ShieldOff className="h-4 w-4" aria-hidden />}
-                  <span>Flag as deleted</span>
+                  <X className="h-5 w-5" aria-hidden />
+                  <span className="sr-only">Close dialog</span>
                 </button>
               </div>
-            </form>
-          </div>
-        </div>,
-        document.body,
-      )
+
+              <div className="mt-3 space-y-2">
+                <h2 className="text-xl font-semibold text-white">Flag this {type} as deleted?</h2>
+                <p className="text-sm text-white/70">
+                  This hides the {type} from everyone immediately. Type “{requireText}” to confirm
+                  you want to flag {targetLabel} for removal.
+                </p>
+              </div>
+
+              <form className="mt-3 space-y-3" onSubmit={submit}>
+                <label className="space-y-2 text-md text-white/80">
+                  <span>
+                    Type <span className="text-red-400">{requireText}</span> to proceed
+                  </span>
+                  <input
+                    type="text"
+                    value={confirmValue}
+                    onChange={(event) => setConfirmValue(event.target.value)}
+                    className="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2 mt-1 text-white placeholder-white/40 outline-none transition focus:border-white/40"
+                    placeholder={requireText}
+                  />
+                </label>
+                {error && <p className="text-sm text-red-300">{error}</p>}
+                <div className="flex flex-col pt-3 gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/35 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className={clsx(
+                      "inline-flex items-center justify-center gap-2 rounded-full border border-rose-400/50 bg-rose-500/15 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:border-rose-300 hover:bg-rose-500/25",
+                      submitting && "opacity-60",
+                    )}
+                  >
+                    {submitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    ) : (
+                      <ShieldOff className="h-4 w-4" aria-hidden />
+                    )}
+                    <span>Flag as deleted</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body,
+        )
       : null;
 
   return (

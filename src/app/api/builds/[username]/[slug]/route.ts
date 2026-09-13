@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getBuildDetail } from "@/lib/builds/detail";
 
-export async function GET(request: Request, ctx: { params: Promise<{ username: string; slug: string }> }) {
+export async function GET(
+  request: Request,
+  ctx: { params: Promise<{ username: string; slug: string }> },
+) {
   const { username, slug } = await ctx.params;
   const requestedCommitId = new URL(request.url).searchParams.get("commitId");
   const session = await auth();

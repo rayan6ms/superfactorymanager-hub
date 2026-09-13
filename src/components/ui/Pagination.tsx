@@ -41,14 +41,12 @@ export default function Pagination({
   const isPrevDisabled = page === 1;
   const isNextDisabled = page === totalPages;
 
-  const handleNavigate =
-    (targetPage: number) =>
-      (event: MouseEvent<HTMLAnchorElement>) => {
-        if (!onPageChange) return;
-        event.preventDefault();
-        if (targetPage === page) return;
-        onPageChange(targetPage);
-      };
+  const handleNavigate = (targetPage: number) => (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!onPageChange) return;
+    event.preventDefault();
+    if (targetPage === page) return;
+    onPageChange(targetPage);
+  };
 
   return (
     <div className={`flex flex-wrap items-center justify-between gap-3 ${className ?? ""}`}>

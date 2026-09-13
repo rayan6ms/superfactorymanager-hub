@@ -35,7 +35,7 @@ export default function ResetPasswordConfirmPage() {
     setState("loading");
 
     fetch(`/api/auth/password/reset?token=${encodeURIComponent(token)}`)
-      .then(async res => {
+      .then(async (res) => {
         if (!res.ok) {
           throw new Error("Invalid token");
         }
@@ -45,7 +45,7 @@ export default function ResetPasswordConfirmPage() {
           setState("ready");
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Failed to validate reset token", err);
         if (active) {
           setState("invalid");
@@ -107,7 +107,9 @@ export default function ResetPasswordConfirmPage() {
               : "Choose a new password to finish resetting your account."}
           </p>
         </div>
-        {state === "loading" && <p className="text-center text-sm text-white/70">Checking your reset link...</p>}
+        {state === "loading" && (
+          <p className="text-center text-sm text-white/70">Checking your reset link...</p>
+        )}
         {state === "invalid" && (
           <div className="space-y-3 text-center text-sm text-white/80">
             <p>This reset link is invalid or has expired.</p>
@@ -141,9 +143,9 @@ export default function ResetPasswordConfirmPage() {
                 type={showPassword ? "text" : "password"}
                 placeholder="New password"
                 value={password}
-                onChange={event => {
+                onChange={(event) => {
                   setPassword(event.target.value);
-                  setErrors(prev => ({ ...prev, password: undefined, form: undefined }));
+                  setErrors((prev) => ({ ...prev, password: undefined, form: undefined }));
                 }}
                 autoComplete="new-password"
                 aria-invalid={Boolean(errors.password)}
@@ -152,7 +154,7 @@ export default function ResetPasswordConfirmPage() {
                 rightIcon={
                   <button
                     type="button"
-                    onClick={() => setShowPassword(prev => !prev)}
+                    onClick={() => setShowPassword((prev) => !prev)}
                     className="rounded-full p-1 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-(--surface-2)"
                     aria-pressed={showPassword}
                     aria-label={showPassword ? "Hide password" : "Show password"}

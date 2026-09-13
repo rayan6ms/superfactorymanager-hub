@@ -19,7 +19,9 @@ export default function ContactPage() {
     if (status === "submitting") return;
 
     if (message.trim().length < MIN_MESSAGE) {
-      setError(`Please provide at least ${MIN_MESSAGE} characters so the moderators can review your note.`);
+      setError(
+        `Please provide at least ${MIN_MESSAGE} characters so the moderators can review your note.`,
+      );
       return;
     }
 
@@ -62,7 +64,8 @@ export default function ContactPage() {
         <p className="text-xs uppercase tracking-[0.3em] text-white/50">Support</p>
         <h1 className="text-3xl font-semibold text-white">Contact the team</h1>
         <p className="text-sm text-white/70">
-          Share feedback, questions, or issues. Moderator suggestions will appear in the admin dashboard for review.
+          Share feedback, questions, or issues. Moderator suggestions will appear in the admin
+          dashboard for review.
         </p>
         <p className="text-sm text-white/60">
           If you want a more direct contact, you can find me at{" "}
@@ -81,7 +84,10 @@ export default function ContactPage() {
       <Card className="w-full max-w-3xl space-y-6 p-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-white" htmlFor="name">
+            <label
+              className="flex items-center gap-2 text-sm font-medium text-white"
+              htmlFor="name"
+            >
               <User className="h-4 w-4" />
               Name (optional)
             </label>
@@ -89,11 +95,14 @@ export default function ContactPage() {
               id="name"
               placeholder="How should we address you?"
               value={name}
-              onChange={event => setName(event.target.value)}
+              onChange={(event) => setName(event.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-white" htmlFor="email">
+            <label
+              className="flex items-center gap-2 text-sm font-medium text-white"
+              htmlFor="email"
+            >
               <MessageSquare className="h-4 w-4" />
               Contact email (optional)
             </label>
@@ -102,7 +111,7 @@ export default function ContactPage() {
               type="email"
               placeholder="you@example.com"
               value={email}
-              onChange={event => setEmail(event.target.value)}
+              onChange={(event) => setEmail(event.target.value)}
             />
           </div>
         </div>
@@ -118,11 +127,14 @@ export default function ContactPage() {
               autoComplete="off"
               tabIndex={-1}
               value={website}
-              onChange={event => setWebsite(event.target.value)}
+              onChange={(event) => setWebsite(event.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-white" htmlFor="message">
+            <label
+              className="flex items-center gap-2 text-sm font-medium text-white"
+              htmlFor="message"
+            >
               <Send className="h-4 w-4" />
               Suggestion for moderators
             </label>
@@ -131,19 +143,29 @@ export default function ContactPage() {
               className="min-h-[180px] w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-white placeholder:text-white/50 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/40"
               placeholder="Tell us what you'd like to see or any issues you're running into."
               value={message}
-              onChange={event => {
+              onChange={(event) => {
                 setMessage(event.target.value);
                 setError(null);
               }}
               required
             />
-            <p className="text-xs text-white/50">This message will be routed to moderators on the suggestions page.</p>
+            <p className="text-xs text-white/50">
+              This message will be routed to moderators on the suggestions page.
+            </p>
             {error && <p className="text-sm text-error">{error}</p>}
           </div>
 
-          <Button type="submit" className="w-full justify-center" disabled={status === "submitting"}>
+          <Button
+            type="submit"
+            className="w-full justify-center"
+            disabled={status === "submitting"}
+          >
             <Send className="h-4 w-4" />
-            {status === "submitting" ? "Sending..." : status === "success" ? "Sent" : "Send suggestion"}
+            {status === "submitting"
+              ? "Sending..."
+              : status === "success"
+                ? "Sent"
+                : "Send suggestion"}
           </Button>
         </form>
       </Card>

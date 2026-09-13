@@ -8,10 +8,7 @@ export default async function NewPostPage() {
   const session = await auth();
   if (!session?.user) redirect(`/login?next=${encodeURIComponent("/posts/new")}`);
 
-  const [categories, matrix] = await Promise.all([
-    getCategoryOptions(),
-    getSfmMatrix(false),
-  ]);
+  const [categories, matrix] = await Promise.all([getCategoryOptions(), getSfmMatrix(false)]);
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 lg:space-y-8">

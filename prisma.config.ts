@@ -7,8 +7,8 @@ const directDatabaseUrl = process.env.POSTGRES_URL?.trim() || process.env.DATABA
 const fallbackCliUrl = "postgresql://prisma:prisma@127.0.0.1:5432/prisma";
 
 const isAccelerateUrl = Boolean(
-  prismaDatabaseUrl
-  && (prismaDatabaseUrl.startsWith("prisma://") || prismaDatabaseUrl.startsWith("prisma+postgres://")),
+  prismaDatabaseUrl &&
+  (prismaDatabaseUrl.startsWith("prisma://") || prismaDatabaseUrl.startsWith("prisma+postgres://")),
 );
 
 const migrationUrl = directDatabaseUrl || (!isAccelerateUrl ? prismaDatabaseUrl : undefined);

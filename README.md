@@ -26,10 +26,10 @@ Built with Next.js (App Router), Prisma/PostgreSQL, and NextAuth.
 ## Local development
 
 Use Node 24.15+ (24 LTS) and Bun 1.4+. Dependencies are locked in `bun.lock`.
-The project uses TypeScript 7 for the `tsc` CLI and Next.js builds. ESLint's
-TypeScript parser still needs the TypeScript 6 compatibility API, so the lockfile
-installs that API under the `typescript` package alias while `@typescript/native`
-provides the TypeScript 7 CLI.
+The project uses TypeScript 7 for the `tsc` CLI, Next.js builds, and editor
+tooling. Oxlint and Oxfmt provide the lint and format checks without the
+TypeScript compiler API dependency that prevented TypeScript 7 from being used
+throughout the toolchain.
 
 ### 1) Install dependencies
 
@@ -141,6 +141,7 @@ bun run dev
 bun test
 bun run typecheck
 bun run lint
+bun run format:check
 bun run build
 bun run benchmark:sfml
 ```

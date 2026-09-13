@@ -61,13 +61,13 @@ function fromCachedSerializedBuild(build: CachedSerializedBuild): SerializedBuil
 export type BuildFilterOptions = {
   q?: string;
   order?:
-  | "best"
-  | "newest"
-  | "oldest"
-  | "recently-updated"
-  | "least-recently-updated"
-  | "name-asc"
-  | "name-desc";
+    | "best"
+    | "newest"
+    | "oldest"
+    | "recently-updated"
+    | "least-recently-updated"
+    | "name-asc"
+    | "name-desc";
   username?: string;
   limit?: number;
   page?: number;
@@ -117,42 +117,42 @@ function getPublicBuildWhere(opts: { q?: string; username?: string }): Prisma.Bu
     user: {
       name: trimmedUsername
         ? {
-          contains: trimmedUsername,
-          mode: "insensitive",
-        }
+            contains: trimmedUsername,
+            mode: "insensitive",
+          }
         : { not: null },
     },
     ...(trimmedQuery
       ? {
-        OR: [
-          {
-            nameOriginal: {
-              contains: trimmedQuery,
-              mode: "insensitive",
-            },
-          },
-          {
-            tag: {
-              contains: trimmedQuery,
-              mode: "insensitive",
-            },
-          },
-          {
-            slug: {
-              contains: trimmedQuery,
-              mode: "insensitive",
-            },
-          },
-          {
-            user: {
-              name: {
+          OR: [
+            {
+              nameOriginal: {
                 contains: trimmedQuery,
                 mode: "insensitive",
               },
             },
-          },
-        ],
-      }
+            {
+              tag: {
+                contains: trimmedQuery,
+                mode: "insensitive",
+              },
+            },
+            {
+              slug: {
+                contains: trimmedQuery,
+                mode: "insensitive",
+              },
+            },
+            {
+              user: {
+                name: {
+                  contains: trimmedQuery,
+                  mode: "insensitive",
+                },
+              },
+            },
+          ],
+        }
       : {}),
   };
 }
@@ -260,13 +260,7 @@ async function searchPublicBuildsByRelevance(options: {
 }
 
 async function searchPublicBuildsWithFiltersUncached(opts: BuildFilterOptions) {
-  const {
-    q,
-    order = "best",
-    username,
-    limit = 24,
-    page = 1,
-  } = opts;
+  const { q, order = "best", username, limit = 24, page = 1 } = opts;
 
   const pageSize = Math.max(1, Math.min(limit, 100));
   const currentPage = Math.max(1, Math.floor(page));
@@ -302,9 +296,7 @@ async function searchPublicBuildsWithFiltersUncached(opts: BuildFilterOptions) {
   ]);
 
   return {
-    builds: items
-      .map(serializeBuild)
-      .filter((build): build is SerializedBuild => Boolean(build)),
+    builds: items.map(serializeBuild).filter((build): build is SerializedBuild => Boolean(build)),
     total,
   };
 }
@@ -345,10 +337,10 @@ export async function searchPublicBuildsWithFilters(opts: BuildFilterOptions) {
     page: Math.max(1, Math.floor(opts.page ?? 1)),
   };
 
-  const result = await withDatabaseFallback(
-    () => getCachedPublicBuildsWithFilters(normalized),
-    { builds: [], total: 0 },
-  );
+  const result = await withDatabaseFallback(() => getCachedPublicBuildsWithFilters(normalized), {
+    builds: [],
+    total: 0,
+  });
   return {
     builds: result.builds.map(fromCachedSerializedBuild),
     total: result.total,

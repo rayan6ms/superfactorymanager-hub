@@ -114,11 +114,7 @@ function formatReason(reason: ReportReason) {
   }
 }
 
-async function loadReports(
-  where: Prisma.ReportWhereInput,
-  skip: number,
-  take: number,
-) {
+async function loadReports(where: Prisma.ReportWhereInput, skip: number, take: number) {
   const reports = await db.report.findMany({
     where,
     orderBy: { createdAt: "desc" },
@@ -150,7 +146,7 @@ async function loadReports(
     take,
   });
 
-  const reporterIds = Array.from(new Set(reports.map(report => report.reporterId)));
+  const reporterIds = Array.from(new Set(reports.map((report) => report.reporterId)));
   const reporterCounts = reporterIds.length
     ? await db.report.groupBy({
         by: ["reporterId"],
@@ -159,15 +155,12 @@ async function loadReports(
       })
     : [];
   const reporterCountMap = new Map<string, number>(
-    reporterCounts.map(item => [item.reporterId, item._count._all])
+    reporterCounts.map((item) => [item.reporterId, item._count._all]),
   );
 
-  return reports.map(report => ({
+  return reports.map((report) => ({
     ...report,
-    otherReportsByReporter: Math.max(
-      0,
-      (reporterCountMap.get(report.reporterId) ?? 1) - 1,
-    ),
+    otherReportsByReporter: Math.max(0, (reporterCountMap.get(report.reporterId) ?? 1) - 1),
   }));
 }
 
@@ -203,11 +196,7 @@ export default async function AdminReportsPage({
   const totalForTab = activeTab === "solved" ? solvedCount : openCount;
   const totalPages = getTotalPages(totalForTab, PAGE_SIZE);
   const currentPage = Math.min(requestedPage, totalPages);
-  const reports = await loadReports(
-    activeWhere,
-    (currentPage - 1) * PAGE_SIZE,
-    PAGE_SIZE
-  );
+  const reports = await loadReports(activeWhere, (currentPage - 1) * PAGE_SIZE, PAGE_SIZE);
 
   const buildPageHref = (page: number) => {
     const params = new URLSearchParams();
@@ -226,8 +215,8 @@ export default async function AdminReportsPage({
         <p className="text-sm uppercase tracking-[0.3em] text-white/40">Admin</p>
         <h1 className="text-3xl font-semibold text-white">Content reports</h1>
         <p className="text-sm text-white/60">
-          Review the latest abuse reports. Each entry highlights the reporter, their history, and the exact content
-          location.
+          Review the latest abuse reports. Each entry highlights the reporter, their history, and
+          the exact content location.
         </p>
         <Link
           href="/admin"
@@ -259,7 +248,9 @@ export default async function AdminReportsPage({
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div>
             <h2 className="text-lg font-semibold text-white">Latest reports</h2>
-            <p className="text-sm text-white/60">Includes reporter history and direct links to flagged content.</p>
+            <p className="text-sm text-white/60">
+              Includes reporter history and direct links to flagged content.
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/70">
@@ -268,15 +259,19 @@ export default async function AdminReportsPage({
             <div className="flex overflow-hidden rounded-full border border-white/15">
               <Link
                 href="/admin/reports"
-                className={`px-3 py-1 text-xs font-semibold transition ${activeTab === "open" ? "bg-white/10 text-white" : "text-white/70 hover:text-white"
-                  }`}
+                className={`px-3 py-1 text-xs font-semibold transition ${
+                  activeTab === "open" ? "bg-white/10 text-white" : "text-white/70 hover:text-white"
+                }`}
               >
                 Open reports
               </Link>
               <Link
                 href="/admin/reports?tab=solved"
-                className={`px-3 py-1 text-xs font-semibold transition ${activeTab === "solved" ? "bg-white/10 text-white" : "text-white/70 hover:text-white"
-                  }`}
+                className={`px-3 py-1 text-xs font-semibold transition ${
+                  activeTab === "solved"
+                    ? "bg-white/10 text-white"
+                    : "text-white/70 hover:text-white"
+                }`}
               >
                 Solved reports
               </Link>
@@ -289,16 +284,20 @@ export default async function AdminReportsPage({
             <div className="px-5 py-10 text-center text-sm text-white/60">No open reports.</div>
           ) : (
             <ul className="divide-y divide-white/10">
-              {openReports.map(report => {
+              {openReports.map((report) => {
                 const target = formatTarget(report);
-                const created = formatDistanceToNow(new Date(report.createdAt), { addSuffix: true });
+                const created = formatDistanceToNow(new Date(report.createdAt), {
+                  addSuffix: true,
+                });
                 const offender = report.comment?.author ?? report.post?.author ?? null;
                 const reporterName = report.reporter?.name ?? "Unknown reporter";
                 const offenderName = offender?.name ?? offender?.email ?? "Unknown user";
                 return (
                   <li key={report.id} className="space-y-4 px-5 py-5">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-                      <span className="rounded-full bg-white/5 px-2 py-0.5 font-semibold text-white/80">Open</span>
+                      <span className="rounded-full bg-white/5 px-2 py-0.5 font-semibold text-white/80">
+                        Open
+                      </span>
                       <span>{created}</span>
                       <span className="rounded-full border border-white/15 px-2 py-0.5 text-[0.7rem] uppercase tracking-wide text-white/70">
                         ID: {report.id}
@@ -311,7 +310,9 @@ export default async function AdminReportsPage({
                     <div className="grid gap-4 lg:grid-cols-[minmax(260px,320px)_1fr]">
                       <div className="space-y-3">
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Reporter</p>
+                          <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+                            Reporter
+                          </p>
                           <div className="mt-2 flex items-center gap-3">
                             {report.reporter?.image ? (
                               <span
@@ -335,7 +336,9 @@ export default async function AdminReportsPage({
                               ) : (
                                 <p className="text-sm font-semibold text-white">{reporterName}</p>
                               )}
-                              <p className="text-xs text-white/60">{report.reporter?.email ?? "No email on file"}</p>
+                              <p className="text-xs text-white/60">
+                                {report.reporter?.email ?? "No email on file"}
+                              </p>
                               {report.otherReportsByReporter > 0 && (
                                 <p className="text-xs text-white/60">
                                   {report.otherReportsByReporter} other report
@@ -347,7 +350,9 @@ export default async function AdminReportsPage({
                         </div>
 
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Reported user</p>
+                          <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+                            Reported user
+                          </p>
                           <div className="mt-2 flex items-center gap-3">
                             {offender?.image ? (
                               <span
@@ -362,17 +367,24 @@ export default async function AdminReportsPage({
                             )}
                             <div className="space-y-0.5">
                               <p className="text-sm font-semibold text-white">{offenderName}</p>
-                              <p className="text-xs text-white/60">{offender?.email ?? "No email available"}</p>
                               <p className="text-xs text-white/60">
-                                Target: {report.comment ? "Comment" : report.post ? "Post" : "Unknown"}
+                                {offender?.email ?? "No email available"}
+                              </p>
+                              <p className="text-xs text-white/60">
+                                Target:{" "}
+                                {report.comment ? "Comment" : report.post ? "Post" : "Unknown"}
                               </p>
                             </div>
                           </div>
                         </div>
 
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Timestamps</p>
-                          <p className="mt-2 text-sm text-white/80">Created: {new Date(report.createdAt).toLocaleString()}</p>
+                          <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+                            Timestamps
+                          </p>
+                          <p className="mt-2 text-sm text-white/80">
+                            Created: {new Date(report.createdAt).toLocaleString()}
+                          </p>
                           <p className="text-sm text-white/80">Resolved: Pending</p>
                         </div>
                       </div>
@@ -380,27 +392,38 @@ export default async function AdminReportsPage({
                       <div className="space-y-4">
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
                           <div className="flex items-center justify-between">
-                            <p className="text-xs uppercase tracking-[0.2em] text-white/50">Reason</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+                              Reason
+                            </p>
                             <span className="rounded-full border border-red-300/30 bg-red-500/10 px-2 py-0.5 text-[0.7rem] uppercase tracking-wide text-red-100">
                               {formatReason(report.reason)}
                             </span>
                           </div>
                           {report.message ? (
-                            <p className="whitespace-pre-wrap text-sm text-white/85">{report.message}</p>
+                            <p className="whitespace-pre-wrap text-sm text-white/85">
+                              {report.message}
+                            </p>
                           ) : (
-                            <p className="text-sm text-white/70">No additional details were provided.</p>
+                            <p className="text-sm text-white/70">
+                              No additional details were provided.
+                            </p>
                           )}
                         </div>
 
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
                           <div className="flex items-center justify-between">
-                            <p className="text-xs uppercase tracking-[0.2em] text-white/50">Content</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+                              Content
+                            </p>
                             <span className="rounded-full border border-white/15 px-2 py-0.5 text-[0.7rem] uppercase tracking-wide text-white/70">
                               {target.removed ? "Flagged" : "Active"}
                             </span>
                           </div>
                           {target.href ? (
-                            <Link href={target.href} className="text-sm font-semibold text-brand-200 hover:text-brand-100 hover:underline">
+                            <Link
+                              href={target.href}
+                              className="text-sm font-semibold text-brand-200 hover:text-brand-100 hover:underline"
+                            >
                               {target.label}
                             </Link>
                           ) : (
@@ -410,28 +433,42 @@ export default async function AdminReportsPage({
 
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
                           <div className="flex items-center justify-between">
-                            <p className="text-xs uppercase tracking-[0.2em] text-white/50">History</p>
-                            <span className="text-xs text-white/60">{report.actions.length} entr{report.actions.length === 1 ? "y" : "ies"}</span>
+                            <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+                              History
+                            </p>
+                            <span className="text-xs text-white/60">
+                              {report.actions.length} entr
+                              {report.actions.length === 1 ? "y" : "ies"}
+                            </span>
                           </div>
                           {report.actions.length === 0 ? (
                             <p className="text-xs text-white/60">No actions logged yet.</p>
                           ) : (
                             <ul className="space-y-2">
-                              {report.actions.map(action => {
+                              {report.actions.map((action) => {
                                 const summary = summarizeAction(action);
                                 return (
-                                  <li key={action.id} className="space-y-1 rounded-lg border border-white/10 bg-black/40 p-3">
+                                  <li
+                                    key={action.id}
+                                    className="space-y-1 rounded-lg border border-white/10 bg-black/40 p-3"
+                                  >
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                       <div className="flex flex-wrap items-center gap-2 text-sm text-white">
                                         <span className="rounded-full bg-white/5 px-2 py-0.5 text-[0.7rem] uppercase tracking-wide text-white/70">
                                           {formatActionType(action.type)}
                                         </span>
-                                        <span>{action.actor?.name ?? action.actor?.email ?? "Admin"}</span>
+                                        <span>
+                                          {action.actor?.name ?? action.actor?.email ?? "Admin"}
+                                        </span>
                                       </div>
-                                      <span className="text-xs text-white/60">{new Date(action.createdAt).toLocaleString()}</span>
+                                      <span className="text-xs text-white/60">
+                                        {new Date(action.createdAt).toLocaleString()}
+                                      </span>
                                     </div>
                                     {summary && <p className="text-xs text-white/70">{summary}</p>}
-                                    {action.note && <p className="text-xs text-white/80">Note: {action.note}</p>}
+                                    {action.note && (
+                                      <p className="text-xs text-white/80">Note: {action.note}</p>
+                                    )}
                                   </li>
                                 );
                               })}
@@ -458,7 +495,7 @@ export default async function AdminReportsPage({
           <div className="px-5 py-10 text-center text-sm text-white/60">No solved reports yet.</div>
         ) : (
           <ul className="divide-y divide-white/10">
-            {resolvedReports.map(report => {
+            {resolvedReports.map((report) => {
               const target = formatTarget(report);
               const reporterName = report.reporter?.name ?? "Unknown reporter";
               const offender = report.comment?.author ?? report.post?.author ?? null;
@@ -470,7 +507,9 @@ export default async function AdminReportsPage({
                 <li key={report.id} className="space-y-3 px-5 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-white/70">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-white/5 px-2 py-0.5 font-semibold text-white/80">Resolved</span>
+                      <span className="rounded-full bg-white/5 px-2 py-0.5 font-semibold text-white/80">
+                        Resolved
+                      </span>
                       <span className="rounded-full border border-red-300/30 bg-red-500/10 px-2 py-0.5 text-[0.7rem] uppercase tracking-wide text-red-100">
                         {formatReason(report.reason)}
                       </span>
@@ -486,7 +525,10 @@ export default async function AdminReportsPage({
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-white">{target.label}</p>
                         {target.href ? (
-                          <Link href={target.href} className="text-xs text-brand-200 hover:text-brand-100 hover:underline">
+                          <Link
+                            href={target.href}
+                            className="text-xs text-brand-200 hover:text-brand-100 hover:underline"
+                          >
                             View
                           </Link>
                         ) : null}
@@ -494,12 +536,17 @@ export default async function AdminReportsPage({
                       <p className="text-xs text-white/60">
                         Reporter: {reporterName} • Reported user: {offenderName}
                       </p>
-                      {report.message && <p className="text-xs text-white/70">Details: {report.message}</p>}
+                      {report.message && (
+                        <p className="text-xs text-white/70">Details: {report.message}</p>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-3">
                       <p className="text-xs text-white/60">
-                        Resolved on {report.resolvedAt ? new Date(report.resolvedAt).toLocaleString() : "Unknown"}
+                        Resolved on{" "}
+                        {report.resolvedAt
+                          ? new Date(report.resolvedAt).toLocaleString()
+                          : "Unknown"}
                       </p>
                       <ReopenReportButton reportId={report.id} />
                     </div>

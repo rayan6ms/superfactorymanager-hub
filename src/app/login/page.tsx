@@ -18,7 +18,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const fromParam = resolved?.from;
   const next = Array.isArray(nextParam)
     ? nextParam[0]
-    : nextParam ?? (Array.isArray(fromParam) ? fromParam[0] : fromParam);
+    : (nextParam ?? (Array.isArray(fromParam) ? fromParam[0] : fromParam));
   const safeNext = resolveNext(next);
 
   const session = await auth();

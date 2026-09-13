@@ -114,10 +114,7 @@ const PUBLIC_POST_DETAIL_SELECT = {
 
 type PublicPostDetail = Prisma.PostGetPayload<{ select: typeof PUBLIC_POST_DETAIL_SELECT }>;
 
-export type PrismaClientOrTransaction = Pick<
-  PrismaClient,
-  "rating" | "post" | "postContributor"
->;
+export type PrismaClientOrTransaction = Pick<PrismaClient, "rating" | "post" | "postContributor">;
 
 export async function recomputePostRating(postId: string) {
   const groups = await db.rating.groupBy({
@@ -181,15 +178,12 @@ export async function recordPostContributor(
 export async function generateUniquePostSlug(baseSlug: string) {
   const candidates = await db.post.findMany({
     where: {
-      OR: [
-        { slug: baseSlug },
-        { slug: { startsWith: `${baseSlug}-` } },
-      ],
+      OR: [{ slug: baseSlug }, { slug: { startsWith: `${baseSlug}-` } }],
     },
     select: { slug: true },
   });
 
-  const taken = new Set(candidates.map(candidate => candidate.slug));
+  const taken = new Set(candidates.map((candidate) => candidate.slug));
   if (!taken.has(baseSlug)) {
     return baseSlug;
   }
@@ -219,7 +213,10 @@ type CachedSerializedPost = Omit<SerializedPost, "uploadDate"> & {
   uploadDate: string;
 };
 
-type CachedPublicPostDetail = Omit<PublicPostDetail, "uploadDate" | "updatedAt" | "moderationEditedAt"> & {
+type CachedPublicPostDetail = Omit<
+  PublicPostDetail,
+  "uploadDate" | "updatedAt" | "moderationEditedAt"
+> & {
   uploadDate: string;
   updatedAt: string;
   moderationEditedAt: string | null;
@@ -258,11 +255,12 @@ function fromCachedPublicPostDetail(post: CachedPublicPostDetail): PublicPostDet
 }
 
 const getCachedPopularTags = unstable_cache(
-  async (limit: number) => db.tag.findMany({
-    orderBy: { posts: { _count: "desc" } },
-    take: limit,
-    include: { _count: { select: { posts: true } } },
-  }),
+  async (limit: number) =>
+    db.tag.findMany({
+      orderBy: { posts: { _count: "desc" } },
+      take: limit,
+      include: { _count: { select: { posts: true } } },
+    }),
   ["popular-tags"],
   { revalidate: 60 * 15 },
 );
@@ -275,7 +273,7 @@ const getCachedRecentPosts = unstable_cache(
       select: POST_CARD_SELECT,
       take: limit,
     });
-    return posts.map(post => toCachedSerializedPost(serializePost(post)));
+    return posts.map((post) => toCachedSerializedPost(serializePost(post)));
   },
   ["recent-posts"],
   { revalidate: 60 },
@@ -294,7 +292,7 @@ const getCachedPopularPosts = unstable_cache(
       select: POST_CARD_SELECT,
       take: limit,
     });
-    return posts.map(post => toCachedSerializedPost(serializePost(post)));
+    return posts.map((post) => toCachedSerializedPost(serializePost(post)));
   },
   ["popular-posts"],
   { revalidate: 60 },
@@ -305,7 +303,10 @@ function isMissingPostViewDayTableError(error: unknown) {
     return false;
   }
 
-  return error.message.includes("PostViewDay") || JSON.stringify(error.meta ?? {}).includes("PostViewDay");
+  return (
+    error.message.includes("PostViewDay") ||
+    JSON.stringify(error.meta ?? {}).includes("PostViewDay")
+  );
 }
 
 const getCachedTrendingPosts = unstable_cache(
@@ -329,19 +330,19 @@ const getCachedTrendingPosts = unstable_cache(
       }
     }
 
-    const ids = rows.map(row => row.postId);
+    const ids = rows.map((row) => row.postId);
 
     const posts = ids.length
       ? await db.post.findMany({
-        where: { id: { in: ids }, isDeleted: false },
-        select: POST_CARD_SELECT,
-      })
+          where: { id: { in: ids }, isDeleted: false },
+          select: POST_CARD_SELECT,
+        })
       : [];
 
-    const map = new Map(posts.map(post => [post.id, post]));
+    const map = new Map(posts.map((post) => [post.id, post]));
 
     const ordered = ids
-      .map(id => map.get(id))
+      .map((id) => map.get(id))
       .filter((post): post is PostWithRelations => Boolean(post))
       .map(serializePost);
 
@@ -397,10 +398,7 @@ export async function getPublicPostDetail(slug: string) {
   const normalizedSlug = slug.trim();
   if (!normalizedSlug) return null;
 
-  const post = await withDatabaseFallback(
-    () => getCachedPublicPostDetail(normalizedSlug),
-    null,
-  );
+  const post = await withDatabaseFallback(() => getCachedPublicPostDetail(normalizedSlug), null);
 
   return post ? fromCachedPublicPostDetail(post) : null;
 }
@@ -408,13 +406,13 @@ export async function getPublicPostDetail(slug: string) {
 export type PostsFilterOptions = {
   q?: string;
   order?:
-  | "best"
-  | "newest"
-  | "oldest"
-  | "highest-rating"
-  | "lowest-rating"
-  | "most-views"
-  | "least-views";
+    | "best"
+    | "newest"
+    | "oldest"
+    | "highest-rating"
+    | "lowest-rating"
+    | "most-views"
+    | "least-views";
   minRating?: number;
   categoryKey?: string;
   gameVersion?: string;
@@ -456,17 +454,17 @@ async function searchPostsWithFiltersUncached(opts: PostsFilterOptions) {
       },
     });
 
-    const ids = results.map(result => result.id);
+    const ids = results.map((result) => result.id);
     const posts = ids.length
       ? await db.post.findMany({
-        where: { id: { in: ids } },
-        select: POST_CARD_SELECT,
-      })
+          where: { id: { in: ids } },
+          select: POST_CARD_SELECT,
+        })
       : [];
 
-    const map = new Map(posts.map(post => [post.id, post]));
+    const map = new Map(posts.map((post) => [post.id, post]));
     const ordered = ids
-      .map(id => map.get(id))
+      .map((id) => map.get(id))
       .filter((post): post is PostWithRelations => Boolean(post))
       .map(serializePost);
 
@@ -562,10 +560,10 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
     page: Math.max(1, Math.floor(opts.page ?? 1)),
   };
 
-  const result = await withDatabaseFallback(
-    () => getCachedSearchPostsWithFilters(normalized),
-    { posts: [], total: 0 },
-  );
+  const result = await withDatabaseFallback(() => getCachedSearchPostsWithFilters(normalized), {
+    posts: [],
+    total: 0,
+  });
   return {
     posts: result.posts.map(fromCachedSerializedPost),
     total: result.total,

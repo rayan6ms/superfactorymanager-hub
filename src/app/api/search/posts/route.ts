@@ -23,7 +23,9 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
   const limitParam = Number(url.searchParams.get("limit") ?? "20");
-  const limit = Number.isFinite(limitParam) ? Math.max(1, Math.min(Math.floor(limitParam), SEARCH_RESULT_MAX)) : 20;
+  const limit = Number.isFinite(limitParam)
+    ? Math.max(1, Math.min(Math.floor(limitParam), SEARCH_RESULT_MAX))
+    : 20;
 
   if (!q) return NextResponse.json({ results: [] });
   if (q.length > SEARCH_QUERY_MAX_LENGTH) {

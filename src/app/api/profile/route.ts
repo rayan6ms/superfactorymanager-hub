@@ -11,10 +11,7 @@ import { isUsernameTaken } from "@/lib/usernames.server";
 const MAX_IMAGE_VALUE_LENGTH = 4096;
 const DATA_IMAGE_URL_PATTERN = /^data:image\//i;
 const schema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "NAME_REQUIRED"),
+  name: z.string().trim().min(1, "NAME_REQUIRED"),
   image: z
     .string()
     .trim()

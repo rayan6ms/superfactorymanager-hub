@@ -32,7 +32,7 @@
 
 :root {
   --bg: var(--color-base-950);
-  --surface: rgba(10, 10, 10, 0.40);
+  --surface: rgba(10, 10, 10, 0.4);
   --surface-2: rgba(42, 39, 39, 0.8);
   --muted: var(--color-base-700);
   --text: 240 9% 98%;
@@ -178,7 +178,13 @@ textarea::-webkit-scrollbar-thumb {
 }
 
 textarea::-webkit-resizer {
-  background: linear-gradient(135deg, transparent 45%, rgba(255, 255, 255, 0.28) 45%, rgba(255, 255, 255, 0.28) 55%, transparent 55%);
+  background: linear-gradient(
+    135deg,
+    transparent 45%,
+    rgba(255, 255, 255, 0.28) 45%,
+    rgba(255, 255, 255, 0.28) 55%,
+    transparent 55%
+  );
   border-radius: 0.75rem;
   opacity: 0.5;
 }
@@ -186,7 +192,6 @@ textarea::-webkit-resizer {
 button {
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
 }
-
 
 pre,
 code {

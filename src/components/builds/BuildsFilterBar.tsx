@@ -32,9 +32,15 @@ export default function BuildsFilterBar({
   const [username, setUsername] = useState(initialUsername);
 
   return (
-    <form method="get" action={action} className="space-y-4 rounded-2xl border border-white/10 bg-(--surface)/80 p-5 shadow-soft">
+    <form
+      method="get"
+      action={action}
+      className="space-y-4 rounded-2xl border border-white/10 bg-(--surface)/80 p-5 shadow-soft"
+    >
       {hiddenParams
-        ? Object.entries(hiddenParams).map(([key, value]) => <input key={key} type="hidden" name={key} value={value} />)
+        ? Object.entries(hiddenParams).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={value} />
+          ))
         : null}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_220px_auto] lg:items-end">
         <label className="flex flex-col text-xs font-semibold uppercase tracking-[0.3em] text-white/50">

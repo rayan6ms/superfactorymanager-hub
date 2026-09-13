@@ -53,7 +53,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     return NextResponse.json({ error: "Only the post author can pin comments" }, { status: 403 });
   }
 
-  await db.$transaction(async tx => {
+  await db.$transaction(async (tx) => {
     await tx.comment.updateMany({
       where: { postId: comment.postId, pinnedAt: { not: null } },
       data: { pinnedAt: null },

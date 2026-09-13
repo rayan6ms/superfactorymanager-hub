@@ -36,9 +36,7 @@ function log(...a: unknown[]) {
 function looksLikeCloudflare(html: string) {
   const t = html.toLowerCase();
   return (
-    t.includes("just a moment") ||
-    t.includes("checking your browser") ||
-    t.includes("cloudflare")
+    t.includes("just a moment") || t.includes("checking your browser") || t.includes("cloudflare")
   );
 }
 
@@ -49,9 +47,11 @@ function pushPair(map: Map<string, Set<string>>, g: string, m: string) {
 
 function sortDescSemverish(arr: string[]) {
   return [...arr].sort((a, b) => {
-    const A = a.split(".").map(Number), B = b.split(".").map(Number);
+    const A = a.split(".").map(Number),
+      B = b.split(".").map(Number);
     for (let i = 0; i < Math.max(A.length, B.length); i++) {
-      const ai = A[i] ?? 0, bi = B[i] ?? 0;
+      const ai = A[i] ?? 0,
+        bi = B[i] ?? 0;
       if (ai !== bi) return bi - ai;
     }
     return b.localeCompare(a);
@@ -65,7 +65,7 @@ function uniqPairs(pairs: Pair[]) {
 }
 
 function extractAllVersions(text: string) {
-  return [...text.matchAll(FULL_VERSION_RE)].map(match => match[1]);
+  return [...text.matchAll(FULL_VERSION_RE)].map((match) => match[1]);
 }
 
 function normalizeKnownSfmModVersion(raw: string) {
@@ -75,7 +75,7 @@ function normalizeKnownSfmModVersion(raw: string) {
 
 function findModVersInText(text: string) {
   const versions = extractAllVersions(text)
-    .filter(version => !version.startsWith("1."))
+    .filter((version) => !version.startsWith("1."))
     .map(normalizeKnownSfmModVersion);
   return sortDescSemverish([...new Set(versions)]);
 }
@@ -85,7 +85,9 @@ function extractFromFilename(raw: string) {
   let game = t.match(/(?:mc|minecraft)\s*v?(1\.\d+(?:\.\d+)?)/i)?.[1] ?? null;
   let mod = t.match(/(?:mc|minecraft)\s*v?1\.\d+(?:\.\d+)?\D+v?(\d+\.\d+(?:\.\d+)?)/i)?.[1] ?? null;
 
-  let m = t.match(/(?:^|[-_\s])v?(\d+\.\d+(?:\.\d+)?)\s*[-_\s]+(?:mc|minecraft)\s*v?(1\.\d+(?:\.\d+)?)/i);
+  let m = t.match(
+    /(?:^|[-_\s])v?(\d+\.\d+(?:\.\d+)?)\s*[-_\s]+(?:mc|minecraft)\s*v?(1\.\d+(?:\.\d+)?)/i,
+  );
   if (m) {
     mod = m[1];
     game = m[2];
@@ -98,8 +100,8 @@ function extractFromFilename(raw: string) {
   }
 
   const nums = extractAllVersions(t);
-  if (!game) game = [...t.matchAll(GAME_VERSION_RE)].map(match => match[1])[0] ?? null;
-  if (!mod) mod = nums.find(version => version !== game) ?? null;
+  if (!game) game = [...t.matchAll(GAME_VERSION_RE)].map((match) => match[1])[0] ?? null;
+  if (!mod) mod = nums.find((version) => version !== game) ?? null;
 
   if (game && mod) return { game, mod };
   return null;
@@ -107,7 +109,7 @@ function extractFromFilename(raw: string) {
 
 function findGameVersInText(text: string) {
   const cleaned = text.replace(/\s+/g, " ");
-  const all = [...cleaned.matchAll(GAME_VERSION_RE)].map(match => match[1]);
+  const all = [...cleaned.matchAll(GAME_VERSION_RE)].map((match) => match[1]);
   return [...new Set(all)];
 }
 
@@ -125,7 +127,8 @@ function parseCurseForgeListPage(html: string) {
     badgeText: string;
   }[] = [];
 
-  const rowRe = /<a[^>]+class="[^"]*file-row-details[^"]*"[^>]+href="([^"]*\/files\/(\d+))"[^>]*>([\s\S]*?)<\/a>/gi;
+  const rowRe =
+    /<a[^>]+class="[^"]*file-row-details[^"]*"[^>]+href="([^"]*\/files\/(\d+))"[^>]*>([\s\S]*?)<\/a>/gi;
   let m: RegExpExecArray | null;
   while ((m = rowRe.exec(html))) {
     const fileUrl = new URL(m[1], "https://www.curseforge.com").toString();
@@ -154,7 +157,9 @@ function parseCurseForgeListPage(html: string) {
     const combinedText = `${r.fileName} ${r.badgeText}`;
     const guessed = extractFromFilename(combinedText);
     const games = guessed ? [guessed.game] : findGameVersInText(combinedText);
-    const mod = normalizeKnownSfmModVersion(guessed?.mod ?? findModVersInText(combinedText)[0] ?? "");
+    const mod = normalizeKnownSfmModVersion(
+      guessed?.mod ?? findModVersInText(combinedText)[0] ?? "",
+    );
     const uploadedAt = parseDateMaybe(r.uploadedAtText);
 
     for (const g of games) {
@@ -172,13 +177,17 @@ function parseCurseForgeListPage(html: string) {
   return out;
 }
 
-async function fetchFromCurseForgeIncremental(): Promise<{ added: number; pairs: Pair[]; blocked: boolean }> {
+async function fetchFromCurseForgeIncremental(): Promise<{
+  added: number;
+  pairs: Pair[];
+  blocked: boolean;
+}> {
   const PAGE_SIZE = 50;
   const slug = "super-factory-manager";
   const base = `https://www.curseforge.com/minecraft/mc-mods/${slug}/files/all`;
   const headers = {
     "user-agent": "Mozilla/5.0 superfactorymanager",
-    "accept": "text/html,application/xhtml+xml",
+    accept: "text/html,application/xhtml+xml",
     "accept-language": "en-US,en;q=0.9",
     "cache-control": "no-cache",
   } as Record<string, string>;
@@ -188,15 +197,27 @@ async function fetchFromCurseForgeIncremental(): Promise<{ added: number; pairs:
   const allPairs: Pair[] = [];
   let blocked = false;
 
-  const existing = await db.sfmVersion.findMany({ select: { gameVersion: true, modVersion: true } });
-  const known = new Set(existing.map(e => `${e.gameVersion}|${normalizeKnownSfmModVersion(e.modVersion)}`));
+  const existing = await db.sfmVersion.findMany({
+    select: { gameVersion: true, modVersion: true },
+  });
+  const known = new Set(
+    existing.map((e) => `${e.gameVersion}|${normalizeKnownSfmModVersion(e.modVersion)}`),
+  );
 
   while (true) {
     const url = `${base}?page=${page}&pageSize=${PAGE_SIZE}`;
     const res = await fetch(url, { cache: "no-store", headers }).catch(() => null);
-    if (!res) { log("CF fetch failed", url); blocked = true; break; }
+    if (!res) {
+      log("CF fetch failed", url);
+      blocked = true;
+      break;
+    }
     const html = await res.text();
-    if (looksLikeCloudflare(html)) { log("CF blocked by Cloudflare"); blocked = true; break; }
+    if (looksLikeCloudflare(html)) {
+      log("CF blocked by Cloudflare");
+      blocked = true;
+      break;
+    }
 
     log("CF fetched page", page, "chars", html.length);
     const parsed = parseCurseForgeListPage(html);
@@ -206,14 +227,14 @@ async function fetchFromCurseForgeIncremental(): Promise<{ added: number; pairs:
     }
 
     const pageUniq = uniqPairs(parsed);
-    const newPairs = pageUniq.filter(p => !known.has(`${p.game}|${p.mod}`));
+    const newPairs = pageUniq.filter((p) => !known.has(`${p.game}|${p.mod}`));
     if (newPairs.length === 0) {
       log("CF page", page, "no NEW pairs — stopping early");
       break;
     }
 
     await db.sfmVersion.createMany({
-      data: newPairs.map(p => ({
+      data: newPairs.map((p) => ({
         gameVersion: p.game,
         modVersion: p.mod,
         source: p.source,
@@ -225,7 +246,7 @@ async function fetchFromCurseForgeIncremental(): Promise<{ added: number; pairs:
       })),
     });
 
-    newPairs.forEach(p => known.add(`${p.game}|${p.mod}`));
+    newPairs.forEach((p) => known.add(`${p.game}|${p.mod}`));
     totalAdded += newPairs.length;
     allPairs.push(...newPairs);
     log(`CF page ${page}: rows=${parsed.length}, new=${newPairs.length}, totalAdded=${totalAdded}`);
@@ -240,11 +261,14 @@ async function fetchFromModrinthFallback(): Promise<Pair[]> {
   const res = await fetch(url, {
     cache: "no-store",
     headers: {
-      "accept": "application/json",
+      accept: "application/json",
       "user-agent": "superfactorymanager-hub/1.0",
     },
   }).catch(() => null);
-  if (!res) { log("MR fetch failed"); return []; }
+  if (!res) {
+    log("MR fetch failed");
+    return [];
+  }
 
   let versions: ModrinthVersion[];
   try {
@@ -264,7 +288,7 @@ async function fetchFromModrinthFallback(): Promise<Pair[]> {
     const mod = version.version_number ? normalizeKnownSfmModVersion(version.version_number) : "";
     if (!mod) continue;
 
-    const games = version.game_versions?.filter(game => /^1\.\d+(?:\.\d+)?$/.test(game)) ?? [];
+    const games = version.game_versions?.filter((game) => /^1\.\d+(?:\.\d+)?$/.test(game)) ?? [];
     const uploadedAt = version.date_published ? parseDateMaybe(version.date_published) : null;
     const fileUrl = version.id
       ? `https://modrinth.com/mod/super-factory-manager/version/${version.id}`
@@ -290,12 +314,14 @@ async function fetchFromModrinthFallback(): Promise<Pair[]> {
   const existing = await db.sfmVersion.findMany({
     select: { gameVersion: true, modVersion: true },
   });
-  const known = new Set(existing.map(row => `${row.gameVersion}|${normalizeKnownSfmModVersion(row.modVersion)}`));
-  const newPairs = uniq.filter(pair => !known.has(`${pair.game}|${pair.mod}`));
+  const known = new Set(
+    existing.map((row) => `${row.gameVersion}|${normalizeKnownSfmModVersion(row.modVersion)}`),
+  );
+  const newPairs = uniq.filter((pair) => !known.has(`${pair.game}|${pair.mod}`));
 
   if (newPairs.length) {
     await db.sfmVersion.createMany({
-      data: newPairs.map(p => ({
+      data: newPairs.map((p) => ({
         gameVersion: p.game,
         modVersion: p.mod,
         source: p.source,
@@ -321,14 +347,10 @@ async function matrixFromDB() {
   return { byGame, gameVersions: games };
 }
 
-const getCachedSfmMatrix = unstable_cache(
-  async () => matrixFromDB(),
-  ["sfm-matrix"],
-  {
-    revalidate: 60 * 60,
-    tags: ["sfm-matrix"],
-  },
-);
+const getCachedSfmMatrix = unstable_cache(async () => matrixFromDB(), ["sfm-matrix"], {
+  revalidate: 60 * 60,
+  tags: ["sfm-matrix"],
+});
 
 async function repairKnownSfmVersionRows() {
   const brokenRows = await db.sfmVersion.findMany({
@@ -341,21 +363,23 @@ async function repairKnownSfmVersionRows() {
   });
 
   const fixedTargets = [...new Set(Object.values(KNOWN_MOD_VERSION_FIXUPS))];
-  const impactedGames = [...new Set(brokenRows.map(row => row.gameVersion))];
+  const impactedGames = [...new Set(brokenRows.map((row) => row.gameVersion))];
   const existingFixedRows = brokenRows.length
     ? await db.sfmVersion.findMany({
-      where: {
-        gameVersion: { in: impactedGames },
-        modVersion: { in: fixedTargets },
-      },
-      select: {
-        gameVersion: true,
-        modVersion: true,
-      },
-    })
+        where: {
+          gameVersion: { in: impactedGames },
+          modVersion: { in: fixedTargets },
+        },
+        select: {
+          gameVersion: true,
+          modVersion: true,
+        },
+      })
     : [];
 
-  const existingFixedPairs = new Set(existingFixedRows.map(row => `${row.gameVersion}|${row.modVersion}`));
+  const existingFixedPairs = new Set(
+    existingFixedRows.map((row) => `${row.gameVersion}|${row.modVersion}`),
+  );
   const idsToDelete: string[] = [];
   const idsToUpdateByTarget = new Map<string, string[]>();
 
@@ -453,7 +477,7 @@ export async function getSfmMatrix(force = false) {
 export async function refreshSfm(opts: { source: "cf" | "mr" | "both"; ignoreCooldown?: boolean }) {
   await repairKnownSfmVersionRows();
   const now = Date.now();
-  if (!opts.ignoreCooldown && memoMatrix && (now - lastFetchAt <= COOLDOWN_MS)) {
+  if (!opts.ignoreCooldown && memoMatrix && now - lastFetchAt <= COOLDOWN_MS) {
     log("Skipping refresh due to cooldown");
     return { insertedCf: 0, insertedMr: 0, matrix: memoMatrix };
   }

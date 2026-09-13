@@ -14,10 +14,7 @@ import { getNextBuildSlugForUser } from "@/lib/builds/slug";
 import { assertBuildRateLimit, BuildRateLimitError } from "@/lib/builds/rate-limit";
 import { interactionBlockReason } from "@/lib/moderation";
 
-function uniqueTargetIncludes(
-  target: string[] | string | undefined,
-  fields: string[],
-) {
+function uniqueTargetIncludes(target: string[] | string | undefined, fields: string[]) {
   if (!target) return false;
   if (Array.isArray(target)) {
     return fields.every((field) => target.includes(field));
@@ -80,9 +77,9 @@ export async function POST(request: Request) {
 
   const forkedFrom = parsed.data.forkedFrom
     ? {
-      username: parsed.data.forkedFrom.username.trim(),
-      slug: parsed.data.forkedFrom.slug.trim(),
-    }
+        username: parsed.data.forkedFrom.username.trim(),
+        slug: parsed.data.forkedFrom.slug.trim(),
+      }
     : null;
 
   const moderationAction = forkedFrom ? "fork-build" : "create-build";
@@ -200,16 +197,19 @@ export async function POST(request: Request) {
       );
     } catch (error) {
       if (error instanceof Error && error.message === "BUILD_NAME_TAKEN") {
-        return NextResponse.json({ error: "BUILD_NAME_TAKEN", normalized: nameLower }, { status: 409 });
+        return NextResponse.json(
+          { error: "BUILD_NAME_TAKEN", normalized: nameLower },
+          { status: 409 },
+        );
       }
 
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError
-        && error.code === "P2002"
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         const target = error.meta?.target as string[] | string | undefined;
         if (uniqueTargetIncludes(target, ["userId", "nameLower"])) {
-          return NextResponse.json({ error: "BUILD_NAME_TAKEN", normalized: nameLower }, { status: 409 });
+          return NextResponse.json(
+            { error: "BUILD_NAME_TAKEN", normalized: nameLower },
+            { status: 409 },
+          );
         }
         if (uniqueTargetIncludes(target, ["userId", "slug"])) {
           // Another transaction grabbed the slug; retry and generate the next suffix.

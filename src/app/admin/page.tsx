@@ -63,7 +63,9 @@ export default async function AdminPage() {
       <div className="space-y-1">
         <p className="text-sm uppercase tracking-[0.3em] text-white/40">Admin</p>
         <h1 className="text-3xl font-semibold text-white">Admin tools</h1>
-        <p className="text-sm text-white/60">Jump to moderation, cleanup, and site management pages.</p>
+        <p className="text-sm text-white/60">
+          Jump to moderation, cleanup, and site management pages.
+        </p>
         <Link
           href="/"
           className="inline-flex text-sm font-medium text-brand-300 underline-offset-4 transition hover:underline"
@@ -73,7 +75,7 @@ export default async function AdminPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {adminLinks.map(item => {
+        {adminLinks.map((item) => {
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href} className="group block no-underline">
@@ -83,7 +85,9 @@ export default async function AdminPage() {
                 </span>
                 <span className="min-w-0 flex-1 space-y-2">
                   <span className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-lg font-semibold text-white group-hover:text-brand-100">{item.title}</span>
+                    <span className="text-lg font-semibold text-white group-hover:text-brand-100">
+                      {item.title}
+                    </span>
                     <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/70">
                       {counts[item.countKey]}
                     </span>

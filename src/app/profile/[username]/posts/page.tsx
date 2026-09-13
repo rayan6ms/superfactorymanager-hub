@@ -29,10 +29,7 @@ type Props = {
   searchParams?: SearchParams;
 };
 
-function getParam(
-  params: Record<string, string | string[] | undefined> | undefined,
-  key: string,
-) {
+function getParam(params: Record<string, string | string[] | undefined> | undefined, key: string) {
   const value = params?.[key];
   if (Array.isArray(value)) return value[0] ?? "";
   return typeof value === "string" ? value : "";
@@ -71,10 +68,7 @@ export default async function UserPostsPage({ params, searchParams }: Props) {
     notFound();
   }
 
-  const [categories, sfmMatrix] = await Promise.all([
-    getCategoryOptions(),
-    getSfmMatrix(false),
-  ]);
+  const [categories, sfmMatrix] = await Promise.all([getCategoryOptions(), getSfmMatrix(false)]);
 
   const fetchPage = (page: number) =>
     searchPostsWithFilters({
@@ -140,7 +134,7 @@ export default async function UserPostsPage({ params, searchParams }: Props) {
       <section className="space-y-4">
         {posts.length ? (
           <ul className="grid gap-5 md:grid-cols-2">
-            {posts.map(post => (
+            {posts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </ul>
