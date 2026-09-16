@@ -2,8 +2,12 @@ import { NotificationOrigin } from "@prisma/client";
 
 export const NOTIFICATION_PREVIEW_LIMIT = 5;
 export const NOTIFICATION_PAGE_SIZE = 10;
-export const NOTIFICATION_UNREAD_EVENT = "sfm:notifications:unread-count";
 export const NOTIFICATION_SYNC_EVENT = "sfm:notifications:sync";
+
+export type NotificationPreview = {
+  notifications: SerializedNotification[];
+  unreadCount: number;
+};
 
 export type SerializedNotification = {
   id: string;

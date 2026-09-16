@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut as clientSignOut, useSession } from "next-auth/react";
 import Button from "@/components/ui/Button";
@@ -16,60 +15,19 @@ import {
   UserRoundPen,
   Menu,
 } from "lucide-react";
-import type { SerializedNotification } from "@/lib/notifications-shared";
 import UserMenuAutoCloser from "@/components/layout/UserMenuAutoCloser";
 import HeaderNotifications from "@/components/layout/HeaderNotifications";
 import NotificationBadge from "@/components/layout/NotificationBadge";
 import Image from "next/image";
-import { NOTIFICATION_PREVIEW_LIMIT } from "@/lib/notifications-shared";
-
-type NotificationsResponse = {
-  unreadCount?: number;
-  notifications?: SerializedNotification[];
-};
+import useNotificationPreview from "@/components/notifications/useNotificationPreview";
+import { updateNotifications } from "@/lib/notification-client";
 
 export default function Header() {
   const { data: session, status } = useSession();
   const user = session?.user ?? null;
-  const [notificationItems, setNotificationItems] = useState<SerializedNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    if (status !== "authenticated" || !user?.id) return;
-
-    const controller = new AbortController();
-
-    void (async () => {
-      try {
-        const params = new URLSearchParams({
-          limit: String(NOTIFICATION_PREVIEW_LIMIT),
-          unreadOnly: "1",
-        });
-        const res = await fetch(`/api/notifications?${params.toString()}`, {
-          cache: "no-store",
-          credentials: "include",
-          signal: controller.signal,
-        });
-        if (!res.ok) return;
-
-        const data = (await res.json()) as NotificationsResponse;
-        if (Array.isArray(data.notifications)) {
-          setNotificationItems(data.notifications);
-        }
-        if (typeof data.unreadCount === "number") {
-          setUnreadCount(data.unreadCount);
-        }
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        console.error("Failed to load header notifications:", error);
-      }
-    })();
-
-    return () => controller.abort();
-  }, [status, user?.id]);
-
-  const visibleNotificationItems = user ? notificationItems : [];
-  const visibleUnreadCount = user ? unreadCount : 0;
+  const { notifications, unreadCount, loading, error, refresh } = useNotificationPreview(
+    status === "authenticated" ? user?.id : undefined,
+  );
 
   const username = user?.name?.trim() || null;
   const avatarUrl = user?.image ?? null;
@@ -118,7 +76,13 @@ export default function Header() {
                 </Link>
               )}
 
-              <details className="relative" data-user-menu>
+              <details
+                className="relative"
+                data-user-menu
+                onToggle={(event) => {
+                  if (event.currentTarget.open) void refresh();
+                }}
+              >
                 <summary className="group flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-(--surface-2)/85 text-white transition hover:border-white/25 hover:bg-(--surface-2)/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
                   {user ? (
                     <>
@@ -133,7 +97,7 @@ export default function Header() {
                           {initial}
                         </span>
                       )}
-                      <NotificationBadge initialCount={visibleUnreadCount} />
+                      <NotificationBadge count={unreadCount} />
                     </>
                   ) : (
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg font-semibold">
@@ -154,8 +118,14 @@ export default function Header() {
 
                     {user && (
                       <HeaderNotifications
-                        initialNotifications={visibleNotificationItems}
-                        initialUnreadCount={visibleUnreadCount}
+                        notifications={notifications}
+                        unreadCount={unreadCount}
+                        loading={loading}
+                        loadError={error}
+                        onRetry={refresh}
+                        onMarkRead={async (id) => {
+                          await updateNotifications({ ids: [id], read: true });
+                        }}
                         scrollClassName="max-h-64"
                       />
                     )}

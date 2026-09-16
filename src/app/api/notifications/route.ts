@@ -50,12 +50,28 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const payload = body as { ids?: unknown; read?: unknown };
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const payload = body as { ids?: unknown; read?: unknown; all?: unknown };
   const ids = Array.isArray(payload.ids)
     ? payload.ids.filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
     : [];
   const read = payload.read !== false;
+  const all = payload.all === true;
 
-  const result = await markNotifications(userId, ids, read);
+  if ((payload.read !== undefined && typeof payload.read !== "boolean") || (all && !read)) {
+    return NextResponse.json({ error: "Invalid read action" }, { status: 400 });
+  }
+
+  if (!all && !ids.length) {
+    return NextResponse.json(
+      { error: "At least one notification id is required" },
+      { status: 400 },
+    );
+  }
+
+  const result = await markNotifications(userId, ids, read, all);
   return NextResponse.json(result);
 }

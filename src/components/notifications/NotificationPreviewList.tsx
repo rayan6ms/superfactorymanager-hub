@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
@@ -29,7 +28,8 @@ type NotificationPreviewListProps = {
   className?: string;
   dense?: boolean;
   maxVisible?: number;
-  onMarkRead?: (id: string) => void | Promise<void>;
+  onMarkRead: (id: string) => void | Promise<void>;
+  pendingIds?: Set<string>;
 };
 
 export default function NotificationPreviewList({
@@ -39,69 +39,8 @@ export default function NotificationPreviewList({
   dense = false,
   maxVisible,
   onMarkRead,
+  pendingIds = new Set(),
 }: NotificationPreviewListProps) {
-  const [localUnread, setLocalUnread] = useState<Record<string, boolean>>({});
-  const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
-
-  useEffect(() => {
-    setLocalUnread({});
-    setPendingIds(new Set());
-  }, [notifications]);
-
-  const toggleRead = useCallback(
-    async (notification: SerializedNotification) => {
-      const id = notification.id;
-
-      const unreadFromProps = !notification.readAt;
-      const override = localUnread[id];
-      const unread = typeof override === "boolean" ? override : unreadFromProps;
-
-      const makeRead = unread;
-
-      setPendingIds((prev) => {
-        const next = new Set(prev);
-        next.add(id);
-        return next;
-      });
-
-      setLocalUnread((prev) => ({
-        ...prev,
-        [id]: !makeRead,
-      }));
-
-      try {
-        if (onMarkRead && makeRead) {
-          await onMarkRead(id);
-        } else {
-          const res = await fetch("/api/notifications", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ ids: [id], read: makeRead }),
-          });
-
-          if (!res.ok) {
-            throw new Error("Failed to update notification");
-          }
-        }
-      } catch (error) {
-        console.error(error);
-        setLocalUnread((prev) => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
-      } finally {
-        setPendingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-      }
-    },
-    [localUnread, onMarkRead],
-  );
-
   const items =
     typeof maxVisible === "number"
       ? notifications.slice(0, Math.max(0, maxVisible))
@@ -126,9 +65,7 @@ export default function NotificationPreviewList({
       {items.map((item) => {
         const created = formatNotificationTimestamp(item.createdAt);
 
-        const unreadFromProps = !item.readAt;
-        const override = localUnread[item.id];
-        const unread = typeof override === "boolean" ? override : unreadFromProps;
+        const unread = !item.readAt;
         const pending = pendingIds.has(item.id);
         const href = withNotificationSource(item.link);
 
@@ -170,7 +107,7 @@ export default function NotificationPreviewList({
 
                   <button
                     type="button"
-                    onClick={() => toggleRead(item)}
+                    onClick={() => onMarkRead(item.id)}
                     disabled={pending}
                     className={clsx(
                       "inline-flex items-center justify-center gap-1 rounded-full border border-white/20 px-2 py-0.5 text-[0.65rem] font-semibold text-white/70 transition hover:border-white/40 hover:bg-white/10 hover:text-white shrink-0 disabled:cursor-not-allowed disabled:opacity-60",
@@ -181,7 +118,7 @@ export default function NotificationPreviewList({
                     ) : (
                       <CheckCheck className="h-3 w-3" aria-hidden="true" />
                     )}
-                    <span>{unread ? "Mark read" : "Mark unread"}</span>
+                    <span>Mark read</span>
                   </button>
                 </div>
 

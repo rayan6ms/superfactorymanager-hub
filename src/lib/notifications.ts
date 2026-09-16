@@ -4,6 +4,7 @@ import {
   NOTIFICATION_PAGE_SIZE,
   NOTIFICATION_PREVIEW_LIMIT,
   normalizeNotificationLink,
+  type NotificationPreview,
   type SerializedNotification,
 } from "./notifications-shared";
 export * from "./notifications-shared";
@@ -25,12 +26,15 @@ const serialize = (notification: Notification): SerializedNotification => ({
   readAt: notification.readAt ? notification.readAt.toISOString() : null,
 });
 
-export async function getNotificationPreview(userId: string, limit = NOTIFICATION_PREVIEW_LIMIT) {
+export async function getNotificationPreview(
+  userId: string,
+  limit = NOTIFICATION_PREVIEW_LIMIT,
+): Promise<NotificationPreview> {
   const take = Math.min(Math.max(limit, 1), 10);
   const [items, unreadCount] = await Promise.all([
     db.notification.findMany({
       where: { userId, readAt: null },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take,
     }),
     db.notification.count({ where: { userId, readAt: null } }),
@@ -55,15 +59,15 @@ export async function getNotifications(
   };
   const notifications = await db.notification.findMany({
     where,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: take + 1,
     ...(options.cursor ? { skip: 1, cursor: { id: options.cursor } } : {}),
   });
 
   let nextCursor: string | null = null;
   if (notifications.length > take) {
-    const next = notifications.pop();
-    nextCursor = next ? next.id : null;
+    notifications.pop();
+    nextCursor = notifications.at(-1)?.id ?? null;
   }
 
   const shouldIncludeUnreadCount = options.includeUnreadCount !== false;
@@ -82,19 +86,16 @@ export async function markNotifications(
   userId: string,
   ids: string[],
   read: boolean,
-): Promise<{ unreadCount: number }> {
-  if (!ids.length) {
-    const unreadCount = await db.notification.count({ where: { userId, readAt: null } });
-    return { unreadCount };
+  all = false,
+): Promise<NotificationPreview> {
+  if (ids.length || all) {
+    await db.notification.updateMany({
+      where: { userId, ...(all ? { readAt: null } : { id: { in: ids } }) },
+      data: { readAt: read ? new Date() : null },
+    });
   }
 
-  await db.notification.updateMany({
-    where: { userId, id: { in: ids } },
-    data: { readAt: read ? new Date() : null },
-  });
-
-  const unreadCount = await db.notification.count({ where: { userId, readAt: null } });
-  return { unreadCount };
+  return getNotificationPreview(userId);
 }
 
 export async function createNotification(options: {

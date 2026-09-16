@@ -1,20 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { CheckCheck, Loader2, RefreshCw } from "lucide-react";
+import { CheckCheck, Loader2, Mail, RefreshCw } from "lucide-react";
 import clsx from "clsx";
 import Pagination from "@/components/ui/Pagination";
 import {
   NOTIFICATION_PAGE_SIZE,
-  NOTIFICATION_PREVIEW_LIMIT,
   NOTIFICATION_SYNC_EVENT,
   formatNotificationTimestamp,
   withNotificationSource,
   type SerializedNotification,
 } from "@/lib/notifications-shared";
 import { dispatchNotificationSync, type NotificationSyncDetail } from "@/lib/notification-events";
+import { fetchNotificationPreview, updateNotifications } from "@/lib/notification-client";
 
 const ORIGIN_LABEL: Record<SerializedNotification["origin"], string> = {
   SYSTEM: "System",
@@ -56,10 +56,8 @@ export default function NotificationCenter({
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  const unreadIds = useMemo(
-    () => notifications.filter((item) => !item.readAt).map((item) => item.id),
-    [notifications],
-  );
+  const request = useRef<AbortController | null>(null);
+  const busy = loading || loadingMore || bulkLoading || pendingIds.size > 0;
   const totalLoaded = notifications.length;
 
   const pageNotifications = useMemo(() => {
@@ -86,10 +84,12 @@ export default function NotificationCenter({
         setUnreadCount(detail.unreadCount);
       }
 
-      if (detail.updates?.length) {
+      if (detail.updates?.length || detail.allReadAt) {
+        request.current?.abort();
         setNotifications((prev) =>
           prev.map((item) => {
-            const update = detail.updates!.find((change) => change.id === item.id);
+            if (detail.allReadAt) return { ...item, readAt: item.readAt ?? detail.allReadAt };
+            const update = detail.updates?.find((change) => change.id === item.id);
             return update ? { ...item, readAt: update.readAt } : item;
           }),
         );
@@ -97,7 +97,10 @@ export default function NotificationCenter({
     }
 
     window.addEventListener(NOTIFICATION_SYNC_EVENT, handle as EventListener);
-    return () => window.removeEventListener(NOTIFICATION_SYNC_EVENT, handle as EventListener);
+    return () => {
+      request.current?.abort();
+      window.removeEventListener(NOTIFICATION_SYNC_EVENT, handle as EventListener);
+    };
   }, []);
 
   const applyUpdates = useCallback(
@@ -113,27 +116,30 @@ export default function NotificationCenter({
   );
 
   const refresh = useCallback(async () => {
+    const controller = new AbortController();
+    request.current?.abort();
+    request.current = controller;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/notifications?limit=${NOTIFICATION_PAGE_SIZE}`, {
-        cache: "no-store",
-        credentials: "include",
-      });
+      const [res, preview] = await Promise.all([
+        fetch(`/api/notifications?limit=${NOTIFICATION_PAGE_SIZE}`, {
+          cache: "no-store",
+          credentials: "include",
+          signal: controller.signal,
+        }),
+        fetchNotificationPreview(controller.signal),
+      ]);
       if (!res.ok) throw new Error("Failed to fetch notifications");
       const data = (await res.json()) as ApiResponse;
-      applyUpdates(data.notifications ?? [], data.unreadCount ?? 0, data.nextCursor ?? null);
+      if (controller.signal.aborted) return;
+      applyUpdates(data.notifications ?? [], preview.unreadCount, data.nextCursor ?? null);
       dispatchNotificationSync({
-        unreadCount: data.unreadCount ?? 0,
-        updates: (data.notifications ?? []).map((notification) => ({
-          id: notification.id,
-          readAt: notification.readAt,
-        })),
-        preview: (data.notifications ?? [])
-          .filter((notification) => !notification.readAt)
-          .slice(0, NOTIFICATION_PREVIEW_LIMIT),
+        unreadCount: preview.unreadCount,
+        preview: preview.notifications,
       });
     } catch (err) {
+      if (controller.signal.aborted) return;
       console.error(err);
       setError("We couldn’t refresh notifications. Please try again.");
     } finally {
@@ -143,6 +149,9 @@ export default function NotificationCenter({
 
   const loadMore = useCallback(async () => {
     if (!cursor) return;
+    const controller = new AbortController();
+    request.current?.abort();
+    request.current = controller;
     setLoadingMore(true);
     setError(null);
     try {
@@ -150,27 +159,30 @@ export default function NotificationCenter({
         cursor,
         limit: String(NOTIFICATION_PAGE_SIZE),
         includeUnreadCount: "0",
-        unreadCountHint: String(unreadCount),
       });
       const res = await fetch(`/api/notifications?${params.toString()}`, {
+        signal: controller.signal,
         cache: "no-store",
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to load more");
       const data = (await res.json()) as ApiResponse;
-      setNotifications((prev) => [...prev, ...(data.notifications ?? [])]);
-      setUnreadCount(data.unreadCount ?? unreadCount);
+      if (controller.signal.aborted) return;
+      setNotifications((prev) => [
+        ...prev,
+        ...(data.notifications ?? []).filter(
+          (item) => !prev.some((existing) => existing.id === item.id),
+        ),
+      ]);
       setCursor(data.nextCursor ?? null);
-      if (typeof data.unreadCount === "number") {
-        dispatchNotificationSync({ unreadCount: data.unreadCount });
-      }
     } catch (err) {
+      if (controller.signal.aborted) return;
       console.error(err);
       setError("We couldn’t load more notifications.");
     } finally {
       setLoadingMore(false);
     }
-  }, [cursor, unreadCount]);
+  }, [cursor]);
 
   const toggleRead = useCallback(
     async (notification: SerializedNotification, makeRead: boolean) => {
@@ -178,35 +190,7 @@ export default function NotificationCenter({
       setError(null);
 
       try {
-        const res = await fetch("/api/notifications", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ ids: [notification.id], read: makeRead }),
-        });
-
-        if (!res.ok) throw new Error("Request failed");
-
-        const data = (await res.json()) as { unreadCount: number };
-        const nextCount = data.unreadCount;
-        const readAt = makeRead ? new Date().toISOString() : null;
-
-        const nextNotifications = notifications.map((item) =>
-          item.id === notification.id ? { ...item, readAt } : item,
-        );
-
-        setNotifications(nextNotifications);
-        setUnreadCount(nextCount);
-
-        const preview = nextNotifications
-          .filter((item) => !item.readAt)
-          .slice(0, NOTIFICATION_PREVIEW_LIMIT);
-
-        dispatchNotificationSync({
-          unreadCount: nextCount,
-          updates: [{ id: notification.id, readAt }],
-          preview,
-        });
+        await updateNotifications({ ids: [notification.id], read: makeRead });
       } catch (err) {
         console.error(err);
         setError("We couldn’t update that notification. Please try again.");
@@ -214,54 +198,24 @@ export default function NotificationCenter({
         updatePending(notification.id, false);
       }
     },
-    [notifications, updatePending],
+    [updatePending],
   );
 
   const markAllAsRead = useCallback(async () => {
-    const ids = unreadIds;
-    if (!ids.length) return;
+    if (!unreadCount) return;
 
     setBulkLoading(true);
     setError(null);
 
     try {
-      const res = await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ ids, read: true }),
-      });
-
-      if (!res.ok) throw new Error("Failed to mark notifications as read");
-
-      const data = (await res.json()) as { unreadCount: number };
-      const nextCount = data.unreadCount;
-      const timestamp = new Date().toISOString();
-
-      const nextNotifications = notifications.map((item) => ({
-        ...item,
-        readAt: item.readAt ?? timestamp,
-      }));
-
-      setNotifications(nextNotifications);
-      setUnreadCount(nextCount);
-
-      const preview = nextNotifications
-        .filter((item) => !item.readAt)
-        .slice(0, NOTIFICATION_PREVIEW_LIMIT);
-
-      dispatchNotificationSync({
-        unreadCount: nextCount,
-        updates: ids.map((id) => ({ id, readAt: timestamp })),
-        preview,
-      });
+      await updateNotifications({ all: true, read: true });
     } catch (err) {
       console.error(err);
       setError("We couldn’t mark everything as read. Please try again.");
     } finally {
       setBulkLoading(false);
     }
-  }, [notifications, unreadIds]);
+  }, [unreadCount]);
 
   const hasNotifications = notifications.length > 0;
 
@@ -281,7 +235,7 @@ export default function NotificationCenter({
           <button
             type="button"
             onClick={refresh}
-            disabled={loading}
+            disabled={busy}
             className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
@@ -294,7 +248,7 @@ export default function NotificationCenter({
           <button
             type="button"
             onClick={markAllAsRead}
-            disabled={!unreadIds.length || bulkLoading}
+            disabled={!unreadCount || busy}
             className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {bulkLoading ? (
@@ -393,13 +347,15 @@ export default function NotificationCenter({
                       <button
                         type="button"
                         onClick={() => toggleRead(item, unread)}
-                        disabled={pending}
+                        disabled={busy}
                         className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1 font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {pending ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                        ) : (
+                        ) : unread ? (
                           <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                        ) : (
+                          <Mail className="h-3.5 w-3.5" aria-hidden="true" />
                         )}
                         {unread ? "Mark read" : "Mark unread"}
                       </button>
@@ -431,7 +387,7 @@ export default function NotificationCenter({
               <button
                 type="button"
                 onClick={loadMore}
-                disabled={loadingMore}
+                disabled={busy}
                 className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loadingMore ? (
@@ -444,7 +400,11 @@ export default function NotificationCenter({
         </div>
       )}
 
-      {error && <p className="text-sm text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
