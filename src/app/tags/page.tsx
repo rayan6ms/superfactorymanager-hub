@@ -9,79 +9,51 @@ import TagSelector from "@/app/tags/TagSelector";
 import { hasRecentDatabaseFallback, withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
 import { POST_CARD_SELECT, serializePost } from "@/lib/posts";
-import { parsePageParam, getTotalPages } from "@/lib/pagination";
+import { cache } from "react";
+import {
+  TAG_PAGE_SIZE as PAGE_SIZE,
+  MAX_SELECTED_TAGS,
+  resolveTagNavigation,
+  tagPageHref,
+  mergeTaggedPosts,
+} from "@/lib/tag-navigation";
 import { redirect } from "next/navigation";
 import { CORE_SEO_KEYWORDS, uniqueKeywords } from "@/lib/seo";
 
 export const revalidate = 60;
-const PAGE_SIZE = 30;
-const MAX_SELECTED_TAGS = 3;
-
-function parseTagsParam(value: string) {
-  return value
-    .split(",")
-    .map((tag) => tag.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-function getSelectedSlugs(value: string | undefined) {
-  if (!value) return [];
-  return [...new Set(parseTagsParam(value))].sort().slice(0, MAX_SELECTED_TAGS);
-}
-
-const getCachedTagCount = unstable_cache(async () => db.tag.count(), ["tags-total-count"], {
-  revalidate,
-});
-
-const getCachedTagPage = unstable_cache(
-  async (skip: number, take: number) =>
+// One shared catalogue; arbitrary query strings cannot create extra catalogue cache entries.
+const getCachedTags = unstable_cache(
+  async () =>
     db.tag.findMany({
-      orderBy: { posts: { _count: "desc" } },
-      include: { _count: { select: { posts: true } } },
-      skip,
-      take,
+      orderBy: [{ posts: { _count: "desc" } }, { slug: "asc" }],
+      select: { id: true, name: true, slug: true, _count: { select: { posts: true } } },
     }),
-  ["tags-page"],
-  { revalidate },
+  ["tags-catalogue-v2"],
+  { revalidate: 300 },
 );
+const getTags = cache(() => withDatabaseFallback(() => getCachedTags(), []));
 
 const getCachedTaggedPosts = unstable_cache(
-  async (selectedSlugs: string[]) => {
-    if (!selectedSlugs.length) {
-      return [];
-    }
-
+  async (slug: string) => {
     const items = await db.post.findMany({
       where: {
         isDeleted: false,
         tags: {
           some: {
             tag: {
-              slug: { in: selectedSlugs },
+              slug,
             },
           },
         },
       },
-      orderBy: { uploadDate: "desc" },
+      orderBy: [{ uploadDate: "desc" }, { id: "desc" }],
       select: POST_CARD_SELECT,
       take: 30,
     });
 
     return items.map(serializePost);
   },
-  ["tagged-posts"],
-  { revalidate },
-);
-
-const getCachedTagsBySlug = unstable_cache(
-  async (slugs: string[]) =>
-    db.tag.findMany({
-      where: {
-        slug: { in: slugs },
-      },
-      include: { _count: { select: { posts: true } } },
-    }),
-  ["tags-by-slug"],
+  ["tagged-posts-single-v2"],
   { revalidate },
 );
 
@@ -93,17 +65,20 @@ type Props = {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = searchParams ? await searchParams : {};
-  const rawTags = params.tags;
-  const tagsParam = Array.isArray(rawTags) ? rawTags[0] : rawTags;
-  const selectedSlugs = typeof tagsParam === "string" ? getSelectedSlugs(tagsParam) : [];
-  const pageParam = Array.isArray(params.page) ? params.page[0] : params.page;
-  const requestedPage = parsePageParam(pageParam, 1);
-  const selectedTags = selectedSlugs.length
-    ? await withDatabaseFallback(() => getCachedTagsBySlug(selectedSlugs), [])
-    : [];
+  const catalogue = await getTags();
+  const {
+    slugs: selectedSlugs,
+    page: requestedPage,
+    needsRedirect,
+  } = resolveTagNavigation(
+    params,
+    catalogue.map((tag) => tag.slug),
+  );
+  const selectedTags = catalogue.filter((tag) => selectedSlugs.includes(tag.slug));
   const selectedTag =
     selectedSlugs.length === 1 ? selectedTags.find((tag) => tag.slug === selectedSlugs[0]) : null;
-  const shouldIndex = requestedPage <= 1 && (selectedSlugs.length === 0 || Boolean(selectedTag));
+  const shouldIndex =
+    !needsRedirect && requestedPage === 1 && (selectedSlugs.length === 0 || Boolean(selectedTag));
   const tagName = selectedTag?.name ?? selectedSlugs[0];
   const title = selectedTag
     ? `${tagName} Super Factory Manager Posts`
@@ -127,7 +102,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     },
     robots: {
       index: shouldIndex,
-      follow: true,
+      follow: selectedSlugs.length <= 1,
     },
   };
 }
@@ -135,49 +110,29 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 export default async function TagsPage({ searchParams }: Props) {
   const params = searchParams ? await searchParams : {};
 
-  const rawTags = params.tags;
-  const tagsParam = Array.isArray(rawTags) ? rawTags[0] : rawTags;
-
-  const selectedSlugs = typeof tagsParam === "string" ? getSelectedSlugs(tagsParam) : [];
-  const pageParam = Array.isArray(params.page) ? params.page[0] : params.page;
-  const requestedPage = parsePageParam(pageParam, 1);
-
-  if (typeof tagsParam === "string" && tagsParam !== selectedSlugs.join(",")) {
-    const query = new URLSearchParams();
-    if (selectedSlugs.length) {
-      query.set("tags", selectedSlugs.join(","));
-    }
-    if (requestedPage > 1) {
-      query.set("page", String(requestedPage));
-    }
-    const suffix = query.toString();
-    redirect(suffix ? `/tags?${suffix}` : "/tags");
-  }
-
-  const totalTags = await withDatabaseFallback(() => getCachedTagCount(), 0);
-  const totalPages = getTotalPages(totalTags, PAGE_SIZE);
-  const currentPage = Math.min(requestedPage, totalPages);
-  const skip = (currentPage - 1) * PAGE_SIZE;
-
-  const tags = await withDatabaseFallback(() => getCachedTagPage(skip, PAGE_SIZE), []);
-
-  const selectedSet = new Set(selectedSlugs);
-  const sortedSelection = [...selectedSet];
-
-  const posts = selectedSlugs.length
-    ? await withDatabaseFallback(() => getCachedTaggedPosts(selectedSlugs), [])
-    : [];
+  const catalogue = await getTags();
+  const {
+    slugs: selectedSlugs,
+    page: currentPage,
+    href,
+    needsRedirect,
+  } = resolveTagNavigation(
+    params,
+    catalogue.map((tag) => tag.slug),
+  );
+  // Avoid redirecting valid bookmarks to an empty catalogue during a database outage.
   const isDegraded = hasRecentDatabaseFallback();
-
-  const buildPageHref = (page: number) => {
-    const query = new URLSearchParams();
-    if (selectedSlugs.length) {
-      query.set("tags", selectedSlugs.join(","));
-    }
-    if (page > 1) query.set("page", String(page));
-    const suffix = query.toString();
-    return suffix ? `/tags?${suffix}` : "/tags";
-  };
+  if (needsRedirect && !isDegraded) redirect(href);
+  const totalTags = catalogue.length;
+  const tags = catalogue.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const selectedTags = catalogue.filter((tag) => selectedSlugs.includes(tag.slug));
+  // Cache by individual existing tag, never by an arbitrary combination of tags.
+  const posts = mergeTaggedPosts(
+    await Promise.all(
+      selectedSlugs.map((slug) => withDatabaseFallback(() => getCachedTaggedPosts(slug), [])),
+    ),
+  );
+  const buildPageHref = (page: number) => tagPageHref([], page);
 
   return (
     <div className="space-y-6">
@@ -203,18 +158,25 @@ export default async function TagsPage({ searchParams }: Props) {
       </div>
 
       <Card className="p-5">
-        <TagSelector selectedSlugs={sortedSelection} tags={tags} />
-        <Pagination
+        <TagSelector
+          selectedSlugs={selectedSlugs}
+          tags={tags}
+          selectedTags={selectedTags}
           currentPage={currentPage}
-          pageSize={PAGE_SIZE}
-          total={totalTags}
-          buildHref={buildPageHref}
-          className="mt-4"
+          totalTags={totalTags}
         />
+        {selectedSlugs.length === 0 && (
+          <Pagination
+            currentPage={currentPage}
+            pageSize={PAGE_SIZE}
+            total={totalTags}
+            buildHref={buildPageHref}
+            className="mt-4"
+          />
+        )}
         {selectedSlugs.length > 1 && (
           <p className="mt-3 text-xs text-white/60">
-            Multiple tags are separated by commas in the URL so you can share the filtered view.
-            Single-tag pages are the indexed topic pages.
+            Showing posts matching any selected tag. You can share this filtered view using its URL.
           </p>
         )}
         {selectedSlugs.length >= MAX_SELECTED_TAGS && (
