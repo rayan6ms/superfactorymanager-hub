@@ -1,5 +1,5 @@
 {
-  "installCommand": "bunx --package bun@1.4.2 bun install --frozen-lockfile --ignore-scripts",
+  "installCommand": "node scripts/vercel-install.mjs",
   "crons": [
     {
       "path": "/api/meta/sfm/refresh",
