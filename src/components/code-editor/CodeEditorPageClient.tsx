@@ -563,7 +563,6 @@ export default function CodeEditorPageClient({
   return (
     <div className="space-y-8 pb-4">
       <div className="space-y-1">
-        <p className="eyebrow">Editor</p>
         <h1 className="text-3xl font-semibold text-white">Code editor</h1>
         <p className="text-sm text-white/70">
           Draft SFML snippets here, then copy and paste them into your builds.

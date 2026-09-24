@@ -863,7 +863,6 @@ export default function BuildDetailPageClient({
       <PostRedirectToast />
 
       <div className="space-y-2">
-        <p className="eyebrow">Build</p>
         <h1 className="text-3xl font-semibold wrap-anywhere text-white">
           {buildMeta.nameOriginal}
         </h1>

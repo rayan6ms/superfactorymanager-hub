@@ -75,10 +75,6 @@ body {
   @apply space-y-4 sm:space-y-6;
 }
 
-.eyebrow {
-  @apply text-[0.65rem] uppercase tracking-[0.45em] text-white/40;
-}
-
 .blur-header {
   position: relative;
   z-index: 0;

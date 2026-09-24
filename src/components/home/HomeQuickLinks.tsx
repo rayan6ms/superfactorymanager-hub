@@ -44,7 +44,6 @@ export default function HomeQuickLinks() {
   return (
     <Card className="space-y-3 p-6">
       <div>
-        <p className="eyebrow">Discover</p>
         <h2 className="text-2xl font-semibold text-white">Quick links</h2>
       </div>
 

@@ -47,7 +47,7 @@ function PostSection({
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold text-white">{title}</h3>
-        <span className="text-xs uppercase tracking-[0.35em] text-white/40">{total} posts</span>
+        <span className="text-sm font-medium text-white/60">{total} posts</span>
       </div>
       {posts.length ? (
         <ul className="grid gap-5 md:grid-cols-2">
@@ -77,7 +77,7 @@ function BuildSection({
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold text-white">{title}</h3>
-        <span className="text-xs uppercase tracking-[0.35em] text-white/40">{total} builds</span>
+        <span className="text-sm font-medium text-white/60">{total} builds</span>
       </div>
       {builds.length ? (
         <ul className="grid gap-5 md:grid-cols-2">
@@ -143,7 +143,6 @@ export default async function Home({ searchParams }: Props) {
       <section className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="eyebrow">Tags</p>
             <h2 className="text-3xl font-semibold text-white">Popular tags</h2>
             <p className="text-white/70">
               Jump into Super Factory Manager topics like Mekanism, AE2, item movement, fluids, and
@@ -178,7 +177,6 @@ export default async function Home({ searchParams }: Props) {
       <section className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="eyebrow">Posts</p>
             <h2 className="text-3xl font-semibold text-white">What builders are sharing</h2>
             <p className="text-white/70">
               Browse recent posts, the past month&apos;s most-viewed posts, and all-time favorites.
@@ -199,7 +197,6 @@ export default async function Home({ searchParams }: Props) {
       <section className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="eyebrow">Builds</p>
             <h2 className="text-3xl font-semibold text-white">Community code builds</h2>
             <p className="text-white/70">Explore recently created and recently updated builds.</p>
           </div>

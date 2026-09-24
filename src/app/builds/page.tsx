@@ -113,7 +113,6 @@ export default async function BuildsPage({ searchParams }: Props) {
       {isDegraded ? <DatabaseUnavailableNotice /> : null}
 
       <div className="space-y-3">
-        <p className="eyebrow">Builds</p>
         <h1 className="text-3xl font-semibold text-white">Explore builds</h1>
         <p className="text-white/70">Search community builds by name, tag, author, or date.</p>
         <Card className="border-white/10 bg-white/5 p-4 text-sm text-white/75">

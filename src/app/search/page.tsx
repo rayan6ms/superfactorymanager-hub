@@ -106,7 +106,6 @@ export default async function SearchPage({ searchParams }: Props) {
       {isDegraded ? <DatabaseUnavailableNotice /> : null}
 
       <div className="space-y-3">
-        <p className="eyebrow">Search</p>
         <h1 className="text-3xl font-semibold text-white">Find posts and builds</h1>
         <p className="text-white/70">Search once and browse both content types below.</p>
       </div>

@@ -133,7 +133,6 @@ export default async function PostsPage({ searchParams }: Props) {
       <HideHeaderSearch />
       {isDegraded ? <DatabaseUnavailableNotice /> : null}
       <div className="space-y-3">
-        <p className="eyebrow">Posts</p>
         <h1 className="text-3xl font-semibold text-white">Explore posts</h1>
         <p className="text-white/70">Dial in your search using the filters below.</p>
         <Link

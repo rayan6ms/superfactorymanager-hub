@@ -138,7 +138,6 @@ export default async function TagsPage({ searchParams }: Props) {
     <div className="space-y-6">
       {isDegraded ? <DatabaseUnavailableNotice /> : null}
       <div className="space-y-3">
-        <p className="eyebrow">Tags</p>
         <h1 className="text-3xl font-semibold text-white">Discover tags</h1>
         <Link
           href="/"
@@ -151,7 +150,7 @@ export default async function TagsPage({ searchParams }: Props) {
             Select up to {MAX_SELECTED_TAGS} tags to surface posts that match them.
           </p>
 
-          <p className="text-xs uppercase tracking-[0.3em] text-white/50 sm:ml-auto sm:text-right whitespace-nowrap">
+          <p className="text-sm font-medium text-white/60 sm:ml-auto sm:text-right whitespace-nowrap">
             Showing {tags.length} {tags.length === 1 ? "tag" : "tags"}
           </p>
         </div>
