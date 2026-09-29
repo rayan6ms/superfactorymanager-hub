@@ -8,6 +8,7 @@ const SEARCH_LIMIT_PER_WINDOW = 60;
 const SEARCH_RESULT_MAX = 20;
 const publicCacheHeaders = {
   "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+  "Vercel-CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
 };
 
 export async function GET(req: Request) {
