@@ -11,6 +11,19 @@ const publicCacheHeaders = {
 };
 
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const q = (url.searchParams.get("q") ?? "").trim();
+
+  // Reject malformed crawler input before touching the database-backed rate
+  // limiter. Valid requests are still rate limited below.
+  if (!q) return NextResponse.json({ results: [] }, { headers: publicCacheHeaders });
+  if (q.length > MAX_PUBLIC_QUERY_LENGTH) {
+    return NextResponse.json(
+      { error: `Query must be ${MAX_PUBLIC_QUERY_LENGTH} characters or fewer.` },
+      { status: 400, headers: { "Cache-Control": "public, max-age=60" } },
+    );
+  }
+
   const clientKey = getClientRateLimitKey(req.headers);
   const rateLimit = await checkRateLimit(`search:posts:${clientKey}`, {
     windowMs: SEARCH_WINDOW_MS,
@@ -23,20 +36,10 @@ export async function GET(req: Request) {
     );
   }
 
-  const url = new URL(req.url);
-  const q = (url.searchParams.get("q") ?? "").trim();
   const limitParam = Number(url.searchParams.get("limit") ?? "20");
   const limit = Number.isFinite(limitParam)
     ? Math.max(1, Math.min(Math.floor(limitParam), SEARCH_RESULT_MAX))
     : 20;
-
-  if (!q) return NextResponse.json({ results: [] }, { headers: publicCacheHeaders });
-  if (q.length > MAX_PUBLIC_QUERY_LENGTH) {
-    return NextResponse.json(
-      { error: `Query must be ${MAX_PUBLIC_QUERY_LENGTH} characters or fewer.` },
-      { status: 400, headers: { "Cache-Control": "public, max-age=60" } },
-    );
-  }
 
   const { results } = await searchPostsHybrid({ q, limit });
   return NextResponse.json({ results }, { headers: publicCacheHeaders });
