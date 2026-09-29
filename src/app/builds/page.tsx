@@ -11,6 +11,7 @@ import { searchPublicBuildsWithFilters, type BuildFilterOptions } from "@/lib/bu
 import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { getTotalPages, parsePageParam } from "@/lib/pagination";
 import { CORE_SEO_KEYWORDS, uniqueKeywords } from "@/lib/seo";
+import { normalizePublicPage, normalizePublicQuery } from "@/lib/public-query";
 
 export const revalidate = 60;
 
@@ -32,9 +33,9 @@ type Props = {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = searchParams ? await searchParams : undefined;
-  const q = getParam(params, "q").trim();
+  const q = normalizePublicQuery(getParam(params, "q"));
   const username = getParam(params, "username").trim();
-  const page = parsePageParam(getParam(params, "page"), 1);
+  const page = normalizePublicPage(parsePageParam(getParam(params, "page"), 1));
   const hasFilters = Boolean(q || username || page > 1);
 
   return {
@@ -66,7 +67,7 @@ function getParam(params: Record<string, string | string[] | undefined> | undefi
 export default async function BuildsPage({ searchParams }: Props) {
   const params = searchParams ? await searchParams : undefined;
 
-  const q = getParam(params, "q");
+  const q = normalizePublicQuery(getParam(params, "q"));
   const orderParam = getParam(params, "order");
   const username = getParam(params, "username");
   const pageParam = getParam(params, "page");
@@ -76,7 +77,7 @@ export default async function BuildsPage({ searchParams }: Props) {
     ? (orderParam as BuildFilterOptions["order"])
     : "best";
 
-  const requestedPage = parsePageParam(pageParam, 1);
+  const requestedPage = normalizePublicPage(parsePageParam(pageParam, 1));
   const pageSize = parseBuildPageSize(pageSizeParam || undefined, 24);
 
   const fetchPage = (page: number) =>

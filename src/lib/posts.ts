@@ -3,6 +3,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 import { withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
+import { normalizePublicPage, normalizePublicQuery } from "@/lib/public-query";
 import { searchPostsHybrid } from "@/lib/search-db";
 import { wilsonScore, WILSON_Z_80 } from "@/lib/wilson-score";
 import { subDays } from "date-fns";
@@ -549,7 +550,7 @@ const getCachedSearchPostsWithFilters = unstable_cache(
 
 export async function searchPostsWithFilters(opts: PostsFilterOptions) {
   const normalized: CachedSearchPostsInput = {
-    q: opts.q?.trim() || null,
+    q: normalizePublicQuery(opts.q) || null,
     order: opts.order ?? "most-views",
     minRating: typeof opts.minRating === "number" ? opts.minRating : null,
     categoryKey: opts.categoryKey?.trim() || null,
@@ -557,7 +558,7 @@ export async function searchPostsWithFilters(opts: PostsFilterOptions) {
     sfmVersion: opts.sfmVersion?.trim() || null,
     authorId: opts.authorId?.trim() || null,
     limit: Math.max(1, Math.min(opts.limit ?? 24, 100)),
-    page: Math.max(1, Math.floor(opts.page ?? 1)),
+    page: normalizePublicPage(opts.page ?? 1),
   };
 
   const result = await withDatabaseFallback(() => getCachedSearchPostsWithFilters(normalized), {

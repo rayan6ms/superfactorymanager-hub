@@ -8,6 +8,7 @@ import Card from "@/components/ui/Card";
 import { searchPublicBuildsWithFilters } from "@/lib/builds/search";
 import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { searchPostsWithFilters } from "@/lib/posts";
+import { normalizePublicQuery } from "@/lib/public-query";
 
 export const revalidate = 60;
 
@@ -36,8 +37,8 @@ function parseSectionLimit(value: string) {
 
 export default async function SearchPage({ searchParams }: Props) {
   const params = searchParams ? await searchParams : undefined;
-  const q = getParam(params, "q");
-  const trimmedQuery = q.trim();
+  const q = normalizePublicQuery(getParam(params, "q"));
+  const trimmedQuery = q;
   const postsLimit = parseSectionLimit(getParam(params, "postsLimit"));
   const buildsLimit = parseSectionLimit(getParam(params, "buildsLimit"));
 

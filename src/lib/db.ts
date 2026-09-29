@@ -55,8 +55,11 @@ const prismaClientOptions: Prisma.PrismaClientOptions =
     : {
         adapter: new PrismaPg({
           connectionString: directDatabaseUrl || prismaUrl || fallbackDatabaseUrl,
+          // Vercel functions scale horizontally. Keep each warm instance from
+          // opening a full default pg pool while allowing parallel public reads.
+          max: 4,
           connectionTimeoutMillis: 5_000,
-          idleTimeoutMillis: 300_000,
+          idleTimeoutMillis: 30_000,
         }),
       };
 

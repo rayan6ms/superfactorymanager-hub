@@ -109,6 +109,7 @@ Notes:
 - If you use the Vercel Prisma integration, it commonly injects `DATABASE_URL`. This project does not read that name by default, so copy the value into `PRISMA_DATABASE_URL` as well.
 - If `PRISMA_DATABASE_URL` points at `*.prisma-data.net` over `postgres://` or `postgresql://`, include `sslmode=require`.
 - When both URLs are present, runtime traffic uses the direct Postgres URL by default. Set `PRISMA_USE_ACCELERATE=true` to opt into Accelerate; `POSTGRES_URL` remains required for Prisma CLI operations.
+- Public search/listing requests cap terms at 100 characters and pages at 100 to prevent malformed crawler URLs from creating unbounded cache keys or expensive database offsets. The direct Postgres adapter uses a small per-instance pool and closes idle connections after 30 seconds for serverless deployments.
 - Production rate limiting needs the real client IP from a trusted edge proxy. On Vercel this app uses `x-forwarded-for` automatically. On other hosts, set `TRUSTED_PROXY_IP_HEADER` to the trusted header your proxy controls.
 
 ### 3) Run migrations

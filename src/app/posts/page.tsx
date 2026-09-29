@@ -12,6 +12,7 @@ import { parsePageParam, getTotalPages } from "@/lib/pagination";
 import { hasRecentDatabaseFallback } from "@/lib/db-availability";
 import { getSfmMatrix } from "@/lib/sfm";
 import { CORE_SEO_KEYWORDS, uniqueKeywords } from "@/lib/seo";
+import { normalizePublicPage, normalizePublicQuery } from "@/lib/public-query";
 
 export const revalidate = 60;
 
@@ -33,11 +34,11 @@ type Props = {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = searchParams ? await searchParams : undefined;
-  const q = getParam(params, "q").trim();
+  const q = normalizePublicQuery(getParam(params, "q"));
   const category = getParam(params, "category");
   const gameVersion = getParam(params, "gameVersion");
   const sfmVersion = getParam(params, "sfmVersion");
-  const page = parsePageParam(getParam(params, "page"), 1);
+  const page = normalizePublicPage(parsePageParam(getParam(params, "page"), 1));
   const hasFilters = Boolean(q || category || gameVersion || sfmVersion || page > 1);
 
   const title = q ? `${q} Super Factory Manager Posts` : "Super Factory Manager Code Posts";
@@ -74,7 +75,7 @@ function getParam(params: Record<string, string | string[] | undefined> | undefi
 export default async function PostsPage({ searchParams }: Props) {
   const params = searchParams ? await searchParams : undefined;
 
-  const q = getParam(params, "q");
+  const q = normalizePublicQuery(getParam(params, "q"));
   const orderParam = getParam(params, "order");
   const minRatingParam = getParam(params, "minRating");
   const category = getParam(params, "category");
@@ -87,7 +88,7 @@ export default async function PostsPage({ searchParams }: Props) {
     : "most-views";
 
   const minRatingNumber = Number(minRatingParam) || undefined;
-  const requestedPage = parsePageParam(pageParam, 1);
+  const requestedPage = normalizePublicPage(parsePageParam(pageParam, 1));
   const PAGE_SIZE = 30;
   const trimmedQuery = q.trim();
   const hasQuery = Boolean(trimmedQuery);

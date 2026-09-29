@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { unstable_cache } from "next/cache";
 import { withDatabaseFallback } from "@/lib/db-availability";
 import { db } from "@/lib/db";
+import { normalizePublicPage, normalizePublicQuery } from "@/lib/public-query";
 import type { BuildVisibility } from "@/lib/builds/profile-list-shared";
 
 export const BUILD_CARD_SELECT = {
@@ -330,11 +331,11 @@ const getCachedPublicBuildsWithFilters = unstable_cache(
 
 export async function searchPublicBuildsWithFilters(opts: BuildFilterOptions) {
   const normalized: CachedBuildFilterOptions = {
-    q: opts.q?.trim() || null,
+    q: normalizePublicQuery(opts.q) || null,
     order: opts.order ?? "best",
     username: opts.username?.trim() || null,
     limit: Math.max(1, Math.min(opts.limit ?? 24, 100)),
-    page: Math.max(1, Math.floor(opts.page ?? 1)),
+    page: normalizePublicPage(opts.page ?? 1),
   };
 
   const result = await withDatabaseFallback(() => getCachedPublicBuildsWithFilters(normalized), {
