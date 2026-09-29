@@ -4,7 +4,29 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { withAccelerate } from "@prisma/extension-accelerate";
 
 const prismaUrl = process.env.PRISMA_DATABASE_URL?.trim();
-const directDatabaseUrl = process.env.POSTGRES_URL?.trim() || process.env.DATABASE_URL?.trim();
+
+function normalizeDirectDatabaseUrl(value: string | undefined) {
+  if (!value) return undefined;
+
+  try {
+    const parsed = new URL(value);
+    const sslmode = parsed.searchParams.get("sslmode");
+    if (sslmode === "require" || sslmode === "prefer" || sslmode === "verify-ca") {
+      // pg-connection-string currently treats these modes as verify-full and
+      // logs a warning. Make that security behavior explicit at runtime.
+      parsed.searchParams.set("sslmode", "verify-full");
+      return parsed.toString();
+    }
+  } catch {
+    // Let Prisma/pg report malformed connection strings normally.
+  }
+
+  return value;
+}
+
+const directDatabaseUrl = normalizeDirectDatabaseUrl(
+  process.env.POSTGRES_URL?.trim() || process.env.DATABASE_URL?.trim(),
+);
 const isAccelerateUrl = Boolean(
   prismaUrl && (prismaUrl.startsWith("prisma://") || prismaUrl.startsWith("prisma+postgres://")),
 );
@@ -31,7 +53,7 @@ function warnAboutPrismaConfig() {
     prismaUrl &&
     (prismaUrl.startsWith("postgres://") || prismaUrl.startsWith("postgresql://")) &&
     prismaUrl.includes("prisma-data.net") &&
-    !/([?&])sslmode=require(?:&|$)/.test(prismaUrl)
+    !/([?&])sslmode=(?:require|verify-full)(?:&|$)/.test(prismaUrl)
   ) {
     console.warn(
       "PRISMA_DATABASE_URL points to Prisma Postgres over TCP without sslmode=require. Vercel production should use sslmode=require, or switch PRISMA_DATABASE_URL to an Accelerate URL.",
