@@ -554,6 +554,7 @@ export default function GuidePage() {
           </p>
           <video
             controls
+            preload="metadata"
             className="mt-1 w-full max-w-xl rounded-2xl border border-white/15 bg-black/40"
           >
             <source src="guide/basics/sfm_examples.mp4" type="video/mp4" />

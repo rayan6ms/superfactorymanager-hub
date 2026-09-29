@@ -8,6 +8,11 @@ const directDatabaseUrl = process.env.POSTGRES_URL?.trim() || process.env.DATABA
 const isAccelerateUrl = Boolean(
   prismaUrl && (prismaUrl.startsWith("prisma://") || prismaUrl.startsWith("prisma+postgres://")),
 );
+// Prefer the direct URL when it is available. It is already required for
+// migrations and avoids making page requests depend on Accelerate availability.
+// Set PRISMA_USE_ACCELERATE=true when an environment specifically needs it.
+const useAccelerate =
+  isAccelerateUrl && (process.env.PRISMA_USE_ACCELERATE === "true" || !directDatabaseUrl);
 const fallbackDatabaseUrl = "postgresql://prisma:prisma@127.0.0.1:5432/prisma";
 
 const globalForPrisma = globalThis as unknown as {
@@ -45,7 +50,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const prismaClientOptions: Prisma.PrismaClientOptions =
-  isAccelerateUrl && prismaUrl
+  useAccelerate && prismaUrl
     ? { accelerateUrl: prismaUrl }
     : {
         adapter: new PrismaPg({
@@ -57,6 +62,6 @@ const prismaClientOptions: Prisma.PrismaClientOptions =
 
 const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
 
-export const db = (isAccelerateUrl ? prisma.$extends(withAccelerate()) : prisma) as PrismaClient;
+export const db = (useAccelerate ? prisma.$extends(withAccelerate()) : prisma) as PrismaClient;
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

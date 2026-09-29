@@ -99,7 +99,7 @@ POSTGRES_URL="postgresql://...?...sslmode=require"
 ```
 
 ```bash
-# Option 2: Prisma Accelerate / Prisma Postgres HTTP
+# Option 2: Prisma Accelerate / Prisma Postgres HTTP (opt in)
 PRISMA_DATABASE_URL="prisma://..."            # or prisma+postgres://...
 POSTGRES_URL="postgresql://...?...sslmode=require"
 ```
@@ -108,7 +108,7 @@ Notes:
 
 - If you use the Vercel Prisma integration, it commonly injects `DATABASE_URL`. This project does not read that name by default, so copy the value into `PRISMA_DATABASE_URL` as well.
 - If `PRISMA_DATABASE_URL` points at `*.prisma-data.net` over `postgres://` or `postgresql://`, include `sslmode=require`.
-- `POSTGRES_URL` is still required even when runtime traffic goes through Accelerate, because Prisma CLI operations use `directUrl`.
+- When both URLs are present, runtime traffic uses the direct Postgres URL by default. Set `PRISMA_USE_ACCELERATE=true` to opt into Accelerate; `POSTGRES_URL` remains required for Prisma CLI operations.
 - Production rate limiting needs the real client IP from a trusted edge proxy. On Vercel this app uses `x-forwarded-for` automatically. On other hosts, set `TRUSTED_PROXY_IP_HEADER` to the trusted header your proxy controls.
 
 ### 3) Run migrations
