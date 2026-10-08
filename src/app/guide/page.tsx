@@ -149,7 +149,7 @@ function GuideImage({
     if (typeof controlledExpanded !== "boolean") setUncontrolled(next);
   };
 
-  const isGif = src.toLowerCase().endsWith(".gif");
+  const isVideo = src.toLowerCase().endsWith(".mp4");
 
   const containerClass =
     collapsedMode === "inline"
@@ -164,20 +164,38 @@ function GuideImage({
           aspect,
         )}
       >
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          sizes={sizes}
-          className={clsx(contain ? "object-contain" : "object-cover")}
-          unoptimized={isGif}
-        />
+        {isVideo ? (
+          // oxlint-disable-next-line jsx-a11y/media-has-caption -- Silent clip; the adjacent step explains the demonstrated action.
+          <video
+            controls
+            loop
+            playsInline
+            preload="none"
+            poster={src.replace(/\.mp4$/i, "-poster.webp")}
+            aria-label={alt}
+            className={clsx(
+              "absolute inset-0 h-full w-full",
+              contain ? "object-contain" : "object-cover",
+            )}
+          >
+            <source src={src} type="video/mp4" />
+            {alt}
+          </video>
+        ) : (
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes={sizes}
+            className={clsx(contain ? "object-contain" : "object-cover")}
+          />
+        )}
 
         {allowExpand && (
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
-            aria-label={expanded ? "Shrink image" : "Expand image"}
+            aria-label={`${expanded ? "Shrink" : "Expand"} ${isVideo ? "video" : "image"}`}
             className={clsx(
               "absolute right-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full",
               "border border-white/20 bg-black/60 text-white shadow-sm backdrop-blur",
@@ -554,10 +572,15 @@ export default function GuidePage() {
           </p>
           <video
             controls
-            preload="metadata"
+            playsInline
+            preload="none"
+            poster="/guide/basics/sfm_examples-720p-poster.webp"
+            width={1280}
+            height={720}
+            aria-label="Loading scripts and labels into a manager"
             className="mt-1 w-full max-w-xl rounded-2xl border border-white/15 bg-black/40"
           >
-            <source src="guide/basics/sfm_examples.mp4" type="video/mp4" />
+            <source src="/guide/basics/sfm_examples-720p.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>
@@ -815,7 +838,7 @@ export default function GuidePage() {
           <GuideStep
             image={
               <GuideImage
-                src="/guide/getting-started/pushing_labels.gif"
+                src="/guide/getting-started/pushing_labels.mp4"
                 alt="Pushing labels back into the manager"
                 sizes="(max-width: 768px) 100vw, 900px"
                 collapsedMode="start"
@@ -846,7 +869,7 @@ export default function GuidePage() {
           <GuideStep
             image={
               <GuideImage
-                src="/guide/getting-started/in_action.gif"
+                src="/guide/getting-started/in_action.mp4"
                 alt="Program in action"
                 sizes="(max-width: 768px) 100vw, 900px"
                 collapsedMode="start"

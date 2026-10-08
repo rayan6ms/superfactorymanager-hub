@@ -79,6 +79,27 @@ const nextConfig: NextConfig = {
     "/*": ["./node_modules/.prisma/client/**/*"],
   },
 
+  async redirects() {
+    // Keep existing guide media links working after replacing oversized files.
+    return [
+      {
+        source: "/guide/basics/sfm_examples.mp4",
+        destination: "/guide/basics/sfm_examples-720p.mp4",
+        permanent: true,
+      },
+      {
+        source: "/guide/getting-started/pushing_labels.gif",
+        destination: "/guide/getting-started/pushing_labels.webp",
+        permanent: true,
+      },
+      {
+        source: "/guide/getting-started/in_action.gif",
+        destination: "/guide/getting-started/in_action.webp",
+        permanent: true,
+      },
+    ];
+  },
+
   async headers() {
     const securityHeaders: { key: string; value: string }[] = [
       { key: "Content-Security-Policy", value: buildCsp() },
@@ -95,6 +116,13 @@ const nextConfig: NextConfig = {
     }
 
     return [
+      {
+        source: "/guide/:section(basics|getting-started)/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, s-maxage=604800" },
+          { key: "X-Robots-Tag", value: "noindex" },
+        ],
+      },
       {
         source: "/guide/examples/:path*",
         headers: [

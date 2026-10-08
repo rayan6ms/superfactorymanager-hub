@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Editor, { loader } from "@monaco-editor/react";
-import type * as monacoNs from "monaco-editor";
+import type * as monacoNs from "monaco-editor/editor/editor.api";
 import { clsx } from "clsx";
 
 const SFML_LANGUAGE_ID = "sfml";
@@ -82,35 +82,7 @@ function ensureMonacoEnvironment() {
 
   monacoGlobal.MonacoEnvironment = {
     ...monacoGlobal.MonacoEnvironment,
-    getWorker(_moduleId, label) {
-      if (label === "json") {
-        return new Worker(
-          new URL("monaco-editor/languages/features/json/json.worker.js", import.meta.url),
-          { type: "module" },
-        );
-      }
-
-      if (label === "css" || label === "scss" || label === "less") {
-        return new Worker(
-          new URL("monaco-editor/languages/features/css/css.worker.js", import.meta.url),
-          { type: "module" },
-        );
-      }
-
-      if (label === "html" || label === "handlebars" || label === "razor") {
-        return new Worker(
-          new URL("monaco-editor/languages/features/html/html.worker.js", import.meta.url),
-          { type: "module" },
-        );
-      }
-
-      if (label === "typescript" || label === "javascript") {
-        return new Worker(
-          new URL("monaco-editor/languages/features/typescript/ts.worker.js", import.meta.url),
-          { type: "module" },
-        );
-      }
-
+    getWorker() {
       return new Worker(new URL("monaco-editor/editor/editor.worker.js", import.meta.url), {
         type: "module",
       });
@@ -248,6 +220,9 @@ export function CodeBox({
   wrapLines = true,
 }: CodeBoxProps) {
   const [isLoaderConfigured, setIsLoaderConfigured] = useState(false);
+  const [loadRequested, setLoadRequested] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const focusOnMountRef = useRef(false);
   const editorRef = useRef<monacoNs.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof monacoNs | null>(null);
 
@@ -255,14 +230,42 @@ export function CodeBox({
 
   useEffect(() => {
     let disposed = false;
-    ensureMonacoEnvironment();
+    // Posts can have long descriptions above their code. Fetch the editor only
+    // when the reader approaches it. The load button also supports keyboard users.
+    if (typeof IntersectionObserver === "undefined" || !containerRef.current) {
+      queueMicrotask(() => {
+        if (!disposed) setLoadRequested(true);
+      });
+      return () => {
+        disposed = true;
+      };
+    }
 
-    import("monaco-editor")
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect();
+          if (!disposed) setLoadRequested(true);
+        }
+      },
+      { rootMargin: "320px" },
+    );
+    observer.observe(containerRef.current);
+
+    return () => {
+      disposed = true;
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loadRequested) return;
+    let disposed = false;
+    ensureMonacoEnvironment();
+    import("@/lib/sfml/monaco")
       .then((monaco) => {
         loader.config({ monaco });
-        if (!disposed) {
-          setIsLoaderConfigured(true);
-        }
+        if (!disposed) setIsLoaderConfigured(true);
       })
       .catch((error) => {
         console.error("Monaco loader setup failed:", error);
@@ -271,7 +274,7 @@ export function CodeBox({
     return () => {
       disposed = true;
     };
-  }, []);
+  }, [loadRequested]);
 
   const handleChange = useCallback(
     (next: string | undefined) => {
@@ -334,6 +337,11 @@ export function CodeBox({
       editor.onDidContentSizeChange(updateHeight);
       editor.onDidBlurEditorText(() => onBlur?.());
 
+      if (focusOnMountRef.current) {
+        focusOnMountRef.current = false;
+        editor.focus();
+      }
+
       editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Tab, () => {
         editor.getAction("editor.action.outdentLines")?.run();
       });
@@ -354,6 +362,7 @@ export function CodeBox({
 
   return (
     <div
+      ref={containerRef}
       className={clsx(
         "codebox relative isolate w-full rounded-xl border bg-[#0c0e12] transition-shadow",
         isInvalid
@@ -397,7 +406,20 @@ export function CodeBox({
           />
         ) : (
           <div className="flex min-h-[256px] items-center justify-center px-4 py-10 text-sm text-white/60">
-            Loading editor...
+            {loadRequested ? (
+              <output>Loading editor...</output>
+            ) : (
+              <button
+                type="button"
+                className="rounded-lg border border-white/20 px-4 py-2 text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-brand-400"
+                onClick={() => {
+                  focusOnMountRef.current = true;
+                  setLoadRequested(true);
+                }}
+              >
+                Load code editor
+              </button>
+            )}
           </div>
         )}
       </div>
