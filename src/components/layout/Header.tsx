@@ -22,6 +22,10 @@ import Image from "next/image";
 import useNotificationPreview from "@/components/notifications/useNotificationPreview";
 import { updateNotifications } from "@/lib/notification-client";
 
+// The 190-byte logo travels with the page, so rendering it needs no image request.
+const LOGO_DATA_URL =
+  "data:image/webp;base64,UklGRrYAAABXRUJQVlA4TKoAAAAvD8ADEG+goG0U6F4QgH+t2FDbSFKbfG9xKSH9oCBtA2bXwvwrHfMfALi/mmKv55OKSqiSEyrzNFxbKL6C22bb3OSzvAA5dqcbAOlfAtHjAchM4KuJv64l15lfbHCicofcUXsa4ggR/U/8QUQEgOKHXAi1WG7Wsh+JaM2mGEmjF4zmxb3Ug+bIFPfWasWm+ORXWF0kzKFxmdQucXenPKTXw5ZKA0in02n8AQ==";
+
 export default function Header() {
   const { data: session, status } = useSession();
   const user = session?.user ?? null;
@@ -47,7 +51,7 @@ export default function Header() {
             >
               <Image
                 className="bg-white/30 px-0.5 rounded-full"
-                src="/disk.webp"
+                src={LOGO_DATA_URL}
                 alt="logo"
                 width={20}
                 height={20}
