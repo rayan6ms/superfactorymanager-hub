@@ -208,10 +208,13 @@ export default function PostCard({ post, compact = false }: Props) {
 
               <div className="flex items-center gap-2 text-xs text-white/80">
                 {authorImage ? (
-                  <span
-                    className="h-8 w-8 shrink-0 rounded-full bg-cover bg-center"
-                    style={{ backgroundImage: `url(${authorImage})` }}
-                    aria-hidden="true"
+                  <Image
+                    src={authorImage}
+                    alt=""
+                    width={32}
+                    height={32}
+                    loading="lazy"
+                    className="h-8 w-8 shrink-0 rounded-full object-cover"
                   />
                 ) : (
                   <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold">

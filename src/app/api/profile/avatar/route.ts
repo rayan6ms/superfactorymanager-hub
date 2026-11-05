@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import sharp from "sharp";
 import { auth } from "@/lib/auth";
 import { uploadImageVariant } from "@/lib/blob";
-import { MAX_UPLOAD_IMAGE_PIXELS, validateUploadBatch } from "@/lib/upload-security";
+import { validateUploadBatch } from "@/lib/upload-security";
+import { prepareAvatarImage } from "@/lib/image-processing";
 import { checkRateLimit, getClientRateLimitKey } from "@/lib/request-security";
 
 export const runtime = "nodejs";
@@ -73,15 +73,7 @@ export async function POST(request: Request) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const metadata = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS }).metadata();
-    if (!metadata.width || !metadata.height) {
-      throw new Error("Unsupported image format.");
-    }
-
-    const avatarBuffer = await sharp(buffer, { limitInputPixels: MAX_UPLOAD_IMAGE_PIXELS })
-      .rotate()
-      .webp({ lossless: true })
-      .toBuffer();
+    const avatarBuffer = await prepareAvatarImage(buffer);
 
     const url = await uploadImageVariant("avatars", avatarBuffer, "image/webp", ".webp");
     return NextResponse.json({ url }, { status: 201 });

@@ -21,6 +21,8 @@ export async function uploadImageVariant(
   const res = await put(key, buffer, {
     access: "public",
     contentType,
+    // UUID paths are never overwritten, so browsers can safely retain these files.
+    cacheControlMaxAge: 365 * 24 * 60 * 60,
     token,
   });
   return res.url;

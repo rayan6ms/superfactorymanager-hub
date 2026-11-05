@@ -9,6 +9,7 @@ import { db } from "./db";
 import { z } from "zod";
 import type { Adapter } from "next-auth/adapters";
 import { generateInitialAvatar, resolveProfileImage } from "./avatar";
+import { isManagedBlobUrl } from "./blob";
 import { generateAvailableUsername } from "./usernames.server";
 import { createNotification } from "./notifications";
 import { checkRateLimit, getClientRateLimitKey, hashRateLimitIdentifier } from "./request-security";
@@ -223,7 +224,8 @@ export const authOptions: NextAuthConfig = {
           nextName = unique;
         }
 
-        if (user.image) {
+        // Import a provider avatar once; preserve stored and custom avatars on later logins.
+        if (user.image && !isManagedBlobUrl(existing.image)) {
           const fallbackName = nextName ?? existing.email ?? user.email ?? "user";
           const seed = existing.email ?? user.email ?? existing.id;
           const fallbackAvatar = generateInitialAvatar({ name: fallbackName, seed });

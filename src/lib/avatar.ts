@@ -5,9 +5,9 @@ import dns from "node:dns/promises";
 import http from "node:http";
 import https from "node:https";
 import net from "node:net";
-import sharp from "sharp";
 import { isAllowedAvatarRemoteUrl } from "./avatar-hosts";
-import { uploadImageVariant } from "./blob";
+import { isManagedBlobUrl, uploadImageVariant } from "./blob";
+import { prepareAvatarImage } from "./image-processing";
 
 const DATA_URL_PATTERN = /^data:image\//i;
 const BASE64_DATA_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,/i;
@@ -15,7 +15,6 @@ const REMOTE_URL_PATTERN = /^https?:\/\//i;
 const REMOTE_TIMEOUT_MS = 5000;
 const MAX_REMOTE_REDIRECTS = 3;
 const MAX_REMOTE_AVATAR_BYTES = 8 * 1024 * 1024;
-const MAX_REMOTE_AVATAR_PIXELS = 24_000_000;
 
 const BLOCKED_HOSTNAMES = new Set(["localhost"]);
 
@@ -429,10 +428,7 @@ async function storeRemoteAvatarAsWebp(url: string): Promise<string | null> {
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.byteLength > MAX_REMOTE_AVATAR_BYTES) return null;
 
-  const avatarBuffer = await sharp(bytes, { limitInputPixels: MAX_REMOTE_AVATAR_PIXELS })
-    .rotate()
-    .webp({ lossless: true })
-    .toBuffer();
+  const avatarBuffer = await prepareAvatarImage(bytes);
 
   return uploadImageVariant("avatars", avatarBuffer, "image/webp", ".webp");
 }
@@ -472,6 +468,12 @@ export async function resolveProfileImage({
 
   if (!isAllowedAvatarRemoteUrl(image)) {
     return generateInitialAvatar({ name, seed });
+  }
+
+  // Uploads already have a permanent URL. Saving a profile must not copy them again
+  // or issue a Blob metadata request on every save.
+  if (isManagedBlobUrl(image)) {
+    return image;
   }
 
   const reachableUrl = await remoteImageIsReachable(image);
